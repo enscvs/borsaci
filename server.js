@@ -173,21 +173,20 @@ function cleanSchema(schema) {
 
 const server = http.createServer(async (req, res) => {
   // Render health check
-  if (req.method === "GET" && req.url === "/") {
-    res.writeHead(200, {
-      "Content-Type": "application/json",
-    });
+if (req.method === "GET" && req.url === "/") {
+  res.writeHead(200, {
+    "Content-Type": "application/json",
+  });
 
-    res.end(
-      JSON.stringify({
-        status: "ok",
-        service: "BorsaCI",
-      })
-    );
+  res.end(
+    JSON.stringify({
+      status: "ok",
+      service: "BorsaCI",
+    })
+  );
 
-    return;
-  }
-
+  return;
+}  
   // Analysis endpoint
   if (req.method === "POST" && req.url === "/ask") {
     let body = "";
