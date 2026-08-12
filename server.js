@@ -8,8 +8,6 @@ const {
 } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
 const TelegramBot = require("node-telegram-bot-api");
 const PORT = process.env.PORT || 3000;
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
-  polling: true,
 });
 
 console.log("Telegram bot başlatıldı.");
