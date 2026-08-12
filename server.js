@@ -6,9 +6,13 @@ const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const {
   StreamableHTTPClientTransport,
 } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
-
+const TelegramBot = require("node-telegram-bot-api");
 const PORT = process.env.PORT || 3000;
+const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, {
+  polling: true,
+});
 
+console.log("Telegram bot başlatıldı.");
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
@@ -236,6 +240,58 @@ if (req.method === "GET" && req.url === "/") {
 
   res.writeHead(404);
   res.end("Not Found");
+});
+bot.on("message", async (msg) => {
+  const chatId = msg.chat.id;
+  const question = msg.text;
+
+  if (!question) return;
+
+  if (
+    question.toLowerCase() === "/start"
+  ) {
+    await bot.sendMessage(
+      chatId,
+      "📈 BorsaCI hazır.\n\nHisse veya piyasa sorunu yazabilirsin.\n\nÖrnek:\nASELSAN'ın güncel teknik analizini yap."
+    );
+    return;
+  }
+
+  if (
+    question.toLowerCase() === "/help"
+  ) {
+    await bot.sendMessage(
+      chatId,
+      "BorsaCI kullanım örnekleri:\n\n" +
+      "• ASELSAN teknik analiz\n" +
+      "• TUPRS temel ve teknik analiz\n" +
+      "• En güçlü BIST hisselerini tara\n" +
+      "• GARAN için destek direnç seviyelerini bul\n" +
+      "• Altın mı BIST mi daha iyi performans gösterdi?"
+    );
+    return;
+  }
+
+  await bot.sendMessage(chatId, "🔎 Veriler toplanıyor, analiz ediyorum...");
+
+  try {
+    const answer = await analyze(question);
+
+    // Telegram mesaj limiti yaklaşık 4096 karakter.
+    const chunks = answer.match(/[\s\S]{1,4000}/g) || [];
+
+    for (const chunk of chunks) {
+      await bot.sendMessage(chatId, chunk);
+    }
+  } catch (error) {
+    console.error("Telegram analiz hatası:", error);
+
+    await bot.sendMessage(
+      chatId,
+      "❌ Analiz sırasında hata oluştu.\n\n" +
+      error.message
+    );
+  }
 });
 
 server.listen(PORT, "0.0.0.0", () => {
