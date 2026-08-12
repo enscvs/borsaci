@@ -6,11 +6,9 @@ const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const {
   StreamableHTTPClientTransport,
 } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
-const TelegramBot = require("node-telegram-bot-api");
-const PORT = process.env.PORT || 3000;
-});
 
-console.log("Telegram bot başlatıldı.");
+const PORT = process.env.PORT || 3000;
+
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
@@ -40,100 +38,109 @@ async function analyze(question) {
     version: "1.0.0",
   });
 
-  await client.connect(transport);
+  try {
+    await client.connect(transport);
 
-  const toolResult = await client.listTools();
+    const toolResult = await client.listTools();
 
-  const geminiTools = [
-    {
-      functionDeclarations: toolResult.tools.map((tool) => ({
-        name: tool.name,
-        description: tool.description || "",
-        parameters: cleanSchema(tool.inputSchema),
-      })),
-    },
-  ];
-
-  let contents = [
-    {
-      role: "user",
-      parts: [{ text: question }],
-    },
-  ];
-
-  for (let step = 0; step < 10; step++) {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents,
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        tools: geminiTools,
+    const geminiTools = [
+      {
+        functionDeclarations: toolResult.tools.map((tool) => ({
+          name: tool.name,
+          description: tool.description || "",
+          parameters: cleanSchema(tool.inputSchema),
+        })),
       },
-    });
+    ];
 
-    const candidate = response.candidates?.[0];
+    let contents = [
+      {
+        role: "user",
+        parts: [{ text: question }],
+      },
+    ];
 
-    if (!candidate) {
-      throw new Error("Gemini cevap üretmedi.");
-    }
+    for (let step = 0; step < 10; step++) {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents,
+        config: {
+          systemInstruction: SYSTEM_PROMPT,
+          tools: geminiTools,
+        },
+      });
 
-    const parts = candidate.content?.parts || [];
+      const candidate = response.candidates?.[0];
 
-    const functionCalls = parts.filter(
-      (part) => part.functionCall
-    );
+      if (!candidate) {
+        throw new Error("Gemini cevap üretmedi.");
+      }
 
-    if (functionCalls.length === 0) {
-      await transport.close();
-      return response.text;
-    }
+      const parts = candidate.content?.parts || [];
 
-    contents.push(candidate.content);
+      const functionCalls = parts.filter(
+        (part) => part.functionCall
+      );
 
-    for (const part of functionCalls) {
-      const call = part.functionCall;
+      if (functionCalls.length === 0) {
+        return response.text;
+      }
 
-      console.log(`MCP → ${call.name}`);
+      contents.push(candidate.content);
 
-      try {
-        const result = await client.callTool({
-          name: call.name,
-          arguments: call.args || {},
-        });
+      for (const part of functionCalls) {
+        const call = part.functionCall;
 
-        contents.push({
-          role: "user",
-          parts: [
-            {
-              functionResponse: {
-                name: call.name,
-                response: {
-                  result,
+        console.log(`MCP → ${call.name}`);
+
+        try {
+          const result = await client.callTool({
+            name: call.name,
+            arguments: call.args || {},
+          });
+
+          contents.push({
+            role: "user",
+            parts: [
+              {
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    result,
+                  },
                 },
               },
-            },
-          ],
-        });
-      } catch (error) {
-        contents.push({
-          role: "user",
-          parts: [
-            {
-              functionResponse: {
-                name: call.name,
-                response: {
-                  error: error.message,
+            ],
+          });
+        } catch (error) {
+          console.error(`MCP ${call.name} hatası:`, error.message);
+
+          contents.push({
+            role: "user",
+            parts: [
+              {
+                functionResponse: {
+                  name: call.name,
+                  response: {
+                    error: error.message,
+                  },
                 },
               },
-            },
-          ],
-        });
+            ],
+          });
+        }
       }
     }
-  }
 
-  await transport.close();
-  throw new Error("Maksimum MCP adımına ulaşıldı.");
+    throw new Error("Maksimum MCP adımına ulaşıldı.");
+
+  } finally {
+    try {
+      await transport.close();
+    } catch (_) {
+      // bağlantı zaten kapanmış olabilir
+    }
+  }
 }
 
 /*
@@ -160,7 +167,9 @@ function cleanSchema(schema) {
     if (value && typeof value === "object") {
       if (Array.isArray(value)) {
         result[key] = value.map((item) =>
-          typeof item === "object" ? cleanSchema(item) : item
+          typeof item === "object"
+            ? cleanSchema(item)
+            : item
         );
       } else {
         result[key] = cleanSchema(value);
@@ -174,21 +183,31 @@ function cleanSchema(schema) {
 }
 
 const server = http.createServer(async (req, res) => {
-// BorsaCI web arayüzü
-if (req.method === "GET" && req.url === "/") {
-  res.writeHead(200, {
-    "Content-Type": "text/html; charset=utf-8",
-  });
 
-  res.end(`
+  /*
+   * BorsaCI WEB ARAYÜZÜ
+   */
+  if (req.method === "GET" && req.url === "/") {
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+    });
+
+    res.end(`
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
+
 <title>BorsaCI</title>
 
 <style>
+
 * {
   box-sizing: border-box;
 }
@@ -197,13 +216,19 @@ body {
   margin: 0;
   background: #0b0f14;
   color: #f1f5f9;
-  font-family: Arial, sans-serif;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Arial,
+    sans-serif;
 }
 
 .container {
+  width: 100%;
   max-width: 900px;
   margin: auto;
-  padding: 20px;
+  padding: 18px;
 }
 
 .header {
@@ -218,19 +243,27 @@ body {
 
 .subtitle {
   color: #94a3b8;
-  margin-top: 6px;
+  margin-top: 7px;
+  font-size: 14px;
 }
 
 textarea {
   width: 100%;
-  min-height: 130px;
+  min-height: 140px;
+
   resize: vertical;
+
   border: 1px solid #263241;
   border-radius: 14px;
+
   background: #111827;
   color: white;
+
   padding: 16px;
+
   font-size: 16px;
+  line-height: 1.5;
+
   outline: none;
 }
 
@@ -238,70 +271,99 @@ textarea:focus {
   border-color: #64748b;
 }
 
-button {
+.ask {
   width: 100%;
+
   margin-top: 12px;
-  padding: 15px;
+
+  padding: 16px;
+
   border: none;
   border-radius: 12px;
+
   background: #2563eb;
   color: white;
+
   font-size: 17px;
   font-weight: 700;
-  cursor: pointer;
 }
 
-button:disabled {
+.ask:disabled {
   opacity: 0.6;
 }
 
 .quick {
   display: flex;
+
   gap: 8px;
+
   flex-wrap: wrap;
+
   margin-top: 12px;
 }
 
 .quick button {
-  width: auto;
-  margin: 0;
-  padding: 10px 14px;
-  background: #1e293b;
-  font-size: 14px;
-}
+  flex: 1;
 
-.result {
-  margin-top: 20px;
-  padding: 20px;
-  border-radius: 14px;
-  background: #111827;
+  min-width: 100px;
+
+  padding: 11px;
+
   border: 1px solid #263241;
-  white-space: pre-wrap;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
+  border-radius: 10px;
+
+  background: #111827;
+  color: #cbd5e1;
+
+  font-size: 14px;
 }
 
 .status {
   text-align: center;
+
+  min-height: 24px;
+
+  margin-top: 15px;
+
   color: #94a3b8;
-  margin-top: 12px;
-  min-height: 22px;
+}
+
+.result {
+  margin-top: 15px;
+
+  padding: 20px;
+
+  border-radius: 14px;
+
+  background: #111827;
+
+  border: 1px solid #263241;
+
+  white-space: pre-wrap;
+
+  line-height: 1.65;
+
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 600px) {
+
   .container {
     padding: 12px;
   }
 
   .logo {
-    font-size: 27px;
+    font-size: 28px;
   }
 
   textarea {
-    min-height: 120px;
+    min-height: 125px;
   }
+
 }
+
 </style>
+
 </head>
 
 <body>
@@ -309,10 +371,15 @@ button:disabled {
 <div class="container">
 
   <div class="header">
-    <div class="logo">📈 BorsaCI</div>
+
+    <div class="logo">
+      📈 BorsaCI
+    </div>
+
     <div class="subtitle">
       AI destekli BIST ve finansal piyasa analiz asistanı
     </div>
+
   </div>
 
   <textarea
@@ -320,53 +387,85 @@ button:disabled {
     placeholder="BorsaCI'ye bir soru sor...
 
 Örnek:
+
 ASELSAN'ın güncel teknik analizini yap.
+
 TUPRS için destek ve direnç seviyelerini değerlendir.
-BIST'te bugün hangi hisseler güçlü?"
+
+BIST'te bugün güçlü hisseleri tara."
   ></textarea>
 
-  <button id="askButton" onclick="askBorsaCI()">
+  <button
+    class="ask"
+    id="askButton"
+    onclick="askBorsaCI()"
+  >
     🔎 ANALİZ ET
   </button>
 
   <div class="quick">
-    <button onclick="quickAsk('ASELSAN güncel teknik analizini yap')">
+
+    <button
+      onclick="quickAsk('ASELSAN güncel teknik analizini yap')"
+    >
       ASELSAN
     </button>
 
-    <button onclick="quickAsk('TUPRS güncel teknik analizini yap')">
+    <button
+      onclick="quickAsk('TUPRS güncel teknik analizini yap')"
+    >
       TUPRS
     </button>
 
-    <button onclick="quickAsk('BIST piyasasını güncel verilerle değerlendir')">
+    <button
+      onclick="quickAsk('BIST piyasasını güncel verilerle değerlendir')"
+    >
       BIST
     </button>
 
-    <button onclick="quickAsk('Güncel piyasa haberlerini ve önemli katalizörleri değerlendir')">
-      📰 Haberler
+    <button
+      onclick="quickAsk('Güncel piyasa haberlerini değerlendir')"
+    >
+      📰 Haber
     </button>
+
   </div>
 
-  <div class="status" id="status"></div>
+  <div
+    class="status"
+    id="status"
+  ></div>
 
-  <div class="result" id="result" style="display:none;"></div>
+  <div
+    class="result"
+    id="result"
+    style="display:none;"
+  ></div>
 
 </div>
 
 <script>
 
 function quickAsk(text) {
+
   document.getElementById("question").value = text;
+
   askBorsaCI();
+
 }
 
 async function askBorsaCI() {
 
   const question =
-    document.getElementById("question").value.trim();
+    document
+      .getElementById("question")
+      .value
+      .trim();
 
   if (!question) {
+
     alert("Önce bir soru yaz.");
+
     return;
   }
 
@@ -380,63 +479,97 @@ async function askBorsaCI() {
     document.getElementById("result");
 
   button.disabled = true;
-  button.innerText = "⏳ ANALİZ EDİLİYOR...";
+
+  button.innerText =
+    "⏳ ANALİZ EDİLİYOR...";
+
   status.innerText =
     "MCP verileri toplanıyor ve Gemini analiz ediyor...";
+
   result.style.display = "none";
 
   try {
 
-    const response = await fetch("/ask", {
-      method: "POST",
+    const response =
+      await fetch("/ask", {
 
-      headers: {
-        "Content-Type": "application/json"
-      },
+        method: "POST",
 
-      body: JSON.stringify({
-        question: question
-      })
-    });
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-    const data = await response.json();
+        body: JSON.stringify({
+          question: question
+        })
+
+      });
+
+    const data =
+      await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Sunucu hatası");
+
+      throw new Error(
+        data.error ||
+        "Sunucu hatası"
+      );
+
     }
 
-    result.innerText = data.answer;
-    result.style.display = "block";
+    result.innerText =
+      data.answer;
 
-    status.innerText = "✅ Analiz tamamlandı.";
+    result.style.display =
+      "block";
 
-  } catch (error) {
+    status.innerText =
+      "✅ Analiz tamamlandı.";
+
+  }
+
+  catch (error) {
 
     result.innerText =
-      "❌ Hata: " + error.message;
+      "❌ Hata: " +
+      error.message;
 
-    result.style.display = "block";
+    result.style.display =
+      "block";
 
     status.innerText = "";
 
-  } finally {
+  }
+
+  finally {
 
     button.disabled = false;
-    button.innerText = "🔎 ANALİZ ET";
+
+    button.innerText =
+      "🔎 ANALİZ ET";
 
   }
+
 }
 
 </script>
 
 </body>
 </html>
-  `);
+`);
 
-  return;
-}
-  // Analysis endpoint
-  if (req.method === "POST" && req.url === "/ask") {
+    return;
+  }
+
+  /*
+   * ANALİZ API
+   */
+  if (
+    req.method === "POST" &&
+    req.url === "/ask"
+  ) {
+
     let body = "";
 
     req.on("data", (chunk) => {
@@ -444,19 +577,32 @@ async function askBorsaCI() {
     });
 
     req.on("end", async () => {
+
       try {
-        const data = JSON.parse(body);
+
+        const data =
+          JSON.parse(body);
 
         if (!data.question) {
-          throw new Error("question alanı gerekli.");
+
+          throw new Error(
+            "question alanı gerekli."
+          );
+
         }
 
-        console.log(`Soru: ${data.question}`);
+        console.log(
+          `Soru: ${data.question}`
+        );
 
-        const answer = await analyze(data.question);
+        const answer =
+          await analyze(
+            data.question
+          );
 
         res.writeHead(200, {
-          "Content-Type": "application/json; charset=utf-8",
+          "Content-Type":
+            "application/json; charset=utf-8",
         });
 
         res.end(
@@ -464,80 +610,55 @@ async function askBorsaCI() {
             answer,
           })
         );
-      } catch (error) {
-        console.error(error);
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "Analiz hatası:",
+          error
+        );
 
         res.writeHead(500, {
-          "Content-Type": "application/json; charset=utf-8",
+          "Content-Type":
+            "application/json; charset=utf-8",
         });
 
         res.end(
           JSON.stringify({
-            error: error.message,
+            error:
+              error.message,
           })
         );
+
       }
+
     });
 
     return;
   }
 
-  res.writeHead(404);
+  /*
+   * BULUNAMAYAN ADRES
+   */
+  res.writeHead(404, {
+    "Content-Type":
+      "text/plain; charset=utf-8",
+  });
+
   res.end("Not Found");
 });
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const question = msg.text;
 
-  if (!question) return;
 
-  if (
-    question.toLowerCase() === "/start"
-  ) {
-    await bot.sendMessage(
-      chatId,
-      "📈 BorsaCI hazır.\n\nHisse veya piyasa sorunu yazabilirsin.\n\nÖrnek:\nASELSAN'ın güncel teknik analizini yap."
+server.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+
+    console.log(
+      `BorsaCI server ${PORT} portunda çalışıyor.`
     );
-    return;
+
   }
-
-  if (
-    question.toLowerCase() === "/help"
-  ) {
-    await bot.sendMessage(
-      chatId,
-      "BorsaCI kullanım örnekleri:\n\n" +
-      "• ASELSAN teknik analiz\n" +
-      "• TUPRS temel ve teknik analiz\n" +
-      "• En güçlü BIST hisselerini tara\n" +
-      "• GARAN için destek direnç seviyelerini bul\n" +
-      "• Altın mı BIST mi daha iyi performans gösterdi?"
-    );
-    return;
-  }
-
-  await bot.sendMessage(chatId, "🔎 Veriler toplanıyor, analiz ediyorum...");
-
-  try {
-    const answer = await analyze(question);
-
-    // Telegram mesaj limiti yaklaşık 4096 karakter.
-    const chunks = answer.match(/[\s\S]{1,4000}/g) || [];
-
-    for (const chunk of chunks) {
-      await bot.sendMessage(chatId, chunk);
-    }
-  } catch (error) {
-    console.error("Telegram analiz hatası:", error);
-
-    await bot.sendMessage(
-      chatId,
-      "❌ Analiz sırasında hata oluştu.\n\n" +
-      error.message
-    );
-  }
-});
-
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`BorsaCI server ${PORT} portunda çalışıyor.`);
-});
+);
