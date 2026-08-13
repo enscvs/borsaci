@@ -2017,27 +2017,23 @@ const server =
 
       }
 
-if (req.url === "/chart.js") {
-  const filePath = path.join(__dirname, "chart.js");
+if (
+  req.method === "GET" &&
+  pathname === "/chart.js"
+) {
 
-  fs.readFile(filePath, "utf8", (err, data) => {
-    if (err) {
-      res.writeHead(404, {
-        "Content-Type": "text/plain; charset=utf-8"
-      });
-      res.end("chart.js not found");
-      return;
-    }
+  const filePath =
+    path.join(
+      __dirname,
+      "public",
+      "chart.js"
+    );
 
-    res.writeHead(200, {
-      "Content-Type": "application/javascript; charset=utf-8",
-      "Cache-Control": "no-cache"
-    });
-
-    res.end(data);
-  });
-
-  return;
+  return serveFile(
+    res,
+    filePath,
+    "application/javascript; charset=utf-8"
+  );
 }
       /*
       ========================================
