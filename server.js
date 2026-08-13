@@ -188,6 +188,149 @@ function cleanSchema(schema) {
 }
 
 const server = http.createServer(async (req, res) => {
+  /*
+   * GERÇEK HİSSE VERİSİ
+   */
+  if (
+    req.method === "GET" &&
+    req.url.startsWith("/quote")
+  ) {
+
+    try {
+
+      const url =
+        new URL(
+          req.url,
+          `http://${req.headers.host}`
+        );
+
+      const symbol =
+        url.searchParams
+          .get("symbol")
+          ?.trim()
+          .toUpperCase();
+
+      if (!symbol) {
+
+        res.writeHead(400, {
+          "Content-Type":
+            "application/json; charset=utf-8",
+        });
+
+        res.end(
+          JSON.stringify({
+            error:
+              "symbol parametresi gerekli."
+          })
+        );
+
+        return;
+      }
+
+      console.log(
+        `QUOTE → ${symbol}`
+      );
+
+      const transport =
+        new StreamableHTTPClientTransport(
+          new URL(process.env.MCP_URL)
+        );
+
+      const client =
+        new Client({
+          name:
+            "borsaci-web-client",
+
+          version:
+            "1.0.0",
+        });
+
+      try {
+
+        await client.connect(
+          transport
+        );
+
+        const tools =
+          await client.listTools();
+
+        const quickInfoTool =
+          tools.tools.find(
+            tool =>
+              tool.name ===
+              "get_quick_info"
+          );
+
+        if (!quickInfoTool) {
+
+          throw new Error(
+            "MCP get_quick_info aracı bulunamadı."
+          );
+
+        }
+
+        console.log(
+          "get_quick_info schema:",
+          JSON.stringify(
+            quickInfoTool.inputSchema,
+            null,
+            2
+          )
+        );
+
+        res.writeHead(200, {
+          "Content-Type":
+            "application/json; charset=utf-8",
+        });
+
+        res.end(
+          JSON.stringify({
+            symbol,
+
+            tool:
+              quickInfoTool.name,
+
+            inputSchema:
+              quickInfoTool.inputSchema,
+
+          })
+        );
+
+      }
+
+      finally {
+
+        try {
+          await transport.close();
+        } catch (_) {}
+
+      }
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "QUOTE ERROR:",
+        error
+      );
+
+      res.writeHead(500, {
+        "Content-Type":
+          "application/json; charset=utf-8",
+      });
+
+      res.end(
+        JSON.stringify({
+          error:
+            error.message
+        })
+      );
+
+    }
+
+    return;
+  }
 /*
  * BorsaCI WEB ARAYÜZÜ
  */
