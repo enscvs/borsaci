@@ -853,7 +853,593 @@ const server =
 
       }
 
+/*
+ * =====================================
+ * YAHOO FINANCE HELPERS
+ * =====================================
+ */
 
+function normalizeBistSymbol(symbol) {
+
+  if (!symbol) return null;
+
+  let clean =
+    String(symbol)
+      .trim()
+      .toUpperCase()
+      .replace(/^BIST:/, "");
+
+  if (!clean.endsWith(".IS")) {
+    clean += ".IS";
+  }
+
+  return clean;
+}
+
+
+async function fetchYahooChart(
+  symbol,
+  range = "1y",
+  interval = "1d"
+) {
+
+  const yahooSymbol =
+    normalizeBistSymbol(symbol);
+
+  if (!yahooSymbol) {
+    throw new Error(
+      "Yahoo sembolü oluşturulamadı."
+    );
+  }
+
+
+  const yahooUrl =
+    "https://query1.finance.yahoo.com/v8/finance/chart/" +
+    encodeURIComponent(yahooSymbol) +
+    `?range=${encodeURIComponent(range)}` +
+    `&interval=${encodeURIComponent(interval)}` +
+    "&events=history&includeAdjustedClose=true";
+
+
+  console.log(
+    "YAHOO REQUEST →",
+    yahooUrl
+  );
+
+
+  const response =
+    await fetch(
+      yahooUrl,
+      {
+        method: "GET",
+
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+
+          "Accept":
+            "application/json,text/plain,*/*"
+        }
+      }
+    );
+
+
+  const text =
+    await response.text();
+
+
+  let data = null;
+
+
+  try {
+
+    data =
+      JSON.parse(text);
+
+  } catch {
+
+    throw new Error(
+      `Yahoo Finance JSON döndürmedi. HTTP ${response.status}`
+    );
+
+  }
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      data?.chart?.error?.description ||
+      `Yahoo Finance HTTP ${response.status}`
+    );
+
+  }
+
+
+  if (
+    data?.chart?.error
+  ) {
+
+    throw new Error(
+      data.chart.error.description ||
+      "Yahoo Finance chart hatası."
+    );
+
+  }
+
+
+  const result =
+    data?.chart?.result?.[0];
+
+
+  if (!result) {
+
+    throw new Error(
+      "Yahoo Finance chart sonucu boş."
+    );
+
+  }
+
+
+  const timestamps =
+    result.timestamp || [];
+
+
+  const quote =
+    result.indicators
+      ?.quote?.[0];
+
+
+  if (
+    !quote ||
+    !Array.isArray(timestamps)
+  ) {
+
+    throw new Error(
+      "Yahoo Finance OHLC verisi bulunamadı."
+    );
+
+  }
+
+
+  const history = [];
+
+
+  for (
+    let i = 0;
+    i < timestamps.length;
+    i++
+  ) {
+
+    const open =
+      Number(
+        quote.open?.[i]
+      );
+
+    const high =
+      Number(
+        quote.high?.[i]
+      );
+
+    const low =
+      Number(
+        quote.low?.[i]
+      );
+
+    const close =
+      Number(
+        quote.close?.[i]
+      );
+
+    const volume =
+      Number(
+        quote.volume?.[i]
+      );
+
+
+    if (
+      !Number.isFinite(close)
+    ) {
+
+      continue;
+
+    }
+
+
+    history.push({
+
+      time:
+        timestamps[i],
+
+      open:
+        Number.isFinite(open)
+          ? open
+          : close,
+
+      high:
+        Number.isFinite(high)
+          ? high
+          : close,
+
+      low:
+        Number.isFinite(low)
+          ? low
+          : close,
+
+      close,
+
+      volume:
+        Number.isFinite(volume)
+          ? volume
+          : 0
+
+    });
+
+  }
+
+
+  if (
+    history.length === 0
+  ) {
+
+    throw new Error(
+      "Yahoo Finance history boş."
+    );
+
+  }
+
+
+  return {
+    symbol:
+      yahooSymbol
+        .replace(/\.IS$/, ""),
+
+    history,
+
+    meta:
+      result.meta || {}
+
+  };
+
+}
+
+
+/*
+ * =====================================
+ * MARKET ENDPOINT
+ * =====================================
+ */
+
+if (
+  req.method === "GET" &&
+  req.url.startsWith("/market")
+) {
+
+  try {
+
+    const url =
+      new URL(
+        req.url,
+        `http://${req.headers.host}`
+      );
+
+
+    const requestedSymbol =
+      url.searchParams
+        .get("symbol");
+
+
+    if (!requestedSymbol) {
+
+      res.writeHead(
+        400,
+        {
+          "Content-Type":
+            "application/json; charset=utf-8"
+        }
+      );
+
+
+      res.end(
+        JSON.stringify({
+          error:
+            "symbol parametresi gerekli."
+        })
+      );
+
+
+      return;
+
+    }
+
+
+    const symbol =
+      requestedSymbol
+        .trim()
+        .toUpperCase();
+
+
+    console.log(
+      `MARKET → ${symbol}`
+    );
+
+
+    /*
+     * 1 günlük Yahoo verisini al.
+     *
+     * Market endpoint için
+     * güncel quote'a yakın veri.
+     */
+
+    const yahoo =
+      await fetchYahooChart(
+        symbol,
+        "5d",
+        "1d"
+      );
+
+
+    const history =
+      yahoo.history;
+
+
+    const latest =
+      history[
+        history.length - 1
+      ];
+
+
+    const previous =
+      history[
+        history.length - 2
+      ];
+
+
+    const price =
+      latest?.close ?? null;
+
+
+    const previousClose =
+      previous?.close ?? null;
+
+
+    let changePercent =
+      null;
+
+
+    if (
+      Number.isFinite(price) &&
+      Number.isFinite(previousClose) &&
+      previousClose !== 0
+    ) {
+
+      changePercent =
+        (
+          (price - previousClose) /
+          previousClose
+        ) * 100;
+
+    }
+
+
+    const volume =
+      latest?.volume ?? null;
+
+
+    const result = {
+
+      symbol,
+
+      timestamp:
+        new Date().toISOString(),
+
+      quote: {
+
+        price,
+
+        changePercent,
+
+        volume,
+
+        previousClose
+
+      },
+
+      price,
+
+      changePercent,
+
+      volume,
+
+      history
+
+    };
+
+
+    res.writeHead(
+      200,
+      {
+        "Content-Type":
+          "application/json; charset=utf-8",
+
+        "Cache-Control":
+          "no-store"
+      }
+    );
+
+
+    res.end(
+      JSON.stringify(
+        result
+      )
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "MARKET ERROR:",
+      error
+    );
+
+
+    res.writeHead(
+      500,
+      {
+        "Content-Type":
+          "application/json; charset=utf-8"
+      }
+    );
+
+
+    res.end(
+      JSON.stringify({
+        error:
+          error.message
+      })
+    );
+
+  }
+
+
+  return;
+
+}
+
+
+/*
+ * =====================================
+ * CHART ENDPOINT
+ * =====================================
+ */
+
+if (
+  req.method === "GET" &&
+  req.url.startsWith("/chart")
+) {
+
+  try {
+
+    const url =
+      new URL(
+        req.url,
+        `http://${req.headers.host}`
+      );
+
+
+    const requestedSymbol =
+      url.searchParams
+        .get("symbol");
+
+
+    const range =
+      url.searchParams
+        .get("range") ||
+      "1y";
+
+
+    const interval =
+      url.searchParams
+        .get("interval") ||
+      "1d";
+
+
+    if (!requestedSymbol) {
+
+      res.writeHead(
+        400,
+        {
+          "Content-Type":
+            "application/json; charset=utf-8"
+        }
+      );
+
+
+      res.end(
+        JSON.stringify({
+          error:
+            "symbol parametresi gerekli."
+        })
+      );
+
+
+      return;
+
+    }
+
+
+    const symbol =
+      requestedSymbol
+        .trim()
+        .toUpperCase();
+
+
+    console.log(
+      `CHART → ${symbol} ${range} ${interval}`
+    );
+
+
+    const yahoo =
+      await fetchYahooChart(
+        symbol,
+        range,
+        interval
+      );
+
+
+    res.writeHead(
+      200,
+      {
+        "Content-Type":
+          "application/json; charset=utf-8",
+
+        "Cache-Control":
+          "no-store"
+      }
+    );
+
+
+    res.end(
+      JSON.stringify({
+
+        symbol,
+
+        history:
+          yahoo.history
+
+      })
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "CHART ERROR:",
+      error
+    );
+
+
+    res.writeHead(
+      500,
+      {
+        "Content-Type":
+          "application/json; charset=utf-8"
+      }
+    );
+
+
+    res.end(
+      JSON.stringify({
+        error:
+          error.message
+      })
+    );
+
+  }
+
+
+  return;
+
+}
       /*
        * =====================================
        * WEB
