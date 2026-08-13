@@ -2963,7 +2963,7 @@ function setAnalyzeButtonState(
 async function fetchWithTimeout(
   url,
   options = {},
-  timeout = 45000
+  timeout = 4500000
 ) {
 
   const controller =
