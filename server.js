@@ -185,8 +185,49 @@ function cleanSchema(schema) {
 }
 
 const server = http.createServer(async (req, res) => {
+/*
+ * BorsaCI WEB ARAYÜZÜ
+ */
+if (req.method === "GET" && req.url === "/") {
 
+  const filePath = path.join(
+    __dirname,
+    "public",
+    "index.html"
+  );
 
+  fs.readFile(filePath, (error, data) => {
+
+    if (error) {
+
+      console.error(
+        "index.html okunamadı:",
+        error
+      );
+
+      res.writeHead(500, {
+        "Content-Type":
+          "text/plain; charset=utf-8",
+      });
+
+      res.end(
+        "Internal Server Error"
+      );
+
+      return;
+    }
+
+    res.writeHead(200, {
+      "Content-Type":
+        "text/html; charset=utf-8",
+    });
+
+    res.end(data);
+
+  });
+
+  return;
+}
   /*
    * ANALİZ API
    */
