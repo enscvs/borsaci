@@ -1219,7 +1219,7 @@ server.listen(
     );
 
     console.log(
-      `OpenRouter model: ${MODEL}`
+      `Groq model: ${MODEL}`
     );
 
   }
