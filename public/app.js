@@ -16,7 +16,9 @@ function loadTradingViewChart(symbol = "XU100") {
 
   script.innerHTML = JSON.stringify({
     autosize: true,
-    symbol: `BIST:${symbol}`,
+    symbol: symbol.startsWith("BIST:")
+  ? symbol
+  : `BIST:${symbol}`,
     interval: "D",
     timezone: "Europe/Istanbul",
     theme: "dark",
