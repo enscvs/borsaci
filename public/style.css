@@ -1250,3 +1250,129 @@ textarea::placeholder {
   height: 100% !important;
   display: block;
 }
+/* ========================================================
+   BORSACI CHART CONTROLS
+   ======================================================== */
+
+.borsaci-chart-controls {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    box-sizing: border-box;
+
+    background: #0b0f14;
+    border: 1px solid #1d2630;
+    border-radius: 8px;
+}
+
+
+.chart-control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+
+.chart-control-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #697586;
+}
+
+
+.chart-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+
+.chart-buttons button {
+    appearance: none;
+
+    border: 1px solid #26313d;
+    background: #111720;
+
+    color: #8995a5;
+
+    min-width: 42px;
+    height: 30px;
+
+    padding: 0 9px;
+
+    border-radius: 5px;
+
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.1s ease;
+}
+
+
+.chart-buttons button:hover {
+    background: #18212b;
+    border-color: #3b4958;
+    color: #d8dee6;
+}
+
+
+.chart-buttons button:active {
+    transform: scale(0.96);
+}
+
+
+.chart-buttons button.active {
+    background: #1d8f82;
+    border-color: #26a69a;
+    color: #ffffff;
+}
+
+
+/* ========================================================
+   MOBILE
+   ======================================================== */
+
+@media (max-width: 700px) {
+
+    .borsaci-chart-controls {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+        padding: 9px;
+    }
+
+
+    .chart-control-group {
+        width: 100%;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+
+    .chart-buttons {
+        width: 100%;
+    }
+
+
+    .chart-buttons button {
+        min-width: 40px;
+        height: 32px;
+        padding: 0 8px;
+    }
+
+}
