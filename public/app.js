@@ -5,6 +5,14 @@ APP.JS
 ========================================================
 */
 
+"use strict";
+
+/*
+========================================================
+GLOBAL STATE
+========================================================
+*/
+
 let symbols = [];
 let selectedSymbol = null;
 let marketCache = {};
@@ -13,6 +21,9 @@ let marketChart = null;
 let candleSeries = null;
 let volumeSeries = null;
 
+let chartResizeObserver = null;
+let chartInitialized = false;
+
 
 /*
 ========================================================
@@ -20,17 +31,38 @@ ELEMENTS
 ========================================================
 */
 
-const questionInput = document.getElementById("question");
-const analyzeBtn = document.getElementById("analyzeBtn");
-const responseBox = document.getElementById("response");
-const addSymbolBtn = document.getElementById("addSymbolBtn");
-const watchlist = document.getElementById("watchlist");
-const chartSymbol = document.getElementById("chartSymbol");
-const chartEmpty = document.getElementById("chartEmpty");
-const newsFeed = document.getElementById("newsFeed");
-const dataStatus = document.getElementById("dataStatus");
-const newsImpact = document.getElementById("newsImpact");
-const chartContainer = document.getElementById("tradingview_chart");
+const questionInput =
+  document.getElementById("question");
+
+const analyzeBtn =
+  document.getElementById("analyzeBtn");
+
+const responseBox =
+  document.getElementById("response");
+
+const addSymbolBtn =
+  document.getElementById("addSymbolBtn");
+
+const watchlist =
+  document.getElementById("watchlist");
+
+const chartSymbol =
+  document.getElementById("chartSymbol");
+
+const chartEmpty =
+  document.getElementById("chartEmpty");
+
+const newsFeed =
+  document.getElementById("newsFeed");
+
+const dataStatus =
+  document.getElementById("dataStatus");
+
+const newsImpact =
+  document.getElementById("newsImpact");
+
+const chartContainer =
+  document.getElementById("tradingview_chart");
 
 
 /*
@@ -41,22 +73,28 @@ CLOCK
 
 function updateClock() {
 
-  const clock = document.getElementById("clock");
+  const clock =
+    document.getElementById("clock");
 
   if (!clock) return;
 
-  clock.innerText = new Date().toLocaleTimeString(
-    "tr-TR",
-    {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit"
-    }
-  );
+  clock.innerText =
+    new Date().toLocaleTimeString(
+      "tr-TR",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      }
+    );
 }
 
 updateClock();
-setInterval(updateClock, 1000);
+
+setInterval(
+  updateClock,
+  1000
+);
 
 
 /*
@@ -65,21 +103,32 @@ FORMAT
 ========================================================
 */
 
-function formatNumber(value, decimals = 2) {
+function formatNumber(
+  value,
+  decimals = 2
+) {
+
+  const number =
+    Number(value);
 
   if (
     value === null ||
     value === undefined ||
-    !Number.isFinite(Number(value))
+    !Number.isFinite(number)
   ) {
+
     return "--";
+
   }
 
-  return Number(value).toLocaleString(
+  return number.toLocaleString(
     "tr-TR",
     {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals
+      minimumFractionDigits:
+        decimals,
+
+      maximumFractionDigits:
+        decimals
     }
   );
 }
@@ -87,50 +136,108 @@ function formatNumber(value, decimals = 2) {
 
 function formatCompact(value) {
 
+  const number =
+    Number(value);
+
   if (
     value === null ||
     value === undefined ||
-    !Number.isFinite(Number(value))
+    !Number.isFinite(number)
   ) {
+
     return "--";
+
   }
 
-  const number = Number(value);
+  if (
+    number >=
+    1_000_000_000
+  ) {
 
-  if (number >= 1_000_000_000) {
-    return (number / 1_000_000_000).toFixed(2) + "B";
+    return (
+      number /
+      1_000_000_000
+    ).toFixed(2) + "B";
+
   }
 
-  if (number >= 1_000_000) {
-    return (number / 1_000_000).toFixed(2) + "M";
+  if (
+    number >=
+    1_000_000
+  ) {
+
+    return (
+      number /
+      1_000_000
+    ).toFixed(2) + "M";
+
   }
 
-  if (number >= 1_000) {
-    return (number / 1_000).toFixed(2) + "K";
+  if (
+    number >=
+    1_000
+  ) {
+
+    return (
+      number /
+      1_000
+    ).toFixed(2) + "K";
+
   }
 
-  return formatNumber(number, 0);
+  return formatNumber(
+    number,
+    0
+  );
 }
 
 
-function setText(id, value) {
+function setText(
+  id,
+  value
+) {
 
-  const element = document.getElementById(id);
+  const element =
+    document.getElementById(id);
 
-  if (element) {
-    element.innerText = value;
-  }
+  if (!element) return;
+
+  element.innerText =
+    value;
 }
 
+
+/*
+========================================================
+ESCAPE
+========================================================
+*/
 
 function escapeHtml(value) {
 
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 
@@ -140,14 +247,19 @@ SYMBOL
 ========================================================
 */
 
-function normalizeSymbol(symbol) {
+function normalizeSymbol(
+  symbol
+) {
 
   if (!symbol) return null;
 
   return String(symbol)
     .trim()
     .toUpperCase()
-    .replace(/^BIST:/, "");
+    .replace(
+      /^BIST:/,
+      ""
+    );
 }
 
 
@@ -161,7 +273,10 @@ function renderWatchlist() {
 
   if (!watchlist) return;
 
-  if (symbols.length === 0) {
+
+  if (
+    symbols.length === 0
+  ) {
 
     watchlist.innerHTML = `
       <div class="watchlist-empty">
@@ -172,138 +287,224 @@ function renderWatchlist() {
     `;
 
     return;
+
   }
+
 
   watchlist.innerHTML = "";
 
-  symbols.forEach((symbol, index) => {
 
-    const cached = marketCache[symbol];
+  symbols.forEach(
+    (
+      symbol,
+      index
+    ) => {
 
-    const price =
-      cached?.quote?.price ??
-      cached?.price;
+      const cached =
+        marketCache[symbol];
 
-    const change =
-      cached?.quote?.changePercent ??
-      cached?.changePercent;
+      const price =
+        cached?.quote?.price ??
+        cached?.price ??
+        cached?.lastPrice;
 
-    const row = document.createElement("div");
+      const change =
+        cached?.quote?.changePercent ??
+        cached?.changePercent ??
+        cached?.change;
 
-    row.className = "watch-row";
 
-    row.innerHTML = `
+      const row =
+        document.createElement(
+          "div"
+        );
 
-      <button
-        class="symbol-button ${
-          selectedSymbol === symbol ? "active" : ""
-        }"
-        data-index="${index}"
-      >
+      row.className =
+        "watch-row";
 
-        <span>
-          ${escapeHtml(symbol)}
-        </span>
 
-        <span class="watch-price">
+      row.innerHTML = `
 
-          <strong>
-            ${
-              price !== undefined
-                ? formatNumber(price, 2)
-                : "--"
+        <button
+          class="symbol-button ${
+            selectedSymbol === symbol
+              ? "active"
+              : ""
+          }"
+          data-index="${index}"
+        >
+
+          <span>
+            ${escapeHtml(symbol)}
+          </span>
+
+          <span class="watch-price">
+
+            <strong>
+              ${
+                price !== undefined &&
+                price !== null
+                  ? formatNumber(
+                      price,
+                      2
+                    )
+                  : "--"
+              }
+            </strong>
+
+            <small
+              class="${
+                Number(change) > 0
+                  ? "positive"
+                  : Number(change) < 0
+                    ? "negative"
+                    : ""
+              }"
+            >
+
+              ${
+                change !== undefined &&
+                change !== null &&
+                Number.isFinite(
+                  Number(change)
+                )
+                  ? (
+                      Number(change) > 0
+                        ? "+"
+                        : ""
+                    ) +
+                    formatNumber(
+                      change,
+                      2
+                    ) +
+                    "%"
+                  : "--"
+              }
+
+            </small>
+
+          </span>
+
+        </button>
+
+
+        <button
+          class="remove-symbol"
+          data-index="${index}"
+        >
+          ×
+        </button>
+
+      `;
+
+
+      watchlist.appendChild(
+        row
+      );
+
+    }
+  );
+
+
+  watchlist
+    .querySelectorAll(
+      ".symbol-button"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const index =
+              Number(
+                button.dataset.index
+              );
+
+            const symbol =
+              symbols[index];
+
+            if (symbol) {
+              selectSymbol(
+                symbol
+              );
             }
-          </strong>
 
-          <small class="${
-            change > 0
-              ? "positive"
-              : change < 0
-                ? "negative"
-                : ""
-          }">
-
-            ${
-              change !== undefined
-                ? (
-                    change > 0 ? "+" : ""
-                  ) +
-                  formatNumber(change, 2) +
-                  "%"
-                : "--"
-            }
-
-          </small>
-
-        </span>
-
-      </button>
-
-      <button
-        class="remove-symbol"
-        data-index="${index}"
-      >
-        ×
-      </button>
-
-    `;
-
-    watchlist.appendChild(row);
-  });
-
-
-  document
-    .querySelectorAll(".symbol-button")
-    .forEach(button => {
-
-      button.addEventListener("click", () => {
-
-        const index =
-          Number(button.dataset.index);
-
-        selectSymbol(symbols[index]);
-
-      });
-
-    });
-
-
-  document
-    .querySelectorAll(".remove-symbol")
-    .forEach(button => {
-
-      button.addEventListener("click", event => {
-
-        event.stopPropagation();
-
-        const index =
-          Number(button.dataset.index);
-
-        const removed =
-          symbols[index];
-
-        symbols.splice(index, 1);
-
-        delete marketCache[removed];
-
-        if (selectedSymbol === removed) {
-
-          selectedSymbol =
-            symbols[0] || null;
-
-          if (selectedSymbol) {
-            selectSymbol(selectedSymbol);
-          } else {
-            clearDashboard();
           }
+        );
 
-        }
+      }
+    );
 
-        renderWatchlist();
 
-      });
+  watchlist
+    .querySelectorAll(
+      ".remove-symbol"
+    )
+    .forEach(
+      button => {
 
-    });
+        button.addEventListener(
+          "click",
+          event => {
+
+            event.stopPropagation();
+
+            const index =
+              Number(
+                button.dataset.index
+              );
+
+            const removed =
+              symbols[index];
+
+            if (!removed) return;
+
+            symbols.splice(
+              index,
+              1
+            );
+
+            delete marketCache[
+              removed
+            ];
+
+
+            if (
+              selectedSymbol ===
+              removed
+            ) {
+
+              selectedSymbol =
+                symbols[0] ||
+                null;
+
+
+              if (
+                selectedSymbol
+              ) {
+
+                selectSymbol(
+                  selectedSymbol
+                );
+
+              } else {
+
+                clearDashboard();
+
+              }
+
+            }
+
+
+            renderWatchlist();
+
+          }
+        );
+
+      }
+    );
 
 }
 
@@ -316,31 +517,51 @@ ADD SYMBOL
 
 function addSymbol() {
 
-  const input = prompt(
-    "BIST sembolünü gir:\n\nÖrnek: ASELS"
-  );
+  const input =
+    prompt(
+      "BIST sembolünü gir:\n\nÖrnek: ASELS"
+    );
 
   if (!input) return;
 
-  const symbol = normalizeSymbol(input);
+
+  const symbol =
+    normalizeSymbol(
+      input
+    );
 
   if (!symbol) return;
 
-  if (!symbols.includes(symbol)) {
-    symbols.push(symbol);
+
+  if (
+    !symbols.includes(
+      symbol
+    )
+  ) {
+
+    symbols.push(
+      symbol
+    );
+
   }
+
 
   renderWatchlist();
 
-  selectSymbol(symbol);
+  selectSymbol(
+    symbol
+  );
+
 }
 
 
 if (addSymbolBtn) {
+
   addSymbolBtn.addEventListener(
     "click",
     addSymbol
   );
+
 }
 
 
@@ -350,34 +571,53 @@ SELECT SYMBOL
 ========================================================
 */
 
-async function selectSymbol(symbol) {
+async function selectSymbol(
+  symbol
+) {
 
   const clean =
-    normalizeSymbol(symbol);
+    normalizeSymbol(
+      symbol
+    );
 
   if (!clean) return;
 
-  selectedSymbol = clean;
+
+  selectedSymbol =
+    clean;
+
 
   if (chartSymbol) {
-    chartSymbol.innerText = clean;
+
+    chartSymbol.innerText =
+      clean;
+
   }
 
-  if (!symbols.includes(clean)) {
-    symbols.push(clean);
+
+  if (
+    !symbols.includes(
+      clean
+    )
+  ) {
+
+    symbols.push(
+      clean
+    );
+
   }
+
 
   renderWatchlist();
 
-  /*
-   * Chart temizle.
-   */
+
   clearChartOnly();
 
-  /*
-   * Veriyi çek.
-   */
-  await loadMarketData(clean);
+
+  await loadMarketData(
+    clean
+  );
+
 }
 
 
@@ -387,95 +627,208 @@ LOAD MARKET DATA
 ========================================================
 */
 
-async function loadMarketData(symbol) {
+async function loadMarketData(
+  symbol
+) {
 
   const clean =
-    normalizeSymbol(symbol);
+    normalizeSymbol(
+      symbol
+    );
 
   if (!clean) return;
 
+
   if (dataStatus) {
-    dataStatus.innerText = "LOADING";
-    dataStatus.classList.add("loading");
+
+    dataStatus.innerText =
+      "LOADING";
+
+    dataStatus.classList.add(
+      "loading"
+    );
+
   }
+
 
   try {
 
     /*
-     * CACHE
-     */
+    ----------------------------------------------------
+    CACHE
+    ----------------------------------------------------
+    */
 
     const cached =
-      marketCache[clean];
+      marketCache[
+        clean
+      ];
+
 
     if (
       cached &&
       cached.timestamp
     ) {
 
+      const timestamp =
+        new Date(
+          cached.timestamp
+        ).getTime();
+
       const age =
         Date.now() -
-        new Date(cached.timestamp).getTime();
+        timestamp;
+
 
       if (
         Number.isFinite(age) &&
+        age >= 0 &&
         age < 20000
       ) {
 
-        updateDashboard(cached);
+        updateDashboard(
+          cached
+        );
+
 
         if (dataStatus) {
-          dataStatus.innerText = "LIVE";
+
+          dataStatus.innerText =
+            "LIVE";
+
         }
 
         return;
+
       }
+
     }
 
 
     /*
-     * BACKEND
-     */
+    ----------------------------------------------------
+    BACKEND REQUEST
+    ----------------------------------------------------
+    */
+
+    const url =
+      `/market?symbol=${encodeURIComponent(
+        clean
+      )}`;
+
+
+    console.log(
+      "BORSACI MARKET REQUEST:",
+      url
+    );
+
 
     const response =
       await fetch(
-        `/market?symbol=${encodeURIComponent(clean)}`
+        url,
+        {
+          method:
+            "GET",
+
+          headers: {
+            "Accept":
+              "application/json"
+          },
+
+          cache:
+            "no-store"
+        }
       );
 
 
-    const data =
-      await response.json();
+    const text =
+      await response.text();
 
 
-    if (!response.ok) {
+    let data = null;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          text
+        );
+
+    } catch {
 
       throw new Error(
-        data?.error ||
-        "Market data error"
+        `Market endpoint JSON döndürmedi. HTTP ${response.status}`
       );
 
     }
 
 
-    marketCache[clean] = data;
+    if (
+      !response.ok
+    ) {
 
-    updateDashboard(data);
+      throw new Error(
+        data?.error ||
+        `Market endpoint HTTP ${response.status}`
+      );
+
+    }
+
+
+    if (!data) {
+
+      throw new Error(
+        "Market endpoint boş cevap döndürdü."
+      );
+
+    }
+
+
+    /*
+    ----------------------------------------------------
+    CACHE
+    ----------------------------------------------------
+    */
+
+    marketCache[
+      clean
+    ] = data;
+
+
+    /*
+    ----------------------------------------------------
+    DASHBOARD
+    ----------------------------------------------------
+    */
+
+    updateDashboard(
+      data
+    );
 
 
     if (dataStatus) {
-      dataStatus.innerText = "LIVE";
+
+      dataStatus.innerText =
+        "LIVE";
+
     }
 
   } catch (error) {
 
     console.error(
-      "Market data error:",
+      "BORSACI MARKET ERROR:",
       error
     );
 
+
     if (dataStatus) {
-      dataStatus.innerText = "ERROR";
+
+      dataStatus.innerText =
+        "ERROR";
+
     }
+
 
     showDashboardError(
       error.message
@@ -484,10 +837,15 @@ async function loadMarketData(symbol) {
   } finally {
 
     if (dataStatus) {
-      dataStatus.classList.remove("loading");
+
+      dataStatus.classList.remove(
+        "loading"
+      );
+
     }
 
   }
+
 }
 
 
@@ -497,41 +855,205 @@ UPDATE DASHBOARD
 ========================================================
 */
 
-function updateDashboard(data) {
+function updateDashboard(
+  data
+) {
 
   if (!data) return;
 
+
   const backendSymbol =
-    normalizeSymbol(data.symbol);
+    normalizeSymbol(
+      data.symbol
+    );
+
 
   if (backendSymbol) {
 
     selectedSymbol =
       backendSymbol;
 
+
     if (chartSymbol) {
+
       chartSymbol.innerText =
         backendSymbol;
+
     }
 
-    if (!symbols.includes(backendSymbol)) {
-      symbols.push(backendSymbol);
+
+    if (
+      !symbols.includes(
+        backendSymbol
+      )
+    ) {
+
+      symbols.push(
+        backendSymbol
+      );
+
     }
 
   }
 
 
-  updateWatchlistData(data);
+  updateWatchlistData(
+    data
+  );
 
-  updateTechnical(data.technical);
 
-  updateChart(data.history);
+  updateTechnical(
+    data.technical
+  );
 
-  updateNews(data.news);
 
-  updateNewsImpact(data.news);
+  /*
+   * KRİTİK:
+   * Backend'den history hangi seviyede
+   * gelirse gelsin normalize et.
+   */
+
+  const history =
+    extractHistory(
+      data
+    );
+
+
+  console.log(
+    "BORSACI HISTORY:",
+    history
+  );
+
+
+  updateChart(
+    history
+  );
+
+
+  updateNews(
+    data.news
+  );
+
+
+  updateNewsImpact(
+    data.news
+  );
+
 
   renderWatchlist();
+
+}
+
+
+/*
+========================================================
+EXTRACT HISTORY
+========================================================
+*/
+
+function extractHistory(
+  data
+) {
+
+  if (!data) {
+    return [];
+  }
+
+
+  /*
+   * Standart:
+   * data.history
+   */
+
+  if (
+    Array.isArray(
+      data.history
+    )
+  ) {
+
+    return data.history;
+
+  }
+
+
+  /*
+   * Bazı backend yapıları:
+   * data.data.history
+   */
+
+  if (
+    Array.isArray(
+      data.data?.history
+    )
+  ) {
+
+    return data.data.history;
+
+  }
+
+
+  /*
+   * data.market.history
+   */
+
+  if (
+    Array.isArray(
+      data.market?.history
+    )
+  ) {
+
+    return data.market.history;
+
+  }
+
+
+  /*
+   * data.chart
+   */
+
+  if (
+    Array.isArray(
+      data.chart
+    )
+  ) {
+
+    return data.chart;
+
+  }
+
+
+  /*
+   * data.candles
+   */
+
+  if (
+    Array.isArray(
+      data.candles
+    )
+  ) {
+
+    return data.candles;
+
+  }
+
+
+  /*
+   * data.data.candles
+   */
+
+  if (
+    Array.isArray(
+      data.data?.candles
+    )
+  ) {
+
+    return data.data.candles;
+
+  }
+
+
+  return [];
+
 }
 
 
@@ -541,15 +1063,27 @@ WATCHLIST DATA
 ========================================================
 */
 
-function updateWatchlistData(data) {
+function updateWatchlistData(
+  data
+) {
+
+  if (!data) return;
+
 
   const symbol =
-    normalizeSymbol(data?.symbol) ||
+    normalizeSymbol(
+      data.symbol
+    ) ||
     selectedSymbol;
+
 
   if (!symbol) return;
 
-  marketCache[symbol] = data;
+
+  marketCache[
+    symbol
+  ] = data;
+
 }
 
 
@@ -559,7 +1093,9 @@ TECHNICAL
 ========================================================
 */
 
-function updateTechnical(technical) {
+function updateTechnical(
+  technical
+) {
 
   if (!technical) {
 
@@ -570,62 +1106,104 @@ function updateTechnical(technical) {
       "ema50",
       "volume",
       "atr"
-    ].forEach(id => setText(id, "--"));
+    ].forEach(
+      id =>
+        setText(
+          id,
+          "--"
+        )
+    );
 
     return;
+
   }
 
 
   setText(
     "rsi",
-    formatNumber(technical.rsi)
+    formatNumber(
+      technical.rsi
+    )
   );
+
 
   setText(
     "macd",
-    formatNumber(technical.macd)
+    formatNumber(
+      technical.macd
+    )
   );
+
 
   setText(
     "ema20",
-    formatNumber(technical.ema20)
+    formatNumber(
+      technical.ema20
+    )
   );
+
 
   setText(
     "ema50",
-    formatNumber(technical.ema50)
+    formatNumber(
+      technical.ema50
+    )
   );
+
 
   setText(
     "atr",
-    formatNumber(technical.atr)
+    formatNumber(
+      technical.atr
+    )
   );
 
 
   const volume =
-    marketCache[selectedSymbol]
-      ?.quote
-      ?.volume;
+    marketCache[
+      selectedSymbol
+    ]?.quote?.volume ??
+    marketCache[
+      selectedSymbol
+    ]?.volume;
+
 
   setText(
     "volume",
-    formatCompact(volume)
+    formatCompact(
+      volume
+    )
   );
+
 }
 
 
 /*
 ========================================================
-CHART INIT
+CHART INITIALIZATION
 ========================================================
 */
 
 function initMarketChart() {
 
+  /*
+   * İKİNCİ KEZ ÇALIŞMASINI ENGELLE
+   */
+
+  if (
+    chartInitialized &&
+    marketChart
+  ) {
+
+    return;
+
+  }
+
+
   if (!chartContainer) {
 
     console.error(
-      "tradingview_chart container yok."
+      "BORSACI: tradingview_chart bulunamadı."
     );
 
     return;
@@ -639,7 +1217,7 @@ function initMarketChart() {
   ) {
 
     console.error(
-      "LightweightCharts yüklenmemiş."
+      "BORSACI: LightweightCharts yüklenmedi."
     );
 
     return;
@@ -648,30 +1226,70 @@ function initMarketChart() {
 
 
   /*
-   * Eski chartı kaldır.
+   * Mobilde container'ın gerçek
+   * yüksekliği bazen 0 olabilir.
+   */
+
+  let width =
+    chartContainer.clientWidth;
+
+  let height =
+    chartContainer.clientHeight;
+
+
+  if (
+    width <= 0
+  ) {
+
+    width =
+      chartContainer.parentElement
+        ?.clientWidth ||
+      600;
+
+  }
+
+
+  if (
+    height <= 0
+  ) {
+
+    height =
+      420;
+
+  }
+
+
+  /*
+   * Eski chart varsa kaldır.
    */
 
   if (marketChart) {
 
     try {
+
       marketChart.remove();
+
     } catch {}
 
-    marketChart = null;
-    candleSeries = null;
-    volumeSeries = null;
   }
 
 
+  marketChart =
+    null;
+
+  candleSeries =
+    null;
+
+  volumeSeries =
+    null;
+
+
+  chartContainer.innerHTML =
+    "";
+
+
   /*
-   * Container temizle.
-   */
-
-  chartContainer.innerHTML = "";
-
-
-  /*
-   * CHART
+   * CREATE CHART
    */
 
   marketChart =
@@ -679,40 +1297,52 @@ function initMarketChart() {
       chartContainer,
       {
 
-        width:
-          chartContainer.clientWidth || 600,
+        width,
 
-        height:
-          chartContainer.clientHeight || 400,
+        height,
 
         layout: {
 
           background: {
-            type: "solid",
-            color: "#0b0f14"
+
+            type:
+              "solid",
+
+            color:
+              "#0b0f14"
+
           },
 
-          textColor: "#9aa4b2"
+          textColor:
+            "#9aa4b2"
 
         },
 
         grid: {
 
           vertLines: {
-            color: "#151b23"
+
+            color:
+              "#151b23"
+
           },
 
           horzLines: {
-            color: "#151b23"
+
+            color:
+              "#151b23"
+
           }
 
         },
 
         crosshair: {
+
           mode:
             LightweightCharts
               .CrosshairMode
               .Normal
+
         },
 
         rightPriceScale: {
@@ -733,6 +1363,29 @@ function initMarketChart() {
           secondsVisible:
             false
 
+        },
+
+        handleScroll: {
+
+          mouseWheel:
+            true,
+
+          pressedMouseMove:
+            true
+
+        },
+
+        handleScale: {
+
+          axisPressedMouseMove:
+            true,
+
+          mouseWheel:
+            true,
+
+          pinch:
+            true
+
         }
 
       }
@@ -740,12 +1393,13 @@ function initMarketChart() {
 
 
   /*
-   * CANDLE
+   * CANDLE SERIES
    */
 
   candleSeries =
     marketChart.addSeries(
-      LightweightCharts.CandlestickSeries,
+      LightweightCharts
+        .CandlestickSeries,
       {
 
         upColor:
@@ -776,11 +1430,15 @@ function initMarketChart() {
 
   volumeSeries =
     marketChart.addSeries(
-      LightweightCharts.HistogramSeries,
+      LightweightCharts
+        .HistogramSeries,
       {
 
         priceFormat: {
-          type: "volume"
+
+          type:
+            "volume"
+
         },
 
         priceScaleId:
@@ -791,14 +1449,18 @@ function initMarketChart() {
 
 
   marketChart
-    .priceScale("volume")
+    .priceScale(
+      "volume"
+    )
     .applyOptions({
 
       scaleMargins: {
 
-        top: 0.80,
+        top:
+          0.80,
 
-        bottom: 0
+        bottom:
+          0
 
       }
 
@@ -806,44 +1468,103 @@ function initMarketChart() {
 
 
   /*
-   * ResizeObserver
+   * RESIZE
    */
+
+  if (
+    chartResizeObserver
+  ) {
+
+    try {
+
+      chartResizeObserver.disconnect();
+
+    } catch {}
+
+  }
+
 
   if (
     typeof ResizeObserver !==
     "undefined"
   ) {
 
-    const observer =
-      new ResizeObserver(() => {
+    chartResizeObserver =
+      new ResizeObserver(
+        entries => {
 
-        if (!marketChart) return;
+          if (
+            !marketChart
+          ) return;
 
-        const width =
-          chartContainer.clientWidth;
 
-        const height =
-          chartContainer.clientHeight;
+          const entry =
+            entries[0];
 
-        if (
-          width > 0 &&
-          height > 0
-        ) {
 
-          marketChart.applyOptions({
-            width,
-            height
-          });
+          if (!entry) return;
+
+
+          const rect =
+            entry.contentRect;
+
+
+          const newWidth =
+            Math.floor(
+              rect.width
+            );
+
+
+          const newHeight =
+            Math.floor(
+              rect.height
+            );
+
+
+          if (
+            newWidth <= 0 ||
+            newHeight <= 0
+          ) {
+
+            return;
+
+          }
+
+
+          try {
+
+            marketChart.applyOptions(
+              {
+
+                width:
+                  newWidth,
+
+                height:
+                  newHeight
+
+              }
+            );
+
+          } catch {}
 
         }
+      );
 
-      });
 
-    observer.observe(
+    chartResizeObserver.observe(
       chartContainer
     );
 
   }
+
+
+  chartInitialized =
+    true;
+
+
+  console.log(
+    "BORSACI: Chart initialized."
+  );
 
 }
 
@@ -854,47 +1575,72 @@ CHART TIME
 ========================================================
 */
 
-function normalizeChartTime(value) {
+function normalizeChartTime(
+  value
+) {
 
   if (
     value === null ||
-    value === undefined
+    value === undefined ||
+    value === ""
   ) {
+
     return null;
+
   }
 
 
   /*
-   * Number timestamp
+   * NUMBER
    */
 
   if (
     typeof value === "number" ||
-    /^\d+$/.test(String(value))
+    /^\d+$/.test(
+      String(value)
+    )
   ) {
 
     let number =
       Number(value);
 
-    if (!Number.isFinite(number)) {
+
+    if (
+      !Number.isFinite(
+        number
+      )
+    ) {
+
       return null;
+
     }
+
 
     /*
      * milliseconds
      */
 
-    if (number > 10000000000) {
+    if (
+      number >
+      10000000000
+    ) {
+
       number =
-        Math.floor(number / 1000);
+        Math.floor(
+          number / 1000
+        );
+
     }
 
+
     return number;
+
   }
 
 
   const stringValue =
-    String(value);
+    String(value)
+      .trim();
 
 
   /*
@@ -903,15 +1649,25 @@ function normalizeChartTime(value) {
 
   if (
     /^\d{4}-\d{2}-\d{2}$/
-      .test(stringValue)
+      .test(
+        stringValue
+      )
   ) {
 
     return stringValue;
+
   }
 
 
+  /*
+   * ISO / diğer tarih
+   */
+
   const date =
-    new Date(stringValue);
+    new Date(
+      stringValue
+    );
+
 
   if (
     Number.isNaN(
@@ -920,18 +1676,28 @@ function normalizeChartTime(value) {
   ) {
 
     return null;
+
   }
 
 
+  /*
+   * Lightweight Charts
+   * daily candle için YYYY-MM-DD
+   */
+
   return date
     .toISOString()
-    .slice(0, 10);
+    .slice(
+      0,
+      10
+    );
+
 }
 
 
 /*
 ========================================================
-GET VALUE
+HISTORY VALUE
 ========================================================
 */
 
@@ -940,12 +1706,20 @@ function getHistoryValue(
   names
 ) {
 
-  for (const name of names) {
+  if (!item) {
+    return null;
+  }
+
+
+  for (
+    const name of names
+  ) {
 
     if (
-      item &&
-      item[name] !== undefined &&
-      item[name] !== null
+      item[name] !==
+        undefined &&
+      item[name] !==
+        null
     ) {
 
       return item[name];
@@ -954,7 +1728,9 @@ function getHistoryValue(
 
   }
 
+
   return null;
+
 }
 
 
@@ -964,7 +1740,9 @@ UPDATE CHART
 ========================================================
 */
 
-function updateChart(history) {
+function updateChart(
+  history
+) {
 
   if (
     !marketChart ||
@@ -972,35 +1750,42 @@ function updateChart(history) {
   ) {
 
     console.warn(
-      "Chart hazır değil."
+      "BORSACI: Chart hazır değil."
     );
 
     return;
+
   }
 
 
   if (
-    !Array.isArray(history) ||
+    !Array.isArray(
+      history
+    ) ||
     history.length === 0
   ) {
 
     showEmptyChart(
-      "MARKET DATA YOK",
-      "Bu hisse için grafik geçmişi bulunamadı."
+      "NO CHART DATA",
+      "Backend history verisi döndürmedi."
     );
 
     return;
+
   }
 
 
   /*
-   * OHLC oluştur.
+   * CANDLES
    */
 
-  const candles = [];
+  const candles =
+    [];
 
 
-  for (const item of history) {
+  for (
+    const item of history
+  ) {
 
     const rawTime =
       getHistoryValue(
@@ -1009,7 +1794,8 @@ function updateChart(history) {
           "time",
           "date",
           "timestamp",
-          "datetime"
+          "datetime",
+          "t"
         ]
       );
 
@@ -1020,11 +1806,21 @@ function updateChart(history) {
       );
 
 
+    if (!time) {
+
+      continue;
+
+    }
+
+
     let open =
       Number(
         getHistoryValue(
           item,
-          ["open", "o"]
+          [
+            "open",
+            "o"
+          ]
         )
       );
 
@@ -1033,7 +1829,10 @@ function updateChart(history) {
       Number(
         getHistoryValue(
           item,
-          ["high", "h"]
+          [
+            "high",
+            "h"
+          ]
         )
       );
 
@@ -1042,7 +1841,10 @@ function updateChart(history) {
       Number(
         getHistoryValue(
           item,
-          ["low", "l"]
+          [
+            "low",
+            "l"
+          ]
         )
       );
 
@@ -1051,18 +1853,24 @@ function updateChart(history) {
       Number(
         getHistoryValue(
           item,
-          ["close", "c", "price"]
+          [
+            "close",
+            "c",
+            "price",
+            "p"
+          ]
         )
       );
 
 
     /*
-     * Backend sadece close gönderiyorsa
-     * yine de grafik oluştur.
+     * Close yoksa candle geçersiz.
      */
 
     if (
-      !Number.isFinite(close)
+      !Number.isFinite(
+        close
+      )
     ) {
 
       continue;
@@ -1070,22 +1878,71 @@ function updateChart(history) {
     }
 
 
-    if (!Number.isFinite(open)) {
-      open = close;
+    /*
+     * Backend yalnızca close
+     * gönderirse güvenli fallback.
+     */
+
+    if (
+      !Number.isFinite(
+        open
+      )
+    ) {
+
+      open =
+        close;
+
     }
 
-    if (!Number.isFinite(high)) {
-      high = close;
+
+    if (
+      !Number.isFinite(
+        high
+      )
+    ) {
+
+      high =
+        Math.max(
+          open,
+          close
+        );
+
     }
 
-    if (!Number.isFinite(low)) {
-      low = close;
+
+    if (
+      !Number.isFinite(
+        low
+      )
+    ) {
+
+      low =
+        Math.min(
+          open,
+          close
+        );
+
     }
 
 
-    if (!time) {
-      continue;
-    }
+    /*
+     * OHLC güvenliği
+     */
+
+    high =
+      Math.max(
+        high,
+        open,
+        close
+      );
+
+
+    low =
+      Math.min(
+        low,
+        open,
+        close
+      );
 
 
     candles.push({
@@ -1106,21 +1963,32 @@ function updateChart(history) {
 
 
   /*
-   * Tarihe göre sırala.
+   * SORT
    */
 
   candles.sort(
-    (a, b) => {
+    (
+      a,
+      b
+    ) => {
 
       const ta =
-        typeof a.time === "number"
+        typeof a.time ===
+        "number"
           ? a.time
-          : Date.parse(a.time);
+          : Date.parse(
+              a.time
+            );
+
 
       const tb =
-        typeof b.time === "number"
+        typeof b.time ===
+        "number"
           ? b.time
-          : Date.parse(b.time);
+          : Date.parse(
+              b.time
+            );
+
 
       return ta - tb;
 
@@ -1129,64 +1997,90 @@ function updateChart(history) {
 
 
   /*
-   * Duplicate temizle.
+   * DUPLICATES
    */
 
-  const unique = [];
+  const uniqueCandles =
+    [];
 
-  const seen = new Set();
+
+  const seen =
+    new Set();
 
 
-  for (const candle of candles) {
+  for (
+    const candle of candles
+  ) {
 
     const key =
-      String(candle.time);
+      String(
+        candle.time
+      );
 
-    if (seen.has(key)) {
+
+    if (
+      seen.has(
+        key
+      )
+    ) {
+
       continue;
+
     }
 
-    seen.add(key);
 
-    unique.push(candle);
+    seen.add(
+      key
+    );
+
+
+    uniqueCandles.push(
+      candle
+    );
 
   }
 
 
-  if (unique.length === 0) {
+  if (
+    uniqueCandles.length === 0
+  ) {
 
     showEmptyChart(
-      "CHART DATA YOK",
+      "CHART DATA ERROR",
       "Backend history formatı okunamadı."
     );
 
     return;
+
   }
 
 
   /*
-   * CANDLE DATA
+   * CANDLE SETDATA
    */
 
   try {
 
     candleSeries.setData(
-      unique
+      uniqueCandles
     );
 
   } catch (error) {
 
     console.error(
-      "Candle setData hatası:",
+      "BORSACI candle error:",
       error
     );
+
 
     showEmptyChart(
       "CHART ERROR",
       error.message
     );
 
+
     return;
+
   }
 
 
@@ -1194,12 +2088,17 @@ function updateChart(history) {
    * VOLUME
    */
 
-  if (volumeSeries) {
+  if (
+    volumeSeries
+  ) {
 
-    const volumes = [];
+    const volumes =
+      [];
 
 
-    for (const item of history) {
+    for (
+      const item of history
+    ) {
 
       const rawTime =
         getHistoryValue(
@@ -1208,7 +2107,8 @@ function updateChart(history) {
             "time",
             "date",
             "timestamp",
-            "datetime"
+            "datetime",
+            "t"
           ]
         );
 
@@ -1234,17 +2134,17 @@ function updateChart(history) {
 
       if (
         time &&
-        Number.isFinite(volume)
+        Number.isFinite(
+          volume
+        )
       ) {
 
         volumes.push({
 
           time,
 
-          value: volume,
-
-          color:
-            "#26a69a"
+          value:
+            volume
 
         });
 
@@ -1254,17 +2154,28 @@ function updateChart(history) {
 
 
     volumes.sort(
-      (a, b) => {
+      (
+        a,
+        b
+      ) => {
 
         const ta =
-          typeof a.time === "number"
+          typeof a.time ===
+          "number"
             ? a.time
-            : Date.parse(a.time);
+            : Date.parse(
+                a.time
+              );
+
 
         const tb =
-          typeof b.time === "number"
+          typeof b.time ===
+          "number"
             ? b.time
-            : Date.parse(b.time);
+            : Date.parse(
+                b.time
+              );
+
 
         return ta - tb;
 
@@ -1272,30 +2183,50 @@ function updateChart(history) {
     );
 
 
-    const uniqueVolumes = [];
+    const uniqueVolumes =
+      [];
 
-    const volumeSeen = new Set();
+
+    const volumeSeen =
+      new Set();
 
 
-    for (const item of volumes) {
+    for (
+      const item of volumes
+    ) {
 
       const key =
-        String(item.time);
+        String(
+          item.time
+        );
+
 
       if (
-        volumeSeen.has(key)
+        volumeSeen.has(
+          key
+        )
       ) {
+
         continue;
+
       }
 
-      volumeSeen.add(key);
 
-      uniqueVolumes.push(item);
+      volumeSeen.add(
+        key
+      );
+
+
+      uniqueVolumes.push(
+        item
+      );
 
     }
 
 
-    if (uniqueVolumes.length > 0) {
+    if (
+      uniqueVolumes.length > 0
+    ) {
 
       try {
 
@@ -1306,7 +2237,7 @@ function updateChart(history) {
       } catch (error) {
 
         console.warn(
-          "Volume hatası:",
+          "BORSACI volume error:",
           error
         );
 
@@ -1318,46 +2249,77 @@ function updateChart(history) {
 
 
   /*
-   * Fit.
+   * FIT
    */
 
-  marketChart
-    .timeScale()
-    .fitContent();
+  try {
+
+    marketChart
+      .timeScale()
+      .fitContent();
+
+  } catch (error) {
+
+    console.warn(
+      "BORSACI fitContent error:",
+      error
+    );
+
+  }
 
 
   /*
-   * Empty kapat.
+   * EMPTY HIDDEN
    */
 
   if (chartEmpty) {
+
     chartEmpty.style.display =
       "none";
+
   }
+
+
+  console.log(
+    `BORSACI: ${uniqueCandles.length} candle çizildi.`
+  );
 
 }
 
 
 /*
 ========================================================
-CLEAR CHART ONLY
+CLEAR CHART
 ========================================================
 */
 
 function clearChartOnly() {
 
-  if (candleSeries) {
+  if (
+    candleSeries
+  ) {
 
     try {
-      candleSeries.setData([]);
+
+      candleSeries.setData(
+        []
+      );
+
     } catch {}
 
   }
 
-  if (volumeSeries) {
+
+  if (
+    volumeSeries
+  ) {
 
     try {
-      volumeSeries.setData([]);
+
+      volumeSeries.setData(
+        []
+      );
+
     } catch {}
 
   }
@@ -1378,8 +2340,10 @@ function showEmptyChart(
 
   if (!chartEmpty) return;
 
+
   chartEmpty.style.display =
     "flex";
+
 
   chartEmpty.innerHTML = `
 
@@ -1402,13 +2366,17 @@ NEWS
 ========================================================
 */
 
-function updateNews(news) {
+function updateNews(
+  news
+) {
 
   if (!newsFeed) return;
 
 
   if (
-    !Array.isArray(news) ||
+    !Array.isArray(
+      news
+    ) ||
     news.length === 0
   ) {
 
@@ -1420,56 +2388,73 @@ function updateNews(news) {
     `;
 
     return;
+
   }
 
 
   newsFeed.innerHTML =
     news
-      .slice(0, 8)
-      .map(item => {
+      .slice(
+        0,
+        8
+      )
+      .map(
+        item => {
 
-        const title =
-          escapeHtml(
-            item?.title ||
-            "Haber"
-          );
-
-        const source =
-          escapeHtml(
-            item?.source ||
-            ""
-          );
-
-        const date =
-          escapeHtml(
-            item?.publishedDate ||
-            item?.date ||
-            ""
-          );
+          const title =
+            escapeHtml(
+              item?.title ||
+              "Haber"
+            );
 
 
-        return `
+          const source =
+            escapeHtml(
+              item?.source ||
+              ""
+            );
 
-          <div class="news-item">
 
-            <div class="news-date">
-              ${date}
+          const date =
+            escapeHtml(
+              item?.publishedDate ||
+              item?.date ||
+              ""
+            );
+
+
+          return `
+
+            <div
+              class="news-item"
+            >
+
+              <div
+                class="news-date"
+              >
+                ${date}
+              </div>
+
+              <div
+                class="news-title"
+              >
+                ${title}
+              </div>
+
+              <div
+                class="news-source"
+              >
+                ${source}
+              </div>
+
             </div>
 
-            <div class="news-title">
-              ${title}
-            </div>
+          `;
 
-            <div class="news-source">
-              ${source}
-            </div>
-
-          </div>
-
-        `;
-
-      })
+        }
+      )
       .join("");
+
 }
 
 
@@ -1479,13 +2464,17 @@ NEWS IMPACT
 ========================================================
 */
 
-function updateNewsImpact(news) {
+function updateNewsImpact(
+  news
+) {
 
   if (!newsImpact) return;
 
 
   if (
-    !Array.isArray(news) ||
+    !Array.isArray(
+      news
+    ) ||
     news.length === 0
   ) {
 
@@ -1495,6 +2484,7 @@ function updateNewsImpact(news) {
     `;
 
     return;
+
   }
 
 
@@ -1527,6 +2517,7 @@ function updateNewsImpact(news) {
     </small>
 
   `;
+
 }
 
 
@@ -1536,7 +2527,9 @@ ERROR
 ========================================================
 */
 
-function showDashboardError(message) {
+function showDashboardError(
+  message
+) {
 
   showEmptyChart(
     "MARKET DATA ERROR",
@@ -1548,7 +2541,9 @@ function showDashboardError(message) {
 
     newsFeed.innerHTML = `
 
-      <div class="empty-state">
+      <div
+        class="empty-state"
+      >
 
         <span>
           DATA ERROR
@@ -1563,6 +2558,7 @@ function showDashboardError(message) {
     `;
 
   }
+
 }
 
 
@@ -1574,10 +2570,17 @@ CLEAR DASHBOARD
 
 function clearDashboard() {
 
+  selectedSymbol =
+    null;
+
+
   if (chartSymbol) {
+
     chartSymbol.innerText =
       "NO SYMBOL";
+
   }
+
 
   clearChartOnly();
 
@@ -1589,9 +2592,13 @@ function clearDashboard() {
     "ema50",
     "volume",
     "atr"
-  ].forEach(id => {
-    setText(id, "--");
-  });
+  ].forEach(
+    id =>
+      setText(
+        id,
+        "--"
+      )
+  );
 
 
   showEmptyChart(
@@ -1626,7 +2633,7 @@ function clearDashboard() {
 
 /*
 ========================================================
-AI
+AI ANALYSIS
 ========================================================
 */
 
@@ -1641,11 +2648,14 @@ async function askBorsaCI() {
   if (!question) {
 
     if (responseBox) {
+
       responseBox.innerText =
         "ERROR: No input.";
+
     }
 
     return;
+
   }
 
 
@@ -1677,289 +2687,20 @@ async function askBorsaCI() {
         "/ask",
         {
 
-          method: "POST",
+          method:
+            "POST",
 
           headers: {
+
             "Content-Type":
               "application/json"
+
           },
 
-          body: JSON.stringify({
-            question
-          })
+          body:
+            JSON.stringify({
+              question
+            })
 
         }
       );
-
-
-    const data =
-      await response.json();
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        data?.error ||
-        "Server error."
-      );
-
-    }
-
-
-    if (responseBox) {
-
-      responseBox.innerText =
-        data?.answer ||
-        "No response.";
-
-    }
-
-
-    /*
-     * Sorudaki hisseyi yakala.
-     */
-
-    const matches =
-      question.match(
-        /\b[A-Z]{3,6}\b/g
-      );
-
-
-    if (
-      matches &&
-      matches.length
-    ) {
-
-      const ignored =
-        new Set([
-          "BIST",
-          "MCP",
-          "RSI",
-          "MACD",
-          "EMA",
-          "ATR",
-          "GUNCEL",
-          "GÜNCEL",
-          "ANALIZ",
-          "ANALİZ",
-          "FIYAT",
-          "FİYAT"
-        ]);
-
-
-      let found = null;
-
-
-      for (
-        let i = matches.length - 1;
-        i >= 0;
-        i--
-      ) {
-
-        const candidate =
-          normalizeSymbol(
-            matches[i]
-          );
-
-        if (
-          candidate &&
-          !ignored.has(candidate)
-        ) {
-
-          found =
-            candidate;
-
-          break;
-
-        }
-
-      }
-
-
-      if (found) {
-
-        if (
-          !symbols.includes(found)
-        ) {
-
-          symbols.push(found);
-
-        }
-
-        renderWatchlist();
-
-        await selectSymbol(found);
-
-      }
-
-    }
-
-  } catch (error) {
-
-    console.error(
-      "AI error:",
-      error
-    );
-
-
-    if (responseBox) {
-
-      responseBox.innerText =
-        "ERROR\n\n" +
-        error.message;
-
-    }
-
-  } finally {
-
-    if (analyzeBtn) {
-
-      analyzeBtn.disabled =
-        false;
-
-      analyzeBtn.innerText =
-        "ANALYZE";
-
-    }
-
-  }
-
-}
-
-
-/*
-========================================================
-BUTTON
-========================================================
-*/
-
-if (analyzeBtn) {
-
-  analyzeBtn.addEventListener(
-    "click",
-    askBorsaCI
-  );
-
-}
-
-
-/*
-========================================================
-ENTER / ESC
-========================================================
-*/
-
-if (questionInput) {
-
-  questionInput.addEventListener(
-    "keydown",
-    event => {
-
-      if (
-        event.key === "Enter" &&
-        !event.shiftKey
-      ) {
-
-        event.preventDefault();
-
-        askBorsaCI();
-
-      }
-
-
-      if (
-        event.key === "Escape"
-      ) {
-
-        questionInput.value = "";
-
-      }
-
-    }
-  );
-
-}
-
-
-/*
-========================================================
-INITIALIZATION
-========================================================
-*/
-
-function initializeBorsaCI() {
-
-  console.log(
-    "BORSACI initializing..."
-  );
-
-
-  /*
-   * Chart hazırla.
-   */
-
-  initMarketChart();
-
-
-  /*
-   * Varsayılan sembol:
-   * BIST 100
-   */
-
-  selectedSymbol =
-    "XU100";
-
-
-  symbols = [
-    "XU100"
-  ];
-
-
-  if (chartSymbol) {
-
-    chartSymbol.innerText =
-      "XU100";
-
-  }
-
-
-  renderWatchlist();
-
-
-  /*
-   * BIST 100 verisini çek.
-   */
-
-  loadMarketData(
-    "XU100"
-  );
-
-
-  console.log(
-    "BORSACI READY"
-  );
-
-}
-
-
-/*
-========================================================
-DOM READY
-========================================================
-*/
-
-if (
-  document.readyState ===
-  "loading"
-) {
-
-  document.addEventListener(
-    "DOMContentLoaded",
-    initializeBorsaCI
-  );
-
-} else {
-
-  initializeBorsaCI();
-
-}
