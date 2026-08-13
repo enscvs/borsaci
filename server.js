@@ -44,7 +44,10 @@ async function analyze(question) {
     await client.connect(transport);
 
     const toolResult = await client.listTools();
-
+console.log(
+  "MCP TOOLS:",
+  toolResult.tools.map(tool => tool.name)
+);
     const geminiTools = [
       {
         functionDeclarations: toolResult.tools.map((tool) => ({
