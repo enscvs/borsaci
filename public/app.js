@@ -3147,7 +3147,6 @@ function renderAIResponse(text) {
 
   if (!responseBox) return;
 
-
   if (
     text === null ||
     text === undefined ||
@@ -3162,26 +3161,12 @@ function renderAIResponse(text) {
     `;
 
     return;
-
   }
-
-
-  /*
-   * Basit ve güvenli Markdown benzeri
-   * formatlama.
-   *
-   * Önce HTML escape ediyoruz.
-   */
 
   let html =
     escapeHtml(
       String(text)
     );
-
-
-  /*
-   * Başlıklar
-   */
 
   html =
     html.replace(
@@ -3189,13 +3174,11 @@ function renderAIResponse(text) {
       "<h4>$1</h4>"
     );
 
-
   html =
     html.replace(
       /^## (.+)$/gm,
       "<h3>$1</h3>"
     );
-
 
   html =
     html.replace(
@@ -3203,21 +3186,11 @@ function renderAIResponse(text) {
       "<h2>$1</h2>"
     );
 
-
-  /*
-   * Bold
-   */
-
   html =
     html.replace(
       /\*\*(.+?)\*\*/g,
       "<strong>$1</strong>"
     );
-
-
-  /*
-   * Bullet
-   */
 
   html =
     html.replace(
@@ -3225,17 +3198,11 @@ function renderAIResponse(text) {
       "<div class=\"ai-bullet\">• $1</div>"
     );
 
-
-  /*
-   * Satır sonları
-   */
-
   html =
     html.replace(
       /\n/g,
       "<br>"
     );
-
 
   responseBox.innerHTML = `
     <div class="ai-response-content">
@@ -3244,6 +3211,581 @@ function renderAIResponse(text) {
   `;
 
 }
+
+
+/*
+========================================================
+ANALYSIS LOADING
+========================================================
+*/
+
+function showAnalysisLoading() {
+
+  if (!responseBox) return;
+
+  responseBox.innerHTML = `
+    <div class="ai-loading">
+
+      <div class="ai-loading-title">
+        ANALYZING
+      </div>
+
+      <div class="ai-loading-text">
+        MCP market data is being analyzed...
+      </div>
+
+      <div class="ai-loading-subtext">
+        Waiting for AI server response...
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/*
+========================================================
+ANALYSIS ERROR
+========================================================
+*/
+
+function showAnalysisError(
+  message
+) {
+
+  if (!responseBox) return;
+
+  responseBox.innerHTML = `
+    <div class="ai-error">
+
+      <strong>
+        ANALYSIS ERROR
+      </strong>
+
+      <small>
+        ${escapeHtml(
+          message ||
+          "Analiz sırasında bilinmeyen bir hata oluştu."
+        )}
+      </small>
+
+    </div>
+  `;
+
+}
+
+
+/*
+========================================================
+ANALYZE BUTTON STATE
+========================================================
+*/
+
+function setAnalyzeButtonState(
+  loading
+) {
+
+  if (!analyzeBtn) return;
+
+  analyzeBtn.disabled =
+    loading;
+
+  if (loading) {
+
+    if (
+      !analyzeBtn.dataset.originalText
+    ) {
+
+      analyzeBtn.dataset.originalText =
+        analyzeBtn.innerText;
+
+    }
+
+    analyzeBtn.innerText =
+      "ANALYZING...";
+
+    analyzeBtn.classList.add(
+      "loading"
+    );
+
+  } else {
+
+    analyzeBtn.innerText =
+      analyzeBtn.dataset.originalText ||
+      "ANALYZE";
+
+    analyzeBtn.classList.remove(
+      "loading"
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+FETCH WITH TIMEOUT
+========================================================
+*/
+
+async function fetchWithTimeout(
+  url,
+  options = {},
+  timeout = 45000
+) {
+
+  const controller =
+    new AbortController();
+
+  const timeoutId =
+    setTimeout(
+      () => {
+
+        controller.abort();
+
+      },
+      timeout
+    );
+
+  try {
+
+    const response =
+      await fetch(
+        url,
+        {
+          ...options,
+          signal:
+            controller.signal
+        }
+      );
+
+    return response;
+
+  } catch (error) {
+
+    if (
+      error?.name ===
+      "AbortError"
+    ) {
+
+      throw new Error(
+        "Render sunucusu 45 saniye içinde cevap vermedi. /ask isteği veya MCP/AI işlemi takılmış olabilir."
+      );
+
+    }
+
+    throw error;
+
+  } finally {
+
+    clearTimeout(
+      timeoutId
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+ANALYZE
+========================================================
+*/
+
+async function analyzeQuestion() {
+
+  /*
+   * Aynı anda ikinci istek gönderme.
+   */
+
+  if (analysisRunning) {
+
+    console.warn(
+      "BORSACI: Analysis already running."
+    );
+
+    return;
+
+  }
+
+
+  if (!questionInput) {
+
+    console.error(
+      "BORSACI: #question bulunamadı."
+    );
+
+    return;
+
+  }
+
+
+  const question =
+    questionInput.value.trim();
+
+
+  /*
+   * Boş soru
+   */
+
+  if (!question) {
+
+    questionInput.focus();
+
+    return;
+
+  }
+
+
+  analysisRunning =
+    true;
+
+
+  setAnalyzeButtonState(
+    true
+  );
+
+
+  showAnalysisLoading();
+
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "BORSACI AI REQUEST START"
+  );
+
+  console.log(
+    "Endpoint:",
+    "/ask"
+  );
+
+  console.log(
+    "Question:",
+    question
+  );
+
+  console.log(
+    "Time:",
+    new Date().toISOString()
+  );
+
+  console.log(
+    "========================================"
+  );
+
+
+  try {
+
+    /*
+     * =====================================
+     * RENDER /ask
+     * =====================================
+     */
+
+    const response =
+      await fetchWithTimeout(
+        "/ask",
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+              question:
+                question
+            }),
+
+          cache:
+            "no-store"
+
+        },
+        45000
+      );
+
+
+    console.log(
+      "BORSACI AI HTTP STATUS:",
+      response.status
+    );
+
+
+    /*
+     * Önce RAW TEXT.
+     *
+     * Böylece Render HTML hata sayfası,
+     * proxy hatası veya JSON dışı cevap
+     * döndürürse görebiliriz.
+     */
+
+    const text =
+      await response.text();
+
+
+    console.log(
+      "BORSACI AI RAW RESPONSE:",
+      text
+    );
+
+
+    /*
+     * Boş response
+     */
+
+    if (
+      !text ||
+      !text.trim()
+    ) {
+
+      throw new Error(
+        `Render /ask boş cevap döndürdü. HTTP ${response.status}`
+      );
+
+    }
+
+
+    let data = null;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          text
+        );
+
+    } catch {
+
+      /*
+       * JSON değilse gerçek cevabı
+       * hata mesajına koy.
+       */
+
+      throw new Error(
+        `Render /ask JSON döndürmedi. HTTP ${response.status}. Cevap: ${text.slice(0, 300)}`
+      );
+
+    }
+
+
+    /*
+     * HTTP ERROR
+     */
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data?.error ||
+        data?.message ||
+        data?.details ||
+        `AI endpoint HTTP ${response.status}`
+      );
+
+    }
+
+
+    /*
+     * =====================================
+     * FARKLI BACKEND RESPONSE FORMATLARI
+     * =====================================
+     *
+     * Normal:
+     *
+     * {
+     *   answer: "..."
+     * }
+     *
+     * Alternatif:
+     *
+     * {
+     *   response: "..."
+     * }
+     *
+     * {
+     *   result: "..."
+     * }
+     *
+     * {
+     *   text: "..."
+     * }
+     */
+
+    const answer =
+      data?.answer ??
+      data?.response ??
+      data?.result ??
+      data?.text ??
+      data?.message;
+
+
+    if (
+      answer === null ||
+      answer === undefined ||
+      String(answer).trim() === ""
+    ) {
+
+      console.error(
+        "BORSACI: Backend data:",
+        data
+      );
+
+      throw new Error(
+        "AI sunucusu başarılı HTTP cevabı verdi ancak analiz metni bulunamadı."
+      );
+
+    }
+
+
+    console.log(
+      "========================================"
+    );
+
+    console.log(
+      "BORSACI AI ANSWER RECEIVED"
+    );
+
+    console.log(
+      answer
+    );
+
+    console.log(
+      "========================================"
+    );
+
+
+    /*
+     * Ekrana yaz
+     */
+
+    renderAIResponse(
+      answer
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "========================================"
+    );
+
+    console.error(
+      "BORSACI AI ERROR"
+    );
+
+    console.error(
+      error
+    );
+
+    console.error(
+      "========================================"
+    );
+
+
+    showAnalysisError(
+      error?.message ||
+      "Analiz sırasında bilinmeyen bir hata oluştu."
+    );
+
+
+  } finally {
+
+    analysisRunning =
+      false;
+
+
+    setAnalyzeButtonState(
+      false
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+ANALYZE BUTTON
+========================================================
+*/
+
+if (analyzeBtn) {
+
+  analyzeBtn.addEventListener(
+    "click",
+    analyzeQuestion
+  );
+
+} else {
+
+  console.error(
+    "BORSACI: #analyzeBtn bulunamadı."
+  );
+
+}
+
+
+/*
+========================================================
+ENTER KEY
+========================================================
+*/
+
+if (questionInput) {
+
+  questionInput.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        analyzeQuestion();
+
+      }
+
+    }
+  );
+
+} else {
+
+  console.error(
+    "BORSACI: #question bulunamadı."
+  );
+
+}
+
+
+/*
+========================================================
+DEBUG
+========================================================
+*/
+
+console.log(
+  "BORSACI: AI analysis system ready."
+);
 
 
 /*
