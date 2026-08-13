@@ -6,12 +6,24 @@ const fs = require("fs");
 
 const OpenAI = require("openai");
 
-const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
+const {
+  Client,
+} = require("@modelcontextprotocol/sdk/client/index.js");
+
 const {
   StreamableHTTPClientTransport,
 } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
 
-const PORT = process.env.PORT || 3000;
+
+/*
+ * =====================================
+ * SERVER
+ * =====================================
+ */
+
+const PORT =
+  process.env.PORT || 3000;
+
 
 /*
  * =====================================
@@ -19,122 +31,159 @@ const PORT = process.env.PORT || 3000;
  * =====================================
  */
 
-const ai = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
-});
+if (!process.env.OPENROUTER_API_KEY) {
+  console.error(
+    "❌ OPENROUTER_API_KEY bulunamadı."
+  );
+}
+
+const ai =
+  new OpenAI({
+    apiKey:
+      process.env.OPENROUTER_API_KEY,
+
+    baseURL:
+      "https://openrouter.ai/api/v1",
+
+    defaultHeaders: {
+      "HTTP-Referer":
+        "https://gemini-borsaci.onrender.com",
+
+      "X-Title":
+        "BorsaCI",
+    },
+  });
+
 
 /*
- * OpenRouter'da kullanılacak model.
- *
- * İlk etapta ücretsiz model kullanıyoruz.
- * Gerekirse daha sonra değiştiririz.
+ * =====================================
+ * MODEL
+ * =====================================
  */
 
 const MODEL =
   process.env.OPENROUTER_MODEL ||
   "openrouter/free";
 
+
+/*
+ * =====================================
+ * SYSTEM PROMPT
+ * =====================================
+ */
+
 const SYSTEM_PROMPT = `
-Sen BorsaCI adlı profesyonel bir BIST ve finansal piyasa analiz asistanısın.
+Sen BorsaCI adlı profesyonel BIST ve finansal piyasa analiz asistanısın.
 
 ========================================
 TEMEL KURAL
 ========================================
 
-Gerçek piyasa verisi olmadan hiçbir fiyat, RSI, MACD, trend, destek,
-direnç, analist hedefi, bilanço veya haber bilgisi uydurma.
+Gerçek MCP verisi olmadan hiçbir piyasa verisi uydurma.
 
-Güncel veri gerekiyorsa mutlaka MCP araçlarını kullan.
+Asla uydurma:
 
-MCP'den gelen veriler ile kendi yorumunu birbirinden ayır.
+- fiyat
+- günlük değişim
+- hacim
+- RSI
+- MACD
+- trend
+- destek
+- direnç
+- hedef fiyat
+- bilanço
+- haber
+- analist görüşü
 
-Veri bulunamazsa "veri bulunamadı" de.
-Tahmin ederek veri üretme.
+Güncel bilgi gerekiyorsa MCP araçlarını kullan.
+
+MCP verisi ile kendi yorumunu birbirinden ayır.
+
+Veri yoksa:
+
+"Veri bulunamadı."
+
+de.
+
+Tahmin ederek veri oluşturma.
 
 
 ========================================
 GENİŞ HİSSE ANALİZİ
 ========================================
 
-Kullanıcı aşağıdaki tarzda geniş bir soru sorarsa:
+Kullanıcı:
 
-- "ASELS şu an ne durumda?"
-- "ASELS analiz et"
-- "ASELS alınır mı?"
-- "oyundayız mı?"
-- "bu hisse ne durumda?"
-- "ne düşünüyorsun?"
+"ASELS şu an ne durumda?"
+"ASELS analiz et"
+"ASELS alınır mı?"
+"oyundayız mı?"
+"bu hisse ne durumda?"
+"ne düşünüyorsun?"
 
-aşağıdaki sırayı mümkün olduğunca takip et:
+gibi geniş bir soru sorarsa mümkün olduğunca şu akışı takip et:
 
 1. get_quote
 2. get_technical_analysis
 3. get_news
-4. Önemli görünen haber varsa get_news ile news_id kullanarak
-   haber detayını getir.
+4. Haber listesinden önemli görünen haber varsa:
+   get_news + news_id
 5. get_analyst_data
-6. Gerekliyse temel analiz araçlarını kullan.
+6. Gerekirse temel analiz araçları
 
-Ancak MCP'den veri gelmeyen kategoriler için veri uydurma.
+Önemli:
 
+get_news sadece başlık listesi döndürüyorsa,
+haber başlığından detay uydurma.
 
-========================================
-TEKNİK ANALİZ
-========================================
+Önemli bir haberin id'si varsa mutlaka
+get_news aracını news_id parametresiyle çağırarak
+haber detayını almaya çalış.
 
-Teknik analiz istendiğinde öncelikle:
+Özellikle:
 
-- get_quote
-- get_technical_analysis
+- Özel Durum Açıklaması
+- sözleşme
+- ihale
+- yeni sipariş
+- finansal sonuç
+- sermaye işlemi
+- ortaklık
+- yatırım
+- temettü
+- yönetim değişikliği
+- önemli hukuki gelişme
 
-kullan.
-
-Gerekliyse:
-
-- get_historical_data
-
-kullan.
-
-Teknik yorumda mümkün olduğunda:
-
-- Güncel fiyat
-- Trend
-- RSI
-- MACD
-- Hareketli ortalamalar
-- Destek
-- Direnç
-- Hacim
-- Momentum
-
-değerlendir.
-
-MCP bu değerlerden birini vermiyorsa tahmin etme.
+gibi haberleri önemse.
 
 
 ========================================
-HABER ANALİZİ
+HABER DETAYI
 ========================================
 
-Hisse analizi sırasında güncel haberleri kontrol et.
+get_news sonucu aşağıdakilere benzer alanlar içerebilir:
 
-Önce:
+id
+title
+summary
+source
+url
+published_date
 
-get_news
+Haber listesinde önemli bir haber varsa:
 
-kullan.
+get_news({
+  news_id: "..."
+})
 
-Haber listesinden fiyatı veya şirket görünümünü etkileyebilecek önemli
-bir haber varsa:
+şeklinde detay çağrısı yap.
 
-get_news
+Detay çağrısından gelen gerçek metni analiz et.
 
-aracını news_id ile tekrar kullanarak detayını getir.
+Haber başlığından detay çıkarma.
 
-Haber başlığından haber içeriği uydurma.
-
-Haber ile fiyat hareketi arasında doğrudan nedensellik kurma.
+Haber ile fiyat hareketi arasında kesin nedensellik kurma.
 
 Sadece veriler destekliyorsa:
 
@@ -144,18 +193,53 @@ olarak ifade et.
 
 
 ========================================
+TEKNİK ANALİZ
+========================================
+
+Teknik analiz için:
+
+get_quote
+get_technical_analysis
+
+kullan.
+
+Gerekirse:
+
+get_historical_data
+
+kullan.
+
+Mümkün olduğunda:
+
+- Fiyat
+- Günlük değişim
+- Hacim
+- Trend
+- RSI
+- MACD
+- Hareketli ortalamalar
+- Destek
+- Direnç
+- Momentum
+
+değerlendir.
+
+Veri yoksa tahmin etme.
+
+
+========================================
 ANALİST VERİSİ
 ========================================
 
-Analist hedef fiyatı veya analist görüşü isteniyorsa:
+Analist görüşü veya hedef fiyat soruluyorsa:
 
 get_analyst_data
 
 kullan.
 
-Analist hedeflerini kendi görüşün gibi sunma.
-
 Kurum hedefi ile konsensüs hedefini ayır.
+
+Analist hedefini BorsaCI'nın kendi hedefi gibi sunma.
 
 Veri yoksa hedef fiyat uydurma.
 
@@ -173,29 +257,35 @@ get_profile
 
 kullan.
 
-Finansal oranları yanlış yorumlama.
-
-Örneğin:
-
-Dividend Yield = Temettü Verimi
+Terimleri doğru Türkçeleştir:
 
 P/B = PD/DD
-
 P/E = F/K
-
+Dividend Yield = Temettü Verimi
 Market Cap = Piyasa Değeri
 
-olarak ifade et.
 
-MCP'nin verdiği birimin anlamsız veya hatalı göründüğü durumda
-birim uydurma.
+========================================
+TOOL KULLANIMI
+========================================
+
+Gereksiz tool çağrısı yapma.
+
+Aynı veriyi tekrar tekrar isteme.
+
+Bir tool sonucu yeterliyse aynı tool'u tekrar çağırma.
+
+Haber detayına ihtiyaç varsa önce haber listesindeki
+id değerini kullan.
+
+Herhangi bir tool hata verirse mevcut verilerle devam et.
 
 
 ========================================
-ÇIKTI STANDARDI
+ÇIKTI
 ========================================
 
-Geniş hisse analizlerinde mümkün olduğunda şu formatı kullan:
+Geniş analizlerde mümkün olduğunca:
 
 ## 📊 Güncel Durum
 
@@ -214,44 +304,36 @@ Geniş hisse analizlerinde mümkün olduğunda şu formatı kullan:
 
 ## 📰 Haber / KAP
 
-Önemli güncel haberleri ve gerekiyorsa haber detaylarını özetle.
+Önemli haberleri tarihleriyle belirt.
+
+Haber detayına ulaşıldıysa detayın önemli kısmını özetle.
 
 ## 🎯 Analist Görüşleri
 
 - Konsensüs:
 - Hedef fiyat:
-- Öne çıkan kurum görüşleri:
-
-Veri yoksa açıkça belirt.
+- Öne çıkan kurumlar:
 
 ## 💰 Temel Görünüm
 
-Gerektiğinde:
-
-- F/K
-- PD/DD
-- Temettü verimi
-- Piyasa değeri
-- Finansal sonuçlar
+- F/K:
+- PD/DD:
+- Temettü verimi:
+- Piyasa değeri:
+- Finansal sonuçlar:
 
 ## 🎯 BorsaCI Yorumu
 
-Verilerden hareketle:
+Pozitif / Nötr / Negatif
 
-- Pozitif
-- Nötr
-- Negatif
-
-olarak genel görünümü belirt.
-
-Ardından nedenini kısa ve net açıkla.
+ve kısa gerekçesi.
 
 
 ========================================
 İŞLEM SENARYOSU
 ========================================
 
-Kullanıcı işlem fikri isterse ve gerçek veri mevcutsa:
+Kullanıcı işlem fikri isterse gerçek MCP verisine dayanarak:
 
 Senaryo:
 Giriş:
@@ -260,36 +342,35 @@ TP1:
 TP2:
 Risk:
 
-şeklinde sun.
+ver.
 
-TP/SL veya giriş fiyatı MCP verilerinden desteklenmiyorsa
-uydurma.
-
-Kesin kazanç veya kesin fiyat garantisi verme.
+Gerçek veri yoksa fiyat uydurma.
 
 
 ========================================
 VERİ KALİTESİ
 ========================================
 
-- Eski veriyi güncelmiş gibi sunma.
-- MCP verisi olmadan gerçek zamanlı fiyat verme.
-- Haber başlığından detay uydurma.
-- Sosyal medya verisi için uygun MCP aracı yoksa sosyal medya yorumu
-  varmış gibi davranma.
-- MCP verileri çelişirse bunu belirt.
-- Birim hatalı görünüyorsa yanlış birimi tekrarlama.
-- Türkçe, net ve profesyonel yaz.
-- Gereksiz uzunlukta cevap verme.
+Eski veriyi güncelmiş gibi sunma.
+
+MCP verisi olmadan gerçek zamanlı veri verme.
+
+Haber başlığından detay uydurma.
+
+Sosyal medya MCP aracı yoksa sosyal medya yorumu uydurma.
+
+MCP verileri çelişirse bunu açıkça belirt.
+
+Türkçe, net ve işlem odaklı cevap ver.
+
+Gereksiz uzunlukta cevap verme.
 `;
+
 
 /*
  * =====================================
- * SCHEMA TEMİZLEYİCİ
+ * SCHEMA CLEANER
  * =====================================
- *
- * MCP JSON Schema'larını OpenAI/OpenRouter
- * function tool formatına uygun hale getirir.
  */
 
 function cleanSchema(schema) {
@@ -350,6 +431,7 @@ function cleanSchema(schema) {
       result[key] = value;
 
     }
+
   }
 
   return result;
@@ -358,7 +440,7 @@ function cleanSchema(schema) {
 
 /*
  * =====================================
- * MCP TOOL → OPENROUTER TOOL
+ * MCP → OPENAI TOOLS
  * =====================================
  */
 
@@ -371,7 +453,8 @@ function convertMcpToolsToOpenAITools(
       type: "function",
 
       function: {
-        name: tool.name,
+        name:
+          tool.name,
 
         description:
           tool.description || "",
@@ -391,15 +474,19 @@ function convertMcpToolsToOpenAITools(
 
 /*
  * =====================================
- * GEMINI + MCP ANALİZ
+ * MCP CLIENT
  * =====================================
  */
 
-async function analyze(question) {
+async function createMcpClient() {
 
-  /*
-   * MCP bağlantısı
-   */
+  if (!process.env.MCP_URL) {
+
+    throw new Error(
+      "MCP_URL environment variable bulunamadı."
+    );
+
+  }
 
   const transport =
     new StreamableHTTPClientTransport(
@@ -410,25 +497,44 @@ async function analyze(question) {
 
   const client =
     new Client({
+
       name:
         "openrouter-borsaci-server",
 
       version:
         "1.0.0",
+
     });
+
+  await client.connect(
+    transport
+  );
+
+  return {
+    client,
+    transport,
+  };
+}
+
+
+/*
+ * =====================================
+ * ANALYZE
+ * =====================================
+ */
+
+async function analyze(question) {
+
+  const {
+    client,
+    transport,
+  } =
+    await createMcpClient();
 
   try {
 
     /*
-     * MCP'ye bağlan
-     */
-
-    await client.connect(
-      transport
-    );
-
-    /*
-     * Gerçek MCP araçlarını al
+     * MCP TOOLS
      */
 
     const toolResult =
@@ -437,12 +543,14 @@ async function analyze(question) {
     console.log(
       "MCP TOOLS:",
       toolResult.tools.map(
-        (tool) => tool.name
+        (tool) =>
+          tool.name
       )
     );
 
+
     /*
-     * MCP → OpenRouter tools
+     * OpenRouter tools
      */
 
     const tools =
@@ -450,22 +558,29 @@ async function analyze(question) {
         toolResult.tools
       );
 
+
     /*
-     * Conversation
+     * Messages
      */
 
     const messages = [
+
       {
-        role: "system",
+        role:
+          "system",
+
         content:
           SYSTEM_PROMPT,
       },
 
       {
-        role: "user",
+        role:
+          "user",
+
         content:
           question,
       },
+
     ];
 
 
@@ -473,16 +588,13 @@ async function analyze(question) {
      * =====================================
      * TOOL LOOP
      * =====================================
-     *
-     * Maksimum 6 tur.
-     *
-     * Gereksiz sonsuz tool çağrısını
-     * engelliyoruz.
      */
+
+    const MAX_STEPS = 6;
 
     for (
       let step = 0;
-      step < 6;
+      step < MAX_STEPS;
       step++
     ) {
 
@@ -490,8 +602,9 @@ async function analyze(question) {
         `AI STEP → ${step + 1}`
       );
 
+
       /*
-       * OpenRouter çağrısı
+       * OpenRouter
        */
 
       const response =
@@ -508,12 +621,15 @@ async function analyze(question) {
             "auto",
 
           temperature:
-            0.2,
+            0.15,
+
         });
 
 
       const message =
-        response.choices?.[0]?.message;
+        response
+          .choices?.[0]
+          ?.message;
 
 
       if (!message) {
@@ -526,8 +642,7 @@ async function analyze(question) {
 
 
       /*
-       * Tool çağrısı yoksa
-       * final cevap.
+       * FINAL CEVAP
        */
 
       if (
@@ -544,7 +659,7 @@ async function analyze(question) {
 
 
       /*
-       * AI mesajini conversation'a ekle
+       * AI mesajı
        */
 
       messages.push(
@@ -566,13 +681,17 @@ async function analyze(question) {
         const functionName =
           toolCall.function.name;
 
+
         let argumentsObject = {};
+
 
         try {
 
           argumentsObject =
             JSON.parse(
-              toolCall.function.arguments ||
+              toolCall
+                .function
+                .arguments ||
               "{}"
             );
 
@@ -582,8 +701,6 @@ async function analyze(question) {
             "Tool arguments JSON hatası:",
             error.message
           );
-
-          argumentsObject = {};
 
         }
 
@@ -595,10 +712,6 @@ async function analyze(question) {
 
 
         try {
-
-          /*
-           * MCP tool çalıştır
-           */
 
           const result =
             await client.callTool({
@@ -613,7 +726,7 @@ async function analyze(question) {
 
 
           /*
-           * Tool sonucunu OpenRouter'a gönder
+           * Tool sonucu
            */
 
           messages.push({
@@ -640,10 +753,6 @@ async function analyze(question) {
           );
 
 
-          /*
-           * Hata da modele bildiriliyor.
-           */
-
           messages.push({
 
             role:
@@ -654,8 +763,10 @@ async function analyze(question) {
 
             content:
               JSON.stringify({
+
                 error:
                   error.message,
+
               }),
 
           });
@@ -687,6 +798,34 @@ async function analyze(question) {
 
 /*
  * =====================================
+ * JSON RESPONSE
+ * =====================================
+ */
+
+function sendJson(
+  res,
+  status,
+  data
+) {
+
+  res.writeHead(
+    status,
+    {
+      "Content-Type":
+        "application/json; charset=utf-8",
+    }
+  );
+
+  res.end(
+    JSON.stringify(
+      data
+    )
+  );
+}
+
+
+/*
+ * =====================================
  * HTTP SERVER
  * =====================================
  */
@@ -695,13 +834,71 @@ const server =
   http.createServer(
     async (req, res) => {
 
+      /*
+       * =====================================
+       * ROOT
+       * =====================================
+       */
+
+      if (
+        req.method === "GET" &&
+        req.url === "/"
+      ) {
+
+        const filePath =
+          path.join(
+            __dirname,
+            "public",
+            "index.html"
+          );
+
+        fs.readFile(
+          filePath,
+          (error, data) => {
+
+            if (error) {
+
+              console.error(
+                "index.html okunamadı:",
+                error
+              );
+
+              res.writeHead(
+                500,
+                {
+                  "Content-Type":
+                    "text/plain; charset=utf-8",
+                }
+              );
+
+              res.end(
+                "Internal Server Error"
+              );
+
+              return;
+            }
+
+            res.writeHead(
+              200,
+              {
+                "Content-Type":
+                  "text/html; charset=utf-8",
+              }
+            );
+
+            res.end(data);
+
+          }
+        );
+
+        return;
+      }
+
 
       /*
        * =====================================
-       * MCP TOOL TEST
+       * QUOTE TEST
        * =====================================
-       *
-       * GET /quote?symbol=ASELS
        */
 
       if (
@@ -729,19 +926,13 @@ const server =
 
           if (!symbol) {
 
-            res.writeHead(
+            sendJson(
+              res,
               400,
               {
-                "Content-Type":
-                  "application/json; charset=utf-8",
-              }
-            );
-
-            res.end(
-              JSON.stringify({
                 error:
                   "symbol parametresi gerekli.",
-              })
+              }
             );
 
             return;
@@ -753,97 +944,46 @@ const server =
           );
 
 
-          const transport =
-            new StreamableHTTPClientTransport(
-              new URL(
-                process.env.MCP_URL
-              )
-            );
-
-
-          const client =
-            new Client({
-
-              name:
-                "borsaci-web-client",
-
-              version:
-                "1.0.0",
-
-            });
+          const {
+            client,
+            transport,
+          } =
+            await createMcpClient();
 
 
           try {
-
-            await client.connect(
-              transport
-            );
-
 
             const tools =
               await client.listTools();
 
 
-            console.log(
-              "========== GERÇEK MCP TOOLS =========="
-            );
-
-
-            console.log(
-              tools.tools.map(
-                (tool) => tool.name
-              )
-            );
-
-
-            console.log(
-              "======================================"
-            );
-
-
-            res.writeHead(
+            sendJson(
+              res,
               200,
               {
-                "Content-Type":
-                  "application/json; charset=utf-8",
+
+                symbol,
+
+                tools:
+                  tools.tools.map(
+                    (tool) => ({
+
+                      name:
+                        tool.name,
+
+                      description:
+                        tool.description ||
+                        "",
+
+                      inputSchema:
+                        tool.inputSchema ||
+                        null,
+
+                    })
+                  ),
+
               }
             );
-
-
-            res.end(
-              JSON.stringify(
-                {
-
-                  symbol,
-
-                  tools:
-                    tools.tools.map(
-                      (tool) => ({
-
-                        name:
-                          tool.name,
-
-                        description:
-                          tool.description ||
-                          "",
-
-                        inputSchema:
-                          tool.inputSchema ||
-                          null,
-
-                      })
-                    ),
-
-                },
-
-                null,
-
-                2
-              )
-            );
-
-
-            return;
 
 
           } finally {
@@ -865,108 +1005,25 @@ const server =
           );
 
 
-          res.writeHead(
+          sendJson(
+            res,
             500,
             {
-              "Content-Type":
-                "application/json; charset=utf-8",
-            }
-          );
-
-
-          res.end(
-            JSON.stringify({
-
               error:
                 error.message,
-
-            })
+            }
           );
 
         }
 
-
         return;
-
       }
 
 
       /*
        * =====================================
-       * WEB ARAYÜZÜ
+       * ASK API
        * =====================================
-       */
-
-      if (
-        req.method === "GET" &&
-        req.url === "/"
-      ) {
-
-        const filePath =
-          path.join(
-            __dirname,
-            "public",
-            "index.html"
-          );
-
-
-        fs.readFile(
-          filePath,
-          (error, data) => {
-
-            if (error) {
-
-              console.error(
-                "index.html okunamadı:",
-                error
-              );
-
-
-              res.writeHead(
-                500,
-                {
-                  "Content-Type":
-                    "text/plain; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                "Internal Server Error"
-              );
-
-
-              return;
-
-            }
-
-
-            res.writeHead(
-              200,
-              {
-                "Content-Type":
-                  "text/html; charset=utf-8",
-              }
-            );
-
-
-            res.end(data);
-
-          }
-        );
-
-
-        return;
-
-      }
-
-
-      /*
-       * =====================================
-       * ANALİZ API
-       * =====================================
-       *
-       * POST /ask
        */
 
       if (
@@ -983,6 +1040,19 @@ const server =
 
             body += chunk;
 
+            /*
+             * Basit body limiti
+             */
+
+            if (
+              body.length >
+              100000
+            ) {
+
+              req.destroy();
+
+            }
+
           }
         );
 
@@ -998,7 +1068,8 @@ const server =
 
 
               if (
-                !data.question
+                !data.question ||
+                typeof data.question !== "string"
               ) {
 
                 throw new Error(
@@ -1007,6 +1078,10 @@ const server =
 
               }
 
+
+              console.log(
+                "///////////////////////////////////////////////////////////"
+              );
 
               console.log(
                 `Soru: ${data.question}`
@@ -1019,21 +1094,12 @@ const server =
                 );
 
 
-              res.writeHead(
+              sendJson(
+                res,
                 200,
                 {
-                  "Content-Type":
-                    "application/json; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                JSON.stringify({
-
                   answer,
-
-                })
+                }
               );
 
 
@@ -1045,22 +1111,13 @@ const server =
               );
 
 
-              res.writeHead(
+              sendJson(
+                res,
                 500,
                 {
-                  "Content-Type":
-                    "application/json; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                JSON.stringify({
-
                   error:
                     error.message,
-
-                })
+                }
               );
 
             }
@@ -1070,7 +1127,6 @@ const server =
 
 
         return;
-
       }
 
 
@@ -1104,7 +1160,6 @@ const server =
                 error
               );
 
-
               res.writeHead(
                 500,
                 {
@@ -1113,11 +1168,9 @@ const server =
                 }
               );
 
-
               res.end(
                 "Internal Server Error"
               );
-
 
               return;
 
@@ -1132,7 +1185,6 @@ const server =
               }
             );
 
-
             res.end(data);
 
           }
@@ -1140,13 +1192,12 @@ const server =
 
 
         return;
-
       }
 
 
       /*
        * =====================================
-       * JAVASCRIPT
+       * APP.JS
        * =====================================
        */
 
@@ -1174,7 +1225,6 @@ const server =
                 error
               );
 
-
               res.writeHead(
                 500,
                 {
@@ -1183,11 +1233,9 @@ const server =
                 }
               );
 
-
               res.end(
                 "Internal Server Error"
               );
-
 
               return;
 
@@ -1202,7 +1250,6 @@ const server =
               }
             );
 
-
             res.end(data);
 
           }
@@ -1210,7 +1257,6 @@ const server =
 
 
         return;
-
       }
 
 
@@ -1227,7 +1273,6 @@ const server =
             "text/plain; charset=utf-8",
         }
       );
-
 
       res.end(
         "Not Found"
