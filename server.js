@@ -538,7 +538,154 @@ const server =
 
         return;
       }
+      /*
+       * =====================================
+       * MCP NEWS TEST
+       * =====================================
+       *
+       * /news?symbol=ASELS&limit=5
+       *
+       * Gerçek MCP get_news aracını çağırır.
+       */
 
+      if (
+        req.method === "GET" &&
+        req.url.startsWith("/news")
+      ) {
+
+        try {
+
+          const url =
+            new URL(
+              req.url,
+              `http://${req.headers.host}`
+            );
+
+          const symbol =
+            url.searchParams
+              .get("symbol")
+              ?.trim()
+              .toUpperCase();
+
+          const limit =
+            Number(
+              url.searchParams.get("limit") || 10
+            );
+
+          const newsId =
+            url.searchParams
+              .get("news_id");
+
+          if (!symbol && !newsId) {
+
+            res.writeHead(400, {
+              "Content-Type":
+                "application/json; charset=utf-8",
+            });
+
+            res.end(
+              JSON.stringify({
+                error:
+                  "symbol veya news_id parametresi gerekli.",
+              })
+            );
+
+            return;
+          }
+
+          const transport =
+            new StreamableHTTPClientTransport(
+              new URL(
+                process.env.MCP_URL
+              )
+            );
+
+          const client =
+            new Client({
+              name:
+                "borsaci-news-client",
+
+              version:
+                "1.0.0",
+            });
+
+          try {
+
+            await client.connect(
+              transport
+            );
+
+            const arguments_ = {};
+
+            if (symbol) {
+              arguments_.symbol = symbol;
+            }
+
+            if (newsId) {
+              arguments_.news_id = newsId;
+            }
+
+            if (!newsId) {
+              arguments_.limit = limit;
+            }
+
+            console.log(
+              "NEWS → get_news",
+              arguments_
+            );
+
+            const result =
+              await client.callTool({
+                name: "get_news",
+                arguments: arguments_,
+              });
+
+            res.writeHead(200, {
+              "Content-Type":
+                "application/json; charset=utf-8",
+            });
+
+            res.end(
+              JSON.stringify(
+                result,
+                null,
+                2
+              )
+            );
+
+            return;
+
+          } finally {
+
+            try {
+              await transport.close();
+            } catch (_) {}
+
+          }
+
+        } catch (error) {
+
+          console.error(
+            "NEWS ERROR:",
+            error
+          );
+
+          res.writeHead(500, {
+            "Content-Type":
+              "application/json; charset=utf-8",
+          });
+
+          res.end(
+            JSON.stringify({
+              error:
+                error.message,
+            })
+          );
+
+        }
+
+        return;
+      }
 
       /*
        * =====================================
