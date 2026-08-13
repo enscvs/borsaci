@@ -2003,7 +2003,24 @@ const server =
             "public",
             "index.html"
           );
+if (
+  req.method === "GET" &&
+  pathname === "/chart.js"
+) {
 
+  const filePath =
+    path.join(
+      __dirname,
+      "public",
+      "chart.js"
+    );
+
+  return serveFile(
+    res,
+    filePath,
+    "application/javascript; charset=utf-8"
+  );
+}
 
         return serveFile(
           res,
