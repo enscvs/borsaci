@@ -1842,11 +1842,13 @@ async function loadChartData(
    * cache'liyoruz.
    */
 
-  const cached =
-    chartCache[
-      clean
-    ];
+  const cacheKey =
+  `${clean}_${range}_${interval}`;
 
+const cached =
+  chartCache[
+    cacheKey
+  ];
 
   if (
     cached &&
@@ -1896,12 +1898,15 @@ async function loadChartData(
      * Browser doğrudan Yahoo'ya gitmiyor.
      */
 
-    const url =
-      `/chart?symbol=${encodeURIComponent(
-        clean
-      )}&range=1y&interval=1d`;
-
-
+const url =
+  `/chart?symbol=${encodeURIComponent(
+    clean
+  )}&range=${encodeURIComponent(
+    range
+  )}&interval=${encodeURIComponent(
+    interval
+  )}`;
+  
     console.log(
       "BORSACI CHART REQUEST:",
       url
@@ -1990,16 +1995,16 @@ async function loadChartData(
     }
 
 
-    chartCache[
-      clean
-    ] = {
+  chartCache[
+  cacheKey
+] = {
 
-      timestamp:
-        Date.now(),
+  timestamp:
+    Date.now(),
 
-      history
+  history
 
-    };
+};
 
 
     updateChartData(
@@ -4439,3 +4444,71 @@ window.BORSACI_CHART = {
   }
 
 };
+/*
+========================================================
+CHART CONTROLS BRIDGE
+========================================================
+*/
+
+window.addEventListener(
+  "borsaci:chart-change",
+  async event => {
+
+    const detail =
+      event.detail || {};
+
+    const range =
+      detail.range || "1y";
+
+    const interval =
+      detail.interval || "1d";
+
+
+    chartRange =
+      range;
+
+    chartInterval =
+      interval;
+
+
+    if (!selectedSymbol) {
+
+      console.warn(
+        "BORSACI: Chart change geldi ama seçili sembol yok."
+      );
+
+      return;
+
+    }
+
+
+    console.log(
+      "BORSACI CHART CONTROL:",
+      {
+        symbol: selectedSymbol,
+        range,
+        interval
+      }
+    );
+
+
+    /*
+     * Eski cache'i kullanma.
+     */
+
+    const cacheKey =
+      `${selectedSymbol}_${range}_${interval}`;
+
+    delete chartCache[
+      cacheKey
+    ];
+
+
+    await loadChartData(
+      selectedSymbol,
+      range,
+      interval
+    );
+
+  }
+);
