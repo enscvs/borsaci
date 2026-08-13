@@ -514,13 +514,13 @@ async function createMcpClient() {
         "1.0.0",
 
     });
-
+console.log("🔥 MCP CONNECT BAŞLIYOR");
 
   await client.connect(
     transport
   );
 
-
+console.log("🔥 MCP CONNECT BAŞARILI");
   return {
     client,
     transport,
@@ -2376,8 +2376,8 @@ if (
           console.log(
             `SORU → ${question}`
           );
-
-
+console.log("🔥 API/ASK REQUEST GELDİ");
+console.log("🔥 ANALYZE BAŞLADI");
           const answer =
             await analyze(
               question
