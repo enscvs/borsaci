@@ -93,12 +93,6 @@ mantığını açıkça belirt.
 Ancak bunların hiçbiri gerçek MCP verisi olmadan uydurulmamalıdır.
 `;
 
-/*
- * =====================================
- * GEMINI + MCP ANALİZ
- * =====================================
- */
-
 async function analyze(question) {
 
   const transport =
@@ -126,169 +120,388 @@ async function analyze(question) {
       )
     );
 
-    const geminiTools = [
-      {
-        functionDeclarations:
-          toolResult.tools.map(
-            (tool) => ({
-              name: tool.name,
+    /*
+     * =====================================
+     * TOOL LİSTESİNİ HAZIRLA
+     * =====================================
+     */
 
-              description:
-                tool.description || "",
-
-              parameters:
-                cleanSchema(
-                  tool.inputSchema
-                ),
-            })
-          ),
-      },
-    ];
-
-    let contents = [
-      {
-        role: "user",
-        parts: [
-          {
-            text: question,
-          },
-        ],
-      },
-    ];
-
-    for (
-      let step = 0;
-      step < 5;
-      step++
-    ) {
-
-      const response =
-        await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-
-          contents,
-
-          config: {
-            systemInstruction:
-              SYSTEM_PROMPT,
-
-            tools:
-              geminiTools,
-          },
-        });
-
-      const candidate =
-        response.candidates?.[0];
-
-      if (!candidate) {
-        throw new Error(
-          "Gemini cevap üretmedi."
-        );
-      }
-
-      const parts =
-        candidate.content?.parts || [];
-
-      const functionCalls =
-        parts.filter(
-          (part) =>
-            part.functionCall
-        );
-
-      /*
-       * Gemini artık MCP tool çağırmıyorsa
-       * final cevabı dön.
-       */
-
-      if (
-        functionCalls.length === 0
-      ) {
-        return response.text;
-      }
-
-      /*
-       * Gemini'nin tool call mesajını
-       * conversation'a ekle.
-       */
-
-      contents.push(
-        candidate.content
+    const availableTools =
+      toolResult.tools.map(
+        (tool) => ({
+          name: tool.name,
+          description:
+            tool.description || "",
+          inputSchema:
+            tool.inputSchema || null,
+        })
       );
 
-      /*
-       * MCP tool'larını çalıştır.
-       */
+    /*
+     * =====================================
+     * 1. GEMINI:
+     * HANGİ VERİLER GEREKLİ?
+     * =====================================
+     */
 
-      for (
-        const part of functionCalls
-      ) {
+    const planningPrompt = `
+Kullanıcı şu soruyu sordu:
 
-        const call =
-          part.functionCall;
+"${question}"
+
+Sen bir BIST finans analiz sistemi için veri planlayıcısısın.
+
+Aşağıdaki MCP araçlarından SADECE gerekli olanları seç.
+
+Mevcut araçlar:
+
+${JSON.stringify(
+  availableTools,
+  null,
+  2
+)}
+
+Kurallar:
+
+1. Güncel fiyat gerekiyorsa get_quote kullan.
+2. Teknik analiz gerekiyorsa get_technical_analysis kullan.
+3. Hisse analizi gerekiyorsa güncel KAP haberlerini kontrol etmek için get_news kullan.
+4. Haber listesinde önemli bir haber varsa onun news_id'sini daha sonra sistem otomatik olarak detaylandıracaktır.
+5. Analist hedefi/görüşü gerekiyorsa get_analyst_data kullan.
+6. Temel analiz gerekiyorsa get_profile, get_financial_ratios,
+   get_financial_statements veya get_earnings araçlarından uygun olanları seç.
+7. Kullanıcının istemediği gereksiz araçları seçme.
+8. Gerçek veri olmadan hiçbir şeyi tahmin etme.
+9. BIST hissesi için sembol açıkça belli ise market=bist kullan.
+
+SADECE aşağıdaki JSON formatında cevap ver:
+
+{
+  "tools": [
+    {
+      "name": "tool_name",
+      "arguments": {}
+    }
+  ]
+}
+
+Başka hiçbir metin yazma.
+`;
+
+    const planningResponse =
+      await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text:
+                  planningPrompt,
+              },
+            ],
+          },
+        ],
+
+        config: {
+          systemInstruction:
+            SYSTEM_PROMPT,
+        },
+      });
+
+    /*
+     * =====================================
+     * PLAN JSON'UNU AL
+     * =====================================
+     */
+
+    let planText =
+      planningResponse.text
+        ?.trim() || "";
+
+    /*
+     * Markdown JSON fence temizle
+     */
+
+    planText =
+      planText
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+    let plan;
+
+    try {
+
+      plan =
+        JSON.parse(planText);
+
+    } catch (error) {
+
+      console.error(
+        "PLAN JSON HATASI:",
+        planText
+      );
+
+      throw new Error(
+        "Gemini geçerli bir MCP planı oluşturamadı."
+      );
+    }
+
+    if (
+      !plan ||
+      !Array.isArray(plan.tools)
+    ) {
+
+      throw new Error(
+        "MCP planı geçersiz."
+      );
+    }
+
+    /*
+     * =====================================
+     * GÜVENLİK:
+     * SADECE GERÇEK TOOL'LARI ÇALIŞTIR
+     * =====================================
+     */
+
+    const validToolNames =
+      new Set(
+        toolResult.tools.map(
+          (tool) => tool.name
+        )
+      );
+
+    const selectedTools =
+      plan.tools.filter(
+        (item) =>
+          item &&
+          validToolNames.has(
+            item.name
+          )
+      );
+
+    console.log(
+      "SEÇİLEN MCP TOOLS:",
+      selectedTools.map(
+        (tool) => tool.name
+      )
+    );
+
+    /*
+     * =====================================
+     * 2. MCP ARAÇLARINI ÇALIŞTIR
+     * =====================================
+     */
+
+    const collectedData = [];
+
+    for (
+      const selected of selectedTools
+    ) {
+
+      try {
 
         console.log(
-          `MCP → ${call.name}`
+          `MCP → ${selected.name}`,
+          selected.arguments || {}
         );
 
-        try {
+        const result =
+          await client.callTool({
+            name:
+              selected.name,
 
-          const result =
-            await client.callTool({
-              name:
-                call.name,
-
-              arguments:
-                call.args || {},
-            });
-
-          contents.push({
-            role: "user",
-
-            parts: [
-              {
-                functionResponse: {
-                  name:
-                    call.name,
-
-                  response: {
-                    result,
-                  },
-                },
-              },
-            ],
+            arguments:
+              selected.arguments || {},
           });
 
-        } catch (error) {
+        collectedData.push({
+          tool:
+            selected.name,
 
-          console.error(
-            `MCP ${call.name} hatası:`,
-            error.message
-          );
+          arguments:
+            selected.arguments || {},
 
-          contents.push({
-            role: "user",
+          result,
+        });
 
-            parts: [
-              {
-                functionResponse: {
+        /*
+         * =====================================
+         * HABER LİSTESİNDEN ÖNEMLİ HABERLERİ
+         * OTOMATİK OLARAK DETAYLANDIR
+         * =====================================
+         */
+
+        if (
+          selected.name === "get_news"
+        ) {
+
+          const text =
+            result?.content
+              ?.find(
+                (item) =>
+                  item.type === "text"
+              )
+              ?.text || "";
+
+          /*
+           * TSV içindeki news_id'leri yakala.
+           */
+
+          const newsIds =
+            [
+              ...text.matchAll(
+                /^([a-f0-9]{20,})\t/gim
+              ),
+            ]
+              .map(
+                (match) =>
+                  match[1]
+              )
+              .slice(0, 3);
+
+          /*
+           * İlk 3 haberin detayını çek.
+           *
+           * Böylece Gemini'nin:
+           * get_news → news_id → get_news
+           * şeklinde ekstra turlar yapmasına gerek kalmaz.
+           */
+
+          for (
+            const newsId of newsIds
+          ) {
+
+            try {
+
+              console.log(
+                `MCP → get_news detay ${newsId}`
+              );
+
+              const detail =
+                await client.callTool({
                   name:
-                    call.name,
+                    "get_news",
 
-                  response: {
-                    error:
-                      error.message,
+                  arguments: {
+                    news_id:
+                      newsId,
                   },
+                });
+
+              collectedData.push({
+                tool:
+                  "get_news_detail",
+
+                arguments: {
+                  news_id:
+                    newsId,
                 },
-              },
-            ],
-          });
+
+                result:
+                  detail,
+              });
+
+            } catch (detailError) {
+
+              console.error(
+                `NEWS DETAIL ERROR ${newsId}:`,
+                detailError.message
+              );
+
+            }
+          }
         }
+
+      } catch (error) {
+
+        console.error(
+          `MCP ${selected.name} HATASI:`,
+          error.message
+        );
+
+        collectedData.push({
+          tool:
+            selected.name,
+
+          arguments:
+            selected.arguments || {},
+
+          error:
+            error.message,
+        });
       }
     }
 
-    throw new Error(
-      "Maksimum MCP adımına ulaşıldı."
-    );
+    /*
+     * =====================================
+     * 3. GEMINI:
+     * GERÇEK VERİLERDEN FİNAL ANALİZ
+     * =====================================
+     */
+
+    const finalPrompt = `
+Kullanıcı sorusu:
+
+"${question}"
+
+Aşağıdaki veriler MCP araçlarından GERÇEK olarak alınmıştır:
+
+${JSON.stringify(
+  collectedData,
+  null,
+  2
+)}
+
+Bu verileri kullanarak kullanıcıya Türkçe cevap ver.
+
+ÇOK ÖNEMLİ:
+
+- MCP verisinde olmayan hiçbir fiyat, oran, RSI,
+  MACD, destek, direnç, hedef veya haber detayı uydurma.
+- Verinin tarihi eskiyse bunu belirt.
+- Haberleri yorumlarken haber ile fiyat hareketi arasında
+  kesin nedensellik kurma.
+- KAP haberinin içeriğini doğrudan MCP verisinden değerlendir.
+- Analist hedeflerini analistin görüşü olarak belirt.
+- Analist konsensüsü ile kendi teknik yorumunu ayır.
+- MCP bir araçta hata verdiyse bunu gizleme.
+- Veriler yetersizse "bu veriyle kesin söylenemez" de.
+- Kullanıcı işlem fikri istiyorsa:
+  giriş, stop, TP1, TP2 ve risk mantığını yalnızca
+  gerçek verilere dayanarak oluştur.
+- Kesin kazanç veya fiyat garantisi verme.
+
+Cevabı net, profesyonel ve işlem odaklı hazırla.
+`;
+
+    const finalResponse =
+      await ai.models.generateContent({
+        model:
+          "gemini-2.5-flash",
+
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                text:
+                  finalPrompt,
+              },
+            ],
+          },
+        ],
+
+        config: {
+          systemInstruction:
+            SYSTEM_PROMPT,
+        },
+      });
+
+    return finalResponse.text;
 
   } finally {
 
