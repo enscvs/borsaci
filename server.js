@@ -2069,17 +2069,8 @@ const server =
 
       }
 
-if (
-  req.method === "GET" &&
-  pathname === "/chart.js"
-) {
 
-  const filePath =
-    path.join(
-      __dirname,
-      "public",
-      "chart.js"
-    );
+      
 
   return serveFile(
     res,
