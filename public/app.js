@@ -7,6 +7,7 @@ APP.JS
 
 "use strict";
 
+
 /*
 ========================================================
 GLOBAL STATE
@@ -14,14 +15,21 @@ GLOBAL STATE
 */
 
 let symbols = [];
+
 let selectedSymbol = null;
+
 let marketCache = {};
 
+let chartCache = {};
+
 let marketChart = null;
+
 let candleSeries = null;
+
 let volumeSeries = null;
 
 let chartResizeObserver = null;
+
 let chartInitialized = false;
 
 
@@ -62,7 +70,7 @@ const newsImpact =
   document.getElementById("newsImpact");
 
 const chartContainer =
-  document.getElementById("tradingview_chart");
+  document.getElementById("market_chart");
 
 
 /*
@@ -87,6 +95,7 @@ function updateClock() {
         second: "2-digit"
       }
     );
+
 }
 
 updateClock();
@@ -131,10 +140,13 @@ function formatNumber(
         decimals
     }
   );
+
 }
 
 
-function formatCompact(value) {
+function formatCompact(
+  value
+) {
 
   const number =
     Number(value);
@@ -157,7 +169,8 @@ function formatCompact(value) {
     return (
       number /
       1_000_000_000
-    ).toFixed(2) + "B";
+    ).toFixed(2) +
+      "B";
 
   }
 
@@ -169,7 +182,8 @@ function formatCompact(value) {
     return (
       number /
       1_000_000
-    ).toFixed(2) + "M";
+    ).toFixed(2) +
+      "M";
 
   }
 
@@ -181,7 +195,8 @@ function formatCompact(value) {
     return (
       number /
       1_000
-    ).toFixed(2) + "K";
+    ).toFixed(2) +
+      "K";
 
   }
 
@@ -189,6 +204,7 @@ function formatCompact(value) {
     number,
     0
   );
+
 }
 
 
@@ -204,6 +220,7 @@ function setText(
 
   element.innerText =
     value;
+
 }
 
 
@@ -213,7 +230,9 @@ ESCAPE
 ========================================================
 */
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(
     value ?? ""
@@ -238,6 +257,7 @@ function escapeHtml(value) {
       /'/g,
       "&#039;"
     );
+
 }
 
 
@@ -259,7 +279,69 @@ function normalizeSymbol(
     .replace(
       /^BIST:/,
       ""
+    )
+    .replace(
+      /\.IS$/,
+      ""
     );
+
+}
+
+
+/*
+========================================================
+YAHOO SYMBOL
+========================================================
+*/
+
+/*
+ * BIST:
+ *
+ * ASELS -> ASELS.IS
+ * THYAO -> THYAO.IS
+ * TUPRS -> TUPRS.IS
+ *
+ * Yahoo Finance BIST hisselerinde
+ * .IS suffix kullanıyor.
+ */
+
+function toYahooSymbol(
+  symbol
+) {
+
+  const clean =
+    normalizeSymbol(
+      symbol
+    );
+
+  if (!clean) return null;
+
+  /*
+   * BIST index
+   */
+
+  if (
+    clean === "XU100"
+  ) {
+
+    return "XU100.IS";
+
+  }
+
+  /*
+   * Zaten Yahoo formatıysa
+   */
+
+  if (
+    clean.endsWith(".IS")
+  ) {
+
+    return clean;
+
+  }
+
+  return `${clean}.IS`;
+
 }
 
 
@@ -280,9 +362,19 @@ function renderWatchlist() {
 
     watchlist.innerHTML = `
       <div class="watchlist-empty">
-        <div class="empty-icon">+</div>
-        <span>NO SYMBOLS LOADED</span>
-        <small>Add a symbol to begin.</small>
+
+        <div class="empty-icon">
+          +
+        </div>
+
+        <span>
+          NO SYMBOLS LOADED
+        </span>
+
+        <small>
+          Add a symbol to begin.
+        </small>
+
       </div>
     `;
 
@@ -301,12 +393,16 @@ function renderWatchlist() {
     ) => {
 
       const cached =
-        marketCache[symbol];
+        marketCache[
+          symbol
+        ];
+
 
       const price =
         cached?.quote?.price ??
         cached?.price ??
         cached?.lastPrice;
+
 
       const change =
         cached?.quote?.changePercent ??
@@ -318,6 +414,7 @@ function renderWatchlist() {
         document.createElement(
           "div"
         );
+
 
       row.className =
         "watch-row";
@@ -426,9 +523,11 @@ function renderWatchlist() {
               symbols[index];
 
             if (symbol) {
+
               selectSymbol(
                 symbol
               );
+
             }
 
           }
@@ -451,22 +550,32 @@ function renderWatchlist() {
 
             event.stopPropagation();
 
+
             const index =
               Number(
                 button.dataset.index
               );
 
+
             const removed =
               symbols[index];
 
+
             if (!removed) return;
+
 
             symbols.splice(
               index,
               1
             );
 
+
             delete marketCache[
+              removed
+            ];
+
+
+            delete chartCache[
               removed
             ];
 
@@ -522,6 +631,7 @@ function addSymbol() {
       "BIST sembolünü gir:\n\nÖrnek: ASELS"
     );
 
+
   if (!input) return;
 
 
@@ -529,6 +639,7 @@ function addSymbol() {
     normalizeSymbol(
       input
     );
+
 
   if (!symbol) return;
 
@@ -547,6 +658,7 @@ function addSymbol() {
 
 
   renderWatchlist();
+
 
   selectSymbol(
     symbol
@@ -579,6 +691,7 @@ async function selectSymbol(
     normalizeSymbol(
       symbol
     );
+
 
   if (!clean) return;
 
@@ -614,7 +727,22 @@ async function selectSymbol(
   clearChartOnly();
 
 
+  /*
+   * MARKET DATA
+   */
+
   await loadMarketData(
+    clean
+  );
+
+
+  /*
+   * CHART DATA
+   *
+   * AYRI KAYNAK
+   */
+
+  await loadChartData(
     clean
   );
 
@@ -636,6 +764,7 @@ async function loadMarketData(
       symbol
     );
 
+
   if (!clean) return;
 
 
@@ -653,12 +782,6 @@ async function loadMarketData(
 
   try {
 
-    /*
-    ----------------------------------------------------
-    CACHE
-    ----------------------------------------------------
-    */
-
     const cached =
       marketCache[
         clean
@@ -675,6 +798,7 @@ async function loadMarketData(
           cached.timestamp
         ).getTime();
 
+
       const age =
         Date.now() -
         timestamp;
@@ -687,7 +811,8 @@ async function loadMarketData(
       ) {
 
         updateDashboard(
-          cached
+          cached,
+          false
         );
 
 
@@ -704,12 +829,6 @@ async function loadMarketData(
 
     }
 
-
-    /*
-    ----------------------------------------------------
-    BACKEND REQUEST
-    ----------------------------------------------------
-    */
 
     const url =
       `/market?symbol=${encodeURIComponent(
@@ -785,25 +904,14 @@ async function loadMarketData(
     }
 
 
-    /*
-    ----------------------------------------------------
-    CACHE
-    ----------------------------------------------------
-    */
-
     marketCache[
       clean
     ] = data;
 
 
-    /*
-    ----------------------------------------------------
-    DASHBOARD
-    ----------------------------------------------------
-    */
-
     updateDashboard(
-      data
+      data,
+      false
     );
 
 
@@ -856,7 +964,8 @@ UPDATE DASHBOARD
 */
 
 function updateDashboard(
-  data
+  data,
+  updateChart = false
 ) {
 
   if (!data) return;
@@ -908,26 +1017,24 @@ function updateDashboard(
 
 
   /*
-   * KRİTİK:
-   * Backend'den history hangi seviyede
-   * gelirse gelsin normalize et.
+   * Grafik artık /market history
+   * kullanmıyor.
+   *
+   * Bu özellikle önemli.
    */
 
-  const history =
-    extractHistory(
-      data
+  if (updateChart) {
+
+    const history =
+      extractHistory(
+        data
+      );
+
+    updateChartData(
+      history
     );
 
-
-  console.log(
-    "BORSACI HISTORY:",
-    history
-  );
-
-
-  updateChart(
-    history
-  );
+  }
 
 
   updateNews(
@@ -951,6 +1058,13 @@ EXTRACT HISTORY
 ========================================================
 */
 
+/*
+ * Bu fonksiyonu tamamen silmek zorunda değiliz.
+ *
+ * Eski backend history döndürürse
+ * fallback olarak kullanılabilir.
+ */
+
 function extractHistory(
   data
 ) {
@@ -959,11 +1073,6 @@ function extractHistory(
     return [];
   }
 
-
-  /*
-   * Standart:
-   * data.history
-   */
 
   if (
     Array.isArray(
@@ -976,11 +1085,6 @@ function extractHistory(
   }
 
 
-  /*
-   * Bazı backend yapıları:
-   * data.data.history
-   */
-
   if (
     Array.isArray(
       data.data?.history
@@ -991,10 +1095,6 @@ function extractHistory(
 
   }
 
-
-  /*
-   * data.market.history
-   */
 
   if (
     Array.isArray(
@@ -1007,10 +1107,6 @@ function extractHistory(
   }
 
 
-  /*
-   * data.chart
-   */
-
   if (
     Array.isArray(
       data.chart
@@ -1022,10 +1118,6 @@ function extractHistory(
   }
 
 
-  /*
-   * data.candles
-   */
-
   if (
     Array.isArray(
       data.candles
@@ -1036,10 +1128,6 @@ function extractHistory(
 
   }
 
-
-  /*
-   * data.data.candles
-   */
 
   if (
     Array.isArray(
@@ -1186,10 +1274,6 @@ CHART INITIALIZATION
 
 function initMarketChart() {
 
-  /*
-   * İKİNCİ KEZ ÇALIŞMASINI ENGELLE
-   */
-
   if (
     chartInitialized &&
     marketChart
@@ -1203,7 +1287,7 @@ function initMarketChart() {
   if (!chartContainer) {
 
     console.error(
-      "BORSACI: tradingview_chart bulunamadı."
+      "BORSACI: market_chart bulunamadı."
     );
 
     return;
@@ -1225,13 +1309,9 @@ function initMarketChart() {
   }
 
 
-  /*
-   * Mobilde container'ın gerçek
-   * yüksekliği bazen 0 olabilir.
-   */
-
   let width =
     chartContainer.clientWidth;
+
 
   let height =
     chartContainer.clientHeight;
@@ -1259,10 +1339,6 @@ function initMarketChart() {
   }
 
 
-  /*
-   * Eski chart varsa kaldır.
-   */
-
   if (marketChart) {
 
     try {
@@ -1287,10 +1363,6 @@ function initMarketChart() {
   chartContainer.innerHTML =
     "";
 
-
-  /*
-   * CREATE CHART
-   */
 
   marketChart =
     LightweightCharts.createChart(
@@ -1393,7 +1465,7 @@ function initMarketChart() {
 
 
   /*
-   * CANDLE SERIES
+   * CANDLE
    */
 
   candleSeries =
@@ -1468,7 +1540,7 @@ function initMarketChart() {
 
 
   /*
-   * RESIZE
+   * RESIZE OBSERVER
    */
 
   if (
@@ -1563,7 +1635,7 @@ function initMarketChart() {
 
 
   console.log(
-    "BORSACI: Chart initialized."
+    "BORSACI: Market chart initialized."
   );
 
 }
@@ -1590,10 +1662,6 @@ function normalizeChartTime(
   }
 
 
-  /*
-   * NUMBER
-   */
-
   if (
     typeof value === "number" ||
     /^\d+$/.test(
@@ -1617,7 +1685,7 @@ function normalizeChartTime(
 
 
     /*
-     * milliseconds
+     * milliseconds -> seconds
      */
 
     if (
@@ -1643,10 +1711,6 @@ function normalizeChartTime(
       .trim();
 
 
-  /*
-   * YYYY-MM-DD
-   */
-
   if (
     /^\d{4}-\d{2}-\d{2}$/
       .test(
@@ -1658,10 +1722,6 @@ function normalizeChartTime(
 
   }
 
-
-  /*
-   * ISO / diğer tarih
-   */
 
   const date =
     new Date(
@@ -1679,11 +1739,6 @@ function normalizeChartTime(
 
   }
 
-
-  /*
-   * Lightweight Charts
-   * daily candle için YYYY-MM-DD
-   */
 
   return date
     .toISOString()
@@ -1736,11 +1791,415 @@ function getHistoryValue(
 
 /*
 ========================================================
-UPDATE CHART
+LOAD CHART DATA
 ========================================================
 */
 
-function updateChart(
+async function loadChartData(
+  symbol
+) {
+
+  const clean =
+    normalizeSymbol(
+      symbol
+    );
+
+
+  if (!clean) return;
+
+
+  /*
+   * CACHE
+   *
+   * Chart verisini 60 saniye
+   * cache'liyoruz.
+   */
+
+  const cached =
+    chartCache[
+      clean
+    ];
+
+
+  if (
+    cached &&
+    cached.timestamp
+  ) {
+
+    const age =
+      Date.now() -
+      cached.timestamp;
+
+
+    if (
+      age >= 0 &&
+      age < 60000 &&
+      Array.isArray(
+        cached.history
+      ) &&
+      cached.history.length > 0
+    ) {
+
+      updateChartData(
+        cached.history
+      );
+
+      return;
+
+    }
+
+  }
+
+
+  showEmptyChart(
+    "LOADING CHART",
+    "Fetching BIST market history..."
+  );
+
+
+  try {
+
+    /*
+     * ÖNEMLİ:
+     *
+     * Browser -> bizim server
+     *
+     * Bizim server -> Yahoo Finance
+     *
+     * Browser doğrudan Yahoo'ya gitmiyor.
+     */
+
+    const url =
+      `/chart?symbol=${encodeURIComponent(
+        clean
+      )}&range=1y&interval=1d`;
+
+
+    console.log(
+      "BORSACI CHART REQUEST:",
+      url
+    );
+
+
+    const response =
+      await fetch(
+        url,
+        {
+
+          method:
+            "GET",
+
+          headers: {
+
+            "Accept":
+              "application/json"
+
+          },
+
+          cache:
+            "no-store"
+
+        }
+      );
+
+
+    const text =
+      await response.text();
+
+
+    let data = null;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          text
+        );
+
+    } catch {
+
+      throw new Error(
+        `Chart endpoint JSON döndürmedi. HTTP ${response.status}`
+      );
+
+    }
+
+
+    if (
+      !response.ok
+    ) {
+
+      throw new Error(
+        data?.error ||
+        `Chart endpoint HTTP ${response.status}`
+      );
+
+    }
+
+
+    /*
+     * Backend'in history
+     * döndürmesini bekliyoruz.
+     */
+
+    const history =
+      extractChartHistory(
+        data
+      );
+
+
+    if (
+      !Array.isArray(
+        history
+      ) ||
+      history.length === 0
+    ) {
+
+      throw new Error(
+        "Yahoo Finance chart verisi boş."
+      );
+
+    }
+
+
+    chartCache[
+      clean
+    ] = {
+
+      timestamp:
+        Date.now(),
+
+      history
+
+    };
+
+
+    updateChartData(
+      history
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "BORSACI CHART ERROR:",
+      error
+    );
+
+
+    /*
+     * Eski /market history varsa
+     * ikinci şans olarak kullan.
+     */
+
+    const marketHistory =
+      extractHistory(
+        marketCache[
+          clean
+        ]
+      );
+
+
+    if (
+      marketHistory.length > 0
+    ) {
+
+      console.warn(
+        "BORSACI: Yahoo chart başarısız. /market history fallback kullanılıyor."
+      );
+
+
+      updateChartData(
+        marketHistory
+      );
+
+
+      return;
+
+    }
+
+
+    showEmptyChart(
+      "CHART DATA ERROR",
+      error.message
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+EXTRACT CHART HISTORY
+========================================================
+*/
+
+function extractChartHistory(
+  data
+) {
+
+  if (!data) {
+
+    return [];
+
+  }
+
+
+  /*
+   * Bizim /chart endpoint
+   */
+
+  if (
+    Array.isArray(
+      data.history
+    )
+  ) {
+
+    return data.history;
+
+  }
+
+
+  /*
+   * data.data.history
+   */
+
+  if (
+    Array.isArray(
+      data.data?.history
+    )
+  ) {
+
+    return data.data.history;
+
+  }
+
+
+  /*
+   * Yahoo raw response
+   *
+   * Eğer server raw Yahoo
+   * response döndürürse bunu da
+   * okuyabiliriz.
+   */
+
+  const result =
+    data.chart?.result?.[0];
+
+
+  if (
+    result
+  ) {
+
+    const timestamps =
+      result.timestamp || [];
+
+
+    const quote =
+      result.indicators
+        ?.quote?.[0];
+
+
+    if (
+      !quote ||
+      !Array.isArray(
+        timestamps
+      )
+    ) {
+
+      return [];
+
+    }
+
+
+    const history =
+      [];
+
+
+    for (
+      let i = 0;
+      i < timestamps.length;
+      i++
+    ) {
+
+      const time =
+        timestamps[i];
+
+
+      const open =
+        quote.open?.[i];
+
+
+      const high =
+        quote.high?.[i];
+
+
+      const low =
+        quote.low?.[i];
+
+
+      const close =
+        quote.close?.[i];
+
+
+      const volume =
+        quote.volume?.[i];
+
+
+      if (
+        !Number.isFinite(
+          Number(close)
+        )
+      ) {
+
+        continue;
+
+      }
+
+
+      history.push({
+
+        time,
+
+        open:
+          Number(open),
+
+        high:
+          Number(high),
+
+        low:
+          Number(low),
+
+        close:
+          Number(close),
+
+        volume:
+          Number(volume) || 0
+
+      });
+
+    }
+
+
+    return history;
+
+  }
+
+
+  return [];
+
+}
+
+
+/*
+========================================================
+UPDATE CHART DATA
+========================================================
+*/
+
+function updateChartData(
   history
 ) {
 
@@ -1767,17 +2226,13 @@ function updateChart(
 
     showEmptyChart(
       "NO CHART DATA",
-      "Backend history verisi döndürmedi."
+      "Chart provider history döndürmedi."
     );
 
     return;
 
   }
 
-
-  /*
-   * CANDLES
-   */
 
   const candles =
     [];
@@ -1863,10 +2318,6 @@ function updateChart(
       );
 
 
-    /*
-     * Close yoksa candle geçersiz.
-     */
-
     if (
       !Number.isFinite(
         close
@@ -1877,11 +2328,6 @@ function updateChart(
 
     }
 
-
-    /*
-     * Backend yalnızca close
-     * gönderirse güvenli fallback.
-     */
 
     if (
       !Number.isFinite(
@@ -1924,10 +2370,6 @@ function updateChart(
 
     }
 
-
-    /*
-     * OHLC güvenliği
-     */
 
     high =
       Math.max(
@@ -2047,7 +2489,7 @@ function updateChart(
 
     showEmptyChart(
       "CHART DATA ERROR",
-      "Backend history formatı okunamadı."
+      "OHLC verisi okunamadı."
     );
 
     return;
@@ -2056,7 +2498,7 @@ function updateChart(
 
 
   /*
-   * CANDLE SETDATA
+   * SET CANDLES
    */
 
   try {
@@ -2268,10 +2710,6 @@ function updateChart(
   }
 
 
-  /*
-   * EMPTY HIDDEN
-   */
-
   if (chartEmpty) {
 
     chartEmpty.style.display =
@@ -2382,8 +2820,15 @@ function updateNews(
 
     newsFeed.innerHTML = `
       <div class="empty-state">
-        <span>NO NEWS DATA</span>
-        <small>No recent news found.</small>
+
+        <span>
+          NO NEWS DATA
+        </span>
+
+        <small>
+          No recent news found.
+        </small>
+
       </div>
     `;
 
@@ -2479,8 +2924,13 @@ function updateNewsImpact(
   ) {
 
     newsImpact.innerHTML = `
-      <span>NO NEWS DATA</span>
-      <small>News impact will appear here.</small>
+      <span>
+        NO NEWS DATA
+      </span>
+
+      <small>
+        News impact will appear here.
+      </small>
     `;
 
     return;
@@ -2611,8 +3061,15 @@ function clearDashboard() {
 
     newsFeed.innerHTML = `
       <div class="empty-state">
-        <span>NO NEWS LOADED</span>
-        <small>Select a symbol.</small>
+
+        <span>
+          NO NEWS LOADED
+        </span>
+
+        <small>
+          Select a symbol.
+        </small>
+
       </div>
     `;
 
@@ -2622,11 +3079,52 @@ function clearDashboard() {
   if (newsImpact) {
 
     newsImpact.innerHTML = `
-      <span>NO NEWS DATA</span>
-      <small>News impact will appear here.</small>
+      <span>
+        NO NEWS DATA
+      </span>
+
+      <small>
+        News impact will appear here.
+      </small>
     `;
 
   }
+
+}
+
+
+/*
+========================================================
+INIT
+========================================================
+*/
+
+function initializeBorsaCI() {
+
+  initMarketChart();
+
+  renderWatchlist();
+
+  console.log(
+    "BORSACI: Application initialized."
+  );
+
+}
+
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    initializeBorsaCI
+  );
+
+} else {
+
+  initializeBorsaCI();
 
 }
 
@@ -2637,70 +3135,10 @@ AI ANALYSIS
 ========================================================
 */
 
-async function askBorsaCI() {
-
-  const question =
-    questionInput
-      ? questionInput.value.trim()
-      : "";
-
-
-  if (!question) {
-
-    if (responseBox) {
-
-      responseBox.innerText =
-        "ERROR: No input.";
-
-    }
-
-    return;
-
-  }
-
-
-  if (analyzeBtn) {
-
-    analyzeBtn.disabled =
-      true;
-
-    analyzeBtn.innerText =
-      "ANALYZING...";
-
-  }
-
-
-  if (responseBox) {
-
-    responseBox.innerText =
-      "Connecting to BorsaCI...\n\n" +
-      "Collecting MCP data...\n\n" +
-      "AI analysis in progress...";
-
-  }
-
-
-  try {
-
-    const response =
-      await fetch(
-        "/ask",
-        {
-
-          method:
-            "POST",
-
-          headers: {
-
-            "Content-Type":
-              "application/json"
-
-          },
-
-          body:
-            JSON.stringify({
-              question
-            })
-
-        }
-      );
+/*
+ * SENİN MEVCUT /ask KODUN BURADA
+ * AYNEN DEVAM EDEBİLİR.
+ *
+ * Chart sistemi /ask sistemine
+ * bağımlı değil.
+ */
