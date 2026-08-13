@@ -715,14 +715,41 @@ MARKET DATA
 */
 
 async function getMarketData(symbol) {
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "MCP MARKET CLIENT BAĞLANIYOR..."
+  );
+
+  console.log(
+    "MCP_URL:",
+    process.env.MCP_URL
+  );
+
+  console.log(
+    "========================================"
+  );
+
   const {
     client,
-    transport,
-  } =
-    await createMcpClient(
-      "borsaci-market-client"
+    transport
+  } = await createMcpClient(
+    "borsaci-market-client"
+  );
+
+  try {
+
+    console.log(
+      "MCP MARKET CLIENT BAĞLANDI"
     );
 
+    const cleanSymbol =
+      symbol
+        .trim()
+        .toUpperCase();
   try {
     const cleanSymbol =
       symbol
@@ -733,27 +760,42 @@ async function getMarketData(symbol) {
      * QUOTE
      */
 
-    let quoteRaw = null;
+    /*
+ * QUOTE
+ */
 
-    try {
-      quoteRaw =
-        normalizeMcpResult(
-          await callMcpTool(
-            client,
-            "get_quote",
-            {
-              symbol: cleanSymbol,
-              market: "bist",
-            }
-          )
-        );
-    } catch (error) {
-      console.error(
-        "QUOTE ERROR:",
-        error.message
-      );
-    }
+let quoteRaw = null;
 
+try {
+
+  console.log(
+    `MARKET → get_quote başlıyor: ${cleanSymbol}`
+  );
+
+  quoteRaw =
+    normalizeMcpResult(
+      await callMcpTool(
+        client,
+        "get_quote",
+        {
+          symbol: cleanSymbol,
+          market: "bist",
+        }
+      )
+    );
+
+  console.log(
+    "MARKET → get_quote tamamlandı"
+  );
+
+} catch (error) {
+
+  console.error(
+    "QUOTE ERROR:",
+    error.message
+  );
+
+}
     /*
      * TECHNICAL
      */
