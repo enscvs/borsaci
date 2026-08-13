@@ -4512,3 +4512,51 @@ window.addEventListener(
 
   }
 );
+
+async function loadWatchlist() {
+
+  try {
+
+    const response =
+      await fetch("/api/watchlist");
+
+    if (!response.ok) {
+      throw new Error(
+        "Watchlist alınamadı."
+      );
+    }
+
+    const data =
+      await response.json();
+
+    console.log(
+      "WATCHLIST →",
+      data
+    );
+
+    /*
+    Burada mevcut watchlist
+    ekrana basma fonksiyonunu çağıracağız.
+    */
+
+    if (
+      typeof renderWatchlist === "function"
+    ) {
+
+      renderWatchlist(
+        data.symbols || []
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      "WATCHLIST LOAD ERROR:",
+      error
+    );
+
+  }
+
+}
+loadWatchlist();
