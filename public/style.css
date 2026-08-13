@@ -1027,3 +1027,75 @@ textarea::placeholder {
   }
 
 }
+.watch-row {
+  display: flex;
+
+  align-items: stretch;
+
+  margin-bottom: 3px;
+
+  border:
+    1px solid var(--border);
+
+  background: #050905;
+}
+
+
+.symbol-button {
+  flex: 1;
+
+  padding: 11px 9px;
+
+  border: none;
+
+  background: transparent;
+
+  color: var(--text);
+
+  font-family: inherit;
+
+  font-size: 10px;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  cursor: pointer;
+}
+
+
+.symbol-button:hover {
+  background: #0b180c;
+
+  color: var(--green);
+}
+
+
+.symbol-price {
+  color: var(--muted);
+}
+
+
+.remove-symbol {
+  width: 28px;
+
+  border: none;
+
+  border-left:
+    1px solid var(--border);
+
+  background: transparent;
+
+  color: #365a3b;
+
+  font-family: inherit;
+
+  cursor: pointer;
+}
+
+
+.remove-symbol:hover {
+  color: var(--red);
+
+  background: #160707;
+}
