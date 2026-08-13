@@ -569,9 +569,9 @@ function renderWatchlist() {
     .forEach(
       button => {
 
-        button.addEventListener(
-          "click",
-          event => {
+       button.addEventListener(
+  "click",
+  async event => {
 
             event.stopPropagation();
 
@@ -593,7 +593,36 @@ function renderWatchlist() {
               index,
               1
             );
+try {
 
+  const response =
+    await fetch(
+      `/api/watchlist?symbol=${encodeURIComponent(removed)}`,
+      {
+        method: "DELETE"
+      }
+    );
+
+  if (!response.ok) {
+
+    throw new Error(
+      `Watchlist DELETE HTTP ${response.status}`
+    );
+
+  }
+
+} catch (error) {
+
+  console.error(
+    "BORSACI WATCHLIST DELETE ERROR:",
+    error
+  );
+
+  alert(
+    "Hisse watchlist'ten silinemedi."
+  );
+
+}
 
             delete marketCache[
               removed
@@ -648,40 +677,29 @@ function renderWatchlist() {
 ADD SYMBOL
 ========================================================
 */
-
-function addSymbol() {
+async function addSymbol() {
 
   const input =
     prompt(
       "BIST sembolünü gir:\n\nÖrnek: ASELS"
     );
 
-
   if (!input) return;
 
-
   const symbol =
-    normalizeSymbol(
-      input
-    );
-
+    normalizeSymbol(input);
 
   if (!symbol) return;
 
-
   if (
-    !symbols.includes(
-      symbol
-    )
+    symbols.includes(symbol)
   ) {
 
-    symbols.push(
-      symbol
-    );
+    selectSymbol(symbol);
+
+    return;
 
   }
-
-async function loadWatchlist() {
 
   try {
 
@@ -689,69 +707,58 @@ async function loadWatchlist() {
       await fetch(
         "/api/watchlist",
         {
-          method: "GET",
-          cache: "no-store"
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              symbol
+            })
         }
       );
 
     if (!response.ok) {
+
+      const error =
+        await response.json();
+
       throw new Error(
-        `Watchlist HTTP ${response.status}`
+        error.error ||
+        `HTTP ${response.status}`
       );
+
     }
 
     const data =
       await response.json();
 
-    if (
+    symbols =
       Array.isArray(data.symbols)
-    ) {
-
-      symbols =
-        data.symbols
-          .map(symbol =>
-            normalizeSymbol(symbol)
-          )
-          .filter(Boolean);
-
-    }
+        ? data.symbols
+        : symbols;
 
     renderWatchlist();
 
-    console.log(
-      "BORSACI WATCHLIST LOADED:",
-      symbols
-    );
+    await selectSymbol(symbol);
 
   } catch (error) {
 
     console.error(
-      "BORSACI WATCHLIST LOAD ERROR:",
+      "BORSACI WATCHLIST ADD ERROR:",
       error
+    );
+
+    alert(
+      "Hisse watchlist'e eklenemedi."
     );
 
   }
 
 }
-  renderWatchlist();
-
-
-  selectSymbol(
-    symbol
-  );
-
-}
-
-
-if (addSymbolBtn) {
-
-  addSymbolBtn.addEventListener(
-    "click",
-    addSymbol
-  );
-
-}
-
 
 /*
 ========================================================
@@ -3226,7 +3233,56 @@ let analysisRunning = false;
 RENDER AI RESPONSE
 ========================================================
 */
+async function loadWatchlist() {
 
+  try {
+
+    const response =
+      await fetch(
+        "/api/watchlist",
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        `Watchlist HTTP ${response.status}`
+      );
+
+    }
+
+    const data =
+      await response.json();
+
+    symbols =
+      Array.isArray(data.symbols)
+        ? data.symbols
+            .map(symbol =>
+              normalizeSymbol(symbol)
+            )
+            .filter(Boolean)
+        : [];
+
+    renderWatchlist();
+
+    console.log(
+      "BORSACI WATCHLIST:",
+      symbols
+    );
+
+  } catch (error) {
+
+    console.error(
+      "BORSACI WATCHLIST LOAD ERROR:",
+      error
+    );
+
+  }
+
+}
 function renderAIResponse(text) {
 
   if (!responseBox) return;
