@@ -3150,7 +3150,32 @@ console.log("🔥 ANALYZE BAŞLADI");
         );
 
       }
+/*
+========================================================
+FAVICON
+========================================================
+*/
 
+if (
+  req.method === "GET" &&
+  pathname === "/favicon.ico"
+) {
+
+  const filePath =
+    path.join(
+      __dirname,
+      "public",
+      "favicon.ico"
+    );
+
+
+  return serveFile(
+    res,
+    filePath,
+    "image/x-icon"
+  );
+
+}
 
       /*
       ========================================
