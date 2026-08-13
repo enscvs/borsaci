@@ -1653,3 +1653,6 @@ INITIAL
 */
 
 renderWatchlist();
+document.addEventListener("DOMContentLoaded", () => {
+  loadTradingViewChart("XU100");
+});
