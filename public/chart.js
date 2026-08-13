@@ -3,8 +3,7 @@
 BORSACI // CHART CONTROLS
 chart.js
 
-app.js'ye DOKUNMAZ.
-Chart kontrollerini kendi oluşturur.
+app.js içindeki chart sistemine bridge üzerinden bağlanır.
 ========================================================
 */
 
@@ -13,6 +12,7 @@ Chart kontrollerini kendi oluşturur.
 (function () {
 
   let activeRange = "1y";
+
   let activeInterval = "1d";
 
   let controlsInitialized = false;
@@ -30,8 +30,12 @@ Chart kontrollerini kendi oluşturur.
       return;
     }
 
+
     const chartContainer =
-      document.getElementById("market_chart");
+      document.getElementById(
+        "market_chart"
+      );
+
 
     if (!chartContainer) {
 
@@ -40,18 +44,48 @@ Chart kontrollerini kendi oluşturur.
       );
 
       return;
+
     }
 
 
     /*
-     * Chart'ın üstüne kontrol paneli
+     * Bridge henüz yüklenmemişse
+     * biraz bekle.
      */
 
+    if (
+      !window.BORSACI_CHART
+    ) {
+
+      console.warn(
+        "BORSACI CHART: app.js bridge henüz hazır değil."
+      );
+
+      setTimeout(
+        initChartControls,
+        300
+      );
+
+      return;
+
+    }
+
+
+    /*
+    ======================================================
+    PANEL
+    ======================================================
+    */
+
     const panel =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
+
 
     panel.id =
       "borsaciChartControls";
+
 
     panel.className =
       "borsaci-chart-controls";
@@ -228,10 +262,6 @@ Chart kontrollerini kendi oluşturur.
     `;
 
 
-    /*
-     * Chart container'ın ÖNÜNE koy.
-     */
-
     chartContainer.parentNode.insertBefore(
       panel,
       chartContainer
@@ -239,8 +269,10 @@ Chart kontrollerini kendi oluşturur.
 
 
     /*
-     * RANGE
-     */
+    ======================================================
+    RANGE
+    ======================================================
+    */
 
     panel
       .querySelectorAll(
@@ -251,10 +283,11 @@ Chart kontrollerini kendi oluşturur.
 
           button.addEventListener(
             "click",
-            () => {
+            async () => {
 
               activeRange =
                 button.dataset.range;
+
 
               setActiveButton(
                 panel,
@@ -262,7 +295,8 @@ Chart kontrollerini kendi oluşturur.
                 activeRange
               );
 
-              reloadChart();
+
+              await reloadChart();
 
             }
           );
@@ -272,8 +306,10 @@ Chart kontrollerini kendi oluşturur.
 
 
     /*
-     * INTERVAL
-     */
+    ======================================================
+    INTERVAL
+    ======================================================
+    */
 
     panel
       .querySelectorAll(
@@ -284,10 +320,11 @@ Chart kontrollerini kendi oluşturur.
 
           button.addEventListener(
             "click",
-            () => {
+            async () => {
 
               activeInterval =
                 button.dataset.interval;
+
 
               setActiveButton(
                 panel,
@@ -295,7 +332,8 @@ Chart kontrollerini kendi oluşturur.
                 activeInterval
               );
 
-              reloadChart();
+
+              await reloadChart();
 
             }
           );
@@ -305,8 +343,10 @@ Chart kontrollerini kendi oluşturur.
 
 
     /*
-     * INDICATORS
-     */
+    ======================================================
+    INDICATORS
+    ======================================================
+    */
 
     panel
       .querySelectorAll(
@@ -319,18 +359,19 @@ Chart kontrollerini kendi oluşturur.
             "click",
             () => {
 
-              button.classList.toggle(
-                "active"
-              );
+              const enabled =
+                button.classList.toggle(
+                  "active"
+                );
+
 
               const indicator =
                 button.dataset.indicator;
 
+
               toggleIndicator(
                 indicator,
-                button.classList.contains(
-                  "active"
-                )
+                enabled
               );
 
             }
@@ -370,10 +411,16 @@ Chart kontrollerini kendi oluşturur.
       .forEach(
         button => {
 
+          const isActive =
+            selector ===
+            "[data-range]"
+              ? button.dataset.range === value
+              : button.dataset.interval === value;
+
+
           button.classList.toggle(
             "active",
-            button.dataset.range === value ||
-            button.dataset.interval === value
+            isActive
           );
 
         }
@@ -388,23 +435,32 @@ Chart kontrollerini kendi oluşturur.
   ========================================================
   */
 
-  function reloadChart() {
+  async function reloadChart() {
+
+    /*
+     * Bridge kontrolü.
+     */
 
     if (
-      typeof window.loadChartData !==
-      "function"
+      !window.BORSACI_CHART
     ) {
 
-      console.warn(
-        "BORSACI CHART: loadChartData bulunamadı."
+      console.error(
+        "BORSACI CHART: Bridge bulunamadı."
       );
 
       return;
+
     }
 
 
+    /*
+     * Symbol kontrolü.
+     */
+
     const symbol =
-      window.selectedSymbol;
+      window.BORSACI_CHART
+        .getSelectedSymbol();
 
 
     if (!symbol) {
@@ -418,110 +474,38 @@ Chart kontrollerini kendi oluşturur.
     }
 
 
-    /*
-     * Burada mevcut app.js'nin
-     * chart cache'ini kullanmıyoruz.
-     *
-     * Çünkü farklı range / interval
-     * istediğimizde yeni veri lazım.
-     */
-
-
-    const url =
-      `/chart?symbol=${encodeURIComponent(
-        symbol
-      )}&range=${encodeURIComponent(
-        activeRange
-      )}&interval=${encodeURIComponent(
-        activeInterval
-      )}`;
-
+    console.log(
+      "================================"
+    );
 
     console.log(
-      "BORSACI CHART REQUEST:",
-      url
+      "BORSACI CHART CONTROL"
+    );
+
+    console.log(
+      "Symbol:",
+      symbol
+    );
+
+    console.log(
+      "Range:",
+      activeRange
+    );
+
+    console.log(
+      "Interval:",
+      activeInterval
+    );
+
+    console.log(
+      "================================"
     );
 
 
-    /*
-     * Şimdilik doğrudan endpoint'i
-     * test ediyoruz.
-     *
-     * Bir sonraki aşamada gelen veriyi
-     * mevcut LightweightCharts serisine
-     * bağlayacağız.
-     */
-
-    fetch(
-      url,
-      {
-        method: "GET",
-        headers: {
-          "Accept":
-            "application/json"
-        },
-        cache:
-          "no-store"
-      }
-    )
-      .then(
-        response => {
-
-          if (!response.ok) {
-
-            throw new Error(
-              `Chart HTTP ${response.status}`
-            );
-
-          }
-
-          return response.json();
-
-        }
-      )
-      .then(
-        data => {
-
-          console.log(
-            "BORSACI CHART DATA:",
-            data
-          );
-
-
-          /*
-           * Global app.js fonksiyonları
-           */
-
-          if (
-            typeof window.extractChartHistory ===
-            "function" &&
-            typeof window.updateChartData ===
-            "function"
-          ) {
-
-            const history =
-              window.extractChartHistory(
-                data
-              );
-
-            window.updateChartData(
-              history
-            );
-
-          }
-
-        }
-      )
-      .catch(
-        error => {
-
-          console.error(
-            "BORSACI CHART ERROR:",
-            error
-          );
-
-        }
-      );
+    await window.BORSACI_CHART.loadChart(
+      activeRange,
+      activeInterval
+    );
 
   }
 
@@ -538,17 +522,19 @@ Chart kontrollerini kendi oluşturur.
   ) {
 
     console.log(
-      `BORSACI INDICATOR: ${indicator}`,
+      "BORSACI INDICATOR:",
+      indicator,
       enabled
     );
 
 
     /*
-     * Şimdilik altyapıyı hazırlıyoruz.
+     * Şimdilik gerçek hesaplama yok.
      *
-     * SMA / EMA / Bollinger /
-     * RSI / MACD hesaplamalarını
-     * bir sonraki katmanda ekleyeceğiz.
+     * Burada sadece state tutuluyor.
+     *
+     * SMA / EMA / BB / RSI / MACD
+     * bir sonraki katmanda bağlanacak.
      */
 
   }
