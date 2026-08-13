@@ -16,6 +16,8 @@
 
   <div class="terminal">
 
+    <!-- HEADER -->
+
     <header class="topbar">
 
       <div class="brand">
@@ -37,25 +39,73 @@
     </header>
 
 
+    <!-- MARKET BAR -->
+
+    <div class="market-bar">
+
+      <div>
+        MARKET
+        <strong>BIST</strong>
+      </div>
+
+      <div>
+        STATUS
+        <strong class="online">
+          ● ONLINE
+        </strong>
+      </div>
+
+      <div>
+        DATA
+        <strong>WAITING</strong>
+      </div>
+
+    </div>
+
+
+    <!-- DASHBOARD -->
+
     <main class="dashboard">
+
 
       <!-- WATCHLIST -->
 
       <section class="panel watchlist">
 
         <div class="panel-title">
-          WATCHLIST
+
+          <span>WATCHLIST</span>
+
+          <button
+            class="mini-button"
+            id="addSymbolBtn"
+          >
+            + ADD
+          </button>
+
         </div>
 
-        <div class="empty-state">
 
-          <span>
-            NO SYMBOLS LOADED
-          </span>
+        <div
+          class="watchlist-body"
+          id="watchlist"
+        >
 
-          <small>
-            Waiting for market data...
-          </small>
+          <div class="watchlist-empty">
+
+            <div class="empty-icon">
+              +
+            </div>
+
+            <span>
+              NO SYMBOLS LOADED
+            </span>
+
+            <small>
+              Add a symbol to begin.
+            </small>
+
+          </div>
 
         </div>
 
@@ -67,18 +117,33 @@
       <section class="panel chart">
 
         <div class="panel-title">
-          MARKET CHART
-        </div>
 
-        <div class="empty-state">
+          <span>MARKET CHART</span>
 
-          <span>
-            NO MARKET DATA
+          <span
+            class="panel-status"
+            id="chartSymbol"
+          >
+            NO SYMBOL
           </span>
 
-          <small>
-            Chart will appear when data is available.
-          </small>
+        </div>
+
+        <div class="chart-area">
+
+          <div class="chart-grid"></div>
+
+          <div class="chart-empty">
+
+            <span>
+              NO MARKET DATA
+            </span>
+
+            <small>
+              Select a symbol to display the chart.
+            </small>
+
+          </div>
 
         </div>
 
@@ -90,7 +155,11 @@
       <section class="panel news">
 
         <div class="panel-title">
-          NEWS FEED
+          <span>NEWS FEED</span>
+
+          <span class="panel-status">
+            LIVE
+          </span>
         </div>
 
         <div class="empty-state">
@@ -116,53 +185,75 @@
           TECHNICAL ANALYSIS
         </div>
 
-        <div class="metric">
-          <span>RSI</span>
-          <strong>--</strong>
-        </div>
 
-        <div class="metric">
-          <span>MACD</span>
-          <strong>--</strong>
-        </div>
+        <div class="technical-grid">
 
-        <div class="metric">
-          <span>EMA 20</span>
-          <strong>--</strong>
-        </div>
+          <div class="indicator">
+            <span>RSI</span>
+            <strong>--</strong>
+          </div>
 
-        <div class="metric">
-          <span>EMA 50</span>
-          <strong>--</strong>
-        </div>
+          <div class="indicator">
+            <span>MACD</span>
+            <strong>--</strong>
+          </div>
 
-        <div class="metric">
-          <span>VOLUME</span>
-          <strong>--</strong>
+          <div class="indicator">
+            <span>EMA 20</span>
+            <strong>--</strong>
+          </div>
+
+          <div class="indicator">
+            <span>EMA 50</span>
+            <strong>--</strong>
+          </div>
+
+          <div class="indicator">
+            <span>VOLUME</span>
+            <strong>--</strong>
+          </div>
+
+          <div class="indicator">
+            <span>ATR</span>
+            <strong>--</strong>
+          </div>
+
         </div>
 
       </section>
 
 
-      <!-- AI -->
+      <!-- AI ANALYSIS -->
 
       <section class="panel ai-analysis">
 
         <div class="panel-title">
-          AI ANALYSIS
+
+          <span>AI ANALYSIS</span>
+
+          <span class="panel-status">
+            AI
+          </span>
+
         </div>
 
-        <div class="empty-state">
+
+        <div class="ai-empty">
+
+          <div class="ai-symbol">
+            AI
+          </div>
 
           <span>
             WAITING FOR ANALYSIS
           </span>
 
           <small>
-            Ask Borsacı something below.
+            Ask BorsaCI to analyze a symbol.
           </small>
 
         </div>
+
 
         <div class="ai-result">
 
@@ -209,17 +300,23 @@
       <section class="panel portfolio">
 
         <div class="panel-title">
-          PORTFOLIO
+
+          <span>PORTFOLIO</span>
+
+          <span class="panel-status">
+            EMPTY
+          </span>
+
         </div>
 
-        <div class="empty-state">
+        <div class="portfolio-empty">
 
           <span>
             NO PORTFOLIO DATA
           </span>
 
           <small>
-            Portfolio information will appear here.
+            Portfolio positions will appear here.
           </small>
 
         </div>
@@ -229,14 +326,20 @@
     </main>
 
 
-    <!-- COMMAND -->
+    <!-- COMMAND TERMINAL -->
 
     <section class="command-panel">
 
-      <div class="command-title">
+      <div class="command-header">
 
-        <span>&gt;</span>
-        ASK BORSACI
+        <div class="command-title">
+          <span>&gt;</span>
+          BORSACI TERMINAL
+        </div>
+
+        <div class="command-status">
+          READY
+        </div>
 
       </div>
 
@@ -272,19 +375,36 @@
     </section>
 
 
-    <!-- RESPONSE -->
+    <!-- AI RESPONSE -->
 
     <section
       class="response-panel panel"
     >
 
       <div class="panel-title">
-        AI RESPONSE
+        <span>AI RESPONSE</span>
+
+        <span class="panel-status">
+          OUTPUT
+        </span>
       </div>
 
       <pre id="response">Waiting for input...</pre>
 
     </section>
+
+
+    <!-- FOOTER -->
+
+    <footer class="footer">
+
+      BORSACI AI TERMINAL
+      <span>•</span>
+      MCP DATA ENGINE
+      <span>•</span>
+      SYSTEM READY
+
+    </footer>
 
   </div>
 
