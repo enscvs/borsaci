@@ -1,84 +1,63 @@
 /*
 ========================================================
-BORSACI // ADVANCED CHART
-chart.js
-
-IMPORTANT:
-- app.js'e dokunmaz.
-- Mevcut chart'ı devralır.
-- Zaman dilimi
-- Interval
-- EMA
-- SMA
-- Bollinger Bands
-- RSI
-- MACD
-- Basit çizim araçları
+BORSACI // CHART MODULE
 ========================================================
 */
 
 "use strict";
 
-(() => {
+let chartTimeframe = "1d";
+let chartIndicator = "none";
 
-  /*
-  ========================================================
-  STATE
-  ========================================================
-  */
-
-  let chart = null;
-
-  let candleSeries = null;
-
-  let volumeSeries = null;
-
-  let indicatorSeries = {};
-
-  let currentSymbol = null;
-
-  let currentRange = "1y";
-
-  let currentInterval = "1d";
-
-  let chartData = [];
-
-  let activeDrawing = null;
-
-  let drawingMode = null;
-
-  let drawings = [];
-
-  let canvas = null;
-
-  let canvasCtx = null;
-
-  let resizeObserver = null;
-
-  let loading = false;
+let chartToolbar = null;
 
 
-  /*
-  ========================================================
-  ELEMENT
-  ========================================================
-  */
+/*
+========================================================
+WAIT FOR APP CHART
+========================================================
+*/
 
-  const container =
+function waitForMarketChart() {
+
+  if (
+    typeof marketChart !== "undefined" &&
+    marketChart
+  ) {
+
+    createChartToolbar();
+
+    return;
+
+  }
+
+  setTimeout(
+    waitForMarketChart,
+    300
+  );
+
+}
+
+
+/*
+========================================================
+CREATE TOOLBAR
+========================================================
+*/
+
+function createChartToolbar() {
+
+  if (chartToolbar) return;
+
+  const chartContainer =
     document.getElementById(
       "market_chart"
     );
 
-  const symbolElement =
-    document.getElementById(
-      "chartSymbol"
-    );
+  if (!chartContainer) {
 
-
-  if (!container) {
-
-    console.warn(
-      "BORSACI CHART.JS: #market_chart bulunamadı."
+    console.error(
+      "CHART.JS: #market_chart bulunamadı."
     );
 
     return;
@@ -87,3370 +66,1620 @@ IMPORTANT:
 
 
   /*
-  ========================================================
-  HELPERS
-  ========================================================
-  */
-
-  function normalizeSymbol(symbol) {
-
-    if (!symbol) return null;
-
-    return String(symbol)
-      .trim()
-      .toUpperCase()
-      .replace(/^BIST:/, "")
-      .replace(/\.IS$/, "");
-
-  }
-
-
-  function escapeHtml(value) {
-
-    return String(
-      value ?? ""
-    )
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-
-  }
-
-
-  /*
-  ========================================================
-  UI
-  ========================================================
-  */
-
-  function createChartUI() {
-
-    const parent =
-      container.parentElement;
-
-    if (!parent) return;
-
-
-    /*
-     * Daha önce oluşturulduysa tekrar oluşturma.
-     */
-
-    if (
-      document.getElementById(
-        "borsaciChartControls"
-      )
-    ) {
-
-      return;
-
-    }
-
-
-    const controls =
-      document.createElement(
-        "div"
-      );
-
-
-    controls.id =
-      "borsaciChartControls";
-
-
-    controls.innerHTML = `
-
-      <div class="bc-toolbar">
-
-        <div class="bc-toolbar-group">
-
-          <span class="bc-label">
-            RANGE
-          </span>
-
-          <button data-range="1d">
-            1D
-          </button>
-
-          <button data-range="5d">
-            5D
-          </button>
-
-          <button data-range="1mo">
-            1M
-          </button>
-
-          <button data-range="3mo">
-            3M
-          </button>
-
-          <button data-range="6mo">
-            6M
-          </button>
-
-          <button
-            data-range="ytd"
-          >
-            YTD
-          </button>
-
-          <button
-            data-range="1y"
-            class="active"
-          >
-            1Y
-          </button>
-
-          <button data-range="5y">
-            5Y
-          </button>
-
-          <button data-range="max">
-            MAX
-          </button>
-
-        </div>
-
-
-        <div class="bc-toolbar-group">
-
-          <span class="bc-label">
-            INTERVAL
-          </span>
-
-          <button
-            data-interval="5m"
-          >
-            5m
-          </button>
-
-          <button
-            data-interval="15m"
-          >
-            15m
-          </button>
-
-          <button
-            data-interval="30m"
-          >
-            30m
-          </button>
-
-          <button
-            data-interval="1h"
-          >
-            1H
-          </button>
-
-          <button
-            data-interval="1d"
-            class="active"
-          >
-            1D
-          </button>
-
-          <button
-            data-interval="1wk"
-          >
-            1W
-          </button>
-
-          <button
-            data-interval="1mo"
-          >
-            1MO
-          </button>
-
-        </div>
-
-
-        <div class="bc-toolbar-group">
-
-          <span class="bc-label">
-            INDICATORS
-          </span>
-
-          <button
-            data-indicator="ema20"
-          >
-            EMA20
-          </button>
-
-          <button
-            data-indicator="ema50"
-          >
-            EMA50
-          </button>
-
-          <button
-            data-indicator="ema200"
-          >
-            EMA200
-          </button>
-
-          <button
-            data-indicator="sma20"
-          >
-            SMA20
-          </button>
-
-          <button
-            data-indicator="sma50"
-          >
-            SMA50
-          </button>
-
-          <button
-            data-indicator="bb"
-          >
-            BB
-          </button>
-
-          <button
-            data-indicator="rsi"
-          >
-            RSI
-          </button>
-
-          <button
-            data-indicator="macd"
-          >
-            MACD
-          </button>
-
-        </div>
-
-
-        <div class="bc-toolbar-group">
-
-          <span class="bc-label">
-            DRAW
-          </span>
-
-          <button
-            data-draw="trend"
-          >
-            TREND
-          </button>
-
-          <button
-            data-draw="horizontal"
-          >
-            H-LINE
-          </button>
-
-          <button
-            data-draw="vertical"
-          >
-            V-LINE
-          </button>
-
-          <button
-            data-draw="clear"
-          >
-            CLEAR
-          </button>
-
-        </div>
-
-      </div>
-
-      <div
-        id="borsaciChartStatus"
-        class="bc-chart-status"
-      >
-        READY
-      </div>
-
-    `;
-
-
-    parent.insertBefore(
-      controls,
-      container
+   * Toolbar
+   */
+
+  chartToolbar =
+    document.createElement(
+      "div"
     );
 
 
-    /*
-     * CSS
-     */
-
-    injectCSS();
+  chartToolbar.id =
+    "chartToolbar";
 
 
-    /*
-     * RANGE
-     */
+  chartToolbar.innerHTML = `
 
-    controls
-      .querySelectorAll(
-        "[data-range]"
-      )
-      .forEach(
-        button => {
+    <div class="chart-toolbar-section">
 
-          button.addEventListener(
-            "click",
-            () => {
+      <span class="chart-toolbar-label">
+        TIMEFRAME
+      </span>
 
-              currentRange =
-                button.dataset.range;
+      <button
+        class="chart-tool active"
+        data-range="1d"
+      >
+        1D
+      </button>
 
-              setActiveButton(
-                "[data-range]",
-                button
+      <button
+        class="chart-tool"
+        data-range="5d"
+      >
+        5D
+      </button>
+
+      <button
+        class="chart-tool"
+        data-range="1mo"
+      >
+        1M
+      </button>
+
+      <button
+        class="chart-tool"
+        data-range="3mo"
+      >
+        3M
+      </button>
+
+      <button
+        class="chart-tool"
+        data-range="6mo"
+      >
+        6M
+      </button>
+
+      <button
+        class="chart-tool"
+        data-range="1y"
+      >
+        1Y
+      </button>
+
+      <button
+        class="chart-tool"
+        data-range="5y"
+      >
+        5Y
+      </button>
+
+    </div>
+
+
+    <div class="chart-toolbar-divider"></div>
+
+
+    <div class="chart-toolbar-section">
+
+      <span class="chart-toolbar-label">
+        INDICATOR
+      </span>
+
+      <button
+        class="chart-indicator active"
+        data-indicator="none"
+      >
+        NONE
+      </button>
+
+      <button
+        class="chart-indicator"
+        data-indicator="sma20"
+      >
+        SMA 20
+      </button>
+
+      <button
+        class="chart-indicator"
+        data-indicator="ema20"
+      >
+        EMA 20
+      </button>
+
+      <button
+        class="chart-indicator"
+        data-indicator="ema50"
+      >
+        EMA 50
+      </button>
+
+      <button
+        class="chart-indicator"
+        data-indicator="ema200"
+      >
+        EMA 200
+      </button>
+
+      <button
+        class="chart-indicator"
+        data-indicator="bb"
+      >
+        BB
+      </button>
+
+    </div>
+
+  `;
+
+
+  /*
+   * Chart'ın üstüne koy
+   */
+
+  chartContainer.parentElement.insertBefore(
+    chartToolbar,
+    chartContainer
+  );
+
+
+  /*
+   * CSS
+   */
+
+  injectChartCSS();
+
+
+  /*
+   * Events
+   */
+
+  bindChartToolbar();
+
+
+  console.log(
+    "BORSACI: Chart toolbar initialized."
+  );
+
+}
+
+
+/*
+========================================================
+TIMEFRAME EVENTS
+========================================================
+*/
+
+function bindChartToolbar() {
+
+  chartToolbar
+    .querySelectorAll(
+      ".chart-tool"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const range =
+              button.dataset.range;
+
+            if (!range) return;
+
+
+            chartTimeframe =
+              range;
+
+
+            chartToolbar
+              .querySelectorAll(
+                ".chart-tool"
+              )
+              .forEach(
+                item => {
+
+                  item.classList.remove(
+                    "active"
+                  );
+
+                }
               );
 
-              loadChart();
 
-            }
-          );
-
-        }
-      );
+            button.classList.add(
+              "active"
+            );
 
 
-    /*
-     * INTERVAL
-     */
+            reloadChart();
 
-    controls
-      .querySelectorAll(
-        "[data-interval]"
-      )
-      .forEach(
-        button => {
+          }
+        );
 
-          button.addEventListener(
-            "click",
-            () => {
+      }
+    );
 
-              currentInterval =
-                button.dataset.interval;
 
-              setActiveButton(
-                "[data-interval]",
-                button
+  /*
+   * INDICATORS
+   */
+
+  chartToolbar
+    .querySelectorAll(
+      ".chart-indicator"
+    )
+    .forEach(
+      button => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const indicator =
+              button.dataset.indicator;
+
+
+            chartIndicator =
+              indicator;
+
+
+            chartToolbar
+              .querySelectorAll(
+                ".chart-indicator"
+              )
+              .forEach(
+                item => {
+
+                  item.classList.remove(
+                    "active"
+                  );
+
+                }
               );
 
-              loadChart();
 
-            }
-          );
-
-        }
-      );
+            button.classList.add(
+              "active"
+            );
 
 
-    /*
-     * INDICATORS
-     */
+            applyIndicator();
 
-    controls
-      .querySelectorAll(
-        "[data-indicator]"
-      )
-      .forEach(
-        button => {
+          }
+        );
 
-          button.addEventListener(
-            "click",
-            () => {
+      }
+    );
 
-              toggleIndicator(
-                button.dataset.indicator,
-                button
-              );
-
-            }
-          );
-
-        }
-      );
+}
 
 
-    /*
-     * DRAWING
-     */
+/*
+========================================================
+RELOAD CHART
+========================================================
+*/
 
-    controls
-      .querySelectorAll(
-        "[data-draw]"
-      )
-      .forEach(
-        button => {
+async function reloadChart() {
 
-          button.addEventListener(
-            "click",
-            () => {
-
-              const type =
-                button.dataset.draw;
-
-              if (
-                type === "clear"
-              ) {
-
-                clearDrawings();
-
-                return;
-
-              }
-
-              activateDrawing(
-                type,
-                button
-              );
-
-            }
-          );
-
-        }
-      );
-
-  }
-
-
-  function setActiveButton(
-    selector,
-    selected
+  if (
+    typeof selectedSymbol ===
+    "undefined" ||
+    !selectedSymbol
   ) {
 
-    document
-      .querySelectorAll(
-        `#borsaciChartControls ${selector}`
-      )
-      .forEach(
-        button => {
-
-          button.classList.remove(
-            "active"
-          );
-
-        }
-      );
-
-
-    selected.classList.add(
-      "active"
-    );
+    return;
 
   }
 
 
-  /*
-  ========================================================
-  CSS
-  ========================================================
-  */
-
-  function injectCSS() {
-
-    if (
-      document.getElementById(
-        "borsaciChartJSStyle"
-      )
-    ) {
-
-      return;
-
-    }
-
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-
-    style.id =
-      "borsaciChartJSStyle";
-
-
-    style.textContent = `
-
-      #borsaciChartControls {
-        width: 100%;
-        margin-bottom: 8px;
-      }
-
-      .bc-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 7px;
-        align-items: center;
-        padding: 8px;
-        background: #0b0f14;
-        border: 1px solid #1d2630;
-        border-radius: 8px;
-      }
-
-      .bc-toolbar-group {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-wrap: wrap;
-      }
-
-      .bc-label {
-        color: #697586;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: .08em;
-        margin-right: 3px;
-      }
-
-      .bc-toolbar button {
-        appearance: none;
-        border: 1px solid #252e39;
-        background: #10161d;
-        color: #8d99a8;
-        border-radius: 4px;
-        padding: 5px 8px;
-        font-size: 10px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: .15s ease;
-      }
-
-      .bc-toolbar button:hover {
-        border-color: #465260;
-        color: #d7dde5;
-      }
-
-      .bc-toolbar button.active {
-        background: #1b2632;
-        color: #ffffff;
-        border-color: #617080;
-      }
-
-      .bc-chart-status {
-        font-size: 9px;
-        color: #647181;
-        padding: 4px 2px;
-        min-height: 13px;
-      }
-
-      @media (max-width: 700px) {
-
-        .bc-toolbar {
-          gap: 5px;
-        }
-
-        .bc-toolbar-group {
-          width: 100%;
-        }
-
-        .bc-toolbar button {
-          padding: 6px 8px;
-        }
-
-        .bc-label {
-          min-width: 48px;
-        }
-
-      }
-
-    `;
-
-
-    document.head.appendChild(
-      style
-    );
-
-  }
-
-
-  /*
-  ========================================================
-  STATUS
-  ========================================================
-  */
-
-  function setStatus(text) {
-
-    const element =
-      document.getElementById(
-        "borsaciChartStatus"
-      );
-
-    if (!element) return;
-
-    element.innerText =
-      text;
-
-  }
-
-
-  /*
-  ========================================================
-  DESTROY OLD CHART
-  ========================================================
-  */
-
-  function destroyChart() {
-
-    if (
-      resizeObserver
-    ) {
-
-      try {
-        resizeObserver.disconnect();
-      } catch {}
-
-      resizeObserver =
-        null;
-
-    }
-
-
-    if (chart) {
-
-      try {
-        chart.remove();
-      } catch {}
-
-    }
-
-
-    chart =
-      null;
-
-    candleSeries =
-      null;
-
-    volumeSeries =
-      null;
-
-    indicatorSeries =
-      {};
-
-  }
-
-
-  /*
-  ========================================================
-  INIT CHART
-  ========================================================
-  */
-
-  function initChart() {
-
-    if (
-      typeof LightweightCharts ===
-      "undefined"
-    ) {
-
-      console.error(
-        "BORSACI CHART.JS: LightweightCharts yok."
-      );
-
-      return false;
-
-    }
-
-
-    destroyChart();
-
-
-    /*
-     * Eski app.js chart DOM'unu
-     * tamamen temizliyoruz.
-     */
-
-    container.innerHTML =
-      "";
-
-
-    const width =
-      Math.max(
-        container.clientWidth,
-        300
-      );
-
-
-    const height =
-      Math.max(
-        container.clientHeight,
-        420
-      );
-
-
-    chart =
-      LightweightCharts.createChart(
-        container,
-        {
-
-          width,
-
-          height,
-
-          layout: {
-
-            background: {
-
-              type:
-                "solid",
-
-              color:
-                "#0b0f14"
-
-            },
-
-            textColor:
-              "#9aa4b2"
-
-          },
-
-          grid: {
-
-            vertLines: {
-
-              color:
-                "#151b23"
-
-            },
-
-            horzLines: {
-
-              color:
-                "#151b23"
-
-            }
-
-          },
-
-          crosshair: {
-
-            mode:
-              LightweightCharts
-                .CrosshairMode
-                .Normal
-
-          },
-
-          rightPriceScale: {
-
-            borderColor:
-              "#252c36"
-
-          },
-
-          timeScale: {
-
-            borderColor:
-              "#252c36",
-
-            timeVisible:
-              true,
-
-            secondsVisible:
-              false
-
-          },
-
-          handleScroll: {
-
-            mouseWheel:
-              true,
-
-            pressedMouseMove:
-              true
-
-          },
-
-          handleScale: {
-
-            axisPressedMouseMove:
-              true,
-
-            mouseWheel:
-              true,
-
-            pinch:
-              true
-
-          }
-
-        }
-      );
-
-
-    candleSeries =
-      chart.addSeries(
-        LightweightCharts.CandlestickSeries,
-        {
-
-          upColor:
-            "#26a69a",
-
-          downColor:
-            "#ef5350",
-
-          borderUpColor:
-            "#26a69a",
-
-          borderDownColor:
-            "#ef5350",
-
-          wickUpColor:
-            "#26a69a",
-
-          wickDownColor:
-            "#ef5350"
-
-        }
-      );
-
-
-    volumeSeries =
-      chart.addSeries(
-        LightweightCharts.HistogramSeries,
-        {
-
-          priceFormat: {
-
-            type:
-              "volume"
-
-          },
-
-          priceScaleId:
-            "volume"
-
-        }
-      );
-
-
-    chart
-      .priceScale(
-        "volume"
-      )
-      .applyOptions({
-
-        scaleMargins: {
-
-          top:
-            0.82,
-
-          bottom:
-            0
-
-        }
-
-      });
-
-
-    /*
-     * Resize
-     */
-
-    if (
-      typeof ResizeObserver !==
-      "undefined"
-    ) {
-
-      resizeObserver =
-        new ResizeObserver(
-          entries => {
-
-            const entry =
-              entries[0];
-
-            if (
-              !entry ||
-              !chart
-            ) return;
-
-            const rect =
-              entry.contentRect;
-
-            if (
-              rect.width <= 0 ||
-              rect.height <= 0
-            ) {
-
-              return;
-
-            }
-
-            try {
-
-              chart.applyOptions({
-
-                width:
-                  Math.floor(
-                    rect.width
-                  ),
-
-                height:
-                  Math.floor(
-                    rect.height
-                  )
-
-              });
-
-              redrawCanvas();
-
-            } catch {}
-
-          }
-        );
-
-
-      resizeObserver.observe(
-        container
-      );
-
-    }
-
-
-    /*
-     * Canvas drawing layer
-     */
-
-    createDrawingCanvas();
-
-
-    return true;
-
-  }
-
-
-  /*
-  ========================================================
-  LOAD CHART
-  ========================================================
-  */
-
-  async function loadChart() {
-
-    if (loading) return;
-
-    if (!currentSymbol) {
-
-      currentSymbol =
-        normalizeSymbol(
-          symbolElement?.innerText
-        );
-
-    }
-
-
-    if (!currentSymbol) {
-
-      setStatus(
-        "NO SYMBOL"
-      );
-
-      return;
-
-    }
-
-
-    loading =
-      true;
-
-
-    setStatus(
-      `LOADING ${currentSymbol} • ${currentRange} • ${currentInterval}`
+  const container =
+    document.getElementById(
+      "market_chart"
     );
 
 
-    try {
-
-      const url =
-        `/chart?symbol=${encodeURIComponent(
-          currentSymbol
-        )}&range=${encodeURIComponent(
-          currentRange
-        )}&interval=${encodeURIComponent(
-          currentInterval
-        )}`;
+  if (!container) return;
 
 
-      console.log(
-        "BORSACI ADVANCED CHART →",
-        url
+  showChartLoading();
+
+
+  try {
+
+    const url =
+      `/chart?symbol=${encodeURIComponent(
+        selectedSymbol
+      )}&range=${encodeURIComponent(
+        chartTimeframe
+      )}&interval=1d`;
+
+
+    console.log(
+      "CHART.JS REQUEST:",
+      url
+    );
+
+
+    const response =
+      await fetch(
+        url,
+        {
+          cache:
+            "no-store"
+        }
       );
 
 
-      const response =
-        await fetch(
-          url,
-          {
-
-            method:
-              "GET",
-
-            headers: {
-
-              "Accept":
-                "application/json"
-
-            },
-
-            cache:
-              "no-store"
-
-          }
-        );
+    const data =
+      await response.json();
 
 
-      const text =
-        await response.text();
+    if (!response.ok) {
 
-
-      let data;
-
-
-      try {
-
-        data =
-          JSON.parse(
-            text
-          );
-
-      } catch {
-
-        throw new Error(
-          `Chart JSON değil. HTTP ${response.status}`
-        );
-
-      }
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          data?.error ||
-          `Chart HTTP ${response.status}`
-        );
-
-      }
-
-
-      const history =
-        extractHistory(
-          data
-        );
-
-
-      if (
-        history.length === 0
-      ) {
-
-        throw new Error(
-          "Bu zaman dilimi için veri bulunamadı."
-        );
-
-      }
-
-
-      chartData =
-        normalizeHistory(
-          history
-        );
-
-
-      drawChartData();
-
-
-      setStatus(
-        `${currentSymbol} • ${chartData.length} CANDLES • ${currentRange.toUpperCase()} • ${currentInterval}`
+      throw new Error(
+        data?.error ||
+        `HTTP ${response.status}`
       );
-
-
-    } catch (error) {
-
-      console.error(
-        "BORSACI ADVANCED CHART ERROR:",
-        error
-      );
-
-
-      setStatus(
-        `ERROR: ${error.message}`
-      );
-
-
-    } finally {
-
-      loading =
-        false;
-
-    }
-
-  }
-
-
-  /*
-  ========================================================
-  EXTRACT HISTORY
-  ========================================================
-  */
-
-  function extractHistory(data) {
-
-    if (!data) return [];
-
-
-    if (
-      Array.isArray(
-        data.history
-      )
-    ) {
-
-      return data.history;
-
-    }
-
-
-    if (
-      Array.isArray(
-        data.data?.history
-      )
-    ) {
-
-      return data.data.history;
-
-    }
-
-
-    const result =
-      data.chart?.result?.[0];
-
-
-    if (!result) {
-
-      return [];
-
-    }
-
-
-    const timestamps =
-      result.timestamp || [];
-
-
-    const quote =
-      result.indicators
-        ?.quote?.[0];
-
-
-    if (!quote) {
-
-      return [];
 
     }
 
 
     const history =
-      [];
+      extractChartHistoryLocal(
+        data
+      );
 
-
-    for (
-      let i = 0;
-      i < timestamps.length;
-      i++
-    ) {
-
-      const close =
-        Number(
-          quote.close?.[i]
-        );
-
-
-      if (
-        !Number.isFinite(
-          close
-        )
-      ) {
-
-        continue;
-
-      }
-
-
-      history.push({
-
-        time:
-          timestamps[i],
-
-        open:
-          Number(
-            quote.open?.[i]
-          ),
-
-        high:
-          Number(
-            quote.high?.[i]
-          ),
-
-        low:
-          Number(
-            quote.low?.[i]
-          ),
-
-        close,
-
-        volume:
-          Number(
-            quote.volume?.[i]
-          ) || 0
-
-      });
-
-    }
-
-
-    return history;
-
-  }
-
-
-  /*
-  ========================================================
-  TIME
-  ========================================================
-  */
-
-  function normalizeTime(value) {
 
     if (
-      typeof value === "number"
+      !history ||
+      history.length === 0
     ) {
 
-      if (
-        value > 10000000000
-      ) {
-
-        return Math.floor(
-          value / 1000
-        );
-
-      }
-
-      return Math.floor(
-        value
+      throw new Error(
+        "Chart verisi boş."
       );
 
     }
 
 
-    const date =
-      new Date(
-        value
-      );
+    drawChartHistory(
+      history
+    );
 
 
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
+  } catch (error) {
 
-      return null;
-
-    }
-
-
-    return Math.floor(
-      date.getTime() / 1000
+    console.error(
+      "CHART.JS ERROR:",
+      error
     );
 
   }
 
+}
 
-  /*
-  ========================================================
-  NORMALIZE HISTORY
-  ========================================================
-  */
 
-  function normalizeHistory(
+/*
+========================================================
+EXTRACT HISTORY
+========================================================
+*/
+
+function extractChartHistoryLocal(
+  data
+) {
+
+  if (!data) return [];
+
+
+  if (
+    Array.isArray(
+      data.history
+    )
+  ) {
+
+    return data.history;
+
+  }
+
+
+  if (
+    Array.isArray(
+      data.data?.history
+    )
+  ) {
+
+    return data.data.history;
+
+  }
+
+
+  const result =
+    data.chart?.result?.[0];
+
+
+  if (!result) return [];
+
+
+  const timestamps =
+    result.timestamp || [];
+
+
+  const quote =
+    result.indicators
+      ?.quote?.[0];
+
+
+  if (!quote) return [];
+
+
+  const history = [];
+
+
+  for (
+    let i = 0;
+    i < timestamps.length;
+    i++
+  ) {
+
+    const close =
+      Number(
+        quote.close?.[i]
+      );
+
+
+    if (
+      !Number.isFinite(
+        close
+      )
+    ) {
+
+      continue;
+
+    }
+
+
+    history.push({
+
+      time:
+        timestamps[i],
+
+      open:
+        Number(
+          quote.open?.[i]
+        ),
+
+      high:
+        Number(
+          quote.high?.[i]
+        ),
+
+      low:
+        Number(
+          quote.low?.[i]
+        ),
+
+      close,
+
+      volume:
+        Number(
+          quote.volume?.[i]
+        ) || 0
+
+    });
+
+  }
+
+
+  return history;
+
+}
+
+
+/*
+========================================================
+DRAW
+========================================================
+*/
+
+function drawChartHistory(
+  history
+) {
+
+  if (
+    typeof candleSeries ===
+    "undefined" ||
+    !candleSeries
+  ) {
+
+    console.warn(
+      "CHART.JS: candleSeries hazır değil."
+    );
+
+    return;
+
+  }
+
+
+  const candles =
     history
-  ) {
-
-    const result =
-      [];
-
-
-    for (
-      const item of history
-    ) {
-
-      const time =
-        normalizeTime(
-          item.time ??
-          item.timestamp ??
-          item.date ??
-          item.datetime
-        );
-
-
-      const close =
-        Number(
-          item.close ??
-          item.c
-        );
-
-
-      if (
-        !time ||
-        !Number.isFinite(close)
-      ) {
-
-        continue;
-
-      }
-
-
-      let open =
-        Number(
-          item.open ??
-          item.o
-        );
-
-
-      let high =
-        Number(
-          item.high ??
-          item.h
-        );
-
-
-      let low =
-        Number(
-          item.low ??
-          item.l
-        );
-
-
-      if (
-        !Number.isFinite(open)
-      ) {
-
-        open =
-          close;
-
-      }
-
-
-      if (
-        !Number.isFinite(high)
-      ) {
-
-        high =
-          Math.max(
-            open,
-            close
-          );
-
-      }
-
-
-      if (
-        !Number.isFinite(low)
-      ) {
-
-        low =
-          Math.min(
-            open,
-            close
-          );
-
-      }
-
-
-      result.push({
-
-        time,
-
-        open,
-
-        high:
-          Math.max(
-            high,
-            open,
-            close
-          ),
-
-        low:
-          Math.min(
-            low,
-            open,
-            close
-          ),
-
-        close,
-
-        volume:
-          Number(
-            item.volume ??
-            item.vol ??
-            item.v
-          ) || 0
-
-      });
-
-    }
-
-
-    result.sort(
-      (
-        a,
-        b
-      ) =>
-        a.time -
-        b.time
-    );
-
-
-    /*
-     * duplicate timestamp
-     */
-
-    const unique =
-      [];
-
-    const seen =
-      new Set();
-
-
-    for (
-      const item of result
-    ) {
-
-      if (
-        seen.has(
-          item.time
-        )
-      ) {
-
-        continue;
-
-      }
-
-
-      seen.add(
-        item.time
-      );
-
-      unique.push(
-        item
-      );
-
-    }
-
-
-    return unique;
-
-  }
-
-
-  /*
-  ========================================================
-  DRAW CHART
-  ========================================================
-  */
-
-  function drawChartData() {
-
-    if (
-      !chart ||
-      !candleSeries
-    ) {
-
-      return;
-
-    }
-
-
-    candleSeries.setData(
-      chartData.map(
-        item => ({
-
-          time:
-            item.time,
-
-          open:
-            item.open,
-
-          high:
-            item.high,
-
-          low:
-            item.low,
-
-          close:
-            item.close
-
-        })
-      )
-    );
-
-
-    volumeSeries.setData(
-      chartData.map(
-        item => ({
-
-          time:
-            item.time,
-
-          value:
-            item.volume,
-
-          color:
-            item.close >= item.open
-              ? "rgba(38,166,154,0.35)"
-              : "rgba(239,83,80,0.35)"
-
-        })
-      )
-    );
-
-
-    rebuildIndicators();
-
-
-    chart
-      .timeScale()
-      .fitContent();
-
-
-    redrawCanvas();
-
-  }
-
-
-  /*
-  ========================================================
-  INDICATORS
-  ========================================================
-  */
-
-  function sma(
-    values,
-    period
-  ) {
-
-    const result =
-      new Array(
-        values.length
-      ).fill(
-        null
-      );
-
-
-    let sum =
-      0;
-
-
-    for (
-      let i = 0;
-      i < values.length;
-      i++
-    ) {
-
-      sum +=
-        values[i];
-
-
-      if (
-        i >= period
-      ) {
-
-        sum -=
-          values[
-            i - period
-          ];
-
-      }
-
-
-      if (
-        i >= period - 1
-      ) {
-
-        result[i] =
-          sum /
-          period;
-
-      }
-
-    }
-
-
-    return result;
-
-  }
-
-
-  function ema(
-    values,
-    period
-  ) {
-
-    const result =
-      new Array(
-        values.length
-      ).fill(
-        null
-      );
-
-
-    if (
-      values.length <
-      period
-    ) {
-
-      return result;
-
-    }
-
-
-    let sum =
-      0;
-
-
-    for (
-      let i = 0;
-      i < period;
-      i++
-    ) {
-
-      sum +=
-        values[i];
-
-    }
-
-
-    let previous =
-      sum /
-      period;
-
-
-    result[
-      period - 1
-    ] =
-      previous;
-
-
-    const multiplier =
-      2 /
-      (period + 1);
-
-
-    for (
-      let i = period;
-      i < values.length;
-      i++
-    ) {
-
-      previous =
-        (
-          values[i] -
-          previous
-        ) *
-          multiplier +
-        previous;
-
-
-      result[i] =
-        previous;
-
-    }
-
-
-    return result;
-
-  }
-
-
-  function standardDeviation(
-    values,
-    period,
-    index
-  ) {
-
-    if (
-      index <
-      period - 1
-    ) {
-
-      return null;
-
-    }
-
-
-    let sum =
-      0;
-
-
-    for (
-      let i =
-        index - period + 1;
-      i <= index;
-      i++
-    ) {
-
-      sum +=
-        values[i];
-
-    }
-
-
-    const mean =
-      sum /
-      period;
-
-
-    let variance =
-      0;
-
-
-    for (
-      let i =
-        index - period + 1;
-      i <= index;
-      i++
-    ) {
-
-      variance +=
-        Math.pow(
-          values[i] -
-          mean,
-          2
-        );
-
-    }
-
-
-    return Math.sqrt(
-      variance /
-      period
-    );
-
-  }
-
-
-  /*
-  ========================================================
-  INDICATOR TOGGLE
-  ========================================================
-  */
-
-  function toggleIndicator(
-    name,
-    button
-  ) {
-
-    if (
-      indicatorSeries[name]
-    ) {
-
-      removeIndicator(
-        name
-      );
-
-      button.classList.remove(
-        "active"
-      );
-
-      return;
-
-    }
-
-
-    addIndicator(
-      name
-    );
-
-    button.classList.add(
-      "active"
-    );
-
-  }
-
-
-  function addIndicator(
-    name
-  ) {
-
-    if (
-      !chart ||
-      chartData.length === 0
-    ) {
-
-      return;
-
-    }
-
-
-    const closes =
-      chartData.map(
-        x => x.close
-      );
-
-
-    /*
-     * EMA
-     */
-
-    if (
-      name === "ema20" ||
-      name === "ema50" ||
-      name === "ema200"
-    ) {
-
-      const period =
-        Number(
-          name.replace(
-            "ema",
-            ""
-          )
-        );
-
-
-      const values =
-        ema(
-          closes,
-          period
-        );
-
-
-      const series =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            lineWidth:
-              2,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
+      .map(
+        item => {
+
+          const timestamp =
+            Number(
+              item.time ??
+              item.timestamp
+            );
+
+
+          if (
+            !Number.isFinite(
+              timestamp
+            )
+          ) {
+
+            return null;
 
           }
-        );
 
 
-      series.setData(
-        buildIndicatorData(
-          values
-        )
-      );
+          const time =
+            timestamp > 10000000000
+              ? Math.floor(
+                  timestamp / 1000
+                )
+              : timestamp;
 
 
-      indicatorSeries[name] =
-        series;
+          const close =
+            Number(
+              item.close ??
+              item.c
+            );
 
 
-      return;
+          if (
+            !Number.isFinite(
+              close
+            )
+          ) {
 
-    }
-
-
-    /*
-     * SMA
-     */
-
-    if (
-      name === "sma20" ||
-      name === "sma50"
-    ) {
-
-      const period =
-        Number(
-          name.replace(
-            "sma",
-            ""
-          )
-        );
-
-
-      const values =
-        sma(
-          closes,
-          period
-        );
-
-
-      const series =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            lineWidth:
-              2,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
+            return null;
 
           }
-        );
 
 
-      series.setData(
-        buildIndicatorData(
-          values
-        )
-      );
+          return {
 
+            time,
 
-      indicatorSeries[name] =
-        series;
+            open:
+              Number(
+                item.open
+              ) || close,
 
+            high:
+              Number(
+                item.high
+              ) || close,
 
-      return;
+            low:
+              Number(
+                item.low
+              ) || close,
 
-    }
+            close
 
-
-    /*
-     * Bollinger
-     */
-
-    if (
-      name === "bb"
-    ) {
-
-      const middle =
-        sma(
-          closes,
-          20
-        );
-
-
-      const upper =
-        [];
-
-      const lower =
-        [];
-
-
-      for (
-        let i = 0;
-        i < closes.length;
-        i++
-      ) {
-
-        const sd =
-          standardDeviation(
-            closes,
-            20,
-            i
-          );
-
-
-        if (
-          sd === null ||
-          middle[i] === null
-        ) {
-
-          upper.push(
-            null
-          );
-
-          lower.push(
-            null
-          );
-
-        } else {
-
-          upper.push(
-            middle[i] +
-            2 * sd
-          );
-
-          lower.push(
-            middle[i] -
-            2 * sd
-          );
+          };
 
         }
-
-      }
-
-
-      const middleSeries =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            lineWidth:
-              1,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
-
-          }
-        );
-
-
-      const upperSeries =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            lineWidth:
-              1,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
-
-          }
-        );
-
-
-      const lowerSeries =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            lineWidth:
-              1,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
-
-          }
-        );
-
-
-      middleSeries.setData(
-        buildIndicatorData(
-          middle
-        )
+      )
+      .filter(
+        Boolean
       );
 
 
-      upperSeries.setData(
-        buildIndicatorData(
-          upper
-        )
-      );
+  candles.sort(
+    (a, b) =>
+      a.time -
+      b.time
+  );
 
 
-      lowerSeries.setData(
-        buildIndicatorData(
-          lower
-        )
-      );
+  /*
+   * Duplicate timestamps
+   */
+
+  const unique = [];
 
 
-      indicatorSeries.bb = [
-
-        middleSeries,
-
-        upperSeries,
-
-        lowerSeries
-
-      ];
+  const seen =
+    new Set();
 
 
-      return;
+  for (
+    const candle of candles
+  ) {
+
+    if (
+      seen.has(
+        candle.time
+      )
+    ) {
+
+      continue;
 
     }
 
 
-    /*
-     * RSI
-     *
-     * Ayrı panel yerine
-     * şimdilik ayrı fiyat ölçeği.
-     */
-
-    if (
-      name === "rsi"
-    ) {
-
-      const values =
-        calculateRSI(
-          closes,
-          14
-        );
+    seen.add(
+      candle.time
+    );
 
 
-      const series =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
+    unique.push(
+      candle
+    );
 
-            priceScaleId:
-              "rsi",
-
-            lineWidth:
-              2,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
-
-          }
-        );
+  }
 
 
-      series.setData(
-        buildIndicatorData(
-          values
-        )
-      );
+  candleSeries.setData(
+    unique
+  );
 
 
-      chart
-        .priceScale(
-          "rsi"
-        )
-        .applyOptions({
+  /*
+   * Volume
+   */
 
-          scaleMargins: {
+  if (
+    typeof volumeSeries !==
+      "undefined" &&
+    volumeSeries
+  ) {
 
-            top:
-              0.65,
+    const volumes =
+      history
+        .map(
+          item => {
 
-            bottom:
-              0.05
-
-          },
-
-          borderVisible:
-            false
-
-        });
-
-
-      indicatorSeries.rsi =
-        series;
+            const timestamp =
+              Number(
+                item.time ??
+                item.timestamp
+              );
 
 
-      return;
+            const volume =
+              Number(
+                item.volume ??
+                item.vol ??
+                0
+              );
 
-    }
-
-
-    /*
-     * MACD
-     */
-
-    if (
-      name === "macd"
-    ) {
-
-      const fast =
-        ema(
-          closes,
-          12
-        );
-
-
-      const slow =
-        ema(
-          closes,
-          26
-        );
-
-
-      const macd =
-        closes.map(
-          (
-            _,
-            i
-          ) => {
 
             if (
-              fast[i] === null ||
-              slow[i] === null
+              !Number.isFinite(
+                timestamp
+              ) ||
+              !Number.isFinite(
+                volume
+              )
             ) {
 
               return null;
 
             }
 
-            return (
-              fast[i] -
-              slow[i]
-            );
+
+            const time =
+              timestamp > 10000000000
+                ? Math.floor(
+                    timestamp / 1000
+                  )
+                : timestamp;
+
+
+            return {
+
+              time,
+
+              value:
+                volume
+
+            };
 
           }
-        );
-
-
-      const signal =
-        ema(
-          macd.map(
-            x =>
-              x === null
-                ? 0
-                : x
-          ),
-          9
-        );
-
-
-      const macdSeries =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            priceScaleId:
-              "macd",
-
-            lineWidth:
-              2,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
-
-          }
-        );
-
-
-      const signalSeries =
-        chart.addSeries(
-          LightweightCharts.LineSeries,
-          {
-
-            priceScaleId:
-              "macd",
-
-            lineWidth:
-              1,
-
-            priceLineVisible:
-              false,
-
-            lastValueVisible:
-              false
-
-          }
-        );
-
-
-      macdSeries.setData(
-        buildIndicatorData(
-          macd
         )
-      );
-
-
-      signalSeries.setData(
-        buildIndicatorData(
-          signal
-        )
-      );
-
-
-      chart
-        .priceScale(
-          "macd"
-        )
-        .applyOptions({
-
-          scaleMargins: {
-
-            top:
-              0.70,
-
-            bottom:
-              0.05
-
-          },
-
-          borderVisible:
-            false
-
-        });
-
-
-      indicatorSeries.macd = [
-
-        macdSeries,
-
-        signalSeries
-
-      ];
-
-    }
-
-  }
-
-
-  function removeIndicator(
-    name
-  ) {
-
-    const series =
-      indicatorSeries[name];
-
-
-    if (!series) return;
-
-
-    if (
-      Array.isArray(
-        series
-      )
-    ) {
-
-      series.forEach(
-        item => {
-
-          try {
-
-            chart.removeSeries(
-              item
-            );
-
-          } catch {}
-
-        }
-      );
-
-    } else {
-
-      try {
-
-        chart.removeSeries(
-          series
+        .filter(
+          Boolean
         );
 
-      } catch {}
 
-    }
-
-
-    delete indicatorSeries[
-      name
-    ];
-
-  }
-
-
-  function rebuildIndicators() {
-
-    const active =
-      Object.keys(
-        indicatorSeries
-      );
-
-
-    active.forEach(
-      name => {
-
-        removeIndicator(
-          name
-        );
-
-      }
+    volumeSeries.setData(
+      volumes
     );
 
+  }
 
-    /*
-     * Butonların active
-     * durumlarını koruyoruz.
-     */
 
-    document
-      .querySelectorAll(
-        "#borsaciChartControls [data-indicator].active"
-      )
-      .forEach(
-        button => {
+  if (
+    typeof marketChart !==
+      "undefined" &&
+    marketChart
+  ) {
 
-          addIndicator(
-            button.dataset.indicator
-          );
-
-        }
-      );
+    marketChart
+      .timeScale()
+      .fitContent();
 
   }
 
 
-  function buildIndicatorData(
-    values
+  applyIndicator();
+
+}
+
+
+/*
+========================================================
+INDICATOR
+========================================================
+*/
+
+function applyIndicator() {
+
+  if (
+    typeof marketChart ===
+      "undefined" ||
+    !marketChart ||
+    typeof candleSeries ===
+      "undefined" ||
+    !candleSeries
   ) {
 
-    const result =
-      [];
+    return;
+
+  }
+
+
+  /*
+   * Eski indicator çizgilerini
+   * kaldır.
+   */
+
+  removeIndicatorSeries();
+
+
+  if (
+    chartIndicator ===
+    "none"
+  ) {
+
+    return;
+
+  }
+
+
+  const data =
+    getCurrentCandleData();
+
+
+  if (
+    data.length === 0
+  ) {
+
+    return;
+
+  }
+
+
+  if (
+    chartIndicator ===
+    "sma20"
+  ) {
+
+    createLine(
+      calculateSMA(
+        data,
+        20
+      ),
+      "SMA 20"
+    );
+
+  }
+
+
+  if (
+    chartIndicator ===
+    "ema20"
+  ) {
+
+    createLine(
+      calculateEMA(
+        data,
+        20
+      ),
+      "EMA 20"
+    );
+
+  }
+
+
+  if (
+    chartIndicator ===
+    "ema50"
+  ) {
+
+    createLine(
+      calculateEMA(
+        data,
+        50
+      ),
+      "EMA 50"
+    );
+
+  }
+
+
+  if (
+    chartIndicator ===
+    "ema200"
+  ) {
+
+    createLine(
+      calculateEMA(
+        data,
+        200
+      ),
+      "EMA 200"
+    );
+
+  }
+
+
+  if (
+    chartIndicator ===
+    "bb"
+  ) {
+
+    createBollingerBands(
+      data,
+      20,
+      2
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+CURRENT CANDLES
+========================================================
+*/
+
+function getCurrentCandleData() {
+
+  if (
+    !candleSeries
+  ) {
+
+    return [];
+
+  }
+
+
+  /*
+   * Lightweight Charts'tan
+   * doğrudan data çekemiyoruz.
+   *
+   * Bu nedenle son yüklenen
+   * dataset'i saklıyoruz.
+   */
+
+  return window.__borsaciChartData ||
+    [];
+
+}
+
+
+/*
+========================================================
+STORE DATA
+========================================================
+*/
+
+const originalDrawChartHistory =
+  drawChartHistory;
+
+
+/*
+ * Wrapper
+ */
+
+drawChartHistory =
+  function(history) {
+
+    window.__borsaciChartData =
+      history
+        .map(
+          item => {
+
+            const timestamp =
+              Number(
+                item.time ??
+                item.timestamp
+              );
+
+
+            const time =
+              timestamp > 10000000000
+                ? Math.floor(
+                    timestamp / 1000
+                  )
+                : timestamp;
+
+
+            return {
+
+              time,
+
+              open:
+                Number(
+                  item.open
+                ),
+
+              high:
+                Number(
+                  item.high
+                ),
+
+              low:
+                Number(
+                  item.low
+                ),
+
+              close:
+                Number(
+                  item.close
+                )
+
+            };
+
+          }
+        )
+        .filter(
+          item =>
+            Number.isFinite(
+              item.close
+            )
+        );
+
+
+    originalDrawChartHistory(
+      history
+    );
+
+  };
+
+
+/*
+========================================================
+SMA
+========================================================
+*/
+
+function calculateSMA(
+  data,
+  period
+) {
+
+  const result = [];
+
+
+  for (
+    let i = period - 1;
+    i < data.length;
+    i++
+  ) {
+
+    let sum = 0;
 
 
     for (
-      let i = 0;
-      i < values.length;
-      i++
+      let j = i - period + 1;
+      j <= i;
+      j++
     ) {
 
-      if (
-        values[i] === null ||
-        !Number.isFinite(
-          Number(
-            values[i]
-          )
-        )
-      ) {
-
-        continue;
-
-      }
-
-
-      result.push({
-
-        time:
-          chartData[i].time,
-
-        value:
-          Number(
-            values[i]
-          )
-
-      });
+      sum +=
+        data[j].close;
 
     }
 
 
-    return result;
+    result.push({
+
+      time:
+        data[i].time,
+
+      value:
+        sum / period
+
+    });
 
   }
 
 
-  function calculateRSI(
-    values,
+  return result;
+
+}
+
+
+/*
+========================================================
+EMA
+========================================================
+*/
+
+function calculateEMA(
+  data,
+  period
+) {
+
+  if (
+    data.length <
     period
   ) {
 
-    const result =
-      new Array(
-        values.length
-      ).fill(
-        null
-      );
-
-
-    if (
-      values.length <=
-      period
-    ) {
-
-      return result;
-
-    }
-
-
-    let gains =
-      0;
-
-    let losses =
-      0;
-
-
-    for (
-      let i = 1;
-      i <= period;
-      i++
-    ) {
-
-      const change =
-        values[i] -
-        values[i - 1];
-
-
-      if (
-        change >= 0
-      ) {
-
-        gains +=
-          change;
-
-      } else {
-
-        losses -=
-          change;
-
-      }
-
-    }
-
-
-    let avgGain =
-      gains /
-      period;
-
-
-    let avgLoss =
-      losses /
-      period;
-
-
-    result[
-      period
-    ] =
-      avgLoss === 0
-        ? 100
-        : 100 -
-          (
-            100 /
-            (
-              1 +
-              avgGain /
-              avgLoss
-            )
-          );
-
-
-    for (
-      let i =
-        period + 1;
-      i < values.length;
-      i++
-    ) {
-
-      const change =
-        values[i] -
-        values[i - 1];
-
-
-      const gain =
-        Math.max(
-          change,
-          0
-        );
-
-
-      const loss =
-        Math.max(
-          -change,
-          0
-        );
-
-
-      avgGain =
-        (
-          avgGain *
-            (period - 1) +
-          gain
-        ) /
-        period;
-
-
-      avgLoss =
-        (
-          avgLoss *
-            (period - 1) +
-          loss
-        ) /
-        period;
-
-
-      if (
-        avgLoss === 0
-      ) {
-
-        result[i] =
-          100;
-
-      } else {
-
-        const rs =
-          avgGain /
-          avgLoss;
-
-
-        result[i] =
-          100 -
-          100 /
-            (1 + rs);
-
-      }
-
-    }
-
-
-    return result;
+    return [];
 
   }
 
 
-  /*
-  ========================================================
-  DRAWING CANVAS
-  ========================================================
-  */
-
-  function createDrawingCanvas() {
-
-    canvas =
-      document.createElement(
-        "canvas"
-      );
+  const result = [];
 
 
-    canvas.style.position =
-      "absolute";
-
-    canvas.style.left =
-      "0";
-
-    canvas.style.top =
-      "0";
-
-    canvas.style.width =
-      "100%";
-
-    canvas.style.height =
-      "100%";
-
-    canvas.style.pointerEvents =
-      "none";
-
-    canvas.style.zIndex =
-      "20";
+  let sum = 0;
 
 
-    /*
-     * container relative
-     */
-
-    if (
-      getComputedStyle(
-        container
-      ).position ===
-      "static"
-    ) {
-
-      container.style.position =
-        "relative";
-
-    }
-
-
-    container.appendChild(
-      canvas
-    );
-
-
-    canvasCtx =
-      canvas.getContext(
-        "2d"
-      );
-
-
-    resizeCanvas();
-
-
-    canvas.addEventListener(
-      "click",
-      handleCanvasClick
-    );
-
-
-    canvas.addEventListener(
-      "pointerdown",
-      handlePointerDown
-    );
-
-
-    canvas.addEventListener(
-      "pointermove",
-      handlePointerMove
-    );
-
-
-    canvas.addEventListener(
-      "pointerup",
-      handlePointerUp
-    );
-
-  }
-
-
-  function resizeCanvas() {
-
-    if (!canvas) return;
-
-
-    const rect =
-      container.getBoundingClientRect();
-
-
-    const ratio =
-      window.devicePixelRatio ||
-      1;
-
-
-    canvas.width =
-      Math.floor(
-        rect.width *
-        ratio
-      );
-
-
-    canvas.height =
-      Math.floor(
-        rect.height *
-        ratio
-      );
-
-
-    canvasCtx.setTransform(
-      ratio,
-      0,
-      0,
-      ratio,
-      0,
-      0
-    );
-
-
-    redrawCanvas();
-
-  }
-
-
-  /*
-  ========================================================
-  DRAWING
-  ========================================================
-  */
-
-  function activateDrawing(
-    type,
-    button
+  for (
+    let i = 0;
+    i < period;
+    i++
   ) {
 
-    drawingMode =
-      type;
-
-
-    setActiveButton(
-      "[data-draw]",
-      button
-    );
-
-
-    canvas.style.pointerEvents =
-      "auto";
-
-
-    setStatus(
-      `${type.toUpperCase()} DRAW MODE — click chart`
-    );
+    sum +=
+      data[i].close;
 
   }
 
 
-  function handleCanvasClick(
-    event
+  let ema =
+    sum / period;
+
+
+  result.push({
+
+    time:
+      data[period - 1].time,
+
+    value:
+      ema
+
+  });
+
+
+  const multiplier =
+    2 /
+    (period + 1);
+
+
+  for (
+    let i = period;
+    i < data.length;
+    i++
   ) {
 
-    if (!drawingMode) return;
+    ema =
+      (
+        data[i].close -
+        ema
+      ) *
+      multiplier +
+      ema;
 
 
-    const point =
-      getCanvasPoint(
-        event
-      );
+    result.push({
 
+      time:
+        data[i].time,
 
-    if (
-      drawingMode ===
-      "horizontal"
-    ) {
+      value:
+        ema
 
-      drawings.push({
-
-        type:
-          "horizontal",
-
-        y:
-          point.y
-
-      });
-
-
-      redrawCanvas();
-
-
-      return;
-
-    }
-
-
-    if (
-      drawingMode ===
-      "vertical"
-    ) {
-
-      drawings.push({
-
-        type:
-          "vertical",
-
-        x:
-          point.x
-
-      });
-
-
-      redrawCanvas();
-
-
-      return;
-
-    }
-
-
-    if (
-      drawingMode ===
-      "trend"
-    ) {
-
-      if (
-        !activeDrawing
-      ) {
-
-        activeDrawing = {
-
-          type:
-            "trend",
-
-          x1:
-            point.x,
-
-          y1:
-            point.y,
-
-          x2:
-            point.x,
-
-          y2:
-            point.y
-
-        };
-
-
-      } else {
-
-        activeDrawing.x2 =
-          point.x;
-
-        activeDrawing.y2 =
-          point.y;
-
-
-        drawings.push(
-          activeDrawing
-        );
-
-
-        activeDrawing =
-          null;
-
-      }
-
-
-      redrawCanvas();
-
-    }
+    });
 
   }
 
 
-  function handlePointerDown(
-    event
-  ) {
+  return result;
 
-    if (
-      drawingMode !==
-      "trend"
-    ) {
+}
 
-      return;
 
-    }
+/*
+========================================================
+LINE SERIES
+========================================================
+*/
 
+let indicatorSeries = [];
 
-    const point =
-      getCanvasPoint(
-        event
-      );
 
-
-    activeDrawing = {
-
-      type:
-        "trend",
-
-      x1:
-        point.x,
-
-      y1:
-        point.y,
-
-      x2:
-        point.x,
-
-      y2:
-        point.y
-
-    };
-
-  }
-
-
-  function handlePointerMove(
-    event
-  ) {
-
-    if (
-      !activeDrawing
-    ) {
-
-      return;
-
-    }
-
-
-    const point =
-      getCanvasPoint(
-        event
-      );
-
-
-    activeDrawing.x2 =
-      point.x;
-
-    activeDrawing.y2 =
-      point.y;
-
-
-    redrawCanvas();
-
-  }
-
-
-  function handlePointerUp() {
-
-    if (
-      !activeDrawing
-    ) {
-
-      return;
-
-    }
-
-
-    drawings.push(
-      activeDrawing
-    );
-
-
-    activeDrawing =
-      null;
-
-
-    redrawCanvas();
-
-  }
-
-
-  function getCanvasPoint(
-    event
-  ) {
-
-    const rect =
-      canvas.getBoundingClientRect();
-
-
-    return {
-
-      x:
-        event.clientX -
-        rect.left,
-
-      y:
-        event.clientY -
-        rect.top
-
-    };
-
-  }
-
-
-  function redrawCanvas() {
-
-    if (
-      !canvas ||
-      !canvasCtx
-    ) {
-
-      return;
-
-    }
-
-
-    const rect =
-      canvas.getBoundingClientRect();
-
-
-    canvasCtx.clearRect(
-      0,
-      0,
-      rect.width,
-      rect.height
-    );
-
-
-    canvasCtx.lineWidth =
-      1.5;
-
-
-    canvasCtx.strokeStyle =
-      "#f5c542";
-
-
-    canvasCtx.fillStyle =
-      "#f5c542";
-
-
-    drawings.forEach(
-      drawing => {
-
-        if (
-          drawing.type ===
-          "horizontal"
-        ) {
-
-          canvasCtx.beginPath();
-
-          canvasCtx.moveTo(
-            0,
-            drawing.y
-          );
-
-          canvasCtx.lineTo(
-            rect.width,
-            drawing.y
-          );
-
-          canvasCtx.stroke();
-
-        }
-
-
-        if (
-          drawing.type ===
-          "vertical"
-        ) {
-
-          canvasCtx.beginPath();
-
-          canvasCtx.moveTo(
-            drawing.x,
-            0
-          );
-
-          canvasCtx.lineTo(
-            drawing.x,
-            rect.height
-          );
-
-          canvasCtx.stroke();
-
-        }
-
-
-        if (
-          drawing.type ===
-          "trend"
-        ) {
-
-          canvasCtx.beginPath();
-
-          canvasCtx.moveTo(
-            drawing.x1,
-            drawing.y1
-          );
-
-          canvasCtx.lineTo(
-            drawing.x2,
-            drawing.y2
-          );
-
-          canvasCtx.stroke();
-
-        }
-
-      }
-    );
-
-
-    if (
-      activeDrawing
-    ) {
-
-      canvasCtx.beginPath();
-
-      canvasCtx.moveTo(
-        activeDrawing.x1,
-        activeDrawing.y1
-      );
-
-      canvasCtx.lineTo(
-        activeDrawing.x2,
-        activeDrawing.y2
-      );
-
-      canvasCtx.stroke();
-
-    }
-
-  }
-
-
-  function clearDrawings() {
-
-    drawings =
-      [];
-
-    activeDrawing =
-      null;
-
-    drawingMode =
-      null;
-
-
-    if (canvas) {
-
-      canvas.style.pointerEvents =
-        "none";
-
-    }
-
-
-    document
-      .querySelectorAll(
-        "#borsaciChartControls [data-draw]"
-      )
-      .forEach(
-        button => {
-
-          button.classList.remove(
-            "active"
-          );
-
-        }
-      );
-
-
-    redrawCanvas();
-
-
-    setStatus(
-      "DRAWINGS CLEARED"
-    );
-
-  }
-
-
-  /*
-  ========================================================
-  SYMBOL WATCHER
-  ========================================================
-  */
-
-  function watchSymbol() {
-
-    if (!symbolElement) {
-
-      console.warn(
-        "BORSACI CHART.JS: #chartSymbol bulunamadı."
-      );
-
-      return;
-
-    }
-
-
-    const observer =
-      new MutationObserver(
-        () => {
-
-          const symbol =
-            normalizeSymbol(
-              symbolElement.innerText
-            );
-
-
-          if (
-            !symbol ||
-            symbol ===
-              currentSymbol
-          ) {
-
-            return;
-
-          }
-
-
-          currentSymbol =
-            symbol;
-
-
-          clearDrawings();
-
-
-          loadChart();
-
-        }
-      );
-
-
-    observer.observe(
-      symbolElement,
-      {
-
-        childList:
-          true,
-
-        subtree:
-          true,
-
-        characterData:
-          true
-
-      }
-    );
-
-
-    /*
-     * İlk sembol
-     */
-
-    const initial =
-      normalizeSymbol(
-        symbolElement.innerText
-      );
-
-
-    if (initial) {
-
-      currentSymbol =
-        initial;
-
-    }
-
-  }
-
-
-  /*
-  ========================================================
-  INIT
-  ========================================================
-  */
-
-  function initialize() {
-
-    createChartUI();
-
-
-    /*
-     * app.js önce kendi chart'ını
-     * oluşturmuş olacak.
-     *
-     * Biz burada onun container'ını
-     * devralıyoruz.
-     */
-
-    if (
-      !initChart()
-    ) {
-
-      return;
-
-    }
-
-
-    watchSymbol();
-
-
-    /*
-     * İlk sembol yoksa bekle.
-     */
-
-    if (currentSymbol) {
-
-      setTimeout(
-        loadChart,
-        150
-      );
-
-    }
-
-
-    window.addEventListener(
-      "resize",
-      resizeCanvas
-    );
-
-
-    console.log(
-      "BORSACI: Advanced chart.js ready."
-    );
-
-  }
-
-
-  /*
-  ========================================================
-  START
-  ========================================================
-  */
+function createLine(
+  data,
+  title
+) {
 
   if (
-    document.readyState ===
-    "loading"
+    !marketChart ||
+    !data.length
   ) {
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      initialize
-    );
-
-  } else {
-
-    /*
-     * app.js'nin init işleminin
-     * bitmesine kısa süre bırakıyoruz.
-     */
-
-    setTimeout(
-      initialize,
-      100
-    );
+    return;
 
   }
 
-})();
+
+  const series =
+    marketChart.addSeries(
+      LightweightCharts
+        .LineSeries,
+      {
+
+        lineWidth:
+          2
+
+      }
+    );
+
+
+  series.setData(
+    data
+  );
+
+
+  indicatorSeries.push(
+    series
+  );
+
+}
+
+
+/*
+========================================================
+BOLLINGER
+========================================================
+*/
+
+function createBollingerBands(
+  data,
+  period,
+  multiplier
+) {
+
+  if (
+    !marketChart
+  ) {
+
+    return;
+
+  }
+
+
+  const middle =
+    calculateSMA(
+      data,
+      period
+    );
+
+
+  const upper = [];
+
+
+  const lower = [];
+
+
+  for (
+    let i = period - 1;
+    i < data.length;
+    i++
+  ) {
+
+    const values =
+      [];
+
+
+    for (
+      let j =
+        i - period + 1;
+      j <= i;
+      j++
+    ) {
+
+      values.push(
+        data[j].close
+      );
+
+    }
+
+
+    const mean =
+      values.reduce(
+        (a, b) =>
+          a + b,
+        0
+      ) /
+      period;
+
+
+    const variance =
+      values.reduce(
+        (sum, value) =>
+          sum +
+          Math.pow(
+            value -
+            mean,
+            2
+          ),
+        0
+      ) /
+      period;
+
+
+    const std =
+      Math.sqrt(
+        variance
+      );
+
+
+    upper.push({
+
+      time:
+        data[i].time,
+
+      value:
+        mean +
+        multiplier *
+        std
+
+    });
+
+
+    lower.push({
+
+      time:
+        data[i].time,
+
+      value:
+        mean -
+        multiplier *
+        std
+
+    });
+
+  }
+
+
+  createLine(
+    middle,
+    "BB Middle"
+  );
+
+
+  createLine(
+    upper,
+    "BB Upper"
+  );
+
+
+  createLine(
+    lower,
+    "BB Lower"
+  );
+
+}
+
+
+/*
+========================================================
+REMOVE INDICATORS
+========================================================
+*/
+
+function removeIndicatorSeries() {
+
+  if (
+    !marketChart
+  ) return;
+
+
+  indicatorSeries
+    .forEach(
+      series => {
+
+        try {
+
+          marketChart.removeSeries(
+            series
+          );
+
+        } catch {}
+
+      }
+    );
+
+
+  indicatorSeries = [];
+
+}
+
+
+/*
+========================================================
+LOADING
+========================================================
+*/
+
+function showChartLoading() {
+
+  const empty =
+    document.getElementById(
+      "chartEmpty"
+    );
+
+
+  if (!empty) return;
+
+
+  empty.style.display =
+    "flex";
+
+
+  empty.innerHTML = `
+
+    <span>
+      LOADING CHART
+    </span>
+
+    <small>
+      Loading ${chartTimeframe.toUpperCase()} market data...
+    </small>
+
+  `;
+
+}
+
+
+/*
+========================================================
+CSS
+========================================================
+*/
+
+function injectChartCSS() {
+
+  if (
+    document.getElementById(
+      "borsaciChartCSS"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const style =
+    document.createElement(
+      "style"
+    );
+
+
+  style.id =
+    "borsaciChartCSS";
+
+
+  style.innerHTML = `
+
+    #chartToolbar {
+
+      width: 100%;
+
+      min-height: 42px;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 12px;
+
+      padding: 8px 10px;
+
+      box-sizing: border-box;
+
+      background: #0b0f14;
+
+      border: 1px solid #202733;
+
+      border-bottom: 0;
+
+      border-radius: 8px 8px 0 0;
+
+      overflow-x: auto;
+
+      white-space: nowrap;
+
+      font-family:
+        Inter,
+        Arial,
+        sans-serif;
+
+    }
+
+
+    .chart-toolbar-section {
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 5px;
+
+    }
+
+
+    .chart-toolbar-label {
+
+      font-size: 10px;
+
+      color: #6f7b8c;
+
+      letter-spacing: 1px;
+
+      margin-right: 4px;
+
+      font-weight: 700;
+
+    }
+
+
+    .chart-tool,
+    .chart-indicator {
+
+      border: 1px solid #29313d;
+
+      background: #111720;
+
+      color: #8e99a8;
+
+      border-radius: 5px;
+
+      padding: 5px 9px;
+
+      font-size: 11px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition:
+        background .15s ease,
+        color .15s ease,
+        border-color .15s ease;
+
+    }
+
+
+    .chart-tool:hover,
+    .chart-indicator:hover {
+
+      background: #18202b;
+
+      color: #ffffff;
+
+    }
+
+
+    .chart-tool.active,
+    .chart-indicator.active {
+
+      background: #1d2937;
+
+      color: #ffffff;
+
+      border-color: #3b4858;
+
+    }
+
+
+    .chart-toolbar-divider {
+
+      width: 1px;
+
+      height: 22px;
+
+      background: #29313d;
+
+      flex-shrink: 0;
+
+    }
+
+
+    #market_chart {
+
+      border-radius:
+        0 0 8px 8px;
+
+    }
+
+
+    @media (
+      max-width: 700px
+    ) {
+
+      #chartToolbar {
+
+        gap: 7px;
+
+        padding:
+          7px 6px;
+
+      }
+
+
+      .chart-toolbar-label {
+
+        font-size: 9px;
+
+      }
+
+
+      .chart-tool,
+      .chart-indicator {
+
+        padding:
+          5px 7px;
+
+        font-size: 10px;
+
+      }
+
+    }
+
+  `;
+
+
+  document.head.appendChild(
+    style
+  );
+
+}
+
+
+/*
+========================================================
+START
+========================================================
+*/
+
+if (
+  document.readyState ===
+  "loading"
+) {
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    waitForMarketChart
+  );
+
+} else {
+
+  waitForMarketChart();
+
+}
+
+
+console.log(
+  "BORSACI: chart.js loaded."
+);
