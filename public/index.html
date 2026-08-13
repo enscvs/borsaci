@@ -2,15 +2,294 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>BORSACI // AI TRADING TERMINAL</title>
+
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
 
-  <h1>BORSACI</h1>
+  <div class="terminal">
 
-  <p>Terminal UI loading...</p>
+    <header class="topbar">
+
+      <div class="brand">
+        BORSACI <span>v1.0.0</span>
+      </div>
+
+      <div class="system-status">
+        <span class="status-dot"></span>
+        SYSTEM READY
+      </div>
+
+      <div
+        class="clock"
+        id="clock"
+      >
+        --:--:--
+      </div>
+
+    </header>
+
+
+    <main class="dashboard">
+
+      <!-- WATCHLIST -->
+
+      <section class="panel watchlist">
+
+        <div class="panel-title">
+          WATCHLIST
+        </div>
+
+        <div class="empty-state">
+
+          <span>
+            NO SYMBOLS LOADED
+          </span>
+
+          <small>
+            Waiting for market data...
+          </small>
+
+        </div>
+
+      </section>
+
+
+      <!-- CHART -->
+
+      <section class="panel chart">
+
+        <div class="panel-title">
+          MARKET CHART
+        </div>
+
+        <div class="empty-state">
+
+          <span>
+            NO MARKET DATA
+          </span>
+
+          <small>
+            Chart will appear when data is available.
+          </small>
+
+        </div>
+
+      </section>
+
+
+      <!-- NEWS -->
+
+      <section class="panel news">
+
+        <div class="panel-title">
+          NEWS FEED
+        </div>
+
+        <div class="empty-state">
+
+          <span>
+            NO NEWS LOADED
+          </span>
+
+          <small>
+            Waiting for news source...
+          </small>
+
+        </div>
+
+      </section>
+
+
+      <!-- TECHNICAL -->
+
+      <section class="panel technical">
+
+        <div class="panel-title">
+          TECHNICAL ANALYSIS
+        </div>
+
+        <div class="metric">
+          <span>RSI</span>
+          <strong>--</strong>
+        </div>
+
+        <div class="metric">
+          <span>MACD</span>
+          <strong>--</strong>
+        </div>
+
+        <div class="metric">
+          <span>EMA 20</span>
+          <strong>--</strong>
+        </div>
+
+        <div class="metric">
+          <span>EMA 50</span>
+          <strong>--</strong>
+        </div>
+
+        <div class="metric">
+          <span>VOLUME</span>
+          <strong>--</strong>
+        </div>
+
+      </section>
+
+
+      <!-- AI -->
+
+      <section class="panel ai-analysis">
+
+        <div class="panel-title">
+          AI ANALYSIS
+        </div>
+
+        <div class="empty-state">
+
+          <span>
+            WAITING FOR ANALYSIS
+          </span>
+
+          <small>
+            Ask Borsacı something below.
+          </small>
+
+        </div>
+
+        <div class="ai-result">
+
+          <div>
+            <span>SIGNAL</span>
+            <strong>--</strong>
+          </div>
+
+          <div>
+            <span>CONFIDENCE</span>
+            <strong>--</strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- NEWS IMPACT -->
+
+      <section class="panel news-impact">
+
+        <div class="panel-title">
+          NEWS IMPACT
+        </div>
+
+        <div class="empty-state">
+
+          <span>
+            NO NEWS DATA
+          </span>
+
+          <small>
+            News impact will appear here.
+          </small>
+
+        </div>
+
+      </section>
+
+
+      <!-- PORTFOLIO -->
+
+      <section class="panel portfolio">
+
+        <div class="panel-title">
+          PORTFOLIO
+        </div>
+
+        <div class="empty-state">
+
+          <span>
+            NO PORTFOLIO DATA
+          </span>
+
+          <small>
+            Portfolio information will appear here.
+          </small>
+
+        </div>
+
+      </section>
+
+    </main>
+
+
+    <!-- COMMAND -->
+
+    <section class="command-panel">
+
+      <div class="command-title">
+
+        <span>&gt;</span>
+        ASK BORSACI
+
+      </div>
+
+
+      <textarea
+        id="question"
+        placeholder="Type your command or question..."
+        spellcheck="false"
+      ></textarea>
+
+
+      <div class="command-footer">
+
+        <div class="shortcuts">
+
+          [ENTER] ANALYZE
+          &nbsp;&nbsp;
+          [SHIFT+ENTER] NEW LINE
+          &nbsp;&nbsp;
+          [ESC] CLEAR
+
+        </div>
+
+
+        <button
+          id="analyzeBtn"
+        >
+          ANALYZE
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- RESPONSE -->
+
+    <section
+      class="response-panel panel"
+    >
+
+      <div class="panel-title">
+        AI RESPONSE
+      </div>
+
+      <pre id="response">Waiting for input...</pre>
+
+    </section>
+
+  </div>
+
+
+  <script src="/app.js"></script>
 
 </body>
 </html>
