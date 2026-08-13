@@ -1,6 +1,8 @@
 require("dotenv").config();
 
 const http = require("http");
+const path = require("path");
+const fs = require("fs");
 const { GoogleGenAI } = require("@google/genai");
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const {
