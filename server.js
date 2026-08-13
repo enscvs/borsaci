@@ -661,4 +661,3 @@ server.listen(
 
   }
 );
-Bana direkt bunu silip yapıştırmak için kod ver
