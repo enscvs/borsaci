@@ -1231,3 +1231,22 @@ textarea::placeholder {
   margin-top: 8px;
   opacity: 0.5;
 }
+/* =========================
+   MARKET CHART - COMPACT
+   ========================= */
+
+.chart {
+  min-height: 0 !important;
+}
+
+.chart-area {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+.chart-area canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
