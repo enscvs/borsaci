@@ -600,6 +600,7 @@ async function loadMarketData(symbol) {
       data
     );
 
+selectChartSymbol(symbol);
 
     dataStatus.innerText =
       "LIVE";
