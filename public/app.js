@@ -4224,3 +4224,189 @@ DEBUG
 console.log(
   "BORSACI: AI analysis system ready."
 );
+/*
+========================================================
+BORSACI // CHART CONTROL BRIDGE
+========================================================
+*/
+
+window.BORSACI_CHART = {
+
+  getSelectedSymbol() {
+
+    return selectedSymbol;
+
+  },
+
+
+  async loadChart(
+    range = "1y",
+    interval = "1d"
+  ) {
+
+    const symbol =
+      selectedSymbol;
+
+    if (!symbol) {
+
+      console.warn(
+        "BORSACI CHART: Seçili sembol yok."
+      );
+
+      return;
+
+    }
+
+
+    const url =
+      `/chart?symbol=${encodeURIComponent(
+        symbol
+      )}&range=${encodeURIComponent(
+        range
+      )}&interval=${encodeURIComponent(
+        interval
+      )}`;
+
+
+    console.log(
+      "BORSACI CHART CONTROL REQUEST:",
+      url
+    );
+
+
+    try {
+
+      showEmptyChart(
+        "LOADING CHART",
+        `${range.toUpperCase()} / ${interval.toUpperCase()}`
+      );
+
+
+      const response =
+        await fetch(
+          url,
+          {
+            method:
+              "GET",
+
+            headers: {
+              "Accept":
+                "application/json"
+            },
+
+            cache:
+              "no-store"
+          }
+        );
+
+
+      const text =
+        await response.text();
+
+
+      let data;
+
+
+      try {
+
+        data =
+          JSON.parse(
+            text
+          );
+
+      } catch {
+
+        throw new Error(
+          `Chart endpoint JSON döndürmedi. HTTP ${response.status}`
+        );
+
+      }
+
+
+      if (!response.ok) {
+
+        throw new Error(
+          data?.error ||
+          `Chart HTTP ${response.status}`
+        );
+
+      }
+
+
+      const history =
+        extractChartHistory(
+          data
+        );
+
+
+      if (
+        !Array.isArray(history) ||
+        history.length === 0
+      ) {
+
+        throw new Error(
+          "Chart verisi boş döndü."
+        );
+
+      }
+
+
+      /*
+       * Eski cache'i ez.
+       */
+
+      chartCache[
+        symbol
+      ] = {
+
+        timestamp:
+          Date.now(),
+
+        history
+
+      };
+
+
+      /*
+       * Grafiği doğrudan güncelle.
+       */
+
+      updateChartData(
+        history
+      );
+
+
+      console.log(
+        `BORSACI CHART: ${history.length} candle loaded.`,
+        range,
+        interval
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "BORSACI CHART CONTROL ERROR:",
+        error
+      );
+
+
+      showEmptyChart(
+        "CHART ERROR",
+        error.message
+      );
+
+    }
+
+  },
+
+
+  getHistory() {
+
+    return chartCache[
+      selectedSymbol
+    ]?.history || [];
+
+  }
+
+};
