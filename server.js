@@ -259,7 +259,7 @@ if (req.method === "GET" && req.url === "/") {
           );
 
         }
-
+console.log("MCP TOOLS LISTELENIYOR...");
         console.log(
           `Soru: ${data.question}`
         );
