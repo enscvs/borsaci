@@ -35,14 +35,20 @@ GROQ
 ========================================================
 */
 
-const ai = new OpenAI({
-  apiKey:
-    process.env.GROQ_API_KEY,
-
-  baseURL:
-    "https://api.groq.com/openai/v1",
+const groqAI = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
 });
 
+const geminiAI = new OpenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
+});
+
+const mistralAI = new OpenAI({
+  apiKey: process.env.MISTRAL_API_KEY,
+  baseURL: "https://api.mistral.ai/v1",
+});
 
 /*
 ========================================================
@@ -618,24 +624,70 @@ async function analyze(
       );
 
 
-      const response =
-        await ai.chat.completions.create({
+  let response;
 
-          model:
-            MODEL,
+try {
 
-          messages,
+  response =
+    await groqAI.chat.completions.create({
 
-          tools,
+      model: MODEL,
 
-          tool_choice:
-            "auto",
+      messages,
 
-          temperature:
-            0.1,
+      tools,
 
-        });
+      tool_choice: "auto",
 
+      temperature: 0.1,
+
+    });
+
+} catch (groqError) {
+
+  console.log("GROQ HATA → GEMINI'YE GEÇİLİYOR");
+
+  try {
+
+    response =
+      await geminiAI.chat.completions.create({
+
+        model:
+          "gemini-3.6-flash",
+
+        messages,
+
+        tools,
+
+        tool_choice: "auto",
+
+        temperature: 0.1,
+
+      });
+
+  } catch (geminiError) {
+
+    console.log("GEMINI HATA → MISTRAL'E GEÇİLİYOR");
+
+    response =
+      await mistralAI.chat.completions.create({
+
+        model:
+          "mistral-small-latest",
+
+        messages,
+
+        tools,
+
+        tool_choice: "auto",
+
+        temperature: 0.1,
+
+      });
+
+  }
+
+}
 
       const message =
         response
