@@ -3,6 +3,7 @@ require("dotenv").config();
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
+
 const { GoogleGenAI } = require("@google/genai");
 const { Client } = require("@modelcontextprotocol/sdk/client/index.js");
 const {
@@ -21,10 +22,9 @@ Sen BorsaCI adlı profesyonel bir BIST ve finansal piyasa analiz asistanısın.
 Kurallar:
 - Gerçek piyasa verisi olmadan fiyat, RSI, MACD veya teknik seviye uydurma.
 - Güncel veri gerektiğinde mutlaka MCP araçlarını kullan.
-- Teknik analiz için get_quote, get_technical_analysis ve gerektiğinde
-  get_historical_data kullan.
+- Teknik analiz için uygun MCP araçlarını kullan.
 - Temel analiz için ilgili finansal MCP araçlarını kullan.
-- Haber gerekiyorsa get_news kullan.
+- Haber gerekiyorsa haber MCP aracını kullan.
 - Veriler çelişiyorsa bunu belirt.
 - Kesin getiri garantisi verme.
 - Sonuçları Türkçe, net ve profesyonel şekilde sun.
@@ -44,10 +44,12 @@ async function analyze(question) {
     await client.connect(transport);
 
     const toolResult = await client.listTools();
-console.log(
-  "MCP TOOLS:",
-  toolResult.tools.map(tool => tool.name)
-);
+
+    console.log(
+      "MCP TOOLS:",
+      toolResult.tools.map((tool) => tool.name)
+    );
+
     const geminiTools = [
       {
         functionDeclarations: toolResult.tools.map((tool) => ({
@@ -118,7 +120,10 @@ console.log(
             ],
           });
         } catch (error) {
-          console.error(`MCP ${call.name} hatası:`, error.message);
+          console.error(
+            `MCP ${call.name} hatası:`,
+            error.message
+          );
 
           contents.push({
             role: "user",
@@ -137,20 +142,20 @@ console.log(
       }
     }
 
-    throw new Error("Maksimum MCP adımına ulaşıldı.");
+    throw new Error(
+      "Maksimum MCP adımına ulaşıldı."
+    );
 
   } finally {
     try {
       await transport.close();
-    } catch (_) {
-      // bağlantı zaten kapanmış olabilir
-    }
+    } catch (_) {}
   }
 }
 
+
 /*
  * Gemini API bazı JSON Schema alanlarını kabul etmiyor.
- * MCP şemalarındaki unsupported alanları temizliyoruz.
  */
 function cleanSchema(schema) {
   if (!schema || typeof schema !== "object") {
@@ -167,7 +172,9 @@ function cleanSchema(schema) {
   const result = {};
 
   for (const [key, value] of Object.entries(schema)) {
-    if (unsupported.includes(key)) continue;
+    if (unsupported.includes(key)) {
+      continue;
+    }
 
     if (value && typeof value === "object") {
       if (Array.isArray(value)) {
@@ -187,248 +194,140 @@ function cleanSchema(schema) {
   return result;
 }
 
-const server = http.createServer(async (req, res) => {
-  /*
-   * GERÇEK HİSSE VERİSİ
-   */
-  if (
-    req.method === "GET" &&
-    req.url.startsWith("/quote")
-  ) {
 
-    try {
+/*
+ * HTTP SERVER
+ */
+const server = http.createServer(
+  async (req, res) => {
 
-      const url =
-        new URL(
+    /*
+     * =====================================
+     * MCP TOOL TEST
+     * =====================================
+     *
+     * Şimdilik gerçek veri çağırmıyoruz.
+     * MCP'nin gerçekten hangi tool'ları
+     * sunduğunu öğreniyoruz.
+     */
+
+    if (
+      req.method === "GET" &&
+      req.url.startsWith("/quote")
+    ) {
+
+      try {
+
+        const url = new URL(
           req.url,
           `http://${req.headers.host}`
         );
 
-      const symbol =
-        url.searchParams
-          .get("symbol")
-          ?.trim()
-          .toUpperCase();
+        const symbol =
+          url.searchParams
+            .get("symbol")
+            ?.trim()
+            .toUpperCase();
 
-      if (!symbol) {
+        if (!symbol) {
 
-        res.writeHead(400, {
-          "Content-Type":
-            "application/json; charset=utf-8",
-        });
+          res.writeHead(400, {
+            "Content-Type":
+              "application/json; charset=utf-8",
+          });
 
-        res.end(
-          JSON.stringify({
-            error:
-              "symbol parametresi gerekli."
-          })
-        );
-
-        return;
-      }
-
-      console.log(
-        `QUOTE → ${symbol}`
-      );
-
-      const transport =
-        new StreamableHTTPClientTransport(
-          new URL(process.env.MCP_URL)
-        );
-
-      const client =
-        new Client({
-          name:
-            "borsaci-web-client",
-
-          version:
-            "1.0.0",
-        });
-
-      try {
-
-        await client.connect(
-          transport
-        );
-
-        const tools =
-          await client.listTools();
-
-        const quickInfoTool =
-          tools.tools.find(
-            tool =>
-              tool.name ===
-              "get_quick_info"
+          res.end(
+            JSON.stringify({
+              error:
+                "symbol parametresi gerekli.",
+            })
           );
 
-        if (!quickInfoTool) {
-
-          throw new Error(
-            "MCP get_quick_info aracı bulunamadı."
-          );
-
+          return;
         }
 
         console.log(
-          "get_quick_info schema:",
-          JSON.stringify(
-            quickInfoTool.inputSchema,
-            null,
-            2
-          )
+          `QUOTE TEST → ${symbol}`
         );
 
-        res.writeHead(200, {
-          "Content-Type":
-            "application/json; charset=utf-8",
-        });
+        const transport =
+          new StreamableHTTPClientTransport(
+            new URL(process.env.MCP_URL)
+          );
 
-        res.end(
-          JSON.stringify({
-            symbol,
-
-            tool:
-              quickInfoTool.name,
-
-            inputSchema:
-              quickInfoTool.inputSchema,
-
-          })
-        );
-
-      }
-
-      finally {
+        const client =
+          new Client({
+            name:
+              "borsaci-web-client",
+            version:
+              "1.0.0",
+          });
 
         try {
-          await transport.close();
-        } catch (_) {}
 
-      }
-
-    }
-
-    catch (error) {
-
-      console.error(
-        "QUOTE ERROR:",
-        error
-      );
-
-      res.writeHead(500, {
-        "Content-Type":
-          "application/json; charset=utf-8",
-      });
-
-      res.end(
-        JSON.stringify({
-          error:
-            error.message
-        })
-      );
-
-    }
-
-    return;
-  }
-/*
- * BorsaCI WEB ARAYÜZÜ
- */
-if (req.method === "GET" && req.url === "/") {
-
-  const filePath = path.join(
-    __dirname,
-    "public",
-    "index.html"
-  );
-
-  fs.readFile(filePath, (error, data) => {
-
-    if (error) {
-
-      console.error(
-        "index.html okunamadı:",
-        error
-      );
-
-      res.writeHead(500, {
-        "Content-Type":
-          "text/plain; charset=utf-8",
-      });
-
-      res.end(
-        "Internal Server Error"
-      );
-
-      return;
-    }
-
-    res.writeHead(200, {
-      "Content-Type":
-        "text/html; charset=utf-8",
-    });
-
-    res.end(data);
-
-  });
-
-  return;
-}
-  /*
-   * ANALİZ API
-   */
-  if (
-    req.method === "POST" &&
-    req.url === "/ask"
-  ) {
-
-    let body = "";
-
-    req.on("data", (chunk) => {
-      body += chunk;
-    });
-
-    req.on("end", async () => {
-
-      try {
-
-        const data =
-          JSON.parse(body);
-
-        if (!data.question) {
-
-          throw new Error(
-            "question alanı gerekli."
+          await client.connect(
+            transport
           );
+
+          const tools =
+            await client.listTools();
+
+          console.log(
+            "========== GERÇEK MCP TOOLS =========="
+          );
+
+          console.log(
+            tools.tools.map(
+              (tool) => tool.name
+            )
+          );
+
+          console.log(
+            "======================================"
+          );
+
+          res.writeHead(200, {
+            "Content-Type":
+              "application/json; charset=utf-8",
+          });
+
+          res.end(
+            JSON.stringify(
+              {
+                symbol,
+                tools:
+                  tools.tools.map(
+                    (tool) => ({
+                      name:
+                        tool.name,
+
+                      description:
+                        tool.description || "",
+
+                      inputSchema:
+                        tool.inputSchema || null,
+                    })
+                  ),
+              },
+              null,
+              2
+            )
+          );
+
+          return;
+
+        } finally {
+
+          try {
+            await transport.close();
+          } catch (_) {}
 
         }
-console.log("MCP TOOLS LISTELENIYOR...");
-        console.log(
-          `Soru: ${data.question}`
-        );
 
-        const answer =
-          await analyze(
-            data.question
-          );
-
-        res.writeHead(200, {
-          "Content-Type":
-            "application/json; charset=utf-8",
-        });
-
-        res.end(
-          JSON.stringify({
-            answer,
-          })
-        );
-
-      }
-
-      catch (error) {
+      } catch (error) {
 
         console.error(
-          "Analiz hatası:",
+          "QUOTE ERROR:",
           error
         );
 
@@ -446,110 +345,274 @@ console.log("MCP TOOLS LISTELENIYOR...");
 
       }
 
-    });
+      return;
+    }
 
-    return;
-  }
-  /*
- * CSS
- */
-if (req.method === "GET" && req.url === "/style.css") {
 
-  const filePath = path.join(
-    __dirname,
-    "public",
-    "style.css"
-  );
+    /*
+     * =====================================
+     * WEB ARAYÜZÜ
+     * =====================================
+     */
 
-  fs.readFile(filePath, (error, data) => {
+    if (
+      req.method === "GET" &&
+      req.url === "/"
+    ) {
 
-    if (error) {
+      const filePath =
+        path.join(
+          __dirname,
+          "public",
+          "index.html"
+        );
 
-      console.error(
-        "style.css okunamadı:",
-        error
-      );
+      fs.readFile(
+        filePath,
+        (error, data) => {
 
-      res.writeHead(500, {
-        "Content-Type":
-          "text/plain; charset=utf-8",
-      });
+          if (error) {
 
-      res.end(
-        "Internal Server Error"
+            console.error(
+              "index.html okunamadı:",
+              error
+            );
+
+            res.writeHead(500, {
+              "Content-Type":
+                "text/plain; charset=utf-8",
+            });
+
+            res.end(
+              "Internal Server Error"
+            );
+
+            return;
+          }
+
+          res.writeHead(200, {
+            "Content-Type":
+              "text/html; charset=utf-8",
+          });
+
+          res.end(data);
+        }
       );
 
       return;
     }
 
-    res.writeHead(200, {
+
+    /*
+     * =====================================
+     * ANALİZ API
+     * =====================================
+     */
+
+    if (
+      req.method === "POST" &&
+      req.url === "/ask"
+    ) {
+
+      let body = "";
+
+      req.on(
+        "data",
+        (chunk) => {
+          body += chunk;
+        }
+      );
+
+      req.on(
+        "end",
+        async () => {
+
+          try {
+
+            const data =
+              JSON.parse(body);
+
+            if (!data.question) {
+              throw new Error(
+                "question alanı gerekli."
+              );
+            }
+
+            console.log(
+              `Soru: ${data.question}`
+            );
+
+            const answer =
+              await analyze(
+                data.question
+              );
+
+            res.writeHead(200, {
+              "Content-Type":
+                "application/json; charset=utf-8",
+            });
+
+            res.end(
+              JSON.stringify({
+                answer,
+              })
+            );
+
+          } catch (error) {
+
+            console.error(
+              "Analiz hatası:",
+              error
+            );
+
+            res.writeHead(500, {
+              "Content-Type":
+                "application/json; charset=utf-8",
+            });
+
+            res.end(
+              JSON.stringify({
+                error:
+                  error.message,
+              })
+            );
+          }
+
+        }
+      );
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * CSS
+     * =====================================
+     */
+
+    if (
+      req.method === "GET" &&
+      req.url === "/style.css"
+    ) {
+
+      const filePath =
+        path.join(
+          __dirname,
+          "public",
+          "style.css"
+        );
+
+      fs.readFile(
+        filePath,
+        (error, data) => {
+
+          if (error) {
+
+            console.error(
+              "style.css okunamadı:",
+              error
+            );
+
+            res.writeHead(500, {
+              "Content-Type":
+                "text/plain; charset=utf-8",
+            });
+
+            res.end(
+              "Internal Server Error"
+            );
+
+            return;
+          }
+
+          res.writeHead(200, {
+            "Content-Type":
+              "text/css; charset=utf-8",
+          });
+
+          res.end(data);
+        }
+      );
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * JAVASCRIPT
+     * =====================================
+     */
+
+    if (
+      req.method === "GET" &&
+      req.url === "/app.js"
+    ) {
+
+      const filePath =
+        path.join(
+          __dirname,
+          "public",
+          "app.js"
+        );
+
+      fs.readFile(
+        filePath,
+        (error, data) => {
+
+          if (error) {
+
+            console.error(
+              "app.js okunamadı:",
+              error
+            );
+
+            res.writeHead(500, {
+              "Content-Type":
+                "text/plain; charset=utf-8",
+            });
+
+            res.end(
+              "Internal Server Error"
+            );
+
+            return;
+          }
+
+          res.writeHead(200, {
+            "Content-Type":
+              "application/javascript; charset=utf-8",
+          });
+
+          res.end(data);
+        }
+      );
+
+      return;
+    }
+
+
+    /*
+     * =====================================
+     * 404
+     * =====================================
+     */
+
+    res.writeHead(404, {
       "Content-Type":
-        "text/css; charset=utf-8",
+        "text/plain; charset=utf-8",
     });
 
-    res.end(data);
+    res.end("Not Found");
 
-  });
-
-  return;
-}
+  }
+);
 
 
 /*
- * JAVASCRIPT
+ * SERVER START
  */
-if (req.method === "GET" && req.url === "/app.js") {
-
-  const filePath = path.join(
-    __dirname,
-    "public",
-    "app.js"
-  );
-
-  fs.readFile(filePath, (error, data) => {
-
-    if (error) {
-
-      console.error(
-        "app.js okunamadı:",
-        error
-      );
-
-      res.writeHead(500, {
-        "Content-Type":
-          "text/plain; charset=utf-8",
-      });
-
-      res.end(
-        "Internal Server Error"
-      );
-
-      return;
-    }
-
-    res.writeHead(200, {
-      "Content-Type":
-        "application/javascript; charset=utf-8",
-    });
-
-    res.end(data);
-
-  });
-
-  return;
-}
-
-  /*
-   * BULUNAMAYAN ADRES
-   */
-  res.writeHead(404, {
-    "Content-Type":
-      "text/plain; charset=utf-8",
-  });
-
-  res.end("Not Found");
-});
-
 server.listen(
   PORT,
   "0.0.0.0",
