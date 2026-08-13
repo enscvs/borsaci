@@ -1655,3 +1655,281 @@ INITIAL
 */
 
 renderWatchlist();
+/* ========================================================
+   BORSACI MARKET CHART
+   ======================================================== */
+
+let marketChart = null;
+let candleSeries = null;
+let volumeSeries = null;
+
+function initMarketChart() {
+
+  const container = document.getElementById("tradingview_chart");
+
+  if (!container) {
+    console.error("Chart container bulunamadı.");
+    return;
+  }
+
+  // Eski chart varsa temizle
+  container.innerHTML = "";
+
+  marketChart = LightweightCharts.createChart(container, {
+
+    width: container.clientWidth,
+    height: container.clientHeight,
+
+    layout: {
+      background: {
+        type: "solid",
+        color: "#0b0f14"
+      },
+
+      textColor: "#9aa4b2"
+    },
+
+    grid: {
+      vertLines: {
+        color: "#151b23"
+      },
+
+      horzLines: {
+        color: "#151b23"
+      }
+    },
+
+    crosshair: {
+      mode: LightweightCharts.CrosshairMode.Normal
+    },
+
+    rightPriceScale: {
+      borderColor: "#252c36"
+    },
+
+    timeScale: {
+      borderColor: "#252c36",
+      timeVisible: false
+    }
+
+  });
+
+
+  candleSeries = marketChart.addSeries(
+    LightweightCharts.CandlestickSeries,
+    {
+
+      upColor: "#26a69a",
+
+      downColor: "#ef5350",
+
+      borderUpColor: "#26a69a",
+
+      borderDownColor: "#ef5350",
+
+      wickUpColor: "#26a69a",
+
+      wickDownColor: "#ef5350"
+
+    }
+  );
+
+
+  volumeSeries = marketChart.addSeries(
+    LightweightCharts.HistogramSeries,
+    {
+
+      priceFormat: {
+        type: "volume"
+      },
+
+      priceScaleId: ""
+
+    }
+  );
+
+
+  marketChart.priceScale("").applyOptions({
+
+    scaleMargins: {
+      top: 0.8,
+      bottom: 0
+    }
+
+  });
+
+
+  // TEST VERİSİ
+  candleSeries.setData([
+
+    {
+      time: "2026-07-20",
+      open: 170,
+      high: 176,
+      low: 168,
+      close: 174
+    },
+
+    {
+      time: "2026-07-21",
+      open: 174,
+      high: 179,
+      low: 172,
+      close: 177
+    },
+
+    {
+      time: "2026-07-22",
+      open: 177,
+      high: 181,
+      low: 175,
+      close: 176
+    },
+
+    {
+      time: "2026-07-23",
+      open: 176,
+      high: 178,
+      low: 170,
+      close: 172
+    },
+
+    {
+      time: "2026-07-24",
+      open: 172,
+      high: 180,
+      low: 171,
+      close: 179
+    },
+
+    {
+      time: "2026-07-27",
+      open: 179,
+      high: 183,
+      low: 177,
+      close: 181
+    },
+
+    {
+      time: "2026-07-28",
+      open: 181,
+      high: 185,
+      low: 179,
+      close: 184
+    },
+
+    {
+      time: "2026-07-29",
+      open: 184,
+      high: 186,
+      low: 180,
+      close: 182
+    },
+
+    {
+      time: "2026-07-30",
+      open: 182,
+      high: 188,
+      low: 181,
+      close: 187
+    },
+
+    {
+      time: "2026-07-31",
+      open: 187,
+      high: 190,
+      low: 184,
+      close: 189
+    }
+
+  ]);
+
+
+  volumeSeries.setData([
+
+    {
+      time: "2026-07-20",
+      value: 1200000
+    },
+
+    {
+      time: "2026-07-21",
+      value: 1800000
+    },
+
+    {
+      time: "2026-07-22",
+      value: 1500000
+    },
+
+    {
+      time: "2026-07-23",
+      value: 2100000
+    },
+
+    {
+      time: "2026-07-24",
+      value: 1900000
+    },
+
+    {
+      time: "2026-07-27",
+      value: 2500000
+    },
+
+    {
+      time: "2026-07-28",
+      value: 2200000
+    },
+
+    {
+      time: "2026-07-29",
+      value: 1700000
+    },
+
+    {
+      time: "2026-07-30",
+      value: 2800000
+    },
+
+    {
+      time: "2026-07-31",
+      value: 3100000
+    }
+
+  ]);
+
+
+  marketChart.timeScale().fitContent();
+
+
+  // Ekran boyutu değişince chart da büyüsün
+  const resizeObserver =
+    new ResizeObserver(() => {
+
+      marketChart.applyOptions({
+
+        width: container.clientWidth,
+
+        height: container.clientHeight
+
+      });
+
+    });
+
+
+  resizeObserver.observe(container);
+
+}
+
+
+/* Sayfa açıldığında chart oluştur */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+
+    initMarketChart();
+
+  }
+);
