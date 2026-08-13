@@ -19,16 +19,11 @@
 
 </head>
 
-
 <body>
-
 
 <div class="terminal">
 
-
-  <!-- =====================================================
-       HEADER
-  ====================================================== -->
+  <!-- HEADER -->
 
   <header class="topbar">
 
@@ -37,11 +32,8 @@
     </div>
 
     <div class="system-status">
-
       <span class="status-dot"></span>
-
       SYSTEM READY
-
     </div>
 
     <div
@@ -54,9 +46,7 @@
   </header>
 
 
-  <!-- =====================================================
-       MARKET BAR
-  ====================================================== -->
+  <!-- MARKET BAR -->
 
   <div class="market-bar">
 
@@ -66,46 +56,34 @@
     </div>
 
     <div>
-
       STATUS
-
       <strong class="online">
         ● ONLINE
       </strong>
-
     </div>
 
     <div>
-
       DATA
-
       <strong id="dataStatus">
         WAITING
       </strong>
-
     </div>
 
   </div>
 
 
-  <!-- =====================================================
-       DASHBOARD
-  ====================================================== -->
+  <!-- DASHBOARD -->
 
   <main class="dashboard">
 
 
-    <!-- ===================================================
-         WATCHLIST
-    ==================================================== -->
+    <!-- WATCHLIST -->
 
     <section class="panel watchlist">
 
       <div class="panel-title">
 
-        <span>
-          WATCHLIST
-        </span>
+        <span>WATCHLIST</span>
 
         <button
           class="mini-button"
@@ -116,44 +94,21 @@
 
       </div>
 
-
       <div
         class="watchlist-body"
         id="watchlist"
-      >
-
-        <div class="watchlist-empty">
-
-          <div class="empty-icon">
-            +
-          </div>
-
-          <span>
-            LOADING
-          </span>
-
-          <small>
-            Loading market symbols...
-          </small>
-
-        </div>
-
-      </div>
+      ></div>
 
     </section>
 
 
-    <!-- ===================================================
-         MARKET CHART
-    ==================================================== -->
+    <!-- MARKET CHART -->
 
     <section class="panel chart">
 
       <div class="panel-title">
 
-        <span>
-          MARKET CHART
-        </span>
+        <span>MARKET CHART</span>
 
         <span
           class="panel-status"
@@ -164,29 +119,24 @@
 
       </div>
 
-
-      <div class="chart-area">
-
-
-        <!--
-          Lightweight Charts buraya kurulacak.
-          app.js içindeki chart kodu bunu kullanır.
-        -->
+      <div
+        class="chart-area"
+        id="chartArea"
+      >
 
         <div
           id="tradingview_chart"
           style="
-            width: 100%;
-            height: 100%;
-            min-height: 350px;
+            width:100%;
+            height:100%;
+            min-height:400px;
           "
         ></div>
-
 
         <div
           class="chart-empty"
           id="chartEmpty"
-          style="display: none;"
+          style="display:none;"
         >
 
           <span>
@@ -199,30 +149,24 @@
 
         </div>
 
-
       </div>
 
     </section>
 
 
-    <!-- ===================================================
-         NEWS
-    ==================================================== -->
+    <!-- NEWS -->
 
     <section class="panel news">
 
       <div class="panel-title">
 
-        <span>
-          NEWS FEED
-        </span>
+        <span>NEWS FEED</span>
 
         <span class="panel-status">
           LIVE
         </span>
 
       </div>
-
 
       <div
         id="newsFeed"
@@ -246,123 +190,64 @@
     </section>
 
 
-    <!-- ===================================================
-         TECHNICAL ANALYSIS
-    ==================================================== -->
+    <!-- TECHNICAL -->
 
     <section class="panel technical">
 
       <div class="panel-title">
-
         TECHNICAL ANALYSIS
-
       </div>
-
 
       <div class="technical-grid">
 
-
         <div class="indicator">
-
-          <span>
-            RSI
-          </span>
-
-          <strong id="rsi">
-            --
-          </strong>
-
+          <span>RSI</span>
+          <strong id="rsi">--</strong>
         </div>
 
-
         <div class="indicator">
-
-          <span>
-            MACD
-          </span>
-
-          <strong id="macd">
-            --
-          </strong>
-
+          <span>MACD</span>
+          <strong id="macd">--</strong>
         </div>
 
-
         <div class="indicator">
-
-          <span>
-            EMA 20
-          </span>
-
-          <strong id="ema20">
-            --
-          </strong>
-
+          <span>EMA 20</span>
+          <strong id="ema20">--</strong>
         </div>
 
-
         <div class="indicator">
-
-          <span>
-            EMA 50
-          </span>
-
-          <strong id="ema50">
-            --
-          </strong>
-
+          <span>EMA 50</span>
+          <strong id="ema50">--</strong>
         </div>
 
-
         <div class="indicator">
-
-          <span>
-            VOLUME
-          </span>
-
-          <strong id="volume">
-            --
-          </strong>
-
+          <span>VOLUME</span>
+          <strong id="volume">--</strong>
         </div>
 
-
         <div class="indicator">
-
-          <span>
-            ATR
-          </span>
-
-          <strong id="atr">
-            --
-          </strong>
-
+          <span>ATR</span>
+          <strong id="atr">--</strong>
         </div>
-
 
       </div>
 
     </section>
 
 
-    <!-- ===================================================
-         AI ANALYSIS
-    ==================================================== -->
+    <!-- AI ANALYSIS -->
 
     <section class="panel ai-analysis">
 
       <div class="panel-title">
 
-        <span>
-          AI ANALYSIS
-        </span>
+        <span>AI ANALYSIS</span>
 
         <span class="panel-status">
           AI
         </span>
 
       </div>
-
 
       <div
         class="ai-empty"
@@ -383,35 +268,19 @@
 
       </div>
 
-
       <div
         class="ai-result"
         id="aiResult"
       >
 
         <div>
-
-          <span>
-            SIGNAL
-          </span>
-
-          <strong id="signal">
-            --
-          </strong>
-
+          <span>SIGNAL</span>
+          <strong id="signal">--</strong>
         </div>
 
-
         <div>
-
-          <span>
-            CONFIDENCE
-          </span>
-
-          <strong id="confidence">
-            --
-          </strong>
-
+          <span>CONFIDENCE</span>
+          <strong id="confidence">--</strong>
         </div>
 
       </div>
@@ -419,18 +288,13 @@
     </section>
 
 
-    <!-- ===================================================
-         NEWS IMPACT
-    ==================================================== -->
+    <!-- NEWS IMPACT -->
 
     <section class="panel news-impact">
 
       <div class="panel-title">
-
         NEWS IMPACT
-
       </div>
-
 
       <div
         class="empty-state"
@@ -450,24 +314,19 @@
     </section>
 
 
-    <!-- ===================================================
-         PORTFOLIO
-    ==================================================== -->
+    <!-- PORTFOLIO -->
 
     <section class="panel portfolio">
 
       <div class="panel-title">
 
-        <span>
-          PORTFOLIO
-        </span>
+        <span>PORTFOLIO</span>
 
         <span class="panel-status">
           EMPTY
         </span>
 
       </div>
-
 
       <div class="portfolio-empty">
 
@@ -483,29 +342,19 @@
 
     </section>
 
-
   </main>
 
 
-  <!-- =====================================================
-       COMMAND PANEL
-  ====================================================== -->
+  <!-- COMMAND -->
 
   <section class="command-panel">
-
 
     <div class="command-header">
 
       <div class="command-title">
-
-        <span>
-          &gt;
-        </span>
-
+        <span>&gt;</span>
         BORSACI TERMINAL
-
       </div>
-
 
       <div class="command-status">
         READY
@@ -523,7 +372,6 @@
 
     <div class="command-footer">
 
-
       <div class="shortcuts">
 
         [ENTER] ANALYZE
@@ -534,28 +382,18 @@
 
       </div>
 
-
-      <button
-        id="analyzeBtn"
-      >
+      <button id="analyzeBtn">
         ANALYZE
       </button>
 
-
     </div>
-
 
   </section>
 
 
-  <!-- =====================================================
-       AI RESPONSE
-  ====================================================== -->
+  <!-- AI RESPONSE -->
 
-  <section
-    class="response-panel panel"
-  >
-
+  <section class="response-panel panel">
 
     <div class="panel-title">
 
@@ -569,58 +407,97 @@
 
     </div>
 
-
     <pre id="response">Waiting for input...</pre>
-
 
   </section>
 
 
-  <!-- =====================================================
-       FOOTER
-  ====================================================== -->
+  <!-- FOOTER -->
 
   <footer class="footer">
 
     BORSACI AI TERMINAL
 
-    <span>
-      •
-    </span>
+    <span>•</span>
 
     MCP DATA ENGINE
 
-    <span>
-      •
-    </span>
+    <span>•</span>
 
     SYSTEM READY
 
   </footer>
-
 
 </div>
 
 
 <!-- =====================================================
      LIGHTWEIGHT CHARTS
-     
-     ÖNEMLİ:
-     BU SCRIPT APP.JS'DEN ÖNCE GELMELİ.
-====================================================== -->
+     ÖNCE KÜTÜPHANE
+===================================================== -->
 
 <script
-  src="https://unpkg.com/lightweight-charts@5.0.0/dist/lightweight-charts.standalone.production.js"
-></script>
+  src="https://unpkg.com/lightweight-charts@5.0.0/dist/lightweight-charts.standalone.production.js">
+</script>
 
 
 <!-- =====================================================
      BORSACI APP
-
-     SADECE 1 KERE
-====================================================== -->
+     SONRA APP.JS
+===================================================== -->
 
 <script src="/app.js"></script>
+
+
+<!-- =====================================================
+     CHART BAŞLATMA
+     APP.JS YÜKLENDİKTEN SONRA
+===================================================== -->
+
+<script>
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+
+    console.log(
+      "BORSACI: LightweightCharts kontrol ediliyor..."
+    );
+
+    if (
+      typeof LightweightCharts === "undefined"
+    ) {
+
+      console.error(
+        "LightweightCharts yüklenmedi!"
+      );
+
+      return;
+
+    }
+
+    console.log(
+      "BORSACI: LightweightCharts OK"
+    );
+
+    if (
+      typeof initMarketChart === "function"
+    ) {
+
+      initMarketChart();
+
+    } else {
+
+      console.error(
+        "initMarketChart bulunamadı!"
+      );
+
+    }
+
+  }
+);
+
+</script>
 
 
 </body>
