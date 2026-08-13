@@ -1,3 +1,38 @@
+function loadTradingViewChart(symbol = "XU100") {
+
+  const container = document.getElementById("tradingview_chart");
+
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const script = document.createElement("script");
+
+  script.src =
+    "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+
+  script.type = "text/javascript";
+  script.async = true;
+
+  script.innerHTML = JSON.stringify({
+    autosize: true,
+    symbol: `BIST:${symbol}`,
+    interval: "D",
+    timezone: "Europe/Istanbul",
+    theme: "dark",
+    style: "1",
+    locale: "tr",
+    enable_publishing: false,
+    allow_symbol_change: false,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    save_image: false,
+    hide_volume: false,
+    support_host: "https://www.tradingview.com"
+  });
+
+  container.appendChild(script);
+}
 /*
 ========================================================
 ELEMENTS
