@@ -31,7 +31,32 @@ let volumeSeries = null;
 let chartResizeObserver = null;
 
 let chartInitialized = false;
+/*
+========================================================
+CHART CONTROL STATE
+========================================================
+*/
 
+let chartRange = "1y";
+let chartInterval = "1d";
+
+let chartHistory = [];
+
+let indicatorSeries = {
+  sma: null,
+  ema: null,
+  bollingerUpper: null,
+  bollingerMiddle: null,
+  bollingerLower: null
+};
+
+let indicatorState = {
+  sma: false,
+  ema: false,
+  bollinger: false,
+  rsi: false,
+  macd: false
+};
 
 /*
 ========================================================
@@ -1796,7 +1821,9 @@ LOAD CHART DATA
 */
 
 async function loadChartData(
-  symbol
+  symbol,
+  range = chartRange,
+  interval = chartInterval
 ) {
 
   const clean =
@@ -2202,7 +2229,9 @@ UPDATE CHART DATA
 function updateChartData(
   history
 ) {
-
+  chartHistory = Array.isArray(history)
+    ? history
+    : [];
   if (
     !marketChart ||
     !candleSeries
