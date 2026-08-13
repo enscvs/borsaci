@@ -14,15 +14,26 @@ const {
   StreamableHTTPClientTransport,
 } = require("@modelcontextprotocol/sdk/client/streamableHttp.js");
 
+
+/*
+========================================================
+CONFIG
+========================================================
+*/
+
 const PORT =
   process.env.PORT || 3000;
 
+const MODEL =
+  process.env.GROQ_MODEL ||
+  "openai/gpt-oss-120b";
+
 
 /*
- * =====================================
- * OPENROUTER
- * =====================================
- */
+========================================================
+GROQ
+========================================================
+*/
 
 const ai = new OpenAI({
   apiKey:
@@ -33,18 +44,15 @@ const ai = new OpenAI({
 });
 
 
-const MODEL =
-  process.env.GROQ_MODEL ||
-  "openai/gpt-oss-120b";
-
 /*
- * =====================================
- * SYSTEM PROMPT
- * =====================================
- */
+========================================================
+SYSTEM PROMPT
+========================================================
+*/
 
 const SYSTEM_PROMPT = `
 Sen BorsaCI adlı profesyonel bir BIST ve finansal piyasa analiz asistanısın.
+
 ========================================
 SEMBOL TESPİTİ
 ========================================
@@ -68,14 +76,19 @@ doğru BIST sembolünü bul.
 BIST sembolü zaten açıkça verilmişse doğrudan ilgili MCP araçlarını kullan.
 
 Kullanıcı "Doas teknik analiz" dediğinde:
+
 1. DOAS sembolünü tespit et.
 2. Gerekirse search_symbol kullan.
 3. get_quote kullan.
 4. get_technical_analysis kullan.
 5. Gerekliyse get_historical_data kullan.
-6. MCP verilerini aldıktan sonra teknik analizi oluştur.
+6. Gerekliyse haber araçlarını kullan.
+7. Gerekliyse temel analiz araçlarını kullan.
+8. MCP verilerini aldıktan sonra teknik analizi oluştur.
 
 Sembol belirsiz değilse kullanıcıdan tekrar sembol isteme.
+
+
 ========================================
 ANA KURAL
 ========================================
@@ -127,6 +140,10 @@ iddialarında bulunma.
 
 Bir haber yalnızca kurumsal veya prosedürel bir KAP açıklamasıysa bunu
 otomatik olarak hisse için pozitif kataliz olarak değerlendirme.
+
+Haber tarihini belirt.
+
+Haber ile fiyat arasında doğrudan nedensellik kurma.
 
 
 ========================================
@@ -190,10 +207,8 @@ Market Cap = Piyasa Değeri
 
 
 ========================================
-SONUÇ
+GENİŞ ANALİZ FORMAT
 ========================================
-
-Geniş analizlerde şu formatı kullan:
 
 ## 📊 Güncel Durum
 
@@ -215,8 +230,6 @@ Geniş analizlerde şu formatı kullan:
 Önemli haberleri ve haber detaylarını özetle.
 
 Haberin tarihini belirt.
-
-Haber ile fiyat arasında doğrudan nedensellik kurma.
 
 ## 🎯 Analist Görüşleri
 
@@ -276,10 +289,71 @@ Gereksiz uzunlukta cevap verme.
 
 
 /*
- * =====================================
- * SCHEMA CLEANER
- * =====================================
- */
+========================================================
+HTTP HELPERS
+========================================================
+*/
+
+function sendJSON(
+  res,
+  statusCode,
+  data
+) {
+
+  res.writeHead(
+    statusCode,
+    {
+      "Content-Type":
+        "application/json; charset=utf-8",
+
+      "Cache-Control":
+        "no-store",
+
+      "Access-Control-Allow-Origin":
+        "*",
+
+      "Access-Control-Allow-Methods":
+        "GET,POST,OPTIONS",
+
+      "Access-Control-Allow-Headers":
+        "Content-Type",
+    }
+  );
+
+  res.end(
+    JSON.stringify(
+      data
+    )
+  );
+}
+
+
+function sendText(
+  res,
+  statusCode,
+  text
+) {
+
+  res.writeHead(
+    statusCode,
+    {
+      "Content-Type":
+        "text/plain; charset=utf-8",
+
+      "Access-Control-Allow-Origin":
+        "*",
+    }
+  );
+
+  res.end(text);
+}
+
+
+/*
+========================================================
+SCHEMA CLEANER
+========================================================
+*/
 
 function cleanSchema(schema) {
 
@@ -339,6 +413,7 @@ function cleanSchema(schema) {
       result[key] = value;
 
     }
+
   }
 
   return result;
@@ -346,10 +421,10 @@ function cleanSchema(schema) {
 
 
 /*
- * =====================================
- * MCP → OPENAI TOOL
- * =====================================
- */
+========================================================
+MCP → OPENAI TOOLS
+========================================================
+*/
 
 function convertMcpToolsToOpenAITools(
   tools
@@ -357,9 +432,12 @@ function convertMcpToolsToOpenAITools(
 
   return tools.map(
     (tool) => ({
-      type: "function",
+
+      type:
+        "function",
 
       function: {
+
         name:
           tool.name,
 
@@ -369,23 +447,36 @@ function convertMcpToolsToOpenAITools(
         parameters:
           cleanSchema(
             tool.inputSchema || {
-              type: "object",
-              properties: {},
+              type:
+                "object",
+
+              properties:
+                {},
             }
           ),
+
       },
+
     })
   );
 }
 
 
 /*
- * =====================================
- * MCP CONNECTION
- * =====================================
- */
+========================================================
+MCP CONNECTION
+========================================================
+*/
 
 async function createMcpClient() {
+
+  if (!process.env.MCP_URL) {
+
+    throw new Error(
+      "MCP_URL environment variable tanımlı değil."
+    );
+
+  }
 
   const transport =
     new StreamableHTTPClientTransport(
@@ -394,18 +485,23 @@ async function createMcpClient() {
       )
     );
 
+
   const client =
     new Client({
+
       name:
-        "openrouter-borsaci",
+        "borsaci",
 
       version:
         "1.0.0",
+
     });
+
 
   await client.connect(
     transport
   );
+
 
   return {
     client,
@@ -415,33 +511,48 @@ async function createMcpClient() {
 
 
 /*
- * =====================================
- * ANALYZE
- * =====================================
- */
+========================================================
+AI ANALYZE
+========================================================
+*/
 
-async function analyze(question) {
+async function analyze(
+  question
+) {
+
+  if (!question) {
+
+    throw new Error(
+      "Soru boş olamaz."
+    );
+
+  }
+
 
   const {
     client,
     transport,
-  } = await createMcpClient();
+  } =
+    await createMcpClient();
+
 
   try {
 
     /*
-     * =====================================
-     * MCP TOOLS
-     * =====================================
-     */
+    ========================================
+    MCP TOOLS
+    ========================================
+    */
 
     const toolResult =
       await client.listTools();
 
+
     console.log(
       "MCP TOOLS:",
       toolResult.tools.map(
-        (tool) => tool.name
+        (tool) =>
+          tool.name
       )
     );
 
@@ -452,11 +563,22 @@ async function analyze(question) {
       );
 
 
+    if (
+      tools.length === 0
+    ) {
+
+      throw new Error(
+        "MCP sunucusunda kullanılabilir araç bulunamadı."
+      );
+
+    }
+
+
     /*
-     * =====================================
-     * MESSAGES
-     * =====================================
-     */
+    ========================================
+    MESSAGES
+    ========================================
+    */
 
     const messages = [
 
@@ -480,10 +602,10 @@ async function analyze(question) {
 
 
     /*
-     * =====================================
-     * TOOL LOOP
-     * =====================================
-     */
+    ========================================
+    TOOL LOOP
+    ========================================
+    */
 
     for (
       let step = 0;
@@ -524,17 +646,17 @@ async function analyze(question) {
       if (!message) {
 
         throw new Error(
-          "OpenRouter cevap üretmedi."
+          "AI cevap üretmedi."
         );
 
       }
 
 
       /*
-       * =====================================
-       * FINAL RESPONSE
-       * =====================================
-       */
+      ========================================
+      FINAL RESPONSE
+      ========================================
+      */
 
       if (
         !message.tool_calls ||
@@ -550,8 +672,10 @@ async function analyze(question) {
 
 
       /*
-       * AI MESSAGE
-       */
+      ========================================
+      AI MESSAGE
+      ========================================
+      */
 
       messages.push(
         message
@@ -559,10 +683,10 @@ async function analyze(question) {
 
 
       /*
-       * =====================================
-       * TOOL CALLS
-       * =====================================
-       */
+      ========================================
+      TOOL CALLS
+      ========================================
+      */
 
       for (
         const toolCall
@@ -570,10 +694,13 @@ async function analyze(question) {
       ) {
 
         const functionName =
-          toolCall.function.name;
+          toolCall
+            .function
+            .name;
 
 
-        let argumentsObject = {};
+        let argumentsObject =
+          {};
 
 
         try {
@@ -582,7 +709,8 @@ async function analyze(question) {
             JSON.parse(
               toolCall
                 .function
-                .arguments || "{}"
+                .arguments ||
+              "{}"
             );
 
         } catch (error) {
@@ -591,8 +719,6 @@ async function analyze(question) {
             "Tool arguments JSON hatası:",
             error.message
           );
-
-          argumentsObject = {};
 
         }
 
@@ -616,10 +742,6 @@ async function analyze(question) {
 
             });
 
-
-          /*
-           * TOOL SONUCUNU MODELE VER
-           */
 
           messages.push({
 
@@ -655,8 +777,10 @@ async function analyze(question) {
 
             content:
               JSON.stringify({
+
                 error:
                   error.message,
+
               }),
 
           });
@@ -669,7 +793,7 @@ async function analyze(question) {
 
 
     throw new Error(
-      "Maksimum MCP adımına ulaşıldı."
+      "Maksimum MCP analiz adımına ulaşıldı."
     );
 
 
@@ -687,181 +811,19 @@ async function analyze(question) {
 
 
 /*
- * =====================================
- * HTTP SERVER
- * =====================================
- */
+========================================================
+YAHOO FINANCE
+========================================================
+*/
 
-const server =
-  http.createServer(
-    async (req, res) => {
+function normalizeBistSymbol(
+  symbol
+) {
 
-      /*
-       * =====================================
-       * QUOTE / MCP TOOL TEST
-       * =====================================
-       */
+  if (!symbol) {
+    return null;
+  }
 
-      if (
-        req.method === "GET" &&
-        req.url.startsWith(
-          "/quote"
-        )
-      ) {
-
-        try {
-
-          const url =
-            new URL(
-              req.url,
-              `http://${req.headers.host}`
-            );
-
-
-          const symbol =
-            url.searchParams
-              .get("symbol")
-              ?.trim()
-              .toUpperCase();
-
-
-          if (!symbol) {
-
-            res.writeHead(
-              400,
-              {
-                "Content-Type":
-                  "application/json; charset=utf-8",
-              }
-            );
-
-
-            res.end(
-              JSON.stringify({
-                error:
-                  "symbol parametresi gerekli.",
-              })
-            );
-
-
-            return;
-
-          }
-
-
-          console.log(
-            `QUOTE TEST → ${symbol}`
-          );
-
-
-          const {
-            client,
-            transport,
-          } =
-            await createMcpClient();
-
-
-          try {
-
-            const tools =
-              await client.listTools();
-
-
-            res.writeHead(
-              200,
-              {
-                "Content-Type":
-                  "application/json; charset=utf-8",
-              }
-            );
-
-
-            res.end(
-              JSON.stringify(
-                {
-
-                  symbol,
-
-                  tools:
-                    tools.tools.map(
-                      (tool) => ({
-
-                        name:
-                          tool.name,
-
-                        description:
-                          tool.description ||
-                          "",
-
-                        inputSchema:
-                          tool.inputSchema ||
-                          null,
-
-                      })
-                    ),
-
-                },
-
-                null,
-
-                2
-              )
-            );
-
-
-          } finally {
-
-            try {
-
-              await transport.close();
-
-            } catch (_) {}
-
-          }
-
-
-        } catch (error) {
-
-          console.error(
-            "QUOTE ERROR:",
-            error
-          );
-
-
-          res.writeHead(
-            500,
-            {
-              "Content-Type":
-                "application/json; charset=utf-8",
-            }
-          );
-
-
-          res.end(
-            JSON.stringify({
-
-              error:
-                error.message,
-
-            })
-          );
-
-        }
-
-
-        return;
-
-      }
-
-/*
- * =====================================
- * YAHOO FINANCE HELPERS
- * =====================================
- */
-
-function normalizeBistSymbol(symbol) {
-
-  if (!symbol) return null;
 
   let clean =
     String(symbol)
@@ -869,13 +831,25 @@ function normalizeBistSymbol(symbol) {
       .toUpperCase()
       .replace(/^BIST:/, "");
 
-  if (!clean.endsWith(".IS")) {
+
+  if (
+    !clean.endsWith(".IS")
+  ) {
+
     clean += ".IS";
+
   }
+
 
   return clean;
 }
 
+
+/*
+========================================================
+YAHOO CHART
+========================================================
+*/
 
 async function fetchYahooChart(
   symbol,
@@ -884,18 +858,25 @@ async function fetchYahooChart(
 ) {
 
   const yahooSymbol =
-    normalizeBistSymbol(symbol);
+    normalizeBistSymbol(
+      symbol
+    );
+
 
   if (!yahooSymbol) {
+
     throw new Error(
       "Yahoo sembolü oluşturulamadı."
     );
+
   }
 
 
   const yahooUrl =
     "https://query1.finance.yahoo.com/v8/finance/chart/" +
-    encodeURIComponent(yahooSymbol) +
+    encodeURIComponent(
+      yahooSymbol
+    ) +
     `?range=${encodeURIComponent(range)}` +
     `&interval=${encodeURIComponent(interval)}` +
     "&events=history&includeAdjustedClose=true";
@@ -911,15 +892,20 @@ async function fetchYahooChart(
     await fetch(
       yahooUrl,
       {
-        method: "GET",
+
+        method:
+          "GET",
 
         headers: {
+
           "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+            "Mozilla/5.0",
 
           "Accept":
-            "application/json,text/plain,*/*"
-        }
+            "application/json,text/plain,*/*",
+
+        },
+
       }
     );
 
@@ -928,7 +914,7 @@ async function fetchYahooChart(
     await response.text();
 
 
-  let data = null;
+  let data;
 
 
   try {
@@ -985,13 +971,16 @@ async function fetchYahooChart(
 
 
   const quote =
-    result.indicators
+    result
+      .indicators
       ?.quote?.[0];
 
 
   if (
     !quote ||
-    !Array.isArray(timestamps)
+    !Array.isArray(
+      timestamps
+    )
   ) {
 
     throw new Error(
@@ -1037,7 +1026,9 @@ async function fetchYahooChart(
 
 
     if (
-      !Number.isFinite(close)
+      !Number.isFinite(
+        close
+      )
     ) {
 
       continue;
@@ -1070,7 +1061,7 @@ async function fetchYahooChart(
       volume:
         Number.isFinite(volume)
           ? volume
-          : 0
+          : 0,
 
     });
 
@@ -1089,14 +1080,18 @@ async function fetchYahooChart(
 
 
   return {
+
     symbol:
       yahooSymbol
-        .replace(/\.IS$/, ""),
+        .replace(
+          /\.IS$/,
+          ""
+        ),
 
     history,
 
     meta:
-      result.meta || {}
+      result.meta || {},
 
   };
 
@@ -1104,14 +1099,14 @@ async function fetchYahooChart(
 
 
 /*
- * =====================================
- * MARKET ENDPOINT
- * =====================================
- */
+========================================================
+MARKET HANDLER
+========================================================
+*/
 
-if (
-  req.method === "GET" &&
-  req.url.startsWith("/market")
+async function handleMarket(
+  req,
+  res
 ) {
 
   try {
@@ -1119,35 +1114,26 @@ if (
     const url =
       new URL(
         req.url,
-        `http://${req.headers.host}`
+        `http://${req.headers.host || "localhost"}`
       );
 
 
     const requestedSymbol =
-      url.searchParams
-        .get("symbol");
+      url.searchParams.get(
+        "symbol"
+      );
 
 
     if (!requestedSymbol) {
 
-      res.writeHead(
+      return sendJSON(
+        res,
         400,
         {
-          "Content-Type":
-            "application/json; charset=utf-8"
+          error:
+            "symbol parametresi gerekli.",
         }
       );
-
-
-      res.end(
-        JSON.stringify({
-          error:
-            "symbol parametresi gerekli."
-        })
-      );
-
-
-      return;
 
     }
 
@@ -1162,13 +1148,6 @@ if (
       `MARKET → ${symbol}`
     );
 
-
-    /*
-     * 1 günlük Yahoo verisini al.
-     *
-     * Market endpoint için
-     * güncel quote'a yakın veri.
-     */
 
     const yahoo =
       await fetchYahooChart(
@@ -1195,11 +1174,13 @@ if (
 
 
     const price =
-      latest?.close ?? null;
+      latest?.close ??
+      null;
 
 
     const previousClose =
-      previous?.close ?? null;
+      previous?.close ??
+      null;
 
 
     let changePercent =
@@ -1216,23 +1197,38 @@ if (
         (
           (price - previousClose) /
           previousClose
-        ) * 100;
+        ) *
+        100;
 
     }
 
 
     const volume =
-      latest?.volume ?? null;
+      latest?.volume ??
+      null;
 
 
-    const result = {
+    return sendJSON(
+      res,
+      200,
+      {
 
-      symbol,
+        symbol,
 
-      timestamp:
-        new Date().toISOString(),
+        timestamp:
+          new Date().toISOString(),
 
-      quote: {
+        quote: {
+
+          price,
+
+          changePercent,
+
+          volume,
+
+          previousClose,
+
+        },
 
         price,
 
@@ -1240,37 +1236,9 @@ if (
 
         volume,
 
-        previousClose
+        history,
 
-      },
-
-      price,
-
-      changePercent,
-
-      volume,
-
-      history
-
-    };
-
-
-    res.writeHead(
-      200,
-      {
-        "Content-Type":
-          "application/json; charset=utf-8",
-
-        "Cache-Control":
-          "no-store"
       }
-    );
-
-
-    res.end(
-      JSON.stringify(
-        result
-      )
     );
 
 
@@ -1282,39 +1250,31 @@ if (
     );
 
 
-    res.writeHead(
+    return sendJSON(
+      res,
       500,
       {
-        "Content-Type":
-          "application/json; charset=utf-8"
+
+        error:
+          error.message,
+
       }
     );
 
-
-    res.end(
-      JSON.stringify({
-        error:
-          error.message
-      })
-    );
-
   }
-
-
-  return;
 
 }
 
 
 /*
- * =====================================
- * CHART ENDPOINT
- * =====================================
- */
+========================================================
+CHART HANDLER
+========================================================
+*/
 
-if (
-  req.method === "GET" &&
-  req.url.startsWith("/chart")
+async function handleChart(
+  req,
+  res
 ) {
 
   try {
@@ -1322,47 +1282,42 @@ if (
     const url =
       new URL(
         req.url,
-        `http://${req.headers.host}`
+        `http://${req.headers.host || "localhost"}`
       );
 
 
     const requestedSymbol =
-      url.searchParams
-        .get("symbol");
+      url.searchParams.get(
+        "symbol"
+      );
 
 
     const range =
-      url.searchParams
-        .get("range") ||
+      url.searchParams.get(
+        "range"
+      ) ||
       "1y";
 
 
     const interval =
-      url.searchParams
-        .get("interval") ||
+      url.searchParams.get(
+        "interval"
+      ) ||
       "1d";
 
 
     if (!requestedSymbol) {
 
-      res.writeHead(
+      return sendJSON(
+        res,
         400,
         {
-          "Content-Type":
-            "application/json; charset=utf-8"
+
+          error:
+            "symbol parametresi gerekli.",
+
         }
       );
-
-
-      res.end(
-        JSON.stringify({
-          error:
-            "symbol parametresi gerekli."
-        })
-      );
-
-
-      return;
 
     }
 
@@ -1386,27 +1341,17 @@ if (
       );
 
 
-    res.writeHead(
+    return sendJSON(
+      res,
       200,
       {
-        "Content-Type":
-          "application/json; charset=utf-8",
-
-        "Cache-Control":
-          "no-store"
-      }
-    );
-
-
-    res.end(
-      JSON.stringify({
 
         symbol,
 
         history:
-          yahoo.history
+          yahoo.history,
 
-      })
+      }
     );
 
 
@@ -1418,37 +1363,586 @@ if (
     );
 
 
-    res.writeHead(
+    return sendJSON(
+      res,
       500,
       {
-        "Content-Type":
-          "application/json; charset=utf-8"
-      }
-    );
 
-
-    res.end(
-      JSON.stringify({
         error:
-          error.message
-      })
+          error.message,
+
+      }
     );
 
   }
 
+}
 
-  return;
+
+/*
+========================================================
+QUOTE / MCP TOOL TEST
+========================================================
+*/
+
+async function handleQuote(
+  req,
+  res
+) {
+
+  let transport = null;
+
+
+  try {
+
+    const url =
+      new URL(
+        req.url,
+        `http://${req.headers.host || "localhost"}`
+      );
+
+
+    const symbol =
+      url.searchParams
+        .get("symbol")
+        ?.trim()
+        .toUpperCase();
+
+
+    if (!symbol) {
+
+      return sendJSON(
+        res,
+        400,
+        {
+
+          error:
+            "symbol parametresi gerekli.",
+
+        }
+      );
+
+    }
+
+
+    console.log(
+      `QUOTE TEST → ${symbol}`
+    );
+
+
+    const connection =
+      await createMcpClient();
+
+
+    transport =
+      connection.transport;
+
+
+    const tools =
+      await connection.client.listTools();
+
+
+    return sendJSON(
+      res,
+      200,
+      {
+
+        symbol,
+
+        tools:
+          tools.tools.map(
+            (tool) => ({
+
+              name:
+                tool.name,
+
+              description:
+                tool.description ||
+                "",
+
+              inputSchema:
+                tool.inputSchema ||
+                null,
+
+            })
+          ),
+
+      }
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "QUOTE ERROR:",
+      error
+    );
+
+
+    return sendJSON(
+      res,
+      500,
+      {
+
+        error:
+          error.message,
+
+      }
+    );
+
+
+  } finally {
+
+    if (transport) {
+
+      try {
+
+        await transport.close();
+
+      } catch (_) {}
+
+    }
+
+  }
 
 }
+
+
+/*
+========================================================
+STATIC FILE
+========================================================
+*/
+
+function serveFile(
+  res,
+  filePath,
+  contentType
+) {
+
+  fs.readFile(
+    filePath,
+    (error, data) => {
+
+      if (error) {
+
+        console.error(
+          `Dosya okunamadı: ${filePath}`,
+          error
+        );
+
+
+        return sendText(
+          res,
+          500,
+          "Internal Server Error"
+        );
+
+      }
+
+
+      res.writeHead(
+        200,
+        {
+
+          "Content-Type":
+            contentType,
+
+          "Cache-Control":
+            "no-cache",
+
+          "Access-Control-Allow-Origin":
+            "*",
+
+        }
+      );
+
+
+      res.end(data);
+
+    }
+  );
+
+}
+
+
+/*
+========================================================
+READ REQUEST BODY
+========================================================
+*/
+
+function readBody(
+  req
+) {
+
+  return new Promise(
+    (resolve, reject) => {
+
+      let body = "";
+
+
+      req.on(
+        "data",
+        (chunk) => {
+
+          body += chunk;
+
+          if (
+            body.length >
+            1024 * 1024
+          ) {
+
+            reject(
+              new Error(
+                "Request body çok büyük."
+              )
+            );
+
+            req.destroy();
+
+          }
+
+        }
+      );
+
+
+      req.on(
+        "end",
+        () => {
+
+          resolve(body);
+
+        }
+      );
+
+
+      req.on(
+        "error",
+        reject
+      );
+
+    }
+  );
+
+}
+
+
+/*
+========================================================
+HTTP SERVER
+========================================================
+*/
+
+const server =
+  http.createServer(
+    async (
+      req,
+      res
+    ) => {
+
       /*
-       * =====================================
-       * WEB
-       * =====================================
-       */
+      ========================================
+      CORS PREFLIGHT
+      ========================================
+      */
+
+      if (
+        req.method === "OPTIONS"
+      ) {
+
+        res.writeHead(
+          204,
+          {
+
+            "Access-Control-Allow-Origin":
+              "*",
+
+            "Access-Control-Allow-Methods":
+              "GET,POST,OPTIONS",
+
+            "Access-Control-Allow-Headers":
+              "Content-Type",
+
+          }
+        );
+
+
+        res.end();
+
+        return;
+
+      }
+
+
+      /*
+      ========================================
+      URL PARSE
+      ========================================
+      */
+
+      let url;
+
+
+      try {
+
+        url =
+          new URL(
+            req.url,
+            `http://${req.headers.host || "localhost"}`
+          );
+
+      } catch {
+
+        return sendText(
+          res,
+          400,
+          "Bad Request"
+        );
+
+      }
+
+
+      const pathname =
+        url.pathname;
+
+
+      console.log(
+        `${req.method} ${pathname}`
+      );
+
+
+      /*
+      ========================================
+      HEALTH
+      ========================================
+      */
 
       if (
         req.method === "GET" &&
-        req.url === "/"
+        pathname === "/health"
+      ) {
+
+        return sendJSON(
+          res,
+          200,
+          {
+
+            status:
+              "ok",
+
+            service:
+              "BorsaCI",
+
+            model:
+              MODEL,
+
+            timestamp:
+              new Date().toISOString(),
+
+          }
+        );
+
+      }
+
+
+      /*
+      ========================================
+      QUOTE
+      ========================================
+      */
+
+      if (
+        req.method === "GET" &&
+        (
+          pathname === "/quote" ||
+          pathname === "/api/quote"
+        )
+      ) {
+
+        return handleQuote(
+          req,
+          res
+        );
+
+      }
+
+
+      /*
+      ========================================
+      MARKET
+      ========================================
+      */
+
+      if (
+        req.method === "GET" &&
+        (
+          pathname === "/market" ||
+          pathname === "/api/market"
+        )
+      ) {
+
+        return handleMarket(
+          req,
+          res
+        );
+
+      }
+
+
+      /*
+      ========================================
+      CHART
+      ========================================
+      */
+
+      if (
+        req.method === "GET" &&
+        (
+          pathname === "/chart" ||
+          pathname === "/api/chart"
+        )
+      ) {
+
+        return handleChart(
+          req,
+          res
+        );
+
+      }
+
+
+      /*
+      ========================================
+      ASK
+      ========================================
+      */
+
+      if (
+        req.method === "POST" &&
+        (
+          pathname === "/ask" ||
+          pathname === "/api/ask"
+        )
+      ) {
+
+        try {
+
+          const body =
+            await readBody(
+              req
+            );
+
+
+          let data;
+
+
+          try {
+
+            data =
+              JSON.parse(body);
+
+          } catch {
+
+            throw new Error(
+              "Geçersiz JSON."
+            );
+
+          }
+
+
+          if (
+            !data?.question ||
+            typeof data.question !==
+              "string"
+          ) {
+
+            throw new Error(
+              "question alanı gerekli."
+            );
+
+          }
+
+
+          const question =
+            data.question.trim();
+
+
+          if (!question) {
+
+            throw new Error(
+              "question alanı boş olamaz."
+            );
+
+          }
+
+
+          console.log(
+            "==========================================================="
+          );
+
+
+          console.log(
+            `SORU → ${question}`
+          );
+
+
+          const answer =
+            await analyze(
+              question
+            );
+
+
+          console.log(
+            "AI CEVAP →",
+            answer
+          );
+
+
+          return sendJSON(
+            res,
+            200,
+            {
+
+              answer,
+
+            }
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "ANALİZ HATASI:",
+            error
+          );
+
+
+          return sendJSON(
+            res,
+            500,
+            {
+
+              error:
+                error.message,
+
+            }
+          );
+
+        }
+
+      }
+
+
+      /*
+      ========================================
+      ROOT
+      ========================================
+      */
+
+      if (
+        req.method === "GET" &&
+        pathname === "/"
       ) {
 
         const filePath =
@@ -1459,182 +1953,24 @@ if (
           );
 
 
-        fs.readFile(
+        return serveFile(
+          res,
           filePath,
-          (error, data) => {
-
-            if (error) {
-
-              console.error(
-                "index.html okunamadı:",
-                error
-              );
-
-
-              res.writeHead(
-                500,
-                {
-                  "Content-Type":
-                    "text/plain; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                "Internal Server Error"
-              );
-
-
-              return;
-
-            }
-
-
-            res.writeHead(
-              200,
-              {
-                "Content-Type":
-                  "text/html; charset=utf-8",
-              }
-            );
-
-
-            res.end(data);
-
-          }
+          "text/html; charset=utf-8"
         );
-
-
-        return;
 
       }
 
 
       /*
-       * =====================================
-       * ASK
-       * =====================================
-       */
-
-      if (
-        req.method === "POST" &&
-        req.url === "/ask"
-      ) {
-
-        let body = "";
-
-
-        req.on(
-          "data",
-          (chunk) => {
-
-            body += chunk;
-
-          }
-        );
-
-
-        req.on(
-          "end",
-          async () => {
-
-            try {
-
-              const data =
-                JSON.parse(body);
-
-
-              if (
-                !data.question
-              ) {
-
-                throw new Error(
-                  "question alanı gerekli."
-                );
-
-              }
-
-
-              console.log(
-                "///////////////////////////////////////////////////////////"
-              );
-
-
-              console.log(
-                `Soru: ${data.question}`
-              );
-
-
-              const answer =
-                await analyze(
-                  data.question
-                );
-
-
-              res.writeHead(
-                200,
-                {
-                  "Content-Type":
-                    "application/json; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                JSON.stringify({
-
-                  answer,
-
-                })
-              );
-
-
-            } catch (error) {
-
-              console.error(
-                "Analiz hatası:",
-                error
-              );
-
-
-              res.writeHead(
-                500,
-                {
-                  "Content-Type":
-                    "application/json; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                JSON.stringify({
-
-                  error:
-                    error.message,
-
-                })
-              );
-
-            }
-
-          }
-        );
-
-
-        return;
-
-      }
-
-
-      /*
-       * =====================================
-       * CSS
-       * =====================================
-       */
+      ========================================
+      CSS
+      ========================================
+      */
 
       if (
         req.method === "GET" &&
-        req.url === "/style.css"
+        pathname === "/style.css"
       ) {
 
         const filePath =
@@ -1645,66 +1981,24 @@ if (
           );
 
 
-        fs.readFile(
+        return serveFile(
+          res,
           filePath,
-          (error, data) => {
-
-            if (error) {
-
-              console.error(
-                "style.css okunamadı:",
-                error
-              );
-
-
-              res.writeHead(
-                500,
-                {
-                  "Content-Type":
-                    "text/plain; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                "Internal Server Error"
-              );
-
-
-              return;
-
-            }
-
-
-            res.writeHead(
-              200,
-              {
-                "Content-Type":
-                  "text/css; charset=utf-8",
-              }
-            );
-
-
-            res.end(data);
-
-          }
+          "text/css; charset=utf-8"
         );
-
-
-        return;
 
       }
 
 
       /*
-       * =====================================
-       * APP JS
-       * =====================================
-       */
+      ========================================
+      APP JS
+      ========================================
+      */
 
       if (
         req.method === "GET" &&
-        req.url === "/app.js"
+        pathname === "/app.js"
       ) {
 
         const filePath =
@@ -1715,74 +2009,41 @@ if (
           );
 
 
-        fs.readFile(
+        return serveFile(
+          res,
           filePath,
-          (error, data) => {
-
-            if (error) {
-
-              console.error(
-                "app.js okunamadı:",
-                error
-              );
-
-
-              res.writeHead(
-                500,
-                {
-                  "Content-Type":
-                    "text/plain; charset=utf-8",
-                }
-              );
-
-
-              res.end(
-                "Internal Server Error"
-              );
-
-
-              return;
-
-            }
-
-
-            res.writeHead(
-              200,
-              {
-                "Content-Type":
-                  "application/javascript; charset=utf-8",
-              }
-            );
-
-
-            res.end(data);
-
-          }
+          "application/javascript; charset=utf-8"
         );
-
-
-        return;
 
       }
 
 
       /*
-       * =====================================
-       * 404
-       * =====================================
-       */
+      ========================================
+      404
+      ========================================
+      */
 
-      res.writeHead(
-        404,
-        {
-          "Content-Type":
-            "text/plain; charset=utf-8",
-        }
+      console.log(
+        `404 → ${req.method} ${pathname}`
       );
 
 
-      res.end(
-        "Not Found"
+      return sendJSON(
+        res,
+        404,
+        {
+
+          error:
+            "Not Found",
+
+          path:
+            pathname,
+
+          method:
+            req.method,
+
+        }
       );
 
     }
@@ -1790,10 +2051,10 @@ if (
 
 
 /*
- * =====================================
- * SERVER START
- * =====================================
- */
+========================================================
+SERVER START
+========================================================
+*/
 
 server.listen(
   PORT,
@@ -1801,11 +2062,28 @@ server.listen(
   () => {
 
     console.log(
+      "==========================================================="
+    );
+
+    console.log(
       `BorsaCI server ${PORT} portunda çalışıyor.`
     );
 
     console.log(
       `Groq model: ${MODEL}`
+    );
+
+    console.log(
+      `MCP URL: ${process.env.MCP_URL ? "TANIMLI" : "YOK"}`
+    );
+
+    console.log(
+      `Groq API: ${process.env.GROQ_API_KEY ? "TANIMLI" : "YOK"}`
+    );
+
+    console.log(
+      "==========================================================="
+
     );
 
   }
