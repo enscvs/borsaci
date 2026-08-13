@@ -114,21 +114,25 @@
           class="panel-status"
           id="chartSymbol"
         >
-          XU100
+          ASELS
         </span>
 
       </div>
 
       <div class="chart-area">
 
-        <canvas
-          id="priceChart"
-        ></canvas>
+        <div
+          id="tradingview_chart"
+          style="
+            width: 100%;
+            height: 100%;
+          "
+        ></div>
 
         <div
           class="chart-empty"
           id="chartEmpty"
-          style="display:none;"
+          style="display: none;"
         >
 
           <span>
@@ -296,17 +300,27 @@
       >
 
         <div>
-          <span>SIGNAL</span>
+
+          <span>
+            SIGNAL
+          </span>
+
           <strong id="signal">
             --
           </strong>
+
         </div>
 
         <div>
-          <span>CONFIDENCE</span>
+
+          <span>
+            CONFIDENCE
+          </span>
+
           <strong id="confidence">
             --
           </strong>
+
         </div>
 
       </div>
@@ -346,7 +360,9 @@
 
       <div class="panel-title">
 
-        <span>PORTFOLIO</span>
+        <span>
+          PORTFOLIO
+        </span>
 
         <span class="panel-status">
           EMPTY
@@ -380,6 +396,7 @@
       <div class="command-title">
 
         <span>&gt;</span>
+
         BORSACI TERMINAL
 
       </div>
@@ -429,7 +446,9 @@
 
     <div class="panel-title">
 
-      <span>AI RESPONSE</span>
+      <span>
+        AI RESPONSE
+      </span>
 
       <span class="panel-status">
         OUTPUT
@@ -437,17 +456,25 @@
 
     </div>
 
-    <pre id="response">Waiting for input...</pre>
+    <pre id="response">
+Waiting for input...
+    </pre>
 
   </section>
 
 
+  <!-- FOOTER -->
+
   <footer class="footer">
 
     BORSACI AI TERMINAL
+
     <span>•</span>
+
     MCP DATA ENGINE
+
     <span>•</span>
+
     SYSTEM READY
 
   </footer>
@@ -455,7 +482,117 @@
 </div>
 
 
+<!-- TRADINGVIEW -->
+
+<script
+  type="text/javascript"
+  src="https://s3.tradingview.com/tv.js"
+></script>
+
+
+<script>
+
+  let tradingViewWidget = null;
+
+
+  function loadTradingViewChart(symbol = "BIST:ASELS") {
+
+    const container =
+      document.getElementById("tradingview_chart");
+
+    if (!container) {
+      return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    const chartSymbol =
+      document.getElementById("chartSymbol");
+
+
+    if (chartSymbol) {
+
+      chartSymbol.textContent =
+        symbol.replace("BIST:", "");
+
+    }
+
+
+    tradingViewWidget =
+      new TradingView.widget({
+
+        autosize: true,
+
+        symbol: symbol,
+
+        interval: "D",
+
+        timezone: "Europe/Istanbul",
+
+        theme: "dark",
+
+        style: "1",
+
+        locale: "tr",
+
+        enable_publishing: false,
+
+        hide_top_toolbar: false,
+
+        hide_legend: false,
+
+        allow_symbol_change: true,
+
+        save_image: false,
+
+        container_id:
+          "tradingview_chart"
+
+      });
+
+  }
+
+
+  function selectChartSymbol(symbol) {
+
+    if (!symbol) {
+      return;
+    }
+
+
+    symbol =
+      symbol.toString()
+        .trim()
+        .toUpperCase();
+
+
+    loadTradingViewChart(
+      "BIST:" + symbol
+    );
+
+  }
+
+
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+      loadTradingViewChart(
+        "BIST:ASELS"
+      );
+
+    }
+  );
+
+</script>
+
+
+<!-- BORSACI APP -->
+
 <script src="/app.js"></script>
+
 
 </body>
 
