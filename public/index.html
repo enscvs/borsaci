@@ -157,13 +157,17 @@
       >
 
         <!--
-          Lightweight Charts buraya çizilecek.
-          ÖNEMLİ:
-          Bu div'in yüksekliği CSS tarafından verilmelidir.
+          Grafik burada oluşturulacak.
+
+          Veri:
+          Yahoo Finance
+          
+          Renderer:
+          Lightweight Charts
         -->
 
         <div
-          id="tradingview_chart"
+          id="market_chart"
           style="
             width: 100%;
             height: 100%;
@@ -565,7 +569,7 @@
       •
     </span>
 
-    MCP DATA ENGINE
+    MARKET DATA ENGINE
 
     <span>
       •
@@ -581,7 +585,8 @@
 <!-- =====================================================
      LIGHTWEIGHT CHARTS
 
-     ÖNCE KÜTÜPHANEYİ YÜKLÜYORUZ.
+     SADECE GRAFİK RENDERER.
+     MARKET DATA BURADAN GELMİYOR.
 ===================================================== -->
 
 <script
@@ -591,9 +596,6 @@
 
 <!-- =====================================================
      BORSACI APP
-
-     APP.JS EN SON YÜKLENİYOR.
-     Chart başlatma APP.JS içinde.
 ===================================================== -->
 
 <script
