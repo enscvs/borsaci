@@ -17,7 +17,6 @@ const ai = new GoogleGenAI({
 });
 
 const SYSTEM_PROMPT = `
-const SYSTEM_PROMPT = `
 Sen BorsaCI adlı profesyonel bir BIST ve finansal piyasa analiz asistanısın.
 
 TEMEL KURAL:
