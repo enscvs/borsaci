@@ -1,3 +1,28 @@
+/*
+========================================================
+BORSACI // AI TRADING TERMINAL
+APP.JS
+========================================================
+*/
+
+/*
+========================================================
+GLOBAL STATE
+========================================================
+*/
+
+let symbols = [];
+
+let selectedSymbol = null;
+
+let marketCache = {};
+
+let marketChart = null;
+
+let candleSeries = null;
+
+let volumeSeries = null;
+
 
 /*
 ========================================================
@@ -38,6 +63,11 @@ const dataStatus =
 const newsImpact =
   document.getElementById("newsImpact");
 
+const chartContainer =
+  document.getElementById(
+    "tradingview_chart"
+  );
+
 
 /*
 ========================================================
@@ -48,7 +78,9 @@ CLOCK
 function updateClock() {
 
   const clock =
-    document.getElementById("clock");
+    document.getElementById(
+      "clock"
+    );
 
   if (!clock) return;
 
@@ -58,7 +90,7 @@ function updateClock() {
       {
         hour: "2-digit",
         minute: "2-digit",
-        second: "2-digit",
+        second: "2-digit"
       }
     );
 }
@@ -69,19 +101,6 @@ setInterval(
   updateClock,
   1000
 );
-
-
-/*
-========================================================
-WATCHLIST
-========================================================
-*/
-
-let symbols = [];
-
-let selectedSymbol = null;
-
-let marketCache = {};
 
 
 /*
@@ -100,7 +119,9 @@ function formatNumber(
     value === undefined ||
     Number.isNaN(Number(value))
   ) {
+
     return "--";
+
   }
 
   return Number(value).toLocaleString(
@@ -110,7 +131,7 @@ function formatNumber(
         decimals,
 
       maximumFractionDigits:
-        decimals,
+        decimals
     }
   );
 }
@@ -118,7 +139,7 @@ function formatNumber(
 
 /*
 ========================================================
-FORMAT BIG NUMBER
+FORMAT COMPACT NUMBER
 ========================================================
 */
 
@@ -128,44 +149,140 @@ function formatCompact(value) {
     value === null ||
     value === undefined
   ) {
+
     return "--";
+
   }
 
   const number =
     Number(value);
 
   if (!Number.isFinite(number)) {
+
     return "--";
+
   }
 
-  if (number >= 1_000_000_000) {
+  if (
+    number >=
+    1_000_000_000
+  ) {
+
     return (
-      (number / 1_000_000_000)
-        .toFixed(2)
-      + "B"
+      (
+        number /
+        1_000_000_000
+      ).toFixed(2) +
+      "B"
     );
+
   }
 
-  if (number >= 1_000_000) {
+  if (
+    number >=
+    1_000_000
+  ) {
+
     return (
-      (number / 1_000_000)
-        .toFixed(2)
-      + "M"
+      (
+        number /
+        1_000_000
+      ).toFixed(2) +
+      "M"
     );
+
   }
 
-  if (number >= 1_000) {
+  if (
+    number >=
+    1_000
+  ) {
+
     return (
-      (number / 1_000)
-        .toFixed(2)
-      + "K"
+      (
+        number /
+        1_000
+      ).toFixed(2) +
+      "K"
     );
+
   }
 
   return formatNumber(
     number,
     0
   );
+}
+
+
+/*
+========================================================
+SET TEXT
+========================================================
+*/
+
+function setText(
+  id,
+  value
+) {
+
+  const element =
+    document.getElementById(id);
+
+  if (!element) return;
+
+  element.innerText =
+    value;
+}
+
+
+/*
+========================================================
+HTML ESCAPE
+========================================================
+*/
+
+function escapeHtml(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+}
+
+
+function escapeAttribute(value) {
+
+  return String(
+    value ?? ""
+  )
+    .replace(
+      /\\/g,
+      "\\\\"
+    )
+    .replace(
+      /'/g,
+      "\\'"
+    );
 }
 
 
@@ -179,7 +296,10 @@ function renderWatchlist() {
 
   if (!watchlist) return;
 
-  if (symbols.length === 0) {
+
+  if (
+    symbols.length === 0
+  ) {
 
     watchlist.innerHTML = `
       <div class="watchlist-empty">
@@ -207,7 +327,10 @@ function renderWatchlist() {
 
 
   symbols.forEach(
-    (symbol, index) => {
+    (
+      symbol,
+      index
+    ) => {
 
       const row =
         document.createElement(
@@ -219,10 +342,14 @@ function renderWatchlist() {
 
 
       const cached =
-        marketCache[symbol];
+        marketCache[
+          symbol
+        ];
+
 
       const price =
         cached?.quote?.price;
+
 
       const change =
         cached?.quote?.changePercent;
@@ -240,7 +367,7 @@ function renderWatchlist() {
         >
 
           <span>
-            ${symbol}
+            ${escapeHtml(symbol)}
           </span>
 
           <span class="watch-price">
@@ -346,22 +473,27 @@ function renderWatchlist() {
 
             event.stopPropagation();
 
+
             const index =
               Number(
                 button.dataset.index
               );
 
+
             const removed =
               symbols[index];
+
 
             symbols.splice(
               index,
               1
             );
 
+
             delete marketCache[
               removed
             ];
+
 
             if (
               selectedSymbol ===
@@ -372,15 +504,23 @@ function renderWatchlist() {
                 symbols[0] ||
                 null;
 
-              if (selectedSymbol) {
-                loadMarketData(
+
+              if (
+                selectedSymbol
+              ) {
+
+                selectSymbol(
                   selectedSymbol
                 );
+
               } else {
+
                 clearDashboard();
+
               }
 
             }
+
 
             renderWatchlist();
 
@@ -389,6 +529,7 @@ function renderWatchlist() {
 
       }
     );
+
 }
 
 
@@ -405,20 +546,27 @@ function addSymbol() {
       "BIST sembolünü gir:\n\nÖrnek: ASELS"
     );
 
+
   if (!symbol) return;
 
 
   const clean =
     symbol
       .trim()
-      .toUpperCase();
+      .toUpperCase()
+      .replace(
+        "BIST:",
+        ""
+      );
 
 
   if (!clean) return;
 
 
   if (
-    symbols.includes(clean)
+    symbols.includes(
+      clean
+    )
   ) {
 
     selectSymbol(
@@ -426,6 +574,7 @@ function addSymbol() {
     );
 
     return;
+
   }
 
 
@@ -433,11 +582,14 @@ function addSymbol() {
     clean
   );
 
+
   renderWatchlist();
+
 
   selectSymbol(
     clean
   );
+
 }
 
 
@@ -453,23 +605,84 @@ if (addSymbolBtn) {
 
 /*
 ========================================================
+NORMALIZE SYMBOL
+========================================================
+*/
+
+function normalizeSymbol(
+  symbol
+) {
+
+  if (!symbol) {
+
+    return null;
+
+  }
+
+
+  return symbol
+    .toString()
+    .trim()
+    .toUpperCase()
+    .replace(
+      "BIST:",
+      ""
+    );
+
+}
+
+
+/*
+========================================================
 SELECT SYMBOL
 ========================================================
 */
 
-async function selectSymbol(symbol) {
+async function selectSymbol(
+  symbol
+) {
+
+  const clean =
+    normalizeSymbol(
+      symbol
+    );
+
+
+  if (!clean) return;
+
 
   selectedSymbol =
-    symbol;
+    clean;
 
-  chartSymbol.innerText =
-    symbol;
+
+  if (chartSymbol) {
+
+    chartSymbol.innerText =
+      clean;
+
+  }
+
+
+  if (
+    !symbols.includes(
+      clean
+    )
+  ) {
+
+    symbols.push(
+      clean
+    );
+
+  }
+
 
   renderWatchlist();
 
+
   await loadMarketData(
-    symbol
+    clean
   );
+
 }
 
 
@@ -479,29 +692,42 @@ LOAD MARKET DATA
 ========================================================
 */
 
-async function loadMarketData(symbol) {
+async function loadMarketData(
+  symbol
+) {
 
-  if (!symbol) return;
+  const clean =
+    normalizeSymbol(
+      symbol
+    );
 
 
-  dataStatus.innerText =
-    "LOADING";
+  if (!clean) return;
 
 
-  dataStatus.classList.add(
-    "loading"
-  );
+  if (dataStatus) {
+
+    dataStatus.innerText =
+      "LOADING";
+
+    dataStatus.classList.add(
+      "loading"
+    );
+
+  }
 
 
   try {
 
     /*
-     * Aynı veri varsa kısa süre
-     * cache kullan.
+     * CACHE
      */
 
     const cached =
-      marketCache[symbol];
+      marketCache[
+        clean
+      ];
+
 
     if (
       cached &&
@@ -514,11 +740,9 @@ async function loadMarketData(symbol) {
           cached.timestamp
         ).getTime();
 
-      /*
-       * 20 saniye cache.
-       */
 
       if (
+        Number.isFinite(age) &&
         age < 20000
       ) {
 
@@ -526,49 +750,94 @@ async function loadMarketData(symbol) {
           cached
         );
 
-        dataStatus.innerText =
-          "LIVE";
+
+        if (dataStatus) {
+
+          dataStatus.innerText =
+            "LIVE";
+
+        }
+
 
         return;
+
       }
+
     }
 
+
+    /*
+     * MARKET ENDPOINT
+     */
 
     const response =
       await fetch(
         `/market?symbol=${encodeURIComponent(
-          symbol
+          clean
         )}`
       );
 
 
-    const data =
-      await response.json();
+    let data;
+
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
+
+      throw new Error(
+        "Sunucudan geçersiz JSON döndü."
+      );
+
+    }
 
 
     if (!response.ok) {
 
       throw new Error(
-        data.error ||
-        "Market data error"
+        data?.error ||
+        "Market data error."
       );
 
     }
 
 
-    marketCache[symbol] =
-      data;
+    if (!data) {
 
+      throw new Error(
+        "Market verisi boş."
+      );
+
+    }
+
+
+    /*
+     * Cache'e kaydet
+     */
+
+    marketCache[
+      clean
+    ] = data;
+
+
+    /*
+     * Dashboard
+     */
 
     updateDashboard(
       data
     );
 
-selectChartSymbol(symbol);
 
-    dataStatus.innerText =
-      "LIVE";
+    if (dataStatus) {
 
+      dataStatus.innerText =
+        "LIVE";
+
+    }
 
   } catch (error) {
 
@@ -578,8 +847,12 @@ selectChartSymbol(symbol);
     );
 
 
-    dataStatus.innerText =
-      "ERROR";
+    if (dataStatus) {
+
+      dataStatus.innerText =
+        "ERROR";
+
+    }
 
 
     showDashboardError(
@@ -588,11 +861,16 @@ selectChartSymbol(symbol);
 
   } finally {
 
-    dataStatus.classList.remove(
-      "loading"
-    );
+    if (dataStatus) {
+
+      dataStatus.classList.remove(
+        "loading"
+      );
+
+    }
 
   }
+
 }
 
 
@@ -606,27 +884,69 @@ function updateDashboard(
   data
 ) {
 
+  if (!data) return;
+
+
+  /*
+   * Backend başka sembol döndürmüşse
+   * onu normalize et.
+   */
+
+  const backendSymbol =
+    normalizeSymbol(
+      data.symbol
+    );
+
+
+  if (
+    backendSymbol &&
+    !selectedSymbol
+  ) {
+
+    selectedSymbol =
+      backendSymbol;
+
+  }
+
+
+  if (
+    backendSymbol &&
+    chartSymbol
+  ) {
+
+    chartSymbol.innerText =
+      backendSymbol;
+
+  }
+
+
   updateWatchlistData(
     data
   );
+
 
   updateTechnical(
     data.technical
   );
 
+
   updateChart(
     data.history
   );
+
 
   updateNews(
     data.news
   );
 
+
   updateNewsImpact(
     data.news
   );
 
+
   renderWatchlist();
+
 }
 
 
@@ -640,11 +960,23 @@ function updateWatchlistData(
   data
 ) {
 
-  if (!data?.symbol) return;
+  if (!data) return;
+
+
+  const symbol =
+    normalizeSymbol(
+      data.symbol
+    ) ||
+    selectedSymbol;
+
+
+  if (!symbol) return;
+
 
   marketCache[
-    data.symbol
+    symbol
   ] = data;
+
 }
 
 
@@ -658,7 +990,25 @@ function updateTechnical(
   technical
 ) {
 
-  if (!technical) return;
+  if (!technical) {
+
+    [
+      "rsi",
+      "macd",
+      "ema20",
+      "ema50",
+      "atr"
+    ].forEach(
+      (id) =>
+        setText(
+          id,
+          "--"
+        )
+    );
+
+    return;
+
+  }
 
 
   setText(
@@ -693,6 +1043,14 @@ function updateTechnical(
   );
 
 
+  setText(
+    "atr",
+    formatNumber(
+      technical.atr
+    )
+  );
+
+
   const volume =
     marketCache[
       selectedSymbol
@@ -706,42 +1064,442 @@ function updateTechnical(
     )
   );
 
-
-  setText(
-    "atr",
-    formatNumber(
-      technical.atr
-    )
-  );
 }
 
 
 /*
 ========================================================
-SET TEXT
+CHART INITIALIZATION
 ========================================================
 */
 
-function setText(
-  id,
-  value
-) {
+function initMarketChart() {
 
-  const element =
+  const container =
     document.getElementById(
-      id
+      "tradingview_chart"
     );
 
-  if (!element) return;
 
-  element.innerText =
-    value;
+  if (!container) {
+
+    console.error(
+      "Chart container bulunamadı."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    typeof LightweightCharts ===
+    "undefined"
+  ) {
+
+    console.error(
+      "Lightweight Charts yüklenmedi."
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Eski chart
+   */
+
+  if (marketChart) {
+
+    try {
+
+      marketChart.remove();
+
+    } catch {
+
+      // ignore
+
+    }
+
+
+    marketChart =
+      null;
+
+  }
+
+
+  container.innerHTML =
+    "";
+
+
+  /*
+   * CHART
+   */
+
+  marketChart =
+    LightweightCharts.createChart(
+      container,
+      {
+
+        autoSize: true,
+
+
+        layout: {
+
+          background: {
+
+            type:
+              "solid",
+
+            color:
+              "#0b0f14"
+
+          },
+
+          textColor:
+            "#9aa4b2"
+
+        },
+
+
+        grid: {
+
+          vertLines: {
+
+            color:
+              "#151b23"
+
+          },
+
+          horzLines: {
+
+            color:
+              "#151b23"
+
+          }
+
+        },
+
+
+        crosshair: {
+
+          mode:
+            LightweightCharts
+              .CrosshairMode
+              .Normal
+
+        },
+
+
+        rightPriceScale: {
+
+          borderColor:
+            "#252c36"
+
+        },
+
+
+        timeScale: {
+
+          borderColor:
+            "#252c36",
+
+          timeVisible:
+            true,
+
+          secondsVisible:
+            false
+
+        }
+
+      }
+    );
+
+
+  /*
+   * CANDLE SERIES
+   */
+
+  candleSeries =
+    marketChart.addSeries(
+      LightweightCharts.CandlestickSeries,
+      {
+
+        upColor:
+          "#26a69a",
+
+        downColor:
+          "#ef5350",
+
+        borderUpColor:
+          "#26a69a",
+
+        borderDownColor:
+          "#ef5350",
+
+        wickUpColor:
+          "#26a69a",
+
+        wickDownColor:
+          "#ef5350"
+
+      }
+    );
+
+
+  /*
+   * VOLUME SERIES
+   */
+
+  volumeSeries =
+    marketChart.addSeries(
+      LightweightCharts.HistogramSeries,
+      {
+
+        priceFormat: {
+
+          type:
+            "volume"
+
+        },
+
+        priceScaleId:
+          "volume"
+
+      }
+    );
+
+
+  /*
+   * Volume scale
+   */
+
+  marketChart
+    .priceScale(
+      "volume"
+    )
+    .applyOptions({
+
+      scaleMargins: {
+
+        top:
+          0.80,
+
+        bottom:
+          0
+
+      }
+
+    });
+
+
+  /*
+   * İLK AÇILIŞ:
+   * BIST 100
+   */
+
+  selectedSymbol =
+    "XU100";
+
+
+  if (
+    !symbols.includes(
+      "XU100"
+    )
+  ) {
+
+    symbols.push(
+      "XU100"
+    );
+
+  }
+
+
+  if (chartSymbol) {
+
+    chartSymbol.innerText =
+      "XU100";
+
+  }
+
+
+  renderWatchlist();
+
+
+  /*
+   * Market verisini çek.
+   */
+
+  loadMarketData(
+    "XU100"
+  );
+
 }
 
 
 /*
 ========================================================
-CHART
+NORMALIZE HISTORY TIME
+========================================================
+*/
+
+function normalizeChartTime(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined
+  ) {
+
+    return null;
+
+  }
+
+
+  /*
+   * Unix timestamp
+   */
+
+  if (
+    typeof value ===
+      "number" ||
+    /^\d+$/.test(
+      String(value)
+    )
+  ) {
+
+    const number =
+      Number(value);
+
+
+    if (
+      !Number.isFinite(
+        number
+      )
+    ) {
+
+      return null;
+
+    }
+
+
+    /*
+     * Milliseconds -> seconds
+     */
+
+    if (
+      number >
+      10000000000
+    ) {
+
+      return Math.floor(
+        number / 1000
+      );
+
+    }
+
+
+    return number;
+
+  }
+
+
+  /*
+   * Tarih stringi
+   */
+
+  const stringValue =
+    String(value);
+
+
+  /*
+   * YYYY-MM-DD
+   */
+
+  if (
+    /^\d{4}-\d{2}-\d{2}$/.test(
+      stringValue
+    )
+  ) {
+
+    return stringValue;
+
+  }
+
+
+  /*
+   * ISO tarih
+   */
+
+  const date =
+    new Date(
+      stringValue
+    );
+
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+
+    return null;
+
+  }
+
+
+  return (
+    date
+      .toISOString()
+      .slice(
+        0,
+        10
+      )
+  );
+
+}
+
+
+/*
+========================================================
+GET HISTORY VALUE
+========================================================
+*/
+
+function getHistoryValue(
+  item,
+  names
+) {
+
+  for (
+    const name of names
+  ) {
+
+    if (
+      item &&
+      item[name] !==
+        undefined &&
+      item[name] !==
+        null
+    ) {
+
+      return item[name];
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+
+/*
+========================================================
+UPDATE CHART
 ========================================================
 */
 
@@ -749,345 +1507,470 @@ function updateChart(
   history
 ) {
 
-  if (!chartCanvas) return;
-
-
   if (
-    !history ||
-    history.length < 2
+    !marketChart ||
+    !candleSeries
   ) {
 
-    chartCanvas.style.display =
-      "none";
-
-    chartEmpty.style.display =
-      "flex";
+    console.warn(
+      "Chart henüz hazır değil."
+    );
 
     return;
+
   }
 
 
-  chartCanvas.style.display =
-    "block";
+  if (
+    !Array.isArray(
+      history
+    ) ||
+    history.length === 0
+  ) {
 
-  chartEmpty.style.display =
-    "none";
+    console.warn(
+      "History verisi yok:",
+      history
+    );
 
 
-  drawChart(
+    if (chartEmpty) {
+
+      chartEmpty.style.display =
+        "flex";
+
+      chartEmpty.innerHTML = `
+        <span>
+          NO CHART DATA
+        </span>
+
+        <small>
+          Market history bulunamadı.
+        </small>
+      `;
+
+    }
+
+
+    return;
+
+  }
+
+
+  /*
+   * Candlestick
+   */
+
+  const candles =
     history
-  );
-}
+      .map(
+        (item) => {
+
+          const rawTime =
+            getHistoryValue(
+              item,
+              [
+                "time",
+                "date",
+                "timestamp",
+                "datetime"
+              ]
+            );
 
 
-/*
-========================================================
-CANVAS CHART
-========================================================
-*/
-
-function drawChart(
-  history
-) {
-
-  const canvas =
-    chartCanvas;
-
-  const container =
-    canvas.parentElement;
-
-  const width =
-    container.clientWidth;
-
-  const height =
-    container.clientHeight;
+          const open =
+            Number(
+              getHistoryValue(
+                item,
+                ["open", "o"]
+              )
+            );
 
 
-  const ratio =
-    window.devicePixelRatio ||
-    1;
+          const high =
+            Number(
+              getHistoryValue(
+                item,
+                ["high", "h"]
+              )
+            );
 
 
-  canvas.width =
-    width * ratio;
-
-  canvas.height =
-    height * ratio;
-
-  canvas.style.width =
-    width + "px";
-
-  canvas.style.height =
-    height + "px";
+          const low =
+            Number(
+              getHistoryValue(
+                item,
+                ["low", "l"]
+              )
+            );
 
 
-  const ctx =
-    canvas.getContext(
-      "2d"
-    );
+          const close =
+            Number(
+              getHistoryValue(
+                item,
+                ["close", "c"]
+              )
+            );
 
 
-  ctx.scale(
-    ratio,
-    ratio
-  );
+          const time =
+            normalizeChartTime(
+              rawTime
+            );
 
 
-  ctx.clearRect(
-    0,
-    0,
-    width,
-    height
-  );
+          if (
+            !time ||
+            !Number.isFinite(
+              open
+            ) ||
+            !Number.isFinite(
+              high
+            ) ||
+            !Number.isFinite(
+              low
+            ) ||
+            !Number.isFinite(
+              close
+            )
+          ) {
+
+            return null;
+
+          }
 
 
-  /*
-   * Fiyatlar
-   */
+          return {
 
-  const prices =
-    history.map(
-      item =>
-        Number(
-          item.close
-        )
-    ).filter(
-      Number.isFinite
-    );
+            time,
 
+            open,
 
-  if (
-    prices.length < 2
-  ) {
-    return;
-  }
+            high,
 
+            low,
 
-  let min =
-    Math.min(
-      ...prices
-    );
+            close
 
-  let max =
-    Math.max(
-      ...prices
-    );
+          };
 
-
-  const padding =
-    (max - min) *
-    0.08;
-
-
-  min -= padding;
-  max += padding;
-
-
-  const left =
-    45;
-
-  const right =
-    15;
-
-  const top =
-    20;
-
-  const bottom =
-    25;
-
-
-  const chartWidth =
-    width -
-    left -
-    right;
-
-  const chartHeight =
-    height -
-    top -
-    bottom;
+        }
+      )
+      .filter(Boolean);
 
 
   /*
-   * GRID
+   * Tarihe göre sırala.
    */
 
-  ctx.lineWidth =
-    1;
+  candles.sort(
+    (a, b) => {
+
+      const ta =
+        typeof a.time ===
+        "number"
+          ? a.time
+          : new Date(
+              a.time
+            ).getTime();
 
 
-  for (
-    let i = 0;
-    i <= 4;
-    i++
-  ) {
-
-    const y =
-      top +
-      (
-        chartHeight *
-        i /
-        4
-      );
+      const tb =
+        typeof b.time ===
+        "number"
+          ? b.time
+          : new Date(
+              b.time
+            ).getTime();
 
 
-    ctx.beginPath();
-
-    ctx.moveTo(
-      left,
-      y
-    );
-
-    ctx.lineTo(
-      width - right,
-      y
-    );
-
-    ctx.strokeStyle =
-      "rgba(255,255,255,0.08)";
-
-    ctx.stroke();
-
-
-    const value =
-      max -
-      (
-        (max - min) *
-        i /
-        4
-      );
-
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.55)";
-
-    ctx.font =
-      "11px monospace";
-
-    ctx.fillText(
-      value.toFixed(2),
-      5,
-      y + 4
-    );
-
-  }
-
-
-  /*
-   * PRICE LINE
-   */
-
-  ctx.beginPath();
-
-
-  prices.forEach(
-    (price, index) => {
-
-      const x =
-        left +
-        (
-          index /
-          (prices.length - 1)
-        ) *
-        chartWidth;
-
-
-      const y =
-        top +
-        (
-          (max - price) /
-          (max - min)
-        ) *
-        chartHeight;
-
-
-      if (
-        index === 0
-      ) {
-
-        ctx.moveTo(
-          x,
-          y
-        );
-
-      } else {
-
-        ctx.lineTo(
-          x,
-          y
-        );
-
-      }
+      return ta - tb;
 
     }
   );
 
 
-  ctx.strokeStyle =
-    "#00ff88";
+  /*
+   * Duplicate zamanları temizle.
+   */
 
-  ctx.lineWidth =
-    2;
+  const uniqueCandles =
+    [];
 
-  ctx.stroke();
+  const seen =
+    new Set();
+
+
+  for (
+    const candle of candles
+  ) {
+
+    const key =
+      String(
+        candle.time
+      );
+
+
+    if (
+      seen.has(
+        key
+      )
+    ) {
+
+      continue;
+
+    }
+
+
+    seen.add(
+      key
+    );
+
+
+    uniqueCandles.push(
+      candle
+    );
+
+  }
+
+
+  if (
+    uniqueCandles.length < 2
+  ) {
+
+    console.warn(
+      "Yeterli candle verisi yok:",
+      uniqueCandles
+    );
+
+
+    return;
+
+  }
 
 
   /*
-   * CURRENT PRICE
+   * CHART'A VER
    */
 
-  const lastPrice =
-    prices[
-      prices.length - 1
-    ];
+  try {
 
+    candleSeries.setData(
+      uniqueCandles
+    );
 
-  const lastX =
-    width - right;
+  } catch (error) {
 
+    console.error(
+      "Candle chart hatası:",
+      error,
+      uniqueCandles
+    );
 
-  const lastY =
-    top +
-    (
-      (max - lastPrice) /
-      (max - min)
-    ) *
-    chartHeight;
+    return;
 
-
-  ctx.beginPath();
-
-  ctx.arc(
-    lastX,
-    lastY,
-    4,
-    0,
-    Math.PI * 2
-  );
-
-  ctx.fillStyle =
-    "#00ff88";
-
-  ctx.fill();
+  }
 
 
   /*
-   * CURRENT PRICE LABEL
+   * VOLUME
    */
 
-  ctx.fillStyle =
-    "#00ff88";
+  if (volumeSeries) {
 
-  ctx.font =
-    "bold 12px monospace";
+    const volumes =
+      history
+        .map(
+          (item) => {
 
-  ctx.fillText(
-    lastPrice.toFixed(2),
-    Math.max(
-      5,
-      lastX - 65
-    ),
-    lastY - 10
-  );
+            const rawTime =
+              getHistoryValue(
+                item,
+                [
+                  "time",
+                  "date",
+                  "timestamp",
+                  "datetime"
+                ]
+              );
+
+
+            const volume =
+              Number(
+                getHistoryValue(
+                  item,
+                  [
+                    "volume",
+                    "vol",
+                    "v"
+                  ]
+                )
+              );
+
+
+            const time =
+              normalizeChartTime(
+                rawTime
+              );
+
+
+            if (
+              !time ||
+              !Number.isFinite(
+                volume
+              )
+            ) {
+
+              return null;
+
+            }
+
+
+            return {
+
+              time,
+
+              value:
+                volume
+
+            };
+
+          }
+        )
+        .filter(Boolean);
+
+
+    volumes.sort(
+      (a, b) => {
+
+        const ta =
+          typeof a.time ===
+          "number"
+            ? a.time
+            : new Date(
+                a.time
+              ).getTime();
+
+
+        const tb =
+          typeof b.time ===
+          "number"
+            ? b.time
+            : new Date(
+                b.time
+              ).getTime();
+
+
+        return ta - tb;
+
+      }
+    );
+
+
+    const uniqueVolumes =
+      [];
+
+    const volumeSeen =
+      new Set();
+
+
+    for (
+      const item of volumes
+    ) {
+
+      const key =
+        String(
+          item.time
+        );
+
+
+      if (
+        volumeSeen.has(
+          key
+        )
+      ) {
+
+        continue;
+
+      }
+
+
+      volumeSeen.add(
+        key
+      );
+
+
+      uniqueVolumes.push(
+        item
+      );
+
+    }
+
+
+    if (
+      uniqueVolumes.length > 0
+    ) {
+
+      try {
+
+        volumeSeries.setData(
+          uniqueVolumes
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Volume chart hatası:",
+          error
+        );
+
+      }
+
+    }
+
+  }
+
+
+  /*
+   * Görünümü ayarla.
+   */
+
+  try {
+
+    marketChart
+      .timeScale()
+      .fitContent();
+
+  } catch (error) {
+
+    console.warn(
+      "Chart fit hatası:",
+      error
+    );
+
+  }
+
+
+  /*
+   * Eski canvas artık kullanılmıyor.
+   */
+
+  if (chartCanvas) {
+
+    chartCanvas.style.display =
+      "none";
+
+  }
+
+
+  if (chartEmpty) {
+
+    chartEmpty.style.display =
+      "none";
+
+  }
+
 }
 
 
@@ -1105,7 +1988,9 @@ function updateNews(
 
 
   if (
-    !news ||
+    !Array.isArray(
+      news
+    ) ||
     news.length === 0
   ) {
 
@@ -1124,6 +2009,7 @@ function updateNews(
     `;
 
     return;
+
   }
 
 
@@ -1134,48 +2020,69 @@ function updateNews(
         8
       )
       .map(
-        item => `
+        (item) => {
 
-          <div
-            class="news-item"
-            ${
-              item.url
-                ? `onclick="window.open('${escapeAttribute(
-                    item.url
-                  )}', '_blank')"`
-                : ""
-            }
-          >
+          const title =
+            escapeHtml(
+              item?.title ||
+              "Haber"
+            );
 
-            <div class="news-date">
-              ${
-                item.publishedDate ||
-                ""
-              }
-            </div>
 
-            <div class="news-title">
-              ${
-                escapeHtml(
-                  item.title
+          const source =
+            escapeHtml(
+              item?.source ||
+              ""
+            );
+
+
+          const date =
+            escapeHtml(
+              item?.publishedDate ||
+              item?.date ||
+              ""
+            );
+
+
+          const url =
+            item?.url
+              ? escapeAttribute(
+                  item.url
                 )
-              }
-            </div>
+              : "";
 
-            <div class="news-source">
+
+          return `
+
+            <div
+              class="news-item"
               ${
-                escapeHtml(
-                  item.source ||
-                  ""
-                )
+                url
+                  ? `onclick="window.open('${url}', '_blank')"`
+                  : ""
               }
+            >
+
+              <div class="news-date">
+                ${date}
+              </div>
+
+              <div class="news-title">
+                ${title}
+              </div>
+
+              <div class="news-source">
+                ${source}
+              </div>
+
             </div>
 
-          </div>
+          `;
 
-        `
+        }
       )
       .join("");
+
 }
 
 
@@ -1193,7 +2100,9 @@ function updateNewsImpact(
 
 
   if (
-    !news ||
+    !Array.isArray(
+      news
+    ) ||
     news.length === 0
   ) {
 
@@ -1208,6 +2117,7 @@ function updateNewsImpact(
     `;
 
     return;
+
   }
 
 
@@ -1224,7 +2134,7 @@ function updateNewsImpact(
     <strong>
       ${
         escapeHtml(
-          latest.title ||
+          latest?.title ||
           "Haber"
         )
       }
@@ -1233,63 +2143,14 @@ function updateNewsImpact(
     <small>
       ${
         escapeHtml(
-          latest.source ||
+          latest?.source ||
           ""
         )
       }
     </small>
 
   `;
-}
 
-
-/*
-========================================================
-HTML ESCAPE
-========================================================
-*/
-
-function escapeHtml(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
-}
-
-
-function escapeAttribute(
-  value
-) {
-
-  return String(
-    value ?? ""
-  )
-    .replace(
-      /'/g,
-      "\\'"
-    );
 }
 
 
@@ -1303,29 +2164,15 @@ function showDashboardError(
   message
 ) {
 
-  chartEmpty.style.display =
-    "flex";
+  if (chartEmpty) {
 
-  chartEmpty.innerHTML = `
-    <span>
-      MARKET DATA ERROR
-    </span>
+    chartEmpty.style.display =
+      "flex";
 
-    <small>
-      ${
-        escapeHtml(
-          message
-        )
-      }
-    </small>
-  `;
-
-
-  newsFeed.innerHTML = `
-    <div class="empty-state">
+    chartEmpty.innerHTML = `
 
       <span>
-        DATA ERROR
+        MARKET DATA ERROR
       </span>
 
       <small>
@@ -1336,8 +2183,35 @@ function showDashboardError(
         }
       </small>
 
-    </div>
-  `;
+    `;
+
+  }
+
+
+  if (newsFeed) {
+
+    newsFeed.innerHTML = `
+
+      <div class="empty-state">
+
+        <span>
+          DATA ERROR
+        </span>
+
+        <small>
+          ${
+            escapeHtml(
+              message
+            )
+          }
+        </small>
+
+      </div>
+
+    `;
+
+  }
+
 }
 
 
@@ -1349,24 +2223,74 @@ CLEAR DASHBOARD
 
 function clearDashboard() {
 
-  chartSymbol.innerText =
-    "NO SYMBOL";
+  if (chartSymbol) {
 
-  chartCanvas.style.display =
-    "none";
+    chartSymbol.innerText =
+      "NO SYMBOL";
 
-  chartEmpty.style.display =
-    "flex";
+  }
 
-  chartEmpty.innerHTML = `
-    <span>
-      NO MARKET DATA
-    </span>
 
-    <small>
-      Select a symbol to display the chart.
-    </small>
-  `;
+  if (candleSeries) {
+
+    try {
+
+      candleSeries.setData(
+        []
+      );
+
+    } catch {
+
+      // ignore
+
+    }
+
+  }
+
+
+  if (volumeSeries) {
+
+    try {
+
+      volumeSeries.setData(
+        []
+      );
+
+    } catch {
+
+      // ignore
+
+    }
+
+  }
+
+
+  if (chartCanvas) {
+
+    chartCanvas.style.display =
+      "none";
+
+  }
+
+
+  if (chartEmpty) {
+
+    chartEmpty.style.display =
+      "flex";
+
+    chartEmpty.innerHTML = `
+
+      <span>
+        NO MARKET DATA
+      </span>
+
+      <small>
+        Select a symbol to display the chart.
+      </small>
+
+    `;
+
+  }
 
 
   [
@@ -1375,9 +2299,9 @@ function clearDashboard() {
     "ema20",
     "ema50",
     "volume",
-    "atr",
+    "atr"
   ].forEach(
-    id =>
+    (id) =>
       setText(
         id,
         "--"
@@ -1385,19 +2309,43 @@ function clearDashboard() {
   );
 
 
-  newsFeed.innerHTML = `
-    <div class="empty-state">
+  if (newsFeed) {
+
+    newsFeed.innerHTML = `
+
+      <div class="empty-state">
+
+        <span>
+          NO NEWS LOADED
+        </span>
+
+        <small>
+          Select a symbol.
+        </small>
+
+      </div>
+
+    `;
+
+  }
+
+
+  if (newsImpact) {
+
+    newsImpact.innerHTML = `
 
       <span>
-        NO NEWS LOADED
+        NO NEWS DATA
       </span>
 
       <small>
-        Select a symbol.
+        News impact will appear here.
       </small>
 
-    </div>
-  `;
+    `;
+
+  }
+
 }
 
 
@@ -1410,29 +2358,44 @@ AI ANALYSIS
 async function askBorsaCI() {
 
   const question =
-    questionInput.value.trim();
+    questionInput
+      ? questionInput.value.trim()
+      : "";
 
 
   if (!question) {
 
-    responseBox.innerText =
-      "ERROR: No input.";
+    if (responseBox) {
+
+      responseBox.innerText =
+        "ERROR: No input.";
+
+    }
 
     return;
+
   }
 
 
-  analyzeBtn.disabled =
-    true;
+  if (analyzeBtn) {
 
-  analyzeBtn.innerText =
-    "ANALYZING...";
+    analyzeBtn.disabled =
+      true;
+
+    analyzeBtn.innerText =
+      "ANALYZING...";
+
+  }
 
 
-  responseBox.innerText =
-    "Connecting to BorsaCI...\n\n" +
-    "Collecting MCP data...\n\n" +
-    "AI analysis in progress...";
+  if (responseBox) {
+
+    responseBox.innerText =
+      "Connecting to BorsaCI...\n\n" +
+      "Collecting MCP data...\n\n" +
+      "AI analysis in progress...";
+
+  }
 
 
   try {
@@ -1441,96 +2404,180 @@ async function askBorsaCI() {
       await fetch(
         "/ask",
         {
-          method: "POST",
+
+          method:
+            "POST",
 
           headers: {
+
             "Content-Type":
-              "application/json",
+              "application/json"
+
           },
 
           body:
-            JSON.stringify({
-              question,
-            }),
+            JSON.stringify(
+              {
+                question
+              }
+            )
+
         }
       );
 
 
-    const data =
-      await response.json();
+    let data;
+
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch {
+
+      throw new Error(
+        "Sunucudan geçersiz cevap geldi."
+      );
+
+    }
 
 
     if (!response.ok) {
 
       throw new Error(
-        data.error ||
+        data?.error ||
         "Server error."
       );
+
     }
 
 
-    responseBox.innerText =
-      data.answer ||
-      "No response.";
+    if (responseBox) {
+
+      responseBox.innerText =
+        data?.answer ||
+        "No response.";
+
+    }
 
 
     /*
-     * Soru içinde sembol varsa
-     * dashboard'u da güncelle.
+     * Sorunun içinde BIST sembolü
+     * yakalamaya çalış.
      */
 
     const match =
       question.match(
-        /\b[A-Z]{3,6}\b/i
+        /\b[A-Z]{3,6}\b/g
       );
 
 
-    if (match) {
+    if (
+      match &&
+      match.length > 0
+    ) {
+
+      /*
+       * Son sembolü kullan.
+       */
 
       const symbol =
-        match[0]
-          .toUpperCase();
+        normalizeSymbol(
+          match[
+            match.length - 1
+          ]
+        );
+
+
+      /*
+       * Bazı genel kelimeleri
+       * sembol olarak kabul etme.
+       */
+
+      const ignoredSymbols =
+        new Set(
+          [
+            "IÇIN",
+            "ICIN",
+            "GÜNCEL",
+            "GUNCEL",
+            "ANALİZ",
+            "ANALIZ",
+            "FİYAT",
+            "FIYAT",
+            "RSI",
+            "MACD",
+            "MCP",
+            "BIST"
+          ]
+        );
+
 
       if (
-        !symbols.includes(
+        symbol &&
+        !ignoredSymbols.has(
           symbol
         )
       ) {
 
-        symbols.push(
+        if (
+          !symbols.includes(
+            symbol
+          )
+        ) {
+
+          symbols.push(
+            symbol
+          );
+
+        }
+
+
+        renderWatchlist();
+
+
+        await selectSymbol(
           symbol
         );
 
       }
 
-      renderWatchlist();
-
-      await selectSymbol(
-        symbol
-      );
     }
-
 
   } catch (error) {
 
     console.error(
+      "AI error:",
       error
     );
 
 
-    responseBox.innerText =
-      "ERROR\n\n" +
-      error.message;
+    if (responseBox) {
+
+      responseBox.innerText =
+        "ERROR\n\n" +
+        error.message;
+
+    }
 
   } finally {
 
-    analyzeBtn.disabled =
-      false;
+    if (analyzeBtn) {
 
-    analyzeBtn.innerText =
-      "ANALYZE";
+      analyzeBtn.disabled =
+        false;
+
+      analyzeBtn.innerText =
+        "ANALYZE";
+
+    }
+
   }
+
 }
+
+
 /*
 ========================================================
 ANALYZE BUTTON
@@ -1546,6 +2593,7 @@ if (analyzeBtn) {
 
 }
 
+
 /*
 ========================================================
 ENTER
@@ -1557,6 +2605,10 @@ if (questionInput) {
   questionInput.addEventListener(
     "keydown",
     (event) => {
+
+      /*
+       * Enter = analyze
+       */
 
       if (
         event.key === "Enter" &&
@@ -1570,11 +2622,21 @@ if (questionInput) {
       }
 
 
+      /*
+       * Shift + Enter
+       * = yeni satır
+       */
+
+      /*
+       * Escape = temizle
+       */
+
       if (
         event.key === "Escape"
       ) {
 
-        questionInput.value = "";
+        questionInput.value =
+          "";
 
       }
 
@@ -1586,7 +2648,7 @@ if (questionInput) {
 
 /*
 ========================================================
-RESIZE CHART
+RESIZE
 ========================================================
 */
 
@@ -1595,17 +2657,49 @@ window.addEventListener(
   () => {
 
     if (
-      selectedSymbol &&
-      marketCache[
-        selectedSymbol
-      ]
+      marketChart
     ) {
 
-      updateChart(
-        marketCache[
-          selectedSymbol
-        ].history
-      );
+      /*
+       * autoSize aktif olduğu için
+       * normalde gerekmez.
+       * Ancak bazı mobil browserlarda
+       * manuel resize yardımcı olur.
+       */
+
+      const container =
+        document.getElementById(
+          "tradingview_chart"
+        );
+
+
+      if (
+        container &&
+        container.clientWidth > 0 &&
+        container.clientHeight > 0
+      ) {
+
+        try {
+
+          marketChart.applyOptions(
+            {
+
+              width:
+                container.clientWidth,
+
+              height:
+                container.clientHeight
+
+            }
+          );
+
+        } catch {
+
+          // ignore
+
+        }
+
+      }
 
     }
 
@@ -1615,284 +2709,15 @@ window.addEventListener(
 
 /*
 ========================================================
-INITIAL
+INITIALIZATION
 ========================================================
 */
 
-renderWatchlist();
-/* ========================================================
-   BORSACI MARKET CHART
-   ======================================================== */
-
-let marketChart = null;
-let candleSeries = null;
-let volumeSeries = null;
-
-function initMarketChart() {
-
-  const container = document.getElementById("tradingview_chart");
-
-  if (!container) {
-    console.error("Chart container bulunamadı.");
-    return;
-  }
-
-  // Eski chart varsa temizle
-  container.innerHTML = "";
-
-  marketChart = LightweightCharts.createChart(container, {
-
-    width: container.clientWidth,
-    height: container.clientHeight,
-
-    layout: {
-      background: {
-        type: "solid",
-        color: "#0b0f14"
-      },
-
-      textColor: "#9aa4b2"
-    },
-
-    grid: {
-      vertLines: {
-        color: "#151b23"
-      },
-
-      horzLines: {
-        color: "#151b23"
-      }
-    },
-
-    crosshair: {
-      mode: LightweightCharts.CrosshairMode.Normal
-    },
-
-    rightPriceScale: {
-      borderColor: "#252c36"
-    },
-
-    timeScale: {
-      borderColor: "#252c36",
-      timeVisible: false
-    }
-
-  });
-
-
-  candleSeries = marketChart.addSeries(
-    LightweightCharts.CandlestickSeries,
-    {
-
-      upColor: "#26a69a",
-
-      downColor: "#ef5350",
-
-      borderUpColor: "#26a69a",
-
-      borderDownColor: "#ef5350",
-
-      wickUpColor: "#26a69a",
-
-      wickDownColor: "#ef5350"
-
-    }
-  );
-
-
-  volumeSeries = marketChart.addSeries(
-    LightweightCharts.HistogramSeries,
-    {
-
-      priceFormat: {
-        type: "volume"
-      },
-
-      priceScaleId: ""
-
-    }
-  );
-
-
-  marketChart.priceScale("").applyOptions({
-
-    scaleMargins: {
-      top: 0.8,
-      bottom: 0
-    }
-
-  });
-
-
-  // TEST VERİSİ
-  candleSeries.setData([
-
-    {
-      time: "2026-07-20",
-      open: 170,
-      high: 176,
-      low: 168,
-      close: 174
-    },
-
-    {
-      time: "2026-07-21",
-      open: 174,
-      high: 179,
-      low: 172,
-      close: 177
-    },
-
-    {
-      time: "2026-07-22",
-      open: 177,
-      high: 181,
-      low: 175,
-      close: 176
-    },
-
-    {
-      time: "2026-07-23",
-      open: 176,
-      high: 178,
-      low: 170,
-      close: 172
-    },
-
-    {
-      time: "2026-07-24",
-      open: 172,
-      high: 180,
-      low: 171,
-      close: 179
-    },
-
-    {
-      time: "2026-07-27",
-      open: 179,
-      high: 183,
-      low: 177,
-      close: 181
-    },
-
-    {
-      time: "2026-07-28",
-      open: 181,
-      high: 185,
-      low: 179,
-      close: 184
-    },
-
-    {
-      time: "2026-07-29",
-      open: 184,
-      high: 186,
-      low: 180,
-      close: 182
-    },
-
-    {
-      time: "2026-07-30",
-      open: 182,
-      high: 188,
-      low: 181,
-      close: 187
-    },
-
-    {
-      time: "2026-07-31",
-      open: 187,
-      high: 190,
-      low: 184,
-      close: 189
-    }
-
-  ]);
-
-
-  volumeSeries.setData([
-
-    {
-      time: "2026-07-20",
-      value: 1200000
-    },
-
-    {
-      time: "2026-07-21",
-      value: 1800000
-    },
-
-    {
-      time: "2026-07-22",
-      value: 1500000
-    },
-
-    {
-      time: "2026-07-23",
-      value: 2100000
-    },
-
-    {
-      time: "2026-07-24",
-      value: 1900000
-    },
-
-    {
-      time: "2026-07-27",
-      value: 2500000
-    },
-
-    {
-      time: "2026-07-28",
-      value: 2200000
-    },
-
-    {
-      time: "2026-07-29",
-      value: 1700000
-    },
-
-    {
-      time: "2026-07-30",
-      value: 2800000
-    },
-
-    {
-      time: "2026-07-31",
-      value: 3100000
-    }
-
-  ]);
-
-
-  marketChart.timeScale().fitContent();
-
-
-  // Ekran boyutu değişince chart da büyüsün
-  const resizeObserver =
-    new ResizeObserver(() => {
-
-      marketChart.applyOptions({
-
-        width: container.clientWidth,
-
-        height: container.clientHeight
-
-      });
-
-    });
-
-
-  resizeObserver.observe(container);
-
-}
-
-
-/* Sayfa açıldığında chart oluştur */
-
 document.addEventListener(
   "DOMContentLoaded",
-  function () {
+  () => {
+
+    renderWatchlist();
 
     initMarketChart();
 
