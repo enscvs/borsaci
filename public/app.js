@@ -3104,7 +3104,8 @@ async function analyzeQuestion() {
           cache:
             "no-store"
         },
-        45000
+        4500000
+      
       );
 
     const text =
