@@ -533,206 +533,178 @@ FEATURES
 
   async function reloadChart() {
 
-    const symbol =
-      getSelectedSymbol();
+  const symbol =
+    getSelectedSymbol();
 
+  if (!symbol) {
 
-    if (!symbol) {
-
-      console.warn(
-        "BORSACI CHART: Seçili sembol yok."
-      );
-
-      return;
-
-    }
-
-
-    const params =
-      getRequestParams();
-
-
-    let url =
-      `/chart?symbol=${encodeURIComponent(
-        symbol
-      )}&range=${encodeURIComponent(
-        params.range
-      )}&interval=${encodeURIComponent(
-        params.interval
-      )}`;
-
-
-    console.log(
-      "========================================"
+    console.warn(
+      "BORSACI CHART: Seçili sembol yok."
     );
 
-    console.log(
-      "BORSACI CHART REQUEST"
-    );
-
-    console.log(
-      "Symbol:",
-      symbol
-    );
-
-    console.log(
-      "Range:",
-      activeRange
-    );
-
-    console.log(
-      "Interval:",
-      activeInterval
-    );
-
-    console.log(
-      "Server Range:",
-      params.range
-    );
-
-    console.log(
-      "Server Interval:",
-      params.interval
-    );
-
-    console.log(
-      "URL:",
-      url
-    );
-
-    console.log(
-      "========================================"
-    );
-
-
-    try {
-
-      const response =
-        await fetch(
-          url,
-          {
-            method: "GET",
-
-            headers: {
-              "Accept":
-                "application/json"
-            },
-
-            cache:
-              "no-store"
-          }
-        );
-
-
-      const text =
-        await response.text();
-
-
-      let data;
-
-
-      try {
-
-        data =
-          JSON.parse(text);
-
-      } catch {
-
-        throw new Error(
-          `Chart JSON değil. HTTP ${response.status}`
-        );
-
-      }
-
-
-      if (!response.ok) {
-
-        throw new Error(
-          data?.error ||
-          `Chart HTTP ${response.status}`
-        );
-
-      }
-
-
-      let history =
-        extractChartHistory(
-          data
-        );
-
-
-      /*
-       * 4H aggregate
-       */
-
-      if (
-        activeInterval === "4h"
-      ) {
-
-        history =
-          aggregate4Hour(
-            history
-          );
-
-      }
-
-
-      if (
-        !history.length
-      ) {
-
-        throw new Error(
-          "Chart verisi boş."
-        );
-
-      }
-
-
-      currentHistory =
-        history;
-
-
-      /*
-       * App.js'nin chart fonksiyonunu
-       * kullan.
-       */
-
-      if (
-        typeof window.updateChartData ===
-        "function"
-      ) {
-
-        window.updateChartData(
-          history
-        );
-
-      }
-
-
-      /*
-       * Indicator'ları yeniden çiz.
-       */
-
-      redrawChart();
-
-
-      console.log(
-        `BORSACI: ${history.length} candle loaded.`
-      );
-
-
-    } catch (error) {
-
-      console.error(
-        "BORSACI CHART ERROR:",
-        error
-      );
-
-    }
+    return;
 
   }
 
 
+  const url =
+    `/chart?symbol=${encodeURIComponent(symbol)}` +
+    `&range=${encodeURIComponent(activeRange)}` +
+    `&interval=${encodeURIComponent(activeInterval)}`;
+
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "BORSACI CHART RELOAD"
+  );
+
+  console.log(
+    "Symbol:",
+    symbol
+  );
+
+  console.log(
+    "Range:",
+    activeRange
+  );
+
+  console.log(
+    "Interval:",
+    activeInterval
+  );
+
+  console.log(
+    "URL:",
+    url
+  );
+
+  console.log(
+    "========================================"
+  );
+
+
+  try {
+
+    const response =
+      await fetch(
+        url,
+        {
+          method: "GET",
+
+          headers: {
+            "Accept":
+              "application/json"
+          },
+
+          cache:
+            "no-store"
+        }
+      );
+
+
+    const text =
+      await response.text();
+
+
+    let data;
+
+    try {
+
+      data =
+        JSON.parse(text);
+
+    } catch {
+
+      throw new Error(
+        `Chart JSON değil. HTTP ${response.status}: ${text.slice(0, 300)}`
+      );
+
+    }
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        `Chart HTTP ${response.status}`
+      );
+
+    }
+
+
+    const history =
+      extractChartHistory(data);
+
+
+    console.log(
+      "BORSACI CHART CANDLE COUNT:",
+      history.length
+    );
+
+
+    console.log(
+      "BORSACI CHART FIRST:",
+      history[0]
+    );
+
+
+    console.log(
+      "BORSACI CHART LAST:",
+      history[history.length - 1]
+    );
+
+
+    if (
+      !Array.isArray(history) ||
+      history.length === 0
+    ) {
+
+      throw new Error(
+        "Chart verisi boş."
+      );
+
+    }
+
+
+    /*
+     * ÇOK ÖNEMLİ:
+     *
+     * Yeni range/interval verisini
+     * eski cache ile karıştırma.
+     */
+
+    chartCache[symbol] = {
+
+      timestamp:
+        Date.now(),
+
+      history
+
+    };
+
+
+    /*
+     * Gelen bütün mumları çiz.
+     */
+
+    updateChartData(
+      history
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "BORSACI CHART RELOAD ERROR:",
+      error
+    );
+
+  }
+
+}
   /*
   ========================================================
   EXTRACT HISTORY
