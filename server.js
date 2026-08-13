@@ -487,7 +487,7 @@ async function analyze(question) {
 
     for (
       let step = 0;
-      step < 6;
+      step < 20;
       step++
     ) {
 
