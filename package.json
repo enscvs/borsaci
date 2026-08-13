@@ -1,6 +1,24 @@
-"dependencies": {
-  "@modelcontextprotocol/sdk": "^1.30.0",
-  "dotenv": "^17.4.2",
-  "node-telegram-bot-api": "^1.2.0",
-  "openai": "^5.12.2"
+{
+  "name": "gemini-borsaci",
+  "version": "1.0.0",
+  "description": "BorsaCI - BIST AI Analysis Assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "bist",
+    "borsa",
+    "trading",
+    "ai",
+    "mcp"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "dotenv": "^17.4.2",
+    "openai": "^5.12.2"
+  }
 }
