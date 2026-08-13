@@ -1749,7 +1749,360 @@ function readBody(
   );
 
 }
+/*
+========================================================
+GITHUB WATCHLIST
+========================================================
+*/
 
+async function getWatchlist() {
+
+  const response = await fetch(
+    `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`,
+    {
+      headers: {
+        "Authorization":
+          `Bearer ${process.env.GITHUB_TOKEN}`,
+
+        "Accept":
+          "application/vnd.github+json",
+
+        "User-Agent":
+          "BorsaCI",
+      },
+    }
+  );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      `GitHub watchlist okunamadı: HTTP ${response.status}`
+    );
+
+  }
+
+
+  const data =
+    await response.json();
+
+
+  const content =
+    Buffer.from(
+      data.content.replace(/\n/g, ""),
+      "base64"
+    ).toString("utf8");
+
+
+  return {
+    content:
+      JSON.parse(content),
+
+    sha:
+      data.sha,
+  };
+
+}
+
+
+async function saveWatchlist(
+  watchlist,
+  sha
+) {
+
+  const content =
+    Buffer.from(
+      JSON.stringify(
+        watchlist,
+        null,
+        2
+      )
+    ).toString("base64");
+
+
+  const response =
+    await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`,
+      {
+
+        method:
+          "PUT",
+
+        headers: {
+
+          "Authorization":
+            `Bearer ${process.env.GITHUB_TOKEN}`,
+
+          "Accept":
+            "application/vnd.github+json",
+
+          "Content-Type":
+            "application/json",
+
+          "User-Agent":
+            "BorsaCI",
+
+        },
+
+        body:
+          JSON.stringify({
+
+            message:
+              "Update watchlist",
+
+            content,
+
+            sha,
+
+          }),
+
+      }
+    );
+
+
+  if (!response.ok) {
+
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      `GitHub watchlist kaydedilemedi: ${errorText}`
+    );
+
+  }
+
+
+  return await response.json();
+
+}
+
+
+async function handleWatchlist(
+  req,
+  res
+) {
+
+  try {
+
+    /*
+    ========================================
+    GET
+    ========================================
+    */
+
+    if (
+      req.method === "GET"
+    ) {
+
+      const result =
+        await getWatchlist();
+
+
+      return sendJSON(
+        res,
+        200,
+        result.content
+      );
+
+    }
+
+
+    /*
+    ========================================
+    POST
+    ========================================
+    */
+
+    if (
+      req.method === "POST"
+    ) {
+
+      const body =
+        await readBody(req);
+
+
+      let data;
+
+
+      try {
+
+        data =
+          JSON.parse(body);
+
+      } catch {
+
+        throw new Error(
+          "Geçersiz JSON."
+        );
+
+      }
+
+
+      const symbol =
+        String(
+          data?.symbol || ""
+        )
+          .trim()
+          .toUpperCase();
+
+
+      if (!symbol) {
+
+        throw new Error(
+          "symbol alanı gerekli."
+        );
+
+      }
+
+
+      const result =
+        await getWatchlist();
+
+
+      const symbols =
+        Array.isArray(
+          result.content.symbols
+        )
+          ? result.content.symbols
+          : [];
+
+
+      if (
+        !symbols.includes(symbol)
+      ) {
+
+        symbols.push(symbol);
+
+      }
+
+
+      const watchlist = {
+
+        symbols,
+
+      };
+
+
+      await saveWatchlist(
+        watchlist,
+        result.sha
+      );
+
+
+      return sendJSON(
+        res,
+        200,
+        watchlist
+      );
+
+    }
+
+
+    /*
+    ========================================
+    DELETE
+    ========================================
+    */
+
+    if (
+      req.method === "DELETE"
+    ) {
+
+      const url =
+        new URL(
+          req.url,
+          `http://${req.headers.host || "localhost"}`
+        );
+
+
+      const symbol =
+        url.searchParams
+          .get("symbol")
+          ?.trim()
+          .toUpperCase();
+
+
+      if (!symbol) {
+
+        throw new Error(
+          "symbol parametresi gerekli."
+        );
+
+      }
+
+
+      const result =
+        await getWatchlist();
+
+
+      const symbols =
+        Array.isArray(
+          result.content.symbols
+        )
+          ? result.content.symbols
+          : [];
+
+
+      const updatedSymbols =
+        symbols.filter(
+          item =>
+            item !== symbol
+        );
+
+
+      const watchlist = {
+
+        symbols:
+          updatedSymbols,
+
+      };
+
+
+      await saveWatchlist(
+        watchlist,
+        result.sha
+      );
+
+
+      return sendJSON(
+        res,
+        200,
+        watchlist
+      );
+
+    }
+
+
+    return sendJSON(
+      res,
+      405,
+      {
+        error:
+          "Method Not Allowed",
+      }
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "WATCHLIST ERROR:",
+      error
+    );
+
+
+    return sendJSON(
+      res,
+      500,
+      {
+        error:
+          error.message,
+      }
+    );
+
+  }
+
+}
 
 /*
 ========================================================
@@ -1828,7 +2181,22 @@ const server =
 
       const pathname =
         url.pathname;
+/*
+========================================================
+WATCHLIST
+========================================================
+*/
 
+if (
+  pathname === "/api/watchlist"
+) {
+
+  return handleWatchlist(
+    req,
+    res
+  );
+
+}
 
       console.log(
         `${req.method} ${pathname}`
