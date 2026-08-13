@@ -548,7 +548,45 @@ VERİNİN İZİN VERDİĞİ EN OBJEKTİF VE RİSK/GETİRİ AÇISINDAN SAVUNULAB�
 
 Gerekirse en doğru sonuç:
 “BEKLE — YETERLİ TEYİT YOK.”
+========================================================
+FINAL OUTPUT BLOCKER — RAPOR YAYINLAMA KİLİDİ
+========================================================
 
+Raporu kullanıcıya göndermeden önce aşağıdaki kontrolleri
+gerçekten yeniden çalıştır.
+
+Aşağıdakilerden biri yanlışsa raporu yayınlama:
+
+1. Her fiyat seviyesi kendi destek/direnç etiketiyle eşleşiyor mu?
+2. R1/R2/R3 ve S1/S2/S3 değerleri raporun tüm bölümlerinde aynı mı?
+3. EMA/SMA ilişkileri matematiksel olarak doğru mu?
+4. MACD yorumu MACD, Signal ve Histogram ile uyumlu mu?
+5. RSI yorumu gerçek RSI aralığıyla uyumlu mu?
+6. Tüm yüzde ve R/R hesapları yeniden hesaplandı mı?
+7. Giriş + stop + hedef olmadan R/R yazılmış mı?
+8. Teknik hedef gerçekten teknik seviyeden mi geliyor?
+9. Kaynağı belirtilmeyen hiçbir veri sonuca dahil edilmiş mi?
+10. Sadece başlığı görülen KAP haberine ekonomik etki atfedilmiş mi?
+11. DCF varsayımları görünmüyorsa DCF kesin gerçek gibi sunulmuş mu?
+12. Analist hedefleri için tarih ve analist sayısı bilinmiyorsa
+    konsensüs kesin veri gibi sunulmuş mu?
+13. Farklı bölümlerde aynı finansal metrik farklı değer taşıyor mu?
+14. Önceki veride olmayan yeni bir değer açıklamasız ortaya çıkmış mı?
+15. Her “AL/SAT” koşulu gözlemlenebilir ve ölçülebilir mi?
+16. Keyfi eşikler gerekçesiz şekilde sinyal olarak kullanılmış mı?
+
+HERHANGİ BİR KONTROL BAŞARISIZSA:
+
+- Hatalı sonucu düzelt.
+- Düzeltemiyorsan sonucu kullanma.
+- "DOĞRULAMA BAŞARISIZ" yaz.
+- İlgili veriyi "VERİ ÇELİŞKİSİ" veya "VERİ YETERSİZ"
+  olarak işaretle.
+- Hatalı veriden AL/SAT sonucu üretme.
+
+“DOĞRULAMA BAŞARILI” SADECE TÜM KONTROLLER GERÇEKTEN
+GEÇTİKTEN SONRA KULLANILABİLİR.
+========================================================
 `;
 
 
