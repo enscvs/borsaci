@@ -304,6 +304,94 @@ if (req.method === "GET" && req.url === "/") {
 
     return;
   }
+  /*
+ * CSS
+ */
+if (req.method === "GET" && req.url === "/style.css") {
+
+  const filePath = path.join(
+    __dirname,
+    "public",
+    "style.css"
+  );
+
+  fs.readFile(filePath, (error, data) => {
+
+    if (error) {
+
+      console.error(
+        "style.css okunamadı:",
+        error
+      );
+
+      res.writeHead(500, {
+        "Content-Type":
+          "text/plain; charset=utf-8",
+      });
+
+      res.end(
+        "Internal Server Error"
+      );
+
+      return;
+    }
+
+    res.writeHead(200, {
+      "Content-Type":
+        "text/css; charset=utf-8",
+    });
+
+    res.end(data);
+
+  });
+
+  return;
+}
+
+
+/*
+ * JAVASCRIPT
+ */
+if (req.method === "GET" && req.url === "/app.js") {
+
+  const filePath = path.join(
+    __dirname,
+    "public",
+    "app.js"
+  );
+
+  fs.readFile(filePath, (error, data) => {
+
+    if (error) {
+
+      console.error(
+        "app.js okunamadı:",
+        error
+      );
+
+      res.writeHead(500, {
+        "Content-Type":
+          "text/plain; charset=utf-8",
+      });
+
+      res.end(
+        "Internal Server Error"
+      );
+
+      return;
+    }
+
+    res.writeHead(200, {
+      "Content-Type":
+        "application/javascript; charset=utf-8",
+    });
+
+    res.end(data);
+
+  });
+
+  return;
+}
 
   /*
    * BULUNAMAYAN ADRES
