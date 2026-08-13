@@ -3128,17 +3128,557 @@ if (
 
 }
 
-
 /*
 ========================================================
 AI ANALYSIS
 ========================================================
 */
 
+let analysisRunning = false;
+
+
 /*
- * SENİN MEVCUT /ask KODUN BURADA
- * AYNEN DEVAM EDEBİLİR.
- *
- * Chart sistemi /ask sistemine
- * bağımlı değil.
- */
+========================================================
+RENDER AI RESPONSE
+========================================================
+*/
+
+function renderAIResponse(text) {
+
+  if (!responseBox) return;
+
+
+  if (
+    text === null ||
+    text === undefined ||
+    text === ""
+  ) {
+
+    responseBox.innerHTML = `
+      <div class="empty-state">
+        <span>NO ANALYSIS</span>
+        <small>AI analiz sonucu alınamadı.</small>
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  /*
+   * Basit ve güvenli Markdown benzeri
+   * formatlama.
+   *
+   * Önce HTML escape ediyoruz.
+   */
+
+  let html =
+    escapeHtml(
+      String(text)
+    );
+
+
+  /*
+   * Başlıklar
+   */
+
+  html =
+    html.replace(
+      /^### (.+)$/gm,
+      "<h4>$1</h4>"
+    );
+
+
+  html =
+    html.replace(
+      /^## (.+)$/gm,
+      "<h3>$1</h3>"
+    );
+
+
+  html =
+    html.replace(
+      /^# (.+)$/gm,
+      "<h2>$1</h2>"
+    );
+
+
+  /*
+   * Bold
+   */
+
+  html =
+    html.replace(
+      /\*\*(.+?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+
+  /*
+   * Bullet
+   */
+
+  html =
+    html.replace(
+      /^[-•] (.+)$/gm,
+      "<div class=\"ai-bullet\">• $1</div>"
+    );
+
+
+  /*
+   * Satır sonları
+   */
+
+  html =
+    html.replace(
+      /\n/g,
+      "<br>"
+    );
+
+
+  responseBox.innerHTML = `
+    <div class="ai-response-content">
+      ${html}
+    </div>
+  `;
+
+}
+
+
+/*
+========================================================
+ANALYSIS LOADING
+========================================================
+*/
+
+function showAnalysisLoading() {
+
+  if (!responseBox) return;
+
+
+  responseBox.innerHTML = `
+    <div class="ai-loading">
+
+      <div class="ai-loading-title">
+        ANALYZING
+      </div>
+
+      <div class="ai-loading-text">
+        MCP market data is being analyzed...
+      </div>
+
+    </div>
+  `;
+
+}
+
+
+/*
+========================================================
+ANALYSIS ERROR
+========================================================
+*/
+
+function showAnalysisError(
+  message
+) {
+
+  if (!responseBox) return;
+
+
+  responseBox.innerHTML = `
+    <div class="ai-error">
+
+      <strong>
+        ANALYSIS ERROR
+      </strong>
+
+      <small>
+        ${escapeHtml(
+          message ||
+          "Analiz sırasında bilinmeyen bir hata oluştu."
+        )}
+      </small>
+
+    </div>
+  `;
+
+}
+
+
+/*
+========================================================
+SET ANALYZE BUTTON STATE
+========================================================
+*/
+
+function setAnalyzeButtonState(
+  loading
+) {
+
+  if (!analyzeBtn) return;
+
+
+  analyzeBtn.disabled =
+    loading;
+
+
+  if (loading) {
+
+    analyzeBtn.dataset.originalText =
+      analyzeBtn.innerText;
+
+    analyzeBtn.innerText =
+      "ANALYZING...";
+
+    analyzeBtn.classList.add(
+      "loading"
+    );
+
+  } else {
+
+    analyzeBtn.innerText =
+      analyzeBtn.dataset.originalText ||
+      "ANALYZE";
+
+    analyzeBtn.classList.remove(
+      "loading"
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+ANALYZE
+========================================================
+*/
+
+async function analyzeQuestion() {
+
+  /*
+   * Aynı anda iki analiz gönderme.
+   */
+
+  if (analysisRunning) {
+    return;
+  }
+
+
+  if (!questionInput) {
+
+    console.error(
+      "BORSACI: #question bulunamadı."
+    );
+
+    return;
+
+  }
+
+
+  const question =
+    questionInput.value.trim();
+
+
+  /*
+   * Boş soru
+   */
+
+  if (!question) {
+
+    questionInput.focus();
+
+    return;
+
+  }
+
+
+  analysisRunning =
+    true;
+
+
+  setAnalyzeButtonState(
+    true
+  );
+
+
+  showAnalysisLoading();
+
+
+  console.log(
+    "BORSACI AI REQUEST →",
+    question
+  );
+
+
+  try {
+
+    /*
+     * =====================================
+     * /ask
+     * =====================================
+     */
+
+    const response =
+      await fetch(
+        "/ask",
+        {
+
+          method:
+            "POST",
+
+          headers: {
+
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+
+          },
+
+          body:
+            JSON.stringify({
+              question
+            }),
+
+          cache:
+            "no-store"
+
+        }
+      );
+
+
+    /*
+     * Önce text alıyoruz.
+     *
+     * Böylece server HTML / text /
+     * bozuk JSON döndürürse de
+     * gerçek hatayı görebiliriz.
+     */
+
+    const text =
+      await response.text();
+
+
+    console.log(
+      "BORSACI AI RESPONSE STATUS →",
+      response.status
+    );
+
+
+    let data = null;
+
+
+    try {
+
+      data =
+        JSON.parse(
+          text
+        );
+
+    } catch {
+
+      throw new Error(
+        `Sunucu JSON döndürmedi. HTTP ${response.status}`
+      );
+
+    }
+
+
+    /*
+     * HTTP hata
+     */
+
+    if (!response.ok) {
+
+      throw new Error(
+        data?.error ||
+        data?.message ||
+        `AI endpoint HTTP ${response.status}`
+      );
+
+    }
+
+
+    /*
+     * Backend:
+     *
+     * {
+     *   answer: "..."
+     * }
+     */
+
+    const answer =
+      data?.answer;
+
+
+    if (
+      answer === null ||
+      answer === undefined ||
+      answer === ""
+    ) {
+
+      throw new Error(
+        "AI sunucusu boş analiz döndürdü."
+      );
+
+    }
+
+
+    console.log(
+      "BORSACI AI ANSWER →",
+      answer
+    );
+
+
+    /*
+     * Ekrana yaz
+     */
+
+    renderAIResponse(
+      answer
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      "BORSACI AI ERROR:",
+      error
+    );
+
+
+    showAnalysisError(
+      error.message
+    );
+
+
+  } finally {
+
+    analysisRunning =
+      false;
+
+
+    setAnalyzeButtonState(
+      false
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
+ANALYZE BUTTON
+========================================================
+*/
+
+if (analyzeBtn) {
+
+  analyzeBtn.addEventListener(
+    "click",
+    analyzeQuestion
+  );
+
+} else {
+
+  console.error(
+    "BORSACI: #analyzeBtn bulunamadı."
+  );
+
+}
+
+
+/*
+========================================================
+ENTER KEY
+========================================================
+*/
+
+if (questionInput) {
+
+  questionInput.addEventListener(
+    "keydown",
+    event => {
+
+      /*
+       * Enter
+       *
+       * Shift + Enter:
+       * yeni satır bırakır.
+       */
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        analyzeQuestion();
+
+      }
+
+    }
+  );
+
+} else {
+
+  console.error(
+    "BORSACI: #question bulunamadı."
+  );
+
+
+}
+
+
+/*
+========================================================
+CTRL + ENTER
+========================================================
+*/
+
+if (questionInput) {
+
+  questionInput.addEventListener(
+    "keypress",
+    event => {
+
+      /*
+       * Bazı mobil/browser
+       * kombinasyonlarında destek.
+       *
+       * Asıl Enter listener yukarıda.
+       */
+
+      if (
+        event.key === "Enter" &&
+        (event.ctrlKey || event.metaKey)
+      ) {
+
+        event.preventDefault();
+
+        analyzeQuestion();
+
+      }
+
+    }
+  );
+
+}
+
+
+/*
+========================================================
+DEBUG
+========================================================
+*/
+
+console.log(
+  "BORSACI: AI analysis system ready."
+);
