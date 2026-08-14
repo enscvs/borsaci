@@ -1416,3 +1416,75 @@ textarea::placeholder {
     }
 
 }
+/* =========================
+   KAP NEWS PANEL
+========================= */
+
+.kap-panel {
+  overflow: hidden;
+}
+
+.kap-live {
+  color: #00ff88;
+}
+
+.kap-feed {
+  height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.kap-feed::-webkit-scrollbar {
+  width: 5px;
+}
+
+.kap-feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.kap-feed::-webkit-scrollbar-thumb {
+  background: #1d4d35;
+}
+
+.kap-item {
+  display: block;
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(0, 255, 120, 0.10);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+.kap-item:hover {
+  background: rgba(0, 255, 120, 0.05);
+}
+
+.kap-badge {
+  display: inline-block;
+  margin-bottom: 5px;
+  padding: 2px 6px;
+  border: 1px solid rgba(0, 255, 120, 0.35);
+  color: #00ff88;
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.kap-title {
+  color: #d8e2dc;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kap-meta {
+  margin-top: 5px;
+  color: #66756c;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+
+.kap-loading {
+  padding: 20px;
+  color: #66756c;
+  text-align: center;
+  font-size: 11px;
+}
