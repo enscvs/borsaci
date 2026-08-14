@@ -1488,3 +1488,92 @@ textarea::placeholder {
   text-align: center;
   font-size: 11px;
 }
+/* NEWS + KAP SIDE BY SIDE */
+
+.news-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  align-items: start;
+}
+
+.news-panels .panel {
+  min-width: 0;
+  margin: 0;
+}
+
+
+/* NEWS */
+
+.news-feed {
+  height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+
+/* KAP */
+
+.kap-feed {
+  height: 300px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.kap-live {
+  color: #00ff88;
+}
+
+.kap-item {
+  display: block;
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(0,255,120,0.10);
+  text-decoration: none;
+}
+
+.kap-item:hover {
+  background: rgba(0,255,120,0.05);
+}
+
+.kap-badge {
+  display: inline-block;
+  margin-bottom: 5px;
+  padding: 2px 6px;
+  border: 1px solid rgba(0,255,120,0.35);
+  color: #00ff88;
+  font-size: 9px;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+.kap-title {
+  color: #d8e2dc;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kap-meta {
+  margin-top: 5px;
+  color: #66756c;
+  font-size: 9px;
+}
+
+.news-loading,
+.kap-loading {
+  padding: 20px;
+  color: #66756c;
+  text-align: center;
+  font-size: 11px;
+}
+
+
+/* MOBİL */
+
+@media (max-width: 700px) {
+
+  .news-panels {
+    grid-template-columns: 1fr;
+  }
+
+}
