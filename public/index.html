@@ -216,97 +216,42 @@
          NEWS
     ================================================== -->
 
-<section class="panel news">
+<div class="news-panels">
 
-  <div class="panel-title">
-    <span>NEWS FEED</span>
-    <span class="panel-status">LIVE</span>
-  </div>
-<section class="panel kap-panel">
+  <!-- NEWS FEED -->
+  <section class="panel news">
 
-  <div class="panel-title">
-    <span>KAP BİLDİRİMLERİ</span>
-    <span class="panel-status kap-live">LIVE</span>
-  </div>
-
-  <div id="kap-feed" class="kap-feed">
-    <div class="kap-loading">
-      KAP bildirimleri yükleniyor...
+    <div class="panel-title">
+      <span>NEWS FEED</span>
+      <span class="panel-status">LIVE</span>
     </div>
-  </div>
 
-</section>
-  <div id="news-feed" class="news-feed">
-    <div class="news-loading">
-      Haberler yükleniyor...
+    <div id="news-feed" class="news-feed">
+      <div class="news-loading">
+        Haberler yükleniyor...
+      </div>
     </div>
-  </div>
 
-</section>
-    <script>
-async function loadNews() {
-  const feed = document.getElementById("news-feed");
+  </section>
 
-  try {
-    const response = await fetch(
-      "https://patient-snowflake-e9cc.efccavus.workers.dev/"
-    );
 
-    const xmlText = await response.text();
+  <!-- KAP -->
+  <section class="panel kap-panel">
 
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(xmlText, "text/xml");
+    <div class="panel-title">
+      <span>KAP BİLDİRİMLERİ</span>
+      <span class="panel-status kap-live">LIVE</span>
+    </div>
 
-    const items = [...xml.querySelectorAll("item")].slice(0, 10);
+    <div id="kap-feed" class="kap-feed">
+      <div class="kap-loading">
+        KAP bildirimleri yükleniyor...
+      </div>
+    </div>
 
-    if (!items.length) {
-      feed.innerHTML = "<div class='news-loading'>Haber bulunamadı.</div>";
-      return;
-    }
+  </section>
 
-    feed.innerHTML = items.map(item => {
-      const title = item.querySelector("title")?.textContent || "";
-      const link = item.querySelector("link")?.textContent || "#";
-      const pubDate = item.querySelector("pubDate")?.textContent || "";
-
-      const date = new Date(pubDate);
-
-      const time = isNaN(date)
-        ? ""
-        : date.toLocaleString("tr-TR", {
-            day: "2-digit",
-            month: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit"
-          });
-
-      return `
-        <a
-          href="${link}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="news-item"
-        >
-          <div class="news-item-title">${title}</div>
-          <div class="news-item-meta">
-            INVESTING • ${time}
-          </div>
-        </a>
-      `;
-    }).join("");
-
-  } catch (error) {
-    console.error("Haber yükleme hatası:", error);
-
-    feed.innerHTML =
-      "<div class='news-loading'>Haberler yüklenemedi.</div>";
-  }
-}
-
-loadNews();
-
-setInterval(loadNews, 300000);
-</script>
+</div>
     <!-- ==================================================
          TECHNICAL ANALYSIS
     ================================================== -->
