@@ -216,42 +216,148 @@
          NEWS
     ================================================== -->
 
-<div class="news-panels">
+<section class="panel news">
 
-  <!-- NEWS FEED -->
-  <section class="panel news">
+  <div class="panel-title">
+    <span>NEWS FEED</span>
+    <span class="panel-status">LIVE</span>
+  </div>
 
-    <div class="panel-title">
-      <span>NEWS FEED</span>
-      <span class="panel-status">LIVE</span>
+  <div id="news-feed" class="news-feed">
+    <div class="news-loading">
+      Haberler yükleniyor...
     </div>
+  </div>
 
-    <div id="news-feed" class="news-feed">
-      <div class="news-loading">
-        Haberler yükleniyor...
-      </div>
-    </div>
+</section>
+    <script>
+async function loadNews() {
 
-  </section>
+  const feed = document.getElementById("news-feed");
 
+  try {
 
-  <!-- KAP -->
-  <section class="panel kap-panel">
+    const response = await fetch(
+      "https://patient-snowflake-e9cc.efccavus.workers.dev/"
+    );
 
-    <div class="panel-title">
-      <span>KAP BİLDİRİMLERİ</span>
-      <span class="panel-status kap-live">LIVE</span>
-    </div>
+    const xmlText = await response.text();
 
-    <div id="kap-feed" class="kap-feed">
-      <div class="kap-loading">
-        KAP bildirimleri yükleniyor...
-      </div>
-    </div>
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, "text/xml");
 
-  </section>
+    let items = [...xml.querySelectorAll("item")];
 
-</div>
+    if (!items.length) {
+      feed.innerHTML =
+        "<div class='news-loading'>Haber bulunamadı.</div>";
+      return;
+    }
+
+    /* EN YENİ HABERLER ÜSTE */
+    items.sort((a, b) => {
+
+      const dateA =
+        new Date(
+          a.querySelector("pubDate")?.textContent || 0
+        );
+
+      const dateB =
+        new Date(
+          b.querySelector("pubDate")?.textContent || 0
+        );
+
+      return dateB - dateA;
+
+    });
+
+    /* SON 15 HABER */
+    items = items.slice(0, 15);
+
+    feed.innerHTML = items.map(item => {
+
+      let title =
+        item.querySelector("title")?.textContent || "";
+
+      const link =
+        item.querySelector("link")?.textContent || "#";
+
+      const pubDate =
+        item.querySelector("pubDate")?.textContent || "";
+
+      const date = new Date(pubDate);
+
+      const time = isNaN(date)
+        ? ""
+        : date.toLocaleString("tr-TR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+
+      /* KAP MI, NORMAL HABER Mİ? */
+      const isKAP =
+        title.startsWith("KAP");
+
+      let source;
+
+      if (isKAP) {
+
+        title =
+          title.replace(/^KAP\s*·\s*/i, "");
+
+        source = `
+          <span class="news-source kap-source">
+            KAP
+          </span>
+        `;
+
+      } else {
+
+        source = `
+          <span class="news-source">
+            NEWS
+          </span>
+        `;
+
+      }
+
+      return `
+        <a
+          href="${link}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="news-item"
+        >
+
+          <div class="news-item-title">
+            ${title}
+          </div>
+
+          <div class="news-item-meta">
+            ${source}
+            <span>• ${time}</span>
+          </div>
+
+        </a>
+      `;
+
+    }).join("");
+
+  } catch (error) {
+
+    console.error("Haber yükleme hatası:", error);
+
+    feed.innerHTML =
+      "<div class='news-loading'>Haberler yüklenemedi.</div>";
+  }
+}
+
+loadNews();
+
+setInterval(loadNews, 300000);
+</script>
     <!-- ==================================================
          TECHNICAL ANALYSIS
     ================================================== -->
