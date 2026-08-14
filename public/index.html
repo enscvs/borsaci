@@ -230,6 +230,70 @@
   </div>
 
 </section>
+    <script>
+async function loadNews() {
+  const feed = document.getElementById("news-feed");
+
+  try {
+    const response = await fetch(
+      "https://patient-snowflake-e9cc.efccavus.workers.dev/"
+    );
+
+    const xmlText = await response.text();
+
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(xmlText, "text/xml");
+
+    const items = [...xml.querySelectorAll("item")].slice(0, 10);
+
+    if (!items.length) {
+      feed.innerHTML = "<div class='news-loading'>Haber bulunamadı.</div>";
+      return;
+    }
+
+    feed.innerHTML = items.map(item => {
+      const title = item.querySelector("title")?.textContent || "";
+      const link = item.querySelector("link")?.textContent || "#";
+      const pubDate = item.querySelector("pubDate")?.textContent || "";
+
+      const date = new Date(pubDate);
+
+      const time = isNaN(date)
+        ? ""
+        : date.toLocaleString("tr-TR", {
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+
+      return `
+        <a
+          href="${link}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="news-item"
+        >
+          <div class="news-item-title">${title}</div>
+          <div class="news-item-meta">
+            INVESTING • ${time}
+          </div>
+        </a>
+      `;
+    }).join("");
+
+  } catch (error) {
+    console.error("Haber yükleme hatası:", error);
+
+    feed.innerHTML =
+      "<div class='news-loading'>Haberler yüklenemedi.</div>";
+  }
+}
+
+loadNews();
+
+setInterval(loadNews, 300000);
+</script>
     <!-- ==================================================
          TECHNICAL ANALYSIS
     ================================================== -->
