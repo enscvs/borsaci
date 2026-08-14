@@ -169,42 +169,30 @@
 <!-- TradingView Widget BEGIN -->
 <div class="tradingview-widget-container" style="height:100%;width:100%">
   <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
-  <div class="tradingview-widget-copyright"><a href="https://tr.tradingview.com/symbols/NASDAQ-AAPL/" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
+  <div class="tradingview-widget-copyright"><a href="https://tr.tradingview.com/symbols/USDTRY/?exchange=FX" rel="noopener nofollow" target="_blank"><span class="blue-text">Track all markets on TradingView</span></a></div>
   <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
   {
-  "allow_symbol_change": true,
+  "allow_symbol_change": false,
   "calendar": false,
   "details": false,
-  "hide_side_toolbar": false,
-  "hide_top_toolbar": false,
+  "hide_side_toolbar": true,
+  "hide_top_toolbar": true,
   "hide_legend": false,
   "hide_volume": false,
   "hotlist": false,
-  "interval": "240",
+  "interval": "D",
   "locale": "tr",
   "save_image": true,
   "style": "1",
-  "symbol": "NASDAQ:AAPL",
+  "symbol": "FX:USDTRY",
   "theme": "dark",
   "timezone": "Europe/Istanbul",
   "backgroundColor": "#0F0F0F",
   "gridColor": "rgba(242, 242, 242, 0.2)",
-  "watchlist": [
-    "OANDA:XAUUSD",
-    "BINANCE:BTCUSDT",
-    "NASDAQ:TSLA"
-  ],
-  "withdateranges": true,
-  "compareSymbols": [
-    {
-      "symbol": "BIST:XU100",
-      "position": "SameScale"
-    }
-  ],
-  "studies": [
-    "STD;TEMA",
-    "STD;Stochastic_RSI"
-  ],
+  "watchlist": [],
+  "withdateranges": false,
+  "compareSymbols": [],
+  "studies": [],
   "autosize": true
 }
   </script>
