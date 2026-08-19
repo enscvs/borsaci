@@ -2554,35 +2554,42 @@ READ REQUEST BODY
 ========================================================
 */
 
-function readBody(
-  req
-) {
+const MAX_BODY_SIZE =
+  12 * 1024 * 1024; // 12 MB
+
+
+function readBody(req) {
 
   return new Promise(
     (resolve, reject) => {
 
       let body = "";
+      let rejected = false;
 
 
       req.on(
         "data",
         (chunk) => {
 
+          if (rejected) {
+            return;
+          }
+
+
           body += chunk;
 
 
           if (
-            body.length >
-          12 * 1024 * 1024
+            Buffer.byteLength(body, "utf8") >
+            MAX_BODY_SIZE
           ) {
-if (
-  body.length >
-  MAX_BODY_SIZE
-) {
+
+            rejected = true;
+
 
             reject(
               new Error(
-                "Request body çok büyük."
+                "Request body çok büyük. Maksimum 12 MB."
               )
             );
 
@@ -2599,7 +2606,11 @@ if (
         "end",
         () => {
 
-          resolve(body);
+          if (!rejected) {
+
+            resolve(body);
+
+          }
 
         }
       );
@@ -2607,7 +2618,15 @@ if (
 
       req.on(
         "error",
-        reject
+        (error) => {
+
+          if (!rejected) {
+
+            reject(error);
+
+          }
+
+        }
       );
 
     }
