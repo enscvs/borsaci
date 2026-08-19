@@ -1264,9 +1264,8 @@ console.log("🔥 MCP CONNECT BAŞARILI");
 AI ANALYZE
 ========================================================
 */
-
 async function analyze(
-  question
+  question,
   image = null
 ) {
 
