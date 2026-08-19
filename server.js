@@ -1264,6 +1264,7 @@ AI ANALYZE
 
 async function analyze(
   question
+  image = null
 ) {
 
   if (!question) {
@@ -1326,25 +1327,36 @@ async function analyze(
     ========================================
     */
 
-    const messages = [
+    const userContent = [
+  {
+    type: "text",
+    text: question,
+  },
+];
 
-      {
-        role:
-          "system",
+if (image) {
+  userContent.push({
+    type: "image_url",
+    image_url: {
+      url: image,
+    },
+  });
+}
 
-        content:
-          SYSTEM_PROMPT,
-      },
+const messages = [
 
-      {
-        role:
-          "user",
+  {
+    role: "system",
+    content: SYSTEM_PROMPT,
+  },
 
-        content:
-          question,
-      },
+  {
+    role: "user",
+    content: userContent,
+  },
 
-    ];
+];
+
 
 
     /*
