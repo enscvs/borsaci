@@ -63,13 +63,7 @@ let newsFeed = null;
 let newsImpact = null;
 let dataStatus = null;
 
-/* ======================================================
-   BORSACI — ATTACH IMAGE FIX
-   Bu bloğu app.js içine ekle (DOM ELEMENTS bölümünün
-   altına ve bindEvents() çağrısından önceki bir yere).
-====================================================== */
-
-/* ---- 1) DOM ELEMENTS: yeni referanslar ---- */
+/* ---- Attach-image elements ---- */
 let attachImageBtn = null;
 let imageInput = null;
 let imagePreview = null;
@@ -79,149 +73,6 @@ let removeImageBtn = null;
 /* selectedImageBase64: /ask isteğine eklenecek görsel verisi */
 let selectedImageBase64 = null;
 
-/* initializeElements() fonksiyonunun İÇİNE bu satırları ekle: */
-function initializeImageElements() {
-
-  attachImageBtn =
-    document.getElementById("attachImageBtn");
-
-  imageInput =
-    document.getElementById("imageInput");
-
-  imagePreview =
-    document.getElementById("imagePreview");
-
-  previewImage =
-    document.getElementById("previewImage");
-
-  removeImageBtn =
-    document.getElementById("removeImageBtn");
-
-}
-
-/* ---- 2) GÖRSEL SEÇME / ÖNİZLEME / KALDIRMA ---- */
-
-function handleImageSelected(file) {
-
-  if (!file) return;
-
-  const allowed = ["image/png", "image/jpeg", "image/webp"];
-
-  if (!allowed.includes(file.type)) {
-    alert("Sadece PNG, JPEG veya WEBP dosyası seçilebilir.");
-    return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = (event) => {
-
-    selectedImageBase64 = event.target.result; // data:image/...;base64,....
-
-    if (previewImage) {
-      previewImage.src = selectedImageBase64;
-    }
-
-    if (imagePreview) {
-      imagePreview.style.display = "flex";
-    }
-
-  };
-
-  reader.onerror = () => {
-    console.error("BORSACI: Görsel okunamadı.");
-    alert("Görsel okunurken bir hata oluştu.");
-  };
-
-  reader.readAsDataURL(file);
-
-}
-
-function clearSelectedImage() {
-
-  selectedImageBase64 = null;
-
-  if (imageInput) {
-    imageInput.value = "";
-  }
-
-  if (previewImage) {
-    previewImage.src = "";
-  }
-
-  if (imagePreview) {
-    imagePreview.style.display = "none";
-  }
-
-}
-
-/* ---- 3) bindEvents() fonksiyonunun İÇİNE bu bloğu ekle ---- */
-
-function bindImageEvents() {
-
-  if (attachImageBtn && imageInput) {
-
-    attachImageBtn.addEventListener("click", () => {
-      imageInput.click();
-    });
-
-  } else {
-
-    console.error("BORSACI: #attachImageBtn veya #imageInput bulunamadı.");
-
-  }
-
-  if (imageInput) {
-
-    imageInput.addEventListener("change", (event) => {
-      const file = event.target.files && event.target.files[0];
-      handleImageSelected(file);
-    });
-
-  }
-
-  if (removeImageBtn) {
-
-    removeImageBtn.addEventListener("click", () => {
-      clearSelectedImage();
-    });
-
-  }
-
-}
-
-/* ======================================================
-   ENTEGRASYON NOTLARI
-====================================================== */
-
-/*
-  A) initializeBorsaCI() içindeki initializeElements() çağrısından
-     hemen sonra şunu da çağır:
-
-       initializeElements();
-       initializeImageElements();   // <-- EKLE
-
-  B) bindEvents() fonksiyonunun sonuna (kapanış } den önce) ekle:
-
-       bindImageEvents();           // <-- EKLE
-
-  C) analyzeQuestion() içindeki body: JSON.stringify({question})
-     satırını, görseli de gönderecek şekilde güncelle:
-
-       body: JSON.stringify({
-         question,
-         image: selectedImageBase64 || null   // <-- EKLE
-       }),
-
-     Not: Backend (/ask endpoint) bu 'image' alanını da işlemiyorsa
-     sunucu tarafında da destek eklenmesi gerekir, yoksa görsel
-     sessizce yok sayılır.
-
-  D) (Opsiyonel) Analiz gönderildikten sonra görseli temizlemek
-     istersen, analyzeQuestion()'ın finally bloğuna:
-
-       clearSelectedImage();
-*/
 /* ======================================================
    CLOCK
 ====================================================== */
@@ -283,6 +134,132 @@ function initializeElements() {
 
   dataStatus =
     document.getElementById("dataStatus");
+
+}
+
+/* ======================================================
+   ATTACH-IMAGE ELEMENT INITIALIZATION
+====================================================== */
+
+function initializeImageElements() {
+
+  attachImageBtn =
+    document.getElementById("attachImageBtn");
+
+  imageInput =
+    document.getElementById("imageInput");
+
+  imagePreview =
+    document.getElementById("imagePreview");
+
+  previewImage =
+    document.getElementById("previewImage");
+
+  removeImageBtn =
+    document.getElementById("removeImageBtn");
+
+  if (!attachImageBtn) {
+    console.error("BORSACI: #attachImageBtn bulunamadı.");
+  }
+
+  if (!imageInput) {
+    console.error("BORSACI: #imageInput bulunamadı.");
+  }
+
+}
+
+/* ======================================================
+   ATTACH-IMAGE: SEÇME / ÖNİZLEME / KALDIRMA
+====================================================== */
+
+function handleImageSelected(file) {
+
+  if (!file) return;
+
+  const allowed = ["image/png", "image/jpeg", "image/webp"];
+
+  if (!allowed.includes(file.type)) {
+    alert("Sadece PNG, JPEG veya WEBP dosyası seçilebilir.");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+
+    selectedImageBase64 = event.target.result; // data:image/...;base64,....
+
+    if (previewImage) {
+      previewImage.src = selectedImageBase64;
+    }
+
+    if (imagePreview) {
+      imagePreview.style.display = "flex";
+    }
+
+  };
+
+  reader.onerror = () => {
+    console.error("BORSACI: Görsel okunamadı.");
+    alert("Görsel okunurken bir hata oluştu.");
+  };
+
+  reader.readAsDataURL(file);
+
+}
+
+function clearSelectedImage() {
+
+  selectedImageBase64 = null;
+
+  if (imageInput) {
+    imageInput.value = "";
+  }
+
+  if (previewImage) {
+    previewImage.src = "";
+  }
+
+  if (imagePreview) {
+    imagePreview.style.display = "none";
+  }
+
+}
+
+/* ======================================================
+   ATTACH-IMAGE: EVENT BINDING
+====================================================== */
+
+function bindImageEvents() {
+
+  if (attachImageBtn && imageInput) {
+
+    attachImageBtn.addEventListener("click", () => {
+      imageInput.click();
+    });
+
+  } else {
+
+    console.error("BORSACI: #attachImageBtn veya #imageInput bulunamadı, click bağlanamadı.");
+
+  }
+
+  if (imageInput) {
+
+    imageInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      handleImageSelected(file);
+    });
+
+  }
+
+  if (removeImageBtn) {
+
+    removeImageBtn.addEventListener("click", () => {
+      clearSelectedImage();
+    });
+
+  }
 
 }
 
@@ -3236,6 +3213,11 @@ async function analyzeQuestion() {
     question
   );
 
+  console.log(
+    "Image attached:",
+    Boolean(selectedImageBase64)
+  );
+
   try {
 
     const response =
@@ -3256,7 +3238,8 @@ async function analyzeQuestion() {
           body:
             JSON.stringify(
               {
-                question
+                question,
+                image: selectedImageBase64 || null
               }
             ),
 
@@ -3343,6 +3326,8 @@ async function analyzeQuestion() {
     renderAIResponse(
       answer
     );
+
+    clearSelectedImage();
 
   } catch (error) {
 
@@ -3438,6 +3423,12 @@ function bindEvents() {
     );
 
   }
+
+  /*
+   * ATTACH IMAGE
+   */
+
+  bindImageEvents();
 
 }
 
@@ -3578,6 +3569,12 @@ async function initializeBorsaCI() {
    */
 
   initializeElements();
+
+  /*
+   * Attach-image elementleri
+   */
+
+  initializeImageElements();
 
   /*
    * Saat
