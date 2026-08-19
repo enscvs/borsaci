@@ -1260,10 +1260,12 @@ console.log("🔥 MCP CONNECT BAŞARILI");
 
 
 /*
+/*
 ========================================================
 AI ANALYZE
 ========================================================
 */
+
 async function analyze(
   question,
   image = null
@@ -1325,40 +1327,78 @@ async function analyze(
 
     /*
     ========================================
-    MESSAGES
+    USER CONTENT
     ========================================
     */
 
     const userContent = [
-  {
-    type: "text",
-    text: question,
-  },
-];
 
-if (image) {
-  userContent.push({
-    type: "image_url",
-    image_url: {
-      url: image,
-    },
-  });
-}
+      {
+        type:
+          "text",
 
-const messages = [
+        text:
+          question,
 
-  {
-    role: "system",
-    content: SYSTEM_PROMPT,
-  },
+      },
 
-  {
-    role: "user",
-    content: userContent,
-  },
+    ];
 
-];
 
+    /*
+    ========================================
+    IMAGE
+    ========================================
+    */
+
+    if (image) {
+
+      userContent.push({
+
+        type:
+          "image_url",
+
+        image_url: {
+
+          url:
+            image,
+
+        },
+
+      });
+
+    }
+
+
+    /*
+    ========================================
+    MESSAGES
+    ========================================
+    */
+
+    const messages = [
+
+      {
+
+        role:
+          "system",
+
+        content:
+          SYSTEM_PROMPT,
+
+      },
+
+      {
+
+        role:
+          "user",
+
+        content:
+          userContent,
+
+      },
+
+    ];
 
 
     /*
@@ -1378,216 +1418,33 @@ const messages = [
       );
 
 
-      /*
-      ========================================
-      GROQ → GEMINI → MISTRAL
-      ========================================
-      */
-
       let response;
 
 
-/*
-========================================
-GÖRSEL VARSA → GEMINI VISION
-========================================
-*/
+      /*
+      ========================================
+      GÖRSEL VARSA
+      → GEMINI VISION
+      ========================================
+      */
 
-if (image && step === 0) {
-
-  try {
-
-    console.log(
-      "AI PROVIDER → GEMINI VISION"
-    );
-
-    response =
-      await geminiAI.chat.completions.create({
-
-        model:
-          VISION_MODEL,
-
-        messages,
-
-        tools,
-
-        tool_choice:
-          "auto",
-
-        temperature:
-          0.1,
-
-      });
-
-  } catch (geminiVisionError) {
-
-    console.error(
-      "GEMINI VISION HATA →",
-      geminiVisionError.message
-    );
-
-    throw new Error(
-      `Görsel analiz edilemedi: ${geminiVisionError.message}`
-    );
-
-  }
-
-}
-
-
-/*
-========================================
-NORMAL METİN → GROQ
-========================================
-*/
-
-else {
-
-  try {
-
-    console.log(
-      "AI PROVIDER → GROQ"
-    );
-
-    response =
-      await groqAI.chat.completions.create({
-
-        model:
-          MODEL,
-
-        messages,
-
-        tools,
-
-        tool_choice:
-          "auto",
-
-        temperature:
-          0.1,
-
-      });
-
-  } catch (groqError) {
-
-    console.error(
-      "GROQ HATA →",
-      groqError.message
-    );
-
-
-    try {
-
-      console.log(
-        "AI PROVIDER → GEMINI"
-      );
-
-      response =
-        await geminiAI.chat.completions.create({
-
-          model:
-            VISION_MODEL,
-
-          messages,
-
-          tools,
-
-          tool_choice:
-            "auto",
-
-          temperature:
-            0.1,
-
-        });
-
-
-    } catch (geminiError) {
-
-      console.error(
-        "GEMINI HATA →",
-        geminiError.message
-      );
-
-
-      try {
+      if (
+        image &&
+        step === 0
+      ) {
 
         console.log(
-          "AI PROVIDER → MISTRAL"
-        );
-
-        response =
-          await mistralAI.chat.completions.create({
-
-            model:
-              "mistral-small-latest",
-
-            messages,
-
-            tools,
-
-            tool_choice:
-              "auto",
-
-            temperature:
-              0.1,
-
-          });
-
-
-      } catch (mistralError) {
-
-        console.error(
-          "MISTRAL HATA →",
-          mistralError.message
-        );
-
-        throw new Error(
-          "Groq, Gemini ve Mistral AI servislerinin üçü de kullanılamıyor."
-        );
-
-      }
-
-    }
-
-  }
-
-}
-
-            model:
-              MODEL,
-
-            messages,
-
-            tools,
-
-            tool_choice:
-              "auto",
-
-            temperature:
-              0.1,
-
-          });
-
-
-      } catch (groqError) {
-
-        console.error(
-          "GROQ HATA →",
-          groqError.message
+          "AI PROVIDER → GEMINI VISION"
         );
 
 
         try {
 
-          console.log(
-            "AI PROVIDER → GEMINI"
-          );
-
-
           response =
             await geminiAI.chat.completions.create({
 
               model:
-                "gemini-2.5-flash",
+                VISION_MODEL,
 
               messages,
 
@@ -1602,26 +1459,84 @@ else {
             });
 
 
-        } catch (geminiError) {
+        } catch (geminiVisionError) {
 
           console.error(
-            "GEMINI HATA →",
-            geminiError.message
+            "GEMINI VISION HATA →",
+            geminiVisionError.message
           );
 
+
+          throw new Error(
+            `Görsel analiz edilemedi: ${geminiVisionError.message}`
+          );
+
+        }
+
+      }
+
+
+      /*
+      ========================================
+      NORMAL METİN
+      → GROQ
+      ========================================
+      */
+
+      else {
+
+        try {
+
+          console.log(
+            "AI PROVIDER → GROQ"
+          );
+
+
+          response =
+            await groqAI.chat.completions.create({
+
+              model:
+                MODEL,
+
+              messages,
+
+              tools,
+
+              tool_choice:
+                "auto",
+
+              temperature:
+                0.1,
+
+            });
+
+
+        } catch (groqError) {
+
+          console.error(
+            "GROQ HATA →",
+            groqError.message
+          );
+
+
+          /*
+          ========================================
+          GEMINI FALLBACK
+          ========================================
+          */
 
           try {
 
             console.log(
-              "AI PROVIDER → MISTRAL"
+              "AI PROVIDER → GEMINI"
             );
 
 
             response =
-              await mistralAI.chat.completions.create({
+              await geminiAI.chat.completions.create({
 
                 model:
-                  "mistral-small-latest",
+                  VISION_MODEL,
 
                 messages,
 
@@ -1636,17 +1551,59 @@ else {
               });
 
 
-          } catch (mistralError) {
+          } catch (geminiError) {
 
             console.error(
-              "MISTRAL HATA →",
-              mistralError.message
+              "GEMINI HATA →",
+              geminiError.message
             );
 
 
-            throw new Error(
-              "Groq, Gemini ve Mistral AI servislerinin üçü de kullanılamıyor."
-            );
+            /*
+            ========================================
+            MISTRAL FALLBACK
+            ========================================
+            */
+
+            try {
+
+              console.log(
+                "AI PROVIDER → MISTRAL"
+              );
+
+
+              response =
+                await mistralAI.chat.completions.create({
+
+                  model:
+                    "mistral-small-latest",
+
+                  messages,
+
+                  tools,
+
+                  tool_choice:
+                    "auto",
+
+                  temperature:
+                    0.1,
+
+                });
+
+
+            } catch (mistralError) {
+
+              console.error(
+                "MISTRAL HATA →",
+                mistralError.message
+              );
+
+
+              throw new Error(
+                "Groq, Gemini ve Mistral AI servislerinin üçü de kullanılamıyor."
+              );
+
+            }
 
           }
 
@@ -1655,9 +1612,15 @@ else {
       }
 
 
+      /*
+      ========================================
+      RESPONSE CHECK
+      ========================================
+      */
+
       const message =
         response
-          .choices?.[0]
+          ?.choices?.[0]
           ?.message;
 
 
@@ -1702,7 +1665,7 @@ else {
 
       /*
       ========================================
-      TOOL CALLS
+      MCP TOOL CALLS
       ========================================
       */
 
@@ -1826,6 +1789,7 @@ else {
   }
 
 }
+
 
 
 /*
