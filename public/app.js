@@ -3505,3 +3505,903 @@ if (
 console.log(
   "BORSACI: APP.JS loaded."
 );
+/* =========================================================
+   BORSACI UI ENHANCEMENT
+   SADECE GÖRSEL / UX
+   Mevcut trading ve API mantığına dokunmaz.
+========================================================= */
+
+(() => {
+
+  "use strict";
+
+  /* =======================================================
+     UI STYLE
+  ======================================================= */
+
+  const style = document.createElement("style");
+
+  style.textContent = `
+
+    /* -----------------------------------------------------
+       GLOBAL
+    ----------------------------------------------------- */
+
+    :root {
+      --borsaci-orange: #ff9f1c;
+      --borsaci-green: #20c997;
+      --borsaci-red: #ff4d4d;
+      --borsaci-blue: #4da3ff;
+      --borsaci-bg: #080808;
+      --borsaci-panel: #101010;
+      --borsaci-border: #242424;
+      --borsaci-text: #e8e8e8;
+      --borsaci-muted: #777;
+    }
+
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: #333 #090909;
+    }
+
+    ::selection {
+      background: rgba(255,159,28,.25);
+      color: #fff;
+    }
+
+
+    /* -----------------------------------------------------
+       TERMINAL
+    ----------------------------------------------------- */
+
+    .terminal {
+      position: relative;
+    }
+
+    .terminal::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+
+      background:
+        linear-gradient(
+          rgba(255,255,255,.012) 50%,
+          transparent 50%
+        );
+
+      background-size: 100% 4px;
+
+      opacity: .18;
+    }
+
+
+    /* -----------------------------------------------------
+       TOP BAR
+    ----------------------------------------------------- */
+
+    .topbar {
+      border-bottom: 1px solid #292929 !important;
+      box-shadow:
+        0 1px 0 rgba(255,159,28,.05),
+        0 8px 30px rgba(0,0,0,.25);
+    }
+
+    .brand {
+      letter-spacing: 2px;
+      font-weight: 800;
+    }
+
+    .brand span {
+      color: var(--borsaci-orange) !important;
+      opacity: .8;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 1px;
+    }
+
+    .status-dot {
+      width: 7px !important;
+      height: 7px !important;
+      border-radius: 50%;
+      background: var(--borsaci-green) !important;
+
+      box-shadow:
+        0 0 6px rgba(32,201,151,.9),
+        0 0 14px rgba(32,201,151,.35);
+
+      animation: borsaciPulse 2s infinite;
+    }
+
+    @keyframes borsaciPulse {
+      0%,100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: .45;
+        transform: scale(.75);
+      }
+    }
+
+
+    /* -----------------------------------------------------
+       MARKET BAR
+    ----------------------------------------------------- */
+
+    .market-bar {
+      border-top: 1px solid #181818;
+      border-bottom: 1px solid #292929;
+      background:
+        linear-gradient(
+          90deg,
+          rgba(255,159,28,.025),
+          transparent 30%,
+          transparent 70%,
+          rgba(32,201,151,.02)
+        );
+    }
+
+    .market-bar strong {
+      margin-left: 6px;
+      font-family: monospace;
+    }
+
+    .market-bar .online {
+      color: var(--borsaci-green) !important;
+      text-shadow: 0 0 8px rgba(32,201,151,.25);
+    }
+
+
+    /* -----------------------------------------------------
+       ALL PANELS
+    ----------------------------------------------------- */
+
+    .panel {
+      position: relative;
+      border: 1px solid var(--borsaci-border) !important;
+
+      background:
+        linear-gradient(
+          145deg,
+          rgba(255,255,255,.018),
+          rgba(0,0,0,.12)
+        ) !important;
+
+      box-shadow:
+        0 8px 30px rgba(0,0,0,.18);
+
+      transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+    }
+
+    .panel:hover {
+      border-color: #343434 !important;
+
+      box-shadow:
+        0 10px 35px rgba(0,0,0,.25);
+    }
+
+
+    /* -----------------------------------------------------
+       PANEL TITLES
+    ----------------------------------------------------- */
+
+    .panel-title {
+      position: relative;
+
+      border-bottom: 1px solid #252525 !important;
+
+      letter-spacing: 1.2px;
+      font-size: 11px;
+
+      background:
+        linear-gradient(
+          90deg,
+          rgba(255,159,28,.045),
+          transparent 35%
+        );
+    }
+
+    .panel-title::before {
+      content: "";
+      width: 3px;
+      height: 12px;
+
+      display: inline-block;
+
+      margin-right: 8px;
+
+      vertical-align: -2px;
+
+      background: var(--borsaci-orange);
+
+      box-shadow:
+        0 0 8px rgba(255,159,28,.3);
+    }
+
+    .panel-status {
+      color: #888;
+      font-family: monospace;
+    }
+
+
+    /* -----------------------------------------------------
+       WATCHLIST
+    ----------------------------------------------------- */
+
+    .watchlist-body {
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 34px,
+          rgba(255,255,255,.015) 35px
+        );
+    }
+
+    .watchlist-empty {
+      opacity: .55;
+    }
+
+    .empty-icon {
+      border-color: #333 !important;
+      color: var(--borsaci-orange) !important;
+      transition: all .2s ease;
+    }
+
+    .watchlist-empty:hover .empty-icon {
+      border-color: var(--borsaci-orange) !important;
+      box-shadow: 0 0 15px rgba(255,159,28,.15);
+    }
+
+    .mini-button {
+      transition: all .2s ease !important;
+    }
+
+    .mini-button:hover {
+      border-color: var(--borsaci-orange) !important;
+      color: var(--borsaci-orange) !important;
+      box-shadow: 0 0 12px rgba(255,159,28,.12);
+    }
+
+
+    /* -----------------------------------------------------
+       CHART
+    ----------------------------------------------------- */
+
+    .chart-area {
+      position: relative;
+      overflow: hidden;
+
+      background:
+        radial-gradient(
+          circle at 50% 45%,
+          rgba(255,159,28,.025),
+          transparent 55%
+        ),
+        #090909 !important;
+    }
+
+    .chart-area::after {
+      content: "BORSACI // MARKET DATA";
+
+      position: absolute;
+      right: 12px;
+      bottom: 8px;
+
+      font-family: monospace;
+      font-size: 8px;
+
+      letter-spacing: 1px;
+
+      color: rgba(255,255,255,.15);
+
+      pointer-events: none;
+    }
+
+
+    /* -----------------------------------------------------
+       NEWS
+    ----------------------------------------------------- */
+
+    .news-feed {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255,159,28,.015),
+          transparent
+        );
+    }
+
+    .news-item {
+      position: relative;
+
+      border-bottom: 1px solid #1d1d1d !important;
+
+      transition:
+        background .15s ease,
+        padding-left .15s ease;
+    }
+
+    .news-item:hover {
+      background: rgba(255,159,28,.035) !important;
+      padding-left: 7px !important;
+    }
+
+    .news-item:hover .news-item-title {
+      color: #fff;
+    }
+
+    .news-item-title {
+      transition: color .15s ease;
+    }
+
+    .news-source {
+      font-family: monospace;
+      letter-spacing: .8px;
+    }
+
+    .kap-source {
+      color: var(--borsaci-orange) !important;
+
+      text-shadow:
+        0 0 8px rgba(255,159,28,.2);
+    }
+
+
+    /* -----------------------------------------------------
+       TECHNICAL
+    ----------------------------------------------------- */
+
+    .technical {
+      overflow: hidden;
+    }
+
+
+    /* -----------------------------------------------------
+       COMMAND TERMINAL
+    ----------------------------------------------------- */
+
+    .command-panel {
+      position: relative;
+
+      border: 1px solid #2a2a2a;
+
+      background:
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(255,159,28,.035),
+          transparent 40%
+        ),
+        #0a0a0a;
+
+      box-shadow:
+        0 10px 40px rgba(0,0,0,.3);
+    }
+
+    .command-panel::before {
+      content: "AI COMMAND INTERFACE";
+
+      position: absolute;
+
+      top: 8px;
+      right: 12px;
+
+      font-family: monospace;
+      font-size: 8px;
+
+      letter-spacing: 1.5px;
+
+      color: #444;
+
+      pointer-events: none;
+    }
+
+    .command-header {
+      border-bottom: 1px solid #262626 !important;
+    }
+
+    .command-title {
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .command-title > span {
+      color: var(--borsaci-orange);
+      text-shadow:
+        0 0 10px rgba(255,159,28,.4);
+    }
+
+    .command-status {
+      color: var(--borsaci-green) !important;
+      font-family: monospace;
+      font-size: 10px;
+    }
+
+    #question {
+      background:
+        linear-gradient(
+          90deg,
+          rgba(255,159,28,.018),
+          transparent
+        ) !important;
+
+      border-color: #252525 !important;
+
+      font-family:
+        "JetBrains Mono",
+        "Cascadia Code",
+        monospace;
+
+      transition:
+        border-color .2s ease,
+        box-shadow .2s ease;
+    }
+
+    #question:focus {
+      border-color: rgba(255,159,28,.55) !important;
+
+      box-shadow:
+        0 0 0 1px rgba(255,159,28,.08),
+        0 0 25px rgba(255,159,28,.06);
+    }
+
+    #question::placeholder {
+      color: #555;
+    }
+
+    #analyzeBtn {
+      position: relative;
+      overflow: hidden;
+
+      border: 1px solid #bd7110 !important;
+
+      background:
+        linear-gradient(
+          180deg,
+          #ffad32,
+          #d77f08
+        ) !important;
+
+      color: #080808 !important;
+
+      font-weight: 800;
+      letter-spacing: 1px;
+
+      box-shadow:
+        0 0 15px rgba(255,159,28,.08);
+
+      transition:
+        transform .15s ease,
+        box-shadow .15s ease;
+    }
+
+    #analyzeBtn:hover {
+      transform: translateY(-1px);
+
+      box-shadow:
+        0 5px 25px rgba(255,159,28,.18);
+    }
+
+    #analyzeBtn:active {
+      transform: translateY(0);
+    }
+
+
+    /* -----------------------------------------------------
+       AI RESPONSE
+    ----------------------------------------------------- */
+
+    .response-panel {
+      overflow: hidden;
+    }
+
+    #response {
+      position: relative;
+
+      min-height: 120px;
+
+      font-family:
+        "JetBrains Mono",
+        "Cascadia Code",
+        monospace;
+
+      line-height: 1.65;
+
+      color: #d8d8d8;
+
+      background:
+        radial-gradient(
+          circle at 0% 0%,
+          rgba(77,163,255,.025),
+          transparent 40%
+        );
+    }
+
+
+    /* -----------------------------------------------------
+       NEWS IMPACT
+    ----------------------------------------------------- */
+
+    .news-impact {
+      overflow: hidden;
+    }
+
+
+    /* -----------------------------------------------------
+       FOOTER
+    ----------------------------------------------------- */
+
+    .footer {
+      border-top: 1px solid #242424 !important;
+
+      color: #555;
+
+      letter-spacing: 1px;
+      font-family: monospace;
+      font-size: 9px;
+    }
+
+    .footer span {
+      color: #333;
+    }
+
+
+    /* -----------------------------------------------------
+       RESPONSIVE
+    ----------------------------------------------------- */
+
+    @media (max-width: 900px) {
+
+      .terminal {
+        width: 100%;
+      }
+
+      .market-bar {
+        overflow-x: auto;
+      }
+
+      .command-panel::before {
+        display: none;
+      }
+
+    }
+
+  `;
+
+  document.head.appendChild(style);
+
+
+  /* =======================================================
+     LIVE CLOCK
+  ======================================================= */
+
+  function updateClock() {
+
+    const clock =
+      document.getElementById("clock");
+
+    if (!clock) return;
+
+    const now = new Date();
+
+    clock.textContent =
+      now.toLocaleTimeString(
+        "tr-TR",
+        {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        }
+      );
+
+  }
+
+  updateClock();
+
+  setInterval(
+    updateClock,
+    1000
+  );
+
+
+  /* =======================================================
+     DATA STATUS
+  ======================================================= */
+
+  function setVisualDataStatus(
+    text,
+    type = "waiting"
+  ) {
+
+    const el =
+      document.getElementById(
+        "dataStatus"
+      );
+
+    if (!el) return;
+
+    el.textContent =
+      text;
+
+    el.dataset.status =
+      type;
+
+    if (type === "live") {
+      el.style.color =
+        "var(--borsaci-green)";
+    }
+
+    else if (type === "error") {
+      el.style.color =
+        "var(--borsaci-red)";
+    }
+
+    else {
+      el.style.color =
+        "";
+    }
+
+  }
+
+  setVisualDataStatus(
+    "LIVE",
+    "live"
+  );
+
+
+  /* =======================================================
+     PANEL LOAD EFFECT
+  ======================================================= */
+
+  function animatePanels() {
+
+    const panels =
+      document.querySelectorAll(
+        ".panel, .command-panel"
+      );
+
+    panels.forEach(
+      (panel, index) => {
+
+        panel.style.opacity = "0";
+        panel.style.transform =
+          "translateY(5px)";
+
+        setTimeout(
+          () => {
+
+            panel.style.transition =
+              "opacity .35s ease, transform .35s ease";
+
+            panel.style.opacity = "1";
+            panel.style.transform =
+              "translateY(0)";
+
+          },
+          index * 45
+        );
+
+      }
+    );
+
+  }
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
+    document.addEventListener(
+      "DOMContentLoaded",
+      animatePanels
+    );
+
+  } else {
+
+    animatePanels();
+
+  }
+
+
+  /* =======================================================
+     COMMAND SHORTCUTS
+  ======================================================= */
+
+  const question =
+    document.getElementById(
+      "question"
+    );
+
+  if (question) {
+
+    question.addEventListener(
+      "keydown",
+      event => {
+
+        /* ESC = CLEAR */
+
+        if (
+          event.key === "Escape"
+        ) {
+
+          question.value = "";
+
+          question.focus();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     NEWS HOVER SOURCE EFFECT
+  ======================================================= */
+
+  document.addEventListener(
+    "mouseover",
+    event => {
+
+      const item =
+        event.target.closest(
+          ".news-item"
+        );
+
+      if (!item) return;
+
+      const source =
+        item.querySelector(
+          ".news-source"
+        );
+
+      if (!source) return;
+
+      source.style.transition =
+        "text-shadow .2s ease";
+
+      source.style.textShadow =
+        "0 0 10px rgba(255,159,28,.35)";
+
+    }
+  );
+
+  document.addEventListener(
+    "mouseout",
+    event => {
+
+      const item =
+        event.target.closest(
+          ".news-item"
+        );
+
+      if (!item) return;
+
+      const source =
+        item.querySelector(
+          ".news-source"
+        );
+
+      if (!source) return;
+
+      source.style.textShadow =
+        "";
+
+    }
+  );
+
+
+  /* =======================================================
+     COMMAND INPUT CHARACTER COUNTER
+  ======================================================= */
+
+  if (question) {
+
+    const footer =
+      document.querySelector(
+        ".command-footer"
+      );
+
+    if (footer) {
+
+      const counter =
+        document.createElement(
+          "span"
+        );
+
+      counter.id =
+        "commandCounter";
+
+      counter.style.cssText = `
+        margin-left: auto;
+        margin-right: 12px;
+        color: #444;
+        font-family: monospace;
+        font-size: 9px;
+      `;
+
+      footer.insertBefore(
+        counter,
+        footer.querySelector(
+          "#analyzeBtn"
+        )
+      );
+
+      function updateCounter() {
+
+        counter.textContent =
+          `${question.value.length} CHARS`;
+
+      }
+
+      question.addEventListener(
+        "input",
+        updateCounter
+      );
+
+      updateCounter();
+
+    }
+
+  }
+
+
+  /* =======================================================
+     AI RESPONSE AUTO SCROLL
+  ======================================================= */
+
+  const response =
+    document.getElementById(
+      "response"
+    );
+
+  if (response) {
+
+    const observer =
+      new MutationObserver(
+        () => {
+
+          response.scrollTop =
+            response.scrollHeight;
+
+        }
+      );
+
+    observer.observe(
+      response,
+      {
+        childList: true,
+        subtree: true,
+        characterData: true
+      }
+    );
+
+  }
+
+
+  /* =======================================================
+     TERMINAL READY
+  ======================================================= */
+
+  console.log(
+    "%c BORSACI UI READY ",
+    `
+      background:#ff9f1c;
+      color:#080808;
+      font-weight:bold;
+      padding:4px 8px;
+    `
+  );
+
+})();
