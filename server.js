@@ -28,6 +28,9 @@ const MODEL =
   process.env.GROQ_MODEL ||
   "openai/gpt-oss-120b";
 
+const VISION_MODEL =
+  process.env.GEMINI_VISION_MODEL ||
+  "gemini-2.5-flash";
 
 /*
 ========================================================
@@ -1385,15 +1388,170 @@ const messages = [
       let response;
 
 
+/*
+========================================
+GÖRSEL VARSA → GEMINI VISION
+========================================
+*/
+
+if (image && step === 0) {
+
+  try {
+
+    console.log(
+      "AI PROVIDER → GEMINI VISION"
+    );
+
+    response =
+      await geminiAI.chat.completions.create({
+
+        model:
+          VISION_MODEL,
+
+        messages,
+
+        tools,
+
+        tool_choice:
+          "auto",
+
+        temperature:
+          0.1,
+
+      });
+
+  } catch (geminiVisionError) {
+
+    console.error(
+      "GEMINI VISION HATA →",
+      geminiVisionError.message
+    );
+
+    throw new Error(
+      `Görsel analiz edilemedi: ${geminiVisionError.message}`
+    );
+
+  }
+
+}
+
+
+/*
+========================================
+NORMAL METİN → GROQ
+========================================
+*/
+
+else {
+
+  try {
+
+    console.log(
+      "AI PROVIDER → GROQ"
+    );
+
+    response =
+      await groqAI.chat.completions.create({
+
+        model:
+          MODEL,
+
+        messages,
+
+        tools,
+
+        tool_choice:
+          "auto",
+
+        temperature:
+          0.1,
+
+      });
+
+  } catch (groqError) {
+
+    console.error(
+      "GROQ HATA →",
+      groqError.message
+    );
+
+
+    try {
+
+      console.log(
+        "AI PROVIDER → GEMINI"
+      );
+
+      response =
+        await geminiAI.chat.completions.create({
+
+          model:
+            VISION_MODEL,
+
+          messages,
+
+          tools,
+
+          tool_choice:
+            "auto",
+
+          temperature:
+            0.1,
+
+        });
+
+
+    } catch (geminiError) {
+
+      console.error(
+        "GEMINI HATA →",
+        geminiError.message
+      );
+
+
       try {
 
         console.log(
-          "AI PROVIDER → GROQ"
+          "AI PROVIDER → MISTRAL"
         );
 
-
         response =
-          await groqAI.chat.completions.create({
+          await mistralAI.chat.completions.create({
+
+            model:
+              "mistral-small-latest",
+
+            messages,
+
+            tools,
+
+            tool_choice:
+              "auto",
+
+            temperature:
+              0.1,
+
+          });
+
+
+      } catch (mistralError) {
+
+        console.error(
+          "MISTRAL HATA →",
+          mistralError.message
+        );
+
+        throw new Error(
+          "Groq, Gemini ve Mistral AI servislerinin üçü de kullanılamıyor."
+        );
+
+      }
+
+    }
+
+  }
+
+}
 
             model:
               MODEL,
@@ -2452,8 +2610,12 @@ function readBody(
 
           if (
             body.length >
-            1024 * 1024
+          12 * 1024 * 1024
           ) {
+if (
+  body.length >
+  MAX_BODY_SIZE
+) {
 
             reject(
               new Error(
@@ -3096,33 +3258,114 @@ if (
 
 
           const question =
-            data.question.trim();
+  data.question.trim();
 
 
-          if (!question) {
+if (!question) {
 
-            throw new Error(
-              "question alanı boş olamaz."
-            );
+  throw new Error(
+    "question alanı boş olamaz."
+  );
 
-          }
-
-
-          console.log(
-            "==========================================================="
-          );
+}
 
 
-          console.log(
-            `SORU → ${question}`
-          );
-console.log("🔥 API/ASK REQUEST GELDİ");
-console.log("🔥 ANALYZE BAŞLADI");
-          const answer =
-            await analyze(
-              question
-            );
+/*
+========================================
+IMAGE
+========================================
+*/
 
+let image = null;
+
+if (
+  data.image &&
+  typeof data.image === "string"
+) {
+
+  image =
+    data.image.trim();
+
+}
+
+
+/*
+========================================
+IMAGE VALIDATION
+========================================
+*/
+
+if (image) {
+
+  if (
+    !image.startsWith(
+      "data:image/"
+    )
+  ) {
+
+    throw new Error(
+      "Geçersiz görsel formatı."
+    );
+
+  }
+
+
+  const allowedTypes = [
+    "data:image/jpeg",
+    "data:image/png",
+    "data:image/webp",
+    "data:image/gif",
+  ];
+
+
+  const validType =
+    allowedTypes.some(
+      type =>
+        image.startsWith(type)
+    );
+
+
+  if (!validType) {
+
+    throw new Error(
+      "Desteklenmeyen görsel formatı."
+    );
+
+  }
+
+}
+
+
+console.log(
+  "==========================================================="
+);
+
+
+console.log(
+  `SORU → ${question}`
+);
+
+
+console.log(
+  `GÖRSEL → ${image ? "VAR" : "YOK"}`
+);
+
+
+console.log(
+  "🔥 API/ASK REQUEST GELDİ"
+);
+
+
+console.log(
+  "🔥 ANALYZE BAŞLADI"
+);
+
+
+const answer =
+  await analyze(
+    question,
+    image
+  );
 
           console.log(
             "AI CEVAP →",
