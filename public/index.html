@@ -484,14 +484,81 @@ setInterval(loadNews, 300000);
     </div>
 
 
-    <textarea
-      id="question"
-      placeholder="Type your command or question..."
-      spellcheck="false"
-    ></textarea>
+  <div class="input-area">
+
+  <div
+    id="imagePreview"
+    class="image-preview"
+    style="display:none;"
+  >
+    <img
+      id="previewImage"
+      src=""
+      alt="Selected image"
+    >
+
+    <button
+      type="button"
+      id="removeImageBtn"
+      class="remove-image"
+    >
+      ×
+    </button>
+  </div>
 
 
-    <div class="command-footer">
+  <textarea
+    id="question"
+    placeholder="Type your command or question..."
+    spellcheck="false"
+  ></textarea>
+
+</div>
+
+
+<input
+  type="file"
+  id="imageInput"
+  accept="image/png,image/jpeg,image/webp"
+  hidden
+/>
+
+
+<div class="command-footer">
+
+  <div class="shortcuts">
+
+    [ENTER] ANALYZE
+    &nbsp;&nbsp;
+    [SHIFT+ENTER] NEW LINE
+    &nbsp;&nbsp;
+    [ESC] CLEAR
+
+  </div>
+
+
+  <div class="command-actions">
+
+    <button
+      type="button"
+      id="attachImageBtn"
+      class="attach-button"
+      title="Görsel ekle"
+    >
+      +
+    </button>
+
+
+    <button
+      type="button"
+      id="analyzeBtn"
+    >
+      ANALYZE
+    </button>
+
+  </div>
+
+</div>
 
       <div class="shortcuts">
 
