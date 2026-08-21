@@ -1870,26 +1870,60 @@ async function fetchYahooChart(
   );
 
 
-  const response =
-    await fetch(
-      yahooUrl,
-      {
+  const controller =
+    new AbortController();
 
-        method:
-          "GET",
-
-        headers: {
-
-          "User-Agent":
-            "Mozilla/5.0",
-
-          "Accept":
-            "application/json,text/plain,*/*",
-
-        },
-
-      }
+  const timeout =
+    setTimeout(
+      () => controller.abort(),
+      12000
     );
+
+  let response;
+
+  try {
+
+    response =
+      await fetch(
+        yahooUrl,
+        {
+
+          method:
+            "GET",
+
+          headers: {
+
+            "User-Agent":
+              "Mozilla/5.0",
+
+            "Accept":
+              "application/json,text/plain,*/*",
+
+          },
+
+          signal:
+            controller.signal,
+
+        }
+      );
+
+  } catch (error) {
+
+    if (controller.signal.aborted) {
+
+      throw new Error(
+        `Yahoo Finance zaman aşımına uğradı: ${yahooSymbol}`
+      );
+
+    }
+
+    throw error;
+
+  } finally {
+
+    clearTimeout(timeout);
+
+  }
 
 
   const text =
@@ -3590,14 +3624,27 @@ async function handleTradingScanner(
   try {
 
     const results = [];
-
     const batchSize = 8;
+    const maximumScanDuration = 45000;
+    const startedAt = Date.now();
+    let scanned = 0;
 
     for (
       let i = 0;
       i < BIST100_SYMBOLS.length;
       i += batchSize
     ) {
+
+      /*
+       * Render'ın istek zaman aşımına düşmemesi için,
+       * yavaşlayan veri kaynağında mevcut sonuçlarla dön.
+       */
+      if (
+        Date.now() - startedAt >=
+        maximumScanDuration
+      ) {
+        break;
+      }
 
       const batch =
         BIST100_SYMBOLS.slice(
@@ -3611,6 +3658,8 @@ async function handleTradingScanner(
             scanSymbol
           )
         );
+
+      scanned += batch.length;
 
       for (
         const result of batchResults
@@ -3642,11 +3691,13 @@ async function handleTradingScanner(
         timestamp:
           new Date().toISOString(),
 
-        scanned:
-          BIST100_SYMBOLS.length,
+        scanned,
 
         successful:
           results.length,
+
+        complete:
+          scanned === BIST100_SYMBOLS.length,
 
         results:
           results.slice(0, 15)
@@ -3677,6 +3728,8 @@ async function handleTradingScanner(
   }
 
 }
+
+
 /*
 ========================================================
 HTTP SERVER
