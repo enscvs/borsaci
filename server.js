@@ -3023,6 +3023,454 @@ async function handleWatchlist(
 }
 /*
 ========================================================
+PAPER TRADING DECISIONS
+========================================================
+*/
+
+const TRADING_STATE_PATH =
+  "data/trading-state.json";
+
+function createDefaultTradingState() {
+
+  return {
+
+    version: 1,
+
+    paper: {
+      initialCapital: 100000,
+      cash: 100000,
+      equity: 100000,
+      pnl: 0,
+      pnlPercent: 0,
+      positions: [],
+    },
+
+    decisions: [],
+
+    activity: [
+      {
+        timestamp: new Date().toISOString(),
+        type: "SYSTEM",
+        message: "Paper trading engine initialized.",
+      },
+    ],
+
+  };
+
+}
+
+
+async function getTradingState() {
+
+  if (
+    !process.env.GITHUB_OWNER ||
+    !process.env.GITHUB_REPO ||
+    !process.env.GITHUB_TOKEN
+  ) {
+    return {
+      content: createDefaultTradingState(),
+      sha: null,
+    };
+  }
+
+  const response =
+    await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${TRADING_STATE_PATH}`,
+      {
+        headers: {
+          "Authorization":
+            `Bearer ${process.env.GITHUB_TOKEN}`,
+          "Accept":
+            "application/vnd.github+json",
+          "User-Agent":
+            "BorsaCI",
+        },
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `Trading state okunamadı: HTTP ${response.status}`
+    );
+  }
+
+  const data =
+    await response.json();
+
+  const content =
+    Buffer.from(
+      data.content.replace(/\n/g, ""),
+      "base64"
+    ).toString("utf8");
+
+  return {
+    content: JSON.parse(content),
+    sha: data.sha,
+  };
+
+}
+
+
+async function saveTradingState(
+  state,
+  sha
+) {
+
+  if (
+    !process.env.GITHUB_OWNER ||
+    !process.env.GITHUB_REPO ||
+    !process.env.GITHUB_TOKEN ||
+    !sha
+  ) {
+    return state;
+  }
+
+  const content =
+    Buffer.from(
+      JSON.stringify(
+        state,
+        null,
+        2
+      )
+    ).toString("base64");
+
+  const response =
+    await fetch(
+      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${TRADING_STATE_PATH}`,
+      {
+        method: "PUT",
+        headers: {
+          "Authorization":
+            `Bearer ${process.env.GITHUB_TOKEN}`,
+          "Accept":
+            "application/vnd.github+json",
+          "Content-Type":
+            "application/json",
+          "User-Agent":
+            "BorsaCI",
+        },
+        body: JSON.stringify({
+          message: "Record paper trading decisions",
+          content,
+          sha,
+        }),
+      }
+    );
+
+  if (!response.ok) {
+    throw new Error(
+      `Trading state kaydedilemedi: HTTP ${response.status}`
+    );
+  }
+
+  return await response.json();
+
+}
+
+
+function roundTradingValue(
+  value
+) {
+
+  return Number(
+    Number(value).toFixed(2)
+  );
+
+}
+
+
+function buildAiDecision(
+  item,
+  rank
+) {
+
+  const price =
+    Number(item.price);
+
+  const atr =
+    Number(item.atr);
+
+  const rsi =
+    Number(item.rsi);
+
+  const volatility =
+    Number(item.volatility);
+
+  const hasTrend =
+    price > item.ema20 &&
+    price > item.ema50 &&
+    price > item.ema200;
+
+  const isRsiInRange =
+    rsi >= 50 &&
+    rsi <= 68;
+
+  const isExtended =
+    rsi > 70;
+
+  const risk =
+    Math.max(
+      atr * 1.5,
+      price * 0.01
+    );
+
+  const entryLow =
+    roundTradingValue(
+      price - atr * 0.3
+    );
+
+  const entryHigh =
+    roundTradingValue(
+      price + atr * 0.2
+    );
+
+  const stop =
+    roundTradingValue(
+      price - risk
+    );
+
+  const target1 =
+    roundTradingValue(
+      price + risk * 2
+    );
+
+  const target2 =
+    roundTradingValue(
+      price + risk * 3
+    );
+
+  let action =
+    "NO TRADE";
+
+  let status =
+    "REJECTED";
+
+  let reason =
+    "Trend veya risk koşulları yeterli değil.";
+
+  if (
+    item.score >= 80 &&
+    hasTrend &&
+    isRsiInRange &&
+    volatility <= 6
+  ) {
+
+    action =
+      "BUY SETUP";
+
+    status =
+      "PENDING";
+
+    reason =
+      "Trend, momentum ve volatilite koşulları paper işlem adayı olarak uyumlu.";
+
+  } else if (isExtended) {
+
+    action =
+      "WATCH";
+
+    status =
+      "PENDING";
+
+    reason =
+      "Momentum güçlü ancak RSI uzamış; geri çekilme veya hacim teyidi bekleniyor.";
+
+  } else if (
+    item.score >= 65 &&
+    hasTrend
+  ) {
+
+    action =
+      "WATCH";
+
+    status =
+      "PENDING";
+
+    reason =
+      "Trend olumlu fakat işlem açmak için ek teyit gerekli.";
+
+  }
+
+  const confidence =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          item.score * 0.7 +
+          (isRsiInRange ? 15 : 0) +
+          (hasTrend ? 10 : 0) -
+          (isExtended ? 15 : 0) -
+          (volatility > 6 ? 10 : 0)
+        )
+      )
+    );
+
+  return {
+
+    id:
+      `${Date.now()}-${item.symbol}`,
+
+    rank,
+
+    symbol:
+      item.symbol,
+
+    action,
+
+    status,
+
+    confidence,
+
+    entry: {
+      low: entryLow,
+      high: entryHigh,
+      reference: roundTradingValue(price),
+    },
+
+    stop,
+
+    target1,
+
+    target2,
+
+    riskReward: "1:2.0",
+
+    indicators: {
+      score: item.score,
+      rsi: roundTradingValue(rsi),
+      atr: roundTradingValue(atr),
+      volatility:
+        roundTradingValue(volatility),
+    },
+
+    reason,
+
+    invalidation:
+      `Stop seviyesi ${stop} altındaki kapanış.`,
+
+    timestamp:
+      new Date().toISOString(),
+
+  };
+
+}
+
+
+function createAiDecisions(
+  results
+) {
+
+  const candidates =
+    (Array.isArray(results) ? results : [])
+      .map(
+        (item, index) =>
+          buildAiDecision(
+            item,
+            index + 1
+          )
+      )
+      .sort(
+        (a, b) =>
+          b.confidence -
+          a.confidence
+      );
+
+  return candidates.slice(0, 3);
+
+}
+
+
+async function recordAiDecisions(
+  decisions
+) {
+
+  const stateResult =
+    await getTradingState();
+
+  const state =
+    stateResult.content ||
+    createDefaultTradingState();
+
+  state.paper =
+    state.paper ||
+    createDefaultTradingState().paper;
+
+  state.paper.positions =
+    Array.isArray(
+      state.paper.positions
+    )
+      ? state.paper.positions
+      : [];
+
+  state.decisions =
+    decisions;
+
+  const activity = [
+    {
+      timestamp: new Date().toISOString(),
+      type: "SCAN",
+      message:
+        `${decisions.length} AI decision(s) generated in paper mode.`,
+    },
+    ...(
+      Array.isArray(state.activity)
+        ? state.activity
+        : []
+    ),
+  ];
+
+  state.activity =
+    activity.slice(0, 100);
+
+  await saveTradingState(
+    state,
+    stateResult.sha
+  );
+
+  return state;
+
+}
+
+
+async function handleTradingState(
+  req,
+  res
+) {
+
+  try {
+
+    const stateResult =
+      await getTradingState();
+
+    return sendJSON(
+      res,
+      200,
+      stateResult.content
+    );
+
+  } catch (error) {
+
+    console.error(
+      "TRADING STATE ERROR:",
+      error
+    );
+
+    return sendJSON(
+      res,
+      500,
+      {
+        error: error.message,
+      }
+    );
+
+  }
+
+}
+
+
+/*
+========================================================
 AI TRADING SCANNER
 ========================================================
 */
@@ -3681,6 +4129,37 @@ async function handleTradingScanner(
     );
 
 
+    const rankedResults =
+      results.slice(0, 15);
+
+    const decisions =
+      createAiDecisions(
+        rankedResults
+      );
+
+    let tradingState =
+      createDefaultTradingState();
+
+    try {
+
+      tradingState =
+        await recordAiDecisions(
+          decisions
+        );
+
+    } catch (error) {
+
+      /*
+       * Karar kaydı hata verse bile scanner
+       * sonuç üretmeye devam eder.
+       */
+      console.error(
+        "TRADING DECISION RECORD ERROR:",
+        error
+      );
+
+    }
+
     return sendJSON(
       res,
       200,
@@ -3700,7 +4179,15 @@ async function handleTradingScanner(
           scanned === BIST100_SYMBOLS.length,
 
         results:
-          results.slice(0, 15)
+          rankedResults,
+
+        decisions,
+
+        paper:
+          tradingState.paper,
+
+        activity:
+          tradingState.activity,
 
       }
     );
@@ -3823,6 +4310,23 @@ if (
 ) {
 
   return handleTradingScanner(
+    req,
+    res
+  );
+
+}
+/*
+========================================================
+PAPER TRADING STATE
+========================================================
+*/
+
+if (
+  req.method === "GET" &&
+  pathname === "/api/trading/state"
+) {
+
+  return handleTradingState(
     req,
     res
   );
