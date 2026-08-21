@@ -45,7 +45,399 @@
     </div>
 
   </header>
+  <!-- ==================================================
+       BORSACI MAIN TABS
+  ================================================== -->
 
+  <nav class="main-tabs" id="mainTabs">
+
+    <button
+      type="button"
+      class="main-tab active"
+      data-tab="terminalTab"
+    >
+      TERMINAL
+    </button>
+
+    <button
+      type="button"
+      class="main-tab"
+      data-tab="tradingTab"
+    >
+      AI TRADING
+    </button>
+
+  </nav>
+
+
+  <!-- ==================================================
+       AI TRADING TAB
+  ================================================== -->
+
+  <section
+    id="tradingTab"
+    class="trading-tab"
+    style="display:none;"
+  >
+
+    <!-- TOP STATUS -->
+
+    <div class="trading-status-grid">
+
+      <div class="trading-stat">
+        <span class="trading-stat-label">ENGINE</span>
+        <strong class="status-online">
+          ● PAPER
+        </strong>
+      </div>
+
+      <div class="trading-stat">
+        <span class="trading-stat-label">MARKET</span>
+        <strong id="tradingMarketStatus">
+          BIST100
+        </strong>
+      </div>
+
+      <div class="trading-stat">
+        <span class="trading-stat-label">ENGINE STATUS</span>
+        <strong id="tradingEngineStatus">
+          READY
+        </strong>
+      </div>
+
+      <div class="trading-stat">
+        <span class="trading-stat-label">LAST SCAN</span>
+        <strong id="lastScanTime">
+          --
+        </strong>
+      </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         SCANNER
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          MARKET SCANNER
+        </span>
+
+        <span
+          class="panel-status"
+          id="scannerStatus"
+        >
+          IDLE
+        </span>
+
+      </div>
+
+      <div class="scanner-controls">
+
+        <button
+          type="button"
+          id="startScannerBtn"
+          class="trading-button"
+        >
+          START SCANNER
+        </button>
+
+        <button
+          type="button"
+          id="stopScannerBtn"
+          class="trading-button danger"
+        >
+          STOP
+        </button>
+
+      </div>
+
+      <div
+        id="scannerResults"
+        class="scanner-results"
+      >
+
+        <div class="trading-empty">
+          Scanner henüz çalıştırılmadı.
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         AI DECISIONS
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          AI DECISIONS
+        </span>
+
+        <span class="panel-status">
+          LIVE
+        </span>
+
+      </div>
+
+      <div
+        id="aiDecisionFeed"
+        class="decision-feed"
+      >
+
+        <div class="trading-empty">
+          Henüz AI kararı yok.
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         PORTFOLIO
+    ================================================== -->
+
+    <div class="trading-two-column">
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+
+          <span>
+            PAPER PORTFOLIO
+          </span>
+
+          <span class="panel-status">
+            PAPER
+          </span>
+
+        </div>
+
+        <div class="portfolio-grid">
+
+          <div>
+            <span>INITIAL CAPITAL</span>
+            <strong id="paperInitialCapital">
+              ₺100,000
+            </strong>
+          </div>
+
+          <div>
+            <span>CASH</span>
+            <strong id="paperCash">
+              ₺100,000
+            </strong>
+          </div>
+
+          <div>
+            <span>EQUITY</span>
+            <strong id="paperEquity">
+              ₺100,000
+            </strong>
+          </div>
+
+          <div>
+            <span>P&L</span>
+            <strong id="paperPnL">
+              ₺0
+            </strong>
+          </div>
+
+          <div>
+            <span>P&L %</span>
+            <strong id="paperPnLPct">
+              0.00%
+            </strong>
+          </div>
+
+          <div>
+            <span>OPEN POSITIONS</span>
+            <strong id="paperPositionCount">
+              0
+            </strong>
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ==================================================
+           RISK
+      ================================================== -->
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+
+          <span>
+            RISK ENGINE
+          </span>
+
+          <span class="panel-status">
+            ACTIVE
+          </span>
+
+        </div>
+
+        <div class="risk-grid">
+
+          <div>
+            <span>MAX POSITIONS</span>
+            <strong id="maxPositions">
+              3
+            </strong>
+          </div>
+
+          <div>
+            <span>RISK / TRADE</span>
+            <strong id="riskPerTrade">
+              1.00%
+            </strong>
+          </div>
+
+          <div>
+            <span>MAX PORTFOLIO RISK</span>
+            <strong id="maxPortfolioRisk">
+              3.00%
+            </strong>
+          </div>
+
+          <div>
+            <span>DAILY LOSS LIMIT</span>
+            <strong id="dailyLossLimit">
+              3.00%
+            </strong>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+
+    <!-- ==================================================
+         OPEN POSITIONS
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          OPEN POSITIONS
+        </span>
+
+        <span
+          class="panel-status"
+          id="openPositionStatus"
+        >
+          0 POSITIONS
+        </span>
+
+      </div>
+
+      <div class="position-table-wrapper">
+
+        <table class="position-table">
+
+          <thead>
+
+            <tr>
+              <th>SYMBOL</th>
+              <th>SIDE</th>
+              <th>ENTRY</th>
+              <th>CURRENT</th>
+              <th>SL</th>
+              <th>TP1</th>
+              <th>TP2</th>
+              <th>P&L</th>
+              <th>STATUS</th>
+            </tr>
+
+          </thead>
+
+          <tbody id="openPositions">
+
+            <tr>
+
+              <td
+                colspan="9"
+                class="table-empty"
+              >
+                No open positions
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         ACTIVITY LOG
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          TRADING ACTIVITY
+        </span>
+
+        <span class="panel-status">
+          LOG
+        </span>
+
+      </div>
+
+      <div
+        id="tradingActivity"
+        class="trading-log"
+      >
+
+        <div class="log-line">
+          <span class="log-time">
+            --:--:--
+          </span>
+
+          <span>
+            Trading engine initialized.
+          </span>
+        </div>
+
+      </div>
+
+    </section>
+
+  </section>
+
+
+  <!-- ==================================================
+       ORIGINAL TERMINAL
+  ================================================== -->
+
+  <main
+    id="terminalTab"
+    class="dashboard"
+  >
+  
 <script type="module" src="https://widgets.tradingview-widget.com/w/tr/tv-ticker-tape.js"></script>
 
 <tv-ticker-tape symbols="FOREXCOM:NSXUSD,FX:EURUSD,BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BIST:XU100,FX_IDC:XAUTRY,FX:USDTRY" line-chart-type="Baseline" show-hover theme="dark"></tv-ticker-tape>
