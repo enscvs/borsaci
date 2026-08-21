@@ -4827,25 +4827,76 @@ function formatCurrency(
 }
 
 
+let renderedDecisionRecords = [];
+
+
+function renderAiDecisionDetail(
+  item
+) {
+
+  const element =
+    document.getElementById(
+      "aiDecisionDetail"
+    );
+
+  if (!element || !item) return;
+
+  const position =
+    currentPaperState()
+      .positions
+      .find(
+        value =>
+          value.decisionId === item.id &&
+          value.status === "OPEN"
+      );
+
+  element.innerHTML = `
+    <strong>${item.symbol} · ${item.action} · ${item.status}</strong>
+    <div class="decision-detail-grid">
+      <span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span>
+      <span>Stop: ${formatCurrency(item.stop)}</span>
+      <span>TP1: ${formatCurrency(item.target1)}</span>
+      <span>TP2: ${formatCurrency(item.target2)}</span>
+      <span>Risk: ${item.riskPlan?.quantity ?? "--"} lot / ${formatCurrency(item.riskPlan?.actualRisk)}</span>
+      <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
+    </div>
+    <small>${item.reason}</small>
+    <br>
+    <button
+      type="button"
+      class="trading-button"
+      data-paper-action="${position ? "close" : "open"}"
+      data-decision-id="${item.id}"
+    >${position ? "CLOSE PAPER POSITION" : "OPEN PAPER POSITION"}</button>
+  `;
+
+}
+
+
 function renderAiDecisions(
   decisions
 ) {
 
   if (!aiDecisionFeed) return;
 
-  if (
-    !Array.isArray(decisions) ||
-    decisions.length === 0
-  ) {
+  const records =
+    uniqueDecisions(decisions);
+
+  renderedDecisionRecords = records;
+
+  if (records.length === 0) {
     aiDecisionFeed.innerHTML =
       '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
     return;
   }
 
   aiDecisionFeed.innerHTML =
-    decisions.map(
-      item => `
-        <article class="decision-item decision-card">
+    records.map(
+      (item, index) => `
+        <article
+          class="decision-item decision-card"
+          data-decision-index="${index}"
+        >
           <header>
             <strong>${item.symbol}</strong>
             <span>${item.action}</span>
@@ -4857,22 +4908,439 @@ function renderAiDecisions(
             <span><small>STOP</small>${formatCurrency(item.stop)}</span>
             <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
           </div>
-          <div class="decision-risk-line">
-            <b>RİSK PLANI</b>
+          <div class="decision-summary">
             ${item.riskPlan?.quantity ?? "--"} lot ·
             ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
             azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}
           </div>
-          <div class="decision-filter-line">
-            Trend ${item.filters?.trend ? "✓" : "—"} ·
-            Hacim ${item.filters?.volume ? "✓" : "—"} ·
-            Momentum ${item.filters?.momentum ? "✓" : "—"} ·
-            RSI ${item.filters?.rsi ? "✓" : "—"}
-          </div>
-          <small>${item.reason}</small>
         </article>
       `
     ).join("");
+
+}
+
+
+function currentPaperState() {
+
+  const local =
+    loadLocalTradingState() || {};
+
+  const paper =
+    local.paper || {};
+
+  return {
+    initialCapital:
+      Number(paper.initialCapital) || 100000,
+    cash:
+      Number(paper.cash) || 100000,
+    equity:
+      Number(paper.equity) || 100000,
+    pnl:
+      Number(paper.pnl) || 0,
+    pnlPercent:
+      Number(paper.pnlPercent) || 0,
+    positions:
+      Array.isArray(paper.positions)
+        ? paper.positions
+        : [],
+  };
+
+}
+
+
+function savePaperState(
+  nextPaper,
+  message
+) {
+
+  const state =
+    loadLocalTradingState() || {};
+
+  const activity = [
+    {
+      timestamp: new Date().toISOString(),
+      type: "PAPER",
+      message,
+    },
+    ...(
+      Array.isArray(state.activity)
+        ? state.activity
+        : []
+    ),
+  ].slice(0, 100);
+
+  const nextState = {
+    ...state,
+    paper: nextPaper,
+    activity,
+  };
+
+  saveLocalTradingState(nextState);
+  renderPaperPortfolio(nextPaper);
+  renderOpenPositions(nextPaper.positions);
+  renderTradingActivity(activity);
+  renderPerformance(nextState);
+
+  return nextState;
+
+}
+
+
+function openPaperPosition(
+  decision
+) {
+
+  const state =
+    loadLocalTradingState() || {};
+
+  const paper =
+    currentPaperState();
+
+  if (
+    paper.positions.some(
+      item =>
+        item.decisionId === decision.id &&
+        item.status === "OPEN"
+    )
+  ) {
+    return;
+  }
+
+  const risk =
+    currentRiskSettings();
+
+  if (
+    paper.positions.filter(
+      item => item.status === "OPEN"
+    ).length >= risk.maxPositions
+  ) {
+    alert("Maximum paper pozisyon sınırına ulaşıldı.");
+    return;
+  }
+
+  const quantity =
+    Number(decision.riskPlan?.quantity) || 0;
+
+  const entry =
+    Number(decision.entry?.reference) || 0;
+
+  const positionValue =
+    quantity * entry;
+
+  if (
+    quantity <= 0 ||
+    positionValue > paper.cash
+  ) {
+    alert("Paper bakiye bu pozisyon için yeterli değil.");
+    return;
+  }
+
+  const position = {
+    id: `paper-${Date.now()}-${decision.symbol}`,
+    decisionId: decision.id,
+    symbol: decision.symbol,
+    quantity,
+    entry,
+    current: entry,
+    stop: decision.stop,
+    target1: decision.target1,
+    target2: decision.target2,
+    status: "OPEN",
+    openedAt: new Date().toISOString(),
+    pnl: 0,
+  };
+
+  const nextPaper = {
+    ...paper,
+    cash: paper.cash - positionValue,
+    positions: [
+      position,
+      ...paper.positions,
+    ],
+  };
+
+  const nextState =
+    savePaperState(
+      nextPaper,
+      `${decision.symbol} paper pozisyonu açıldı.`
+    );
+
+  nextState.decisions =
+    (nextState.decisions || []).map(
+      item =>
+        item.id === decision.id
+          ? {
+              ...item,
+              status: "OPEN",
+              lifecycle: {
+                ...(item.lifecycle || {}),
+                stage: "OPEN",
+                openedAt: position.openedAt,
+              },
+            }
+          : item
+    );
+
+  saveLocalTradingState(nextState);
+  renderAiDecisions(nextState.decisions);
+  renderAiDecisionDetail(
+    nextState.decisions.find(
+      item => item.id === decision.id
+    )
+  );
+
+}
+
+
+function closePaperPosition(
+  decisionId,
+  reason = "MANUAL_CLOSE"
+) {
+
+  const state =
+    loadLocalTradingState() || {};
+
+  const paper =
+    currentPaperState();
+
+  const position =
+    paper.positions.find(
+      item =>
+        item.decisionId === decisionId &&
+        item.status === "OPEN"
+    );
+
+  if (!position) return;
+
+  const current =
+    Number(position.current) ||
+    Number(position.entry);
+
+  const pnl =
+    (current - Number(position.entry)) *
+    Number(position.quantity);
+
+  const nextPaper = {
+    ...paper,
+    cash:
+      paper.cash +
+      current * Number(position.quantity),
+    pnl:
+      paper.pnl + pnl,
+    positions:
+      paper.positions.map(
+        item =>
+          item.id === position.id
+            ? {
+                ...item,
+                current,
+                pnl,
+                status:
+                  reason === "STOPPED"
+                    ? "STOPPED"
+                    : "CLOSED",
+                closedAt:
+                  new Date().toISOString(),
+                closeReason: reason,
+              }
+            : item
+      ),
+  };
+
+  nextPaper.equity =
+    nextPaper.cash +
+    nextPaper.positions
+      .filter(
+        item => item.status === "OPEN"
+      )
+      .reduce(
+        (sum, item) =>
+          sum +
+          Number(item.current) *
+          Number(item.quantity),
+        0
+      );
+
+  nextPaper.pnlPercent =
+    (nextPaper.pnl /
+      nextPaper.initialCapital) * 100;
+
+  const nextState =
+    savePaperState(
+      nextPaper,
+      `${position.symbol} paper pozisyonu kapatıldı: ${reason}.`
+    );
+
+  nextState.decisions =
+    (nextState.decisions || []).filter(
+      item => item.id !== decisionId
+    );
+
+  nextState.history =
+    uniqueDecisions(
+      [
+        {
+          ...state.decisions?.find(
+            item => item.id === decisionId
+          ),
+          status:
+            reason === "STOPPED"
+              ? "STOPPED"
+              : "CLOSED",
+          lifecycle: {
+            stage:
+              reason === "STOPPED"
+                ? "STOPPED"
+                : "CLOSED",
+            closedAt:
+              new Date().toISOString(),
+          },
+          realizedPnL: pnl,
+        },
+        ...(state.history || []),
+      ]
+    );
+
+  saveLocalTradingState(nextState);
+  renderAiDecisions(nextState.decisions);
+  renderSignalHistory(nextState.history);
+  renderAiDecisionDetail({
+    symbol: position.symbol,
+    action: "PAPER",
+    status: reason,
+    entry: { low: position.entry, high: position.entry },
+    stop: position.stop,
+    target1: position.target1,
+    target2: position.target2,
+    riskPlan: {
+      quantity: position.quantity,
+      actualRisk: 0,
+    },
+    reason: "Paper pozisyon kapandı.",
+  });
+
+}
+
+
+function renderOpenPositions(
+  positions
+) {
+
+  const element =
+    document.getElementById(
+      "openPositions"
+    );
+
+  const status =
+    document.getElementById(
+      "openPositionStatus"
+    );
+
+  const open =
+    (Array.isArray(positions)
+      ? positions
+      : [])
+      .filter(
+        item => item.status === "OPEN"
+      );
+
+  if (status) {
+    status.textContent =
+      `${open.length} POSITIONS`;
+  }
+
+  if (!element) return;
+
+  if (open.length === 0) {
+    element.innerHTML =
+      '<tr><td colspan="9" class="table-empty">No open positions</td></tr>';
+    return;
+  }
+
+  element.innerHTML =
+    open.map(
+      item => `
+        <tr>
+          <td>${item.symbol}</td>
+          <td>LONG</td>
+          <td>${formatCurrency(item.entry)}</td>
+          <td>${formatCurrency(item.current)}</td>
+          <td>${formatCurrency(item.stop)}</td>
+          <td>${formatCurrency(item.target1)}</td>
+          <td>${formatCurrency(item.target2)}</td>
+          <td>${formatCurrency(item.pnl)}</td>
+          <td>OPEN</td>
+        </tr>
+      `
+    ).join("");
+
+}
+
+
+function bindDecisionBoard() {
+
+  if (
+    !aiDecisionFeed ||
+    aiDecisionFeed.dataset.boardBound === "true"
+  ) {
+    return;
+  }
+
+  aiDecisionFeed.dataset.boardBound = "true";
+
+  aiDecisionFeed.addEventListener(
+    "click",
+    event => {
+
+      const card =
+        event.target.closest(
+          "[data-decision-index]"
+        );
+
+      if (!card) return;
+
+      const item =
+        renderedDecisionRecords[
+          Number(card.dataset.decisionIndex)
+        ];
+
+      if (item) {
+        renderAiDecisionDetail(item);
+      }
+
+    }
+  );
+
+  document.addEventListener(
+    "click",
+    event => {
+
+      const action =
+        event.target.closest(
+          "[data-paper-action]"
+        );
+
+      if (!action) return;
+
+      const decision =
+        renderedDecisionRecords.find(
+          item =>
+            item.id ===
+            action.dataset.decisionId
+        );
+
+      if (!decision) return;
+
+      if (
+        action.dataset.paperAction === "open"
+      ) {
+        openPaperPosition(decision);
+      } else {
+        closePaperPosition(decision.id);
+      }
+
+    }
+  );
 
 }
 
