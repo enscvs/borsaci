@@ -1723,3 +1723,582 @@ textarea::placeholder {
 .remove-image:hover {
   background: #222;
 }
+/* =========================================================
+   BORSACI MAIN TABS
+========================================================= */
+
+.main-tabs {
+  display: flex;
+  width: 100%;
+  margin: 14px 0 0;
+  border-bottom: 1px solid #2a2a2a;
+  background: #0b0b0b;
+}
+
+.main-tab {
+  appearance: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+
+  background: transparent;
+  color: #777;
+
+  padding: 12px 22px;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+
+  cursor: pointer;
+
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.main-tab:hover {
+  color: #ddd;
+  background: #111;
+}
+
+.main-tab.active {
+  color: #fff;
+  border-bottom-color: #fff;
+  background: #111;
+}
+
+
+/* =========================================================
+   AI TRADING
+========================================================= */
+
+.trading-tab {
+  width: 100%;
+  padding-top: 16px;
+  padding-bottom: 30px;
+}
+
+
+/* =========================================================
+   STATUS CARDS
+========================================================= */
+
+.trading-status-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+
+  margin-bottom: 12px;
+}
+
+.trading-stat {
+  min-height: 72px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 12px 14px;
+
+  background: #0d0d0d;
+
+  border: 1px solid #252525;
+
+  box-sizing: border-box;
+}
+
+.trading-stat-label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #666;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.trading-stat strong {
+  color: #ddd;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.status-online {
+  color: #7dff8a !important;
+}
+
+
+/* =========================================================
+   TRADING PANELS
+========================================================= */
+
+.trading-panel {
+  margin-bottom: 12px;
+}
+
+.trading-panel .panel-title {
+  min-height: 40px;
+}
+
+
+/* =========================================================
+   SCANNER
+========================================================= */
+
+.scanner-controls {
+  display: flex;
+  gap: 8px;
+
+  padding: 12px;
+
+  border-bottom: 1px solid #202020;
+}
+
+.trading-button {
+  appearance: none;
+
+  border: 1px solid #3a3a3a;
+
+  background: #151515;
+  color: #ddd;
+
+  padding: 8px 14px;
+
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+
+  cursor: pointer;
+}
+
+.trading-button:hover {
+  background: #202020;
+  border-color: #555;
+}
+
+.trading-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.trading-button.danger {
+  color: #ff7b7b;
+  border-color: #492626;
+}
+
+.trading-button.danger:hover {
+  background: #211010;
+}
+
+.scanner-results {
+  padding: 12px;
+}
+
+.trading-empty {
+  padding: 22px 12px;
+
+  text-align: center;
+
+  color: #555;
+
+  font-size: 11px;
+  letter-spacing: 0.4px;
+}
+
+
+/* =========================================================
+   SCANNER ROWS
+========================================================= */
+
+.scanner-row {
+  display: grid;
+
+  grid-template-columns:
+    90px
+    1fr
+    100px
+    100px
+    100px;
+
+  gap: 10px;
+
+  align-items: center;
+
+  padding: 11px 10px;
+
+  border-bottom: 1px solid #1b1b1b;
+
+  font-size: 11px;
+}
+
+.scanner-row:last-child {
+  border-bottom: none;
+}
+
+.scanner-symbol {
+  color: #fff;
+  font-weight: 700;
+}
+
+.scanner-score {
+  color: #aaa;
+}
+
+.scanner-price {
+  text-align: right;
+  color: #ddd;
+}
+
+.scanner-change {
+  text-align: right;
+}
+
+.scanner-signal {
+  text-align: right;
+
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.signal-buy {
+  color: #7dff8a;
+}
+
+.signal-watch {
+  color: #ffd36a;
+}
+
+.signal-avoid {
+  color: #ff7777;
+}
+
+
+/* =========================================================
+   AI DECISION FEED
+========================================================= */
+
+.decision-feed {
+  max-height: 320px;
+
+  overflow-y: auto;
+}
+
+.decision-item {
+  display: grid;
+
+  grid-template-columns:
+    75px
+    75px
+    1fr;
+
+  gap: 12px;
+
+  padding: 11px 13px;
+
+  border-bottom: 1px solid #1b1b1b;
+
+  font-size: 11px;
+}
+
+.decision-time {
+  color: #555;
+}
+
+.decision-symbol {
+  color: #fff;
+  font-weight: 700;
+}
+
+.decision-text {
+  color: #aaa;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   TWO COLUMN
+========================================================= */
+
+.trading-two-column {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 12px;
+}
+
+
+/* =========================================================
+   PORTFOLIO
+========================================================= */
+
+.portfolio-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap: 1px;
+
+  background: #222;
+}
+
+.portfolio-grid > div {
+  min-height: 68px;
+
+  padding: 12px;
+
+  background: #0d0d0d;
+}
+
+.portfolio-grid span,
+.risk-grid span {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #555;
+
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.portfolio-grid strong,
+.risk-grid strong {
+  color: #ddd;
+
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   RISK ENGINE
+========================================================= */
+
+.risk-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 1px;
+
+  background: #222;
+}
+
+.risk-grid > div {
+  min-height: 68px;
+
+  padding: 12px;
+
+  background: #0d0d0d;
+}
+
+
+/* =========================================================
+   POSITION TABLE
+========================================================= */
+
+.position-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+}
+
+.position-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  min-width: 850px;
+}
+
+.position-table th {
+  padding: 10px 8px;
+
+  border-bottom: 1px solid #292929;
+
+  color: #555;
+
+  font-size: 9px;
+  font-weight: 700;
+
+  letter-spacing: 0.8px;
+
+  text-align: right;
+}
+
+.position-table th:first-child {
+  text-align: left;
+}
+
+.position-table td {
+  padding: 11px 8px;
+
+  border-bottom: 1px solid #1a1a1a;
+
+  color: #aaa;
+
+  font-size: 10px;
+
+  text-align: right;
+}
+
+.position-table td:first-child {
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+}
+
+.table-empty {
+  padding: 30px !important;
+
+  color: #444 !important;
+
+  text-align: center !important;
+}
+
+
+/* =========================================================
+   P&L
+========================================================= */
+
+.pnl-positive {
+  color: #7dff8a !important;
+}
+
+.pnl-negative {
+  color: #ff7777 !important;
+}
+
+
+/* =========================================================
+   TRADING LOG
+========================================================= */
+
+.trading-log {
+  max-height: 250px;
+
+  overflow-y: auto;
+
+  padding: 4px 0;
+}
+
+.log-line {
+  display: flex;
+
+  gap: 12px;
+
+  padding: 8px 12px;
+
+  border-bottom: 1px solid #171717;
+
+  color: #888;
+
+  font-size: 10px;
+
+  line-height: 1.4;
+}
+
+.log-time {
+  flex: 0 0 65px;
+
+  color: #444;
+}
+
+.log-line.info {
+  color: #aaa;
+}
+
+.log-line.success {
+  color: #7dff8a;
+}
+
+.log-line.warning {
+  color: #ffd36a;
+}
+
+.log-line.error {
+  color: #ff7777;
+}
+
+
+/* =========================================================
+   TRADING STATUS
+========================================================= */
+
+.trading-status-running {
+  color: #7dff8a !important;
+}
+
+.trading-status-stopped {
+  color: #ff7777 !important;
+}
+
+.trading-status-waiting {
+  color: #ffd36a !important;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 900px) {
+
+  .trading-status-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .trading-two-column {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+
+@media (max-width: 600px) {
+
+  .main-tab {
+    flex: 1;
+
+    padding: 11px 8px;
+
+    font-size: 10px;
+  }
+
+  .trading-status-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .scanner-row {
+    grid-template-columns:
+      70px
+      1fr
+      80px;
+  }
+
+  .scanner-score,
+  .scanner-change {
+    display: none;
+  }
+
+}
