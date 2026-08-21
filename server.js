@@ -3035,7 +3035,7 @@ function createDefaultTradingState() {
 
   return {
 
-    version: 1,
+    version: 2,
 
     paper: {
       initialCapital: 100000,
@@ -3046,7 +3046,15 @@ function createDefaultTradingState() {
       positions: [],
     },
 
+    risk: {
+      riskPerTradePercent: 1,
+      maxPositionPercent: 20,
+      maxPositions: 3,
+    },
+
     decisions: [],
+
+    history: [],
 
     activity: [
       {
@@ -3079,11 +3087,23 @@ function normalizeTradingState(
       ...((value || {}).paper || {}),
     },
 
+    risk: {
+      ...fallback.risk,
+      ...((value || {}).risk || {}),
+    },
+
     decisions:
       Array.isArray(
         value?.decisions
       )
         ? value.decisions
+        : [],
+
+    history:
+      Array.isArray(
+        value?.history
+      )
+        ? value.history
         : [],
 
     activity:
@@ -3171,17 +3191,12 @@ function buildAiDecision(
   rank
 ) {
 
-  const price =
-    Number(item.price);
-
-  const atr =
-    Number(item.atr);
-
-  const rsi =
-    Number(item.rsi);
-
-  const volatility =
-    Number(item.volatility);
+  const price = Number(item.price);
+  const atr = Number(item.atr);
+  const rsi = Number(item.rsi);
+  const volatility = Number(item.volatility);
+  const volume = Number(item.volume);
+  const averageVolume = Number(item.averageVolume);
 
   const hasTrend =
     price > item.ema20 &&
@@ -3195,87 +3210,88 @@ function buildAiDecision(
   const isExtended =
     rsi > 70;
 
+  const volumeConfirmed =
+    Number.isFinite(volume) &&
+    Number.isFinite(averageVolume) &&
+    averageVolume > 0 &&
+    volume >= averageVolume * 1.1;
+
+  const momentumConfirmed =
+    Number(item.macd) > 0;
+
+  const lowVolatility =
+    volatility <= 6;
+
   const risk =
-    Math.max(
-      atr * 1.5,
-      price * 0.01
-    );
+    Math.max(atr * 1.5, price * 0.01);
 
   const entryLow =
-    roundTradingValue(
-      price - atr * 0.3
-    );
+    roundTradingValue(price - atr * 0.3);
 
   const entryHigh =
-    roundTradingValue(
-      price + atr * 0.2
-    );
+    roundTradingValue(price + atr * 0.2);
+
+  const entryReference =
+    roundTradingValue(price);
 
   const stop =
-    roundTradingValue(
-      price - risk
-    );
+    roundTradingValue(price - risk);
 
   const target1 =
-    roundTradingValue(
-      price + risk * 2
-    );
+    roundTradingValue(price + risk * 2);
 
   const target2 =
-    roundTradingValue(
-      price + risk * 3
-    );
+    roundTradingValue(price + risk * 3);
 
-  let action =
-    "NO TRADE";
+  const capital = 100000;
+  const riskBudget = capital * 0.01;
+  const maxPositionValue = capital * 0.2;
+  const stopDistance =
+    Math.max(entryReference - stop, 0.01);
+  const quantity = Math.max(
+    0,
+    Math.floor(
+      Math.min(
+        riskBudget / stopDistance,
+        maxPositionValue / entryReference
+      )
+    )
+  );
+  const positionValue =
+    roundTradingValue(quantity * entryReference);
+  const actualRisk =
+    roundTradingValue(quantity * stopDistance);
 
-  let status =
-    "REJECTED";
-
+  let action = "NO TRADE";
+  let status = "REJECTED";
   let reason =
-    "Trend veya risk koşulları yeterli değil.";
+    "Trend, risk veya kalite filtreleri işlem için yeterli değil.";
 
   if (
     item.score >= 80 &&
     hasTrend &&
     isRsiInRange &&
-    volatility <= 6
+    lowVolatility &&
+    volumeConfirmed &&
+    momentumConfirmed
   ) {
-
-    action =
-      "BUY SETUP";
-
-    status =
-      "PENDING";
-
+    action = "BUY SETUP";
+    status = "PENDING";
     reason =
-      "Trend, momentum ve volatilite koşulları paper işlem adayı olarak uyumlu.";
-
-  } else if (isExtended) {
-
-    action =
-      "WATCH";
-
-    status =
-      "PENDING";
-
-    reason =
-      "Momentum güçlü ancak RSI uzamış; geri çekilme veya hacim teyidi bekleniyor.";
-
+      "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.";
   } else if (
     item.score >= 65 &&
     hasTrend
   ) {
-
-    action =
-      "WATCH";
-
-    status =
-      "PENDING";
-
+    action = "WATCH";
+    status = "PENDING";
     reason =
-      "Trend olumlu fakat işlem açmak için ek teyit gerekli.";
-
+      "Trend olumlu; işlem için hacim, momentum veya RSI teyidi bekleniyor.";
+  } else if (isExtended) {
+    action = "WATCH";
+    status = "PENDING";
+    reason =
+      "Momentum güçlü ancak RSI uzamış; geri çekilme veya teyit bekleniyor.";
   }
 
   const confidence =
@@ -3284,61 +3300,68 @@ function buildAiDecision(
       Math.min(
         100,
         Math.round(
-          item.score * 0.7 +
-          (isRsiInRange ? 15 : 0) +
-          (hasTrend ? 10 : 0) -
+          item.score * 0.65 +
+          (isRsiInRange ? 12 : 0) +
+          (hasTrend ? 10 : 0) +
+          (volumeConfirmed ? 8 : 0) +
+          (momentumConfirmed ? 5 : 0) -
           (isExtended ? 15 : 0) -
-          (volatility > 6 ? 10 : 0)
+          (lowVolatility ? 0 : 10)
         )
       )
     );
 
+  const now = new Date();
+
   return {
-
-    id:
-      `${Date.now()}-${item.symbol}`,
-
+    id: `${Date.now()}-${item.symbol}`,
     rank,
-
-    symbol:
-      item.symbol,
-
+    symbol: item.symbol,
     action,
-
     status,
-
     confidence,
-
     entry: {
       low: entryLow,
       high: entryHigh,
-      reference: roundTradingValue(price),
+      reference: entryReference,
     },
-
     stop,
-
     target1,
-
     target2,
-
     riskReward: "1:2.0",
-
+    riskPlan: {
+      capital,
+      riskBudget,
+      maxPositionValue,
+      stopDistance: roundTradingValue(stopDistance),
+      quantity,
+      positionValue,
+      actualRisk,
+    },
+    filters: {
+      trend: hasTrend,
+      rsi: isRsiInRange,
+      volume: volumeConfirmed,
+      momentum: momentumConfirmed,
+      volatility: lowVolatility,
+    },
     indicators: {
       score: item.score,
       rsi: roundTradingValue(rsi),
       atr: roundTradingValue(atr),
-      volatility:
-        roundTradingValue(volatility),
+      volatility: roundTradingValue(volatility),
     },
-
+    lifecycle: {
+      stage: status,
+      createdAt: now.toISOString(),
+      expiresAt: new Date(
+        now.getTime() + 24 * 60 * 60 * 1000
+      ).toISOString(),
+    },
     reason,
-
     invalidation:
       `Stop seviyesi ${stop} altındaki kapanış.`,
-
-    timestamp:
-      new Date().toISOString(),
-
+    timestamp: now.toISOString(),
   };
 
 }
@@ -3379,36 +3402,50 @@ async function recordAiDecisions(
     stateResult.content ||
     createDefaultTradingState();
 
-  state.paper =
-    state.paper ||
-    createDefaultTradingState().paper;
+  const now =
+    new Date().toISOString();
 
-  state.paper.positions =
-    Array.isArray(
-      state.paper.positions
-    )
-      ? state.paper.positions
-      : [];
+  const archived =
+    (Array.isArray(state.decisions)
+      ? state.decisions
+      : [])
+      .filter(
+        decision =>
+          decision?.status === "PENDING"
+      )
+      .map(
+        decision => ({
+          ...decision,
+          status: "EXPIRED",
+          lifecycle: {
+            ...(decision.lifecycle || {}),
+            stage: "EXPIRED",
+            closedAt: now,
+          },
+          outcome: "SUPERSEDED_BY_NEW_SCAN",
+        })
+      );
 
-  state.decisions =
-    decisions;
+  state.history = [
+    ...archived,
+    ...(Array.isArray(state.history)
+      ? state.history
+      : []),
+  ].slice(0, 100);
 
-  const activity = [
+  state.decisions = decisions;
+
+  state.activity = [
     {
-      timestamp: new Date().toISOString(),
+      timestamp: now,
       type: "SCAN",
       message:
-        `${decisions.length} AI decision(s) generated in paper mode.`,
+        `${decisions.length} AI decision(s) generated; previous pending decisions archived.`,
     },
-    ...(
-      Array.isArray(state.activity)
-        ? state.activity
-        : []
-    ),
-  ];
-
-  state.activity =
-    activity.slice(0, 100);
+    ...(Array.isArray(state.activity)
+      ? state.activity
+      : []),
+  ].slice(0, 100);
 
   await saveTradingState(
     state,
