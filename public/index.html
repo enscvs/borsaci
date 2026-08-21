@@ -1317,6 +1317,43 @@ Waiting for input...
     </section>
 
 
+    <!-- ==================================================
+         KILL SWITCH
+    ================================================== -->
+
+    <section class="kill-switch-panel" aria-label="Emergency trading stop">
+      <div class="kill-switch-heading">
+        <span class="kill-switch-icon">⚠</span>
+        <div>
+          <strong>KILL SWITCH</strong>
+          <small id="killSwitchStatus">SAFE · NEW PAPER TRADES ENABLED</small>
+        </div>
+      </div>
+
+      <p>
+        Yeni paper işlemleri derhal durdurur. Açık pozisyonların TP/SL takibi devam eder.
+      </p>
+
+      <div class="kill-switch-controls">
+        <input
+          id="killSwitchPassword"
+          type="password"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="KILL SWITCH PASSWORD"
+          aria-label="Kill Switch password"
+        >
+        <button
+          type="button"
+          id="killSwitchToggle"
+          class="kill-switch-button"
+        >
+          ACTIVATE KILL SWITCH
+        </button>
+      </div>
+    </section>
+
+
   </section>
 
 
@@ -1447,7 +1484,7 @@ Waiting for input...
 ===================================================== -->
 
 <script
-  src="/app.js?v=20260822-paper-capital"
+  src="/app.js?v=20260822-kill-switch"
   defer
 ></script>
 
