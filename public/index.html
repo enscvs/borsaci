@@ -942,6 +942,73 @@ Waiting for input...
 
 
     <!-- ==================================================
+         SIGNAL HISTORY + PERFORMANCE
+    ================================================== -->
+
+    <div class="trading-two-column">
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>SIGNAL HISTORY</span>
+          <span class="panel-status" id="signalHistoryStatus">0 RECORDS</span>
+        </div>
+
+        <div
+          id="signalHistory"
+          class="trading-log"
+        >
+          <div class="trading-empty">
+            İlk tarama sonrası sinyal geçmişi burada oluşur.
+          </div>
+        </div>
+
+      </section>
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>PERFORMANCE</span>
+          <span class="panel-status">PAPER</span>
+        </div>
+
+        <div class="risk-grid">
+
+          <div>
+            <span>TOTAL SIGNALS</span>
+            <strong id="performanceTotalSignals">0</strong>
+          </div>
+
+          <div>
+            <span>ACTIVE SETUPS</span>
+            <strong id="performanceActiveSignals">0</strong>
+          </div>
+
+          <div>
+            <span>AVERAGE CONFIDENCE</span>
+            <strong id="performanceAvgConfidence">--</strong>
+          </div>
+
+          <div>
+            <span>RESOLVED OUTCOMES</span>
+            <strong id="performanceResolved">0</strong>
+          </div>
+
+        </div>
+
+        <p
+          id="performanceNote"
+          class="trading-empty"
+        >
+          İşlem sonuçları, paper pozisyon açma/kapatma aşaması eklendiğinde ölçülecek.
+        </p>
+
+      </section>
+
+    </div>
+
+
+    <!-- ==================================================
          PORTFOLIO + RISK
     ================================================== -->
 
