@@ -5380,6 +5380,11 @@ function updatePaperPricesFromScan(
   results
 ) {
 
+  /*
+   * Paper pozisyonlarının kapatılması ve TP yönetimi
+   * sunucu tarafındaki monitörün yetkisindedir. Tarayıcı
+   * yalnızca son scan fiyatını ekranda gösterir.
+   */
   const prices =
     new Map(
       (Array.isArray(results)
@@ -5396,7 +5401,7 @@ function updatePaperPricesFromScan(
   const paper =
     currentPaperState();
 
-  const updated =
+  const positions =
     paper.positions.map(
       position => {
 
@@ -5421,85 +5426,20 @@ function updatePaperPricesFromScan(
       }
     );
 
-  const changed =
-    updated.some(
+  if (
+    positions.some(
       (item, index) =>
         item.current !== paper.positions[index]?.current
-    );
-
-  if (changed) {
+    )
+  ) {
     savePaperState(
       {
         ...paper,
-        positions: updated,
+        positions,
       },
-      "Açık paper pozisyonları güncel fiyatla yenilendi."
+      "Açık paper pozisyonları ekranda güncel fiyatla yenilendi."
     );
   }
-
-  /*
-   * Günlük tarama fiyatı SL için kullanılmaz.
-   * STOP yalnızca ayrı 4 saatlik mum kapanışı kontrolü
-   * ile tetiklenir. Hedeflerde ise fiyat teması izlenir.
-   */
-  updated.forEach(
-    item => {
-
-      if (
-        item.status !== "OPEN" ||
-        !Number.isFinite(Number(item.current))
-      ) {
-        return;
-      }
-
-      if (
-        !item.tp1Hit &&
-        Number(item.current) >= Number(item.target1)
-      ) {
-        takePaperProfit1(item.decisionId);
-      }
-
-      const latest =
-        currentPaperState()
-          .positions
-          .find(
-            position =>
-              position.decisionId === item.decisionId &&
-              position.status === "OPEN"
-          );
-
-      if (
-        latest &&
-        Number(latest.current) >=
-          Number(latest.target2)
-      ) {
-        closePaperPosition(
-          latest.decisionId,
-          "TP2_REACHED"
-        );
-      }
-
-    }
-  );
-
-}
-
-
-function autoOpenPaperPositions(
-  decisions
-) {
-
-  (Array.isArray(decisions)
-    ? decisions
-    : [])
-    .filter(
-      item =>
-        item.action === "BUY SETUP" &&
-        item.status === "PENDING"
-    )
-    .forEach(
-      item => openPaperPosition(item)
-    );
 
 }
 
