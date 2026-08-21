@@ -4,11 +4,62 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 49102.60293884277,
+      "cash": 2879.6029388427705,
       "equity": 49102.60293884277,
       "pnl": -897.3945648193346,
       "pnlPercent": -1.7947891296386693,
       "positions": [
+        {
+          "id": "paper-2026-08-21T23:51:00.418Z-GESAN",
+          "decisionId": "1787356259974-GESAN",
+          "symbol": "GESAN",
+          "quantity": 178,
+          "originalQuantity": 178,
+          "entry": 86.75,
+          "current": 86.75,
+          "stop": 81.89,
+          "target1": 96.47,
+          "target2": 101.33,
+          "status": "OPEN",
+          "openedAt": "2026-08-21T23:51:00.418Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-21T23:51:00.418Z-BINBN",
+          "decisionId": "1787356259973-BINBN",
+          "symbol": "BINBN",
+          "quantity": 84,
+          "originalQuantity": 84,
+          "entry": 183.1,
+          "current": 183.1,
+          "stop": 172.5,
+          "target1": 204.29,
+          "target2": 214.89,
+          "status": "OPEN",
+          "openedAt": "2026-08-21T23:51:00.418Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-21T23:51:00.418Z-ALARK",
+          "decisionId": "1787356259973-ALARK",
+          "symbol": "ALARK",
+          "quantity": 143,
+          "originalQuantity": 143,
+          "entry": 107.7,
+          "current": 107.7,
+          "stop": 101.19,
+          "target1": 120.72,
+          "target2": 127.23,
+          "status": "OPEN",
+          "openedAt": "2026-08-21T23:51:00.418Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-21T23:38:33.087Z-GESAN",
           "decisionId": "1787355512679-GESAN",
@@ -421,7 +472,158 @@
       "active": false,
       "activatedAt": null
     },
-    "decisions": [],
+    "decisions": [
+      {
+        "id": "1787356259973-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 94,
+        "entry": {
+          "low": 106.4,
+          "high": 108.57,
+          "reference": 107.7
+        },
+        "stop": 101.19,
+        "target1": 120.72,
+        "target2": 127.23,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 6.51,
+          "quantity": 143,
+          "positionValue": 15401.1,
+          "actualRisk": 930.93,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 55.36,
+          "atr": 4.34,
+          "volatility": 4.03
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-21T23:50:59.973Z",
+          "expiresAt": "2026-08-22T23:50:59.973Z",
+          "openedAt": "2026-08-21T23:51:00.418Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
+        "timestamp": "2026-08-21T23:50:59.973Z"
+      },
+      {
+        "id": "1787356259973-BINBN",
+        "rank": 2,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 94,
+        "entry": {
+          "low": 180.98,
+          "high": 184.51,
+          "reference": 183.1
+        },
+        "stop": 172.5,
+        "target1": 204.29,
+        "target2": 214.89,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 10.6,
+          "quantity": 84,
+          "positionValue": 15380.4,
+          "actualRisk": 890.4,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 54.69,
+          "atr": 7.06,
+          "volatility": 3.86
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-21T23:50:59.973Z",
+          "expiresAt": "2026-08-22T23:50:59.973Z",
+          "openedAt": "2026-08-21T23:51:00.418Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
+        "timestamp": "2026-08-21T23:50:59.973Z"
+      },
+      {
+        "id": "1787356259974-GESAN",
+        "rank": 3,
+        "symbol": "GESAN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 94,
+        "entry": {
+          "low": 85.78,
+          "high": 87.4,
+          "reference": 86.75
+        },
+        "stop": 81.89,
+        "target1": 96.47,
+        "target2": 101.33,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 4.86,
+          "quantity": 178,
+          "positionValue": 15441.5,
+          "actualRisk": 865.08,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 61.52,
+          "atr": 3.24,
+          "volatility": 3.73
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-21T23:50:59.974Z",
+          "expiresAt": "2026-08-22T23:50:59.974Z",
+          "openedAt": "2026-08-21T23:51:00.418Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
+        "timestamp": "2026-08-21T23:50:59.974Z"
+      }
+    ],
     "history": [
       {
         "id": "1787355512679-ALARK",
@@ -1549,6 +1751,26 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T23:51:00.418Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) retained or generated."
+      },
+      {
+        "timestamp": "2026-08-21T23:51:00.418Z",
+        "type": "PAPER_OPEN",
+        "message": "GESAN paper pozisyonu açıldı: 178 lot · ₺15441.50."
+      },
+      {
+        "timestamp": "2026-08-21T23:51:00.418Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15380.40."
+      },
+      {
+        "timestamp": "2026-08-21T23:51:00.418Z",
+        "type": "PAPER_OPEN",
+        "message": "ALARK paper pozisyonu açıldı: 143 lot · ₺15401.10."
+      },
       {
         "timestamp": "2026-08-21T23:50:15.159Z",
         "type": "CLOSED",
