@@ -4877,60 +4877,161 @@ function renderAiDecisions(
 }
 
 
+let renderedHistoryRecords = [];
+
+
+function decisionSignature(
+  item
+) {
+
+  return [
+    item?.symbol,
+    item?.action,
+    Number(item?.entry?.reference || 0).toFixed(2),
+    Number(item?.stop || 0).toFixed(2),
+    Number(item?.target1 || 0).toFixed(2),
+    Number(item?.target2 || 0).toFixed(2),
+  ].join("|");
+
+}
+
+
+function uniqueDecisions(
+  records
+) {
+
+  const seen = new Set();
+
+  return (
+    Array.isArray(records)
+      ? records
+      : []
+  ).filter(
+    item => {
+
+      const signature =
+        decisionSignature(item);
+
+      if (seen.has(signature)) {
+        return false;
+      }
+
+      seen.add(signature);
+      return true;
+
+    }
+  );
+
+}
+
+
+function detailMarkup(
+  item
+) {
+
+  return `
+    <strong>${item.symbol} · ${item.action} · ${item.status}</strong>
+    <div>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</div>
+    <div>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</div>
+    <div>Risk: ${item.riskPlan?.quantity ?? "--"} lot · ${formatCurrency(item.riskPlan?.positionValue)} · azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}</div>
+    <div>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</div>
+    <small>${item.reason || ""}</small>
+  `;
+
+}
+
+
 function renderSignalHistory(
   history
 ) {
 
   const element =
-    document.getElementById(
-      "signalHistory"
-    );
+    document.getElementById("signalHistory");
 
   const status =
-    document.getElementById(
-      "signalHistoryStatus"
-    );
+    document.getElementById("signalHistoryStatus");
 
   const records =
-    Array.isArray(history)
-      ? history
-      : [];
+    uniqueDecisions(history);
+
+  renderedHistoryRecords = records;
 
   if (status) {
     status.textContent =
       `${records.length} RECORDS`;
   }
 
-  if (!element) {
-    return;
-  }
+  if (!element) return;
 
   if (records.length === 0) {
-
     element.innerHTML =
       '<div class="trading-empty">Henüz arşivlenmiş sinyal yok.</div>';
-
     return;
-
   }
 
   element.innerHTML =
-    records.slice(0, 8).map(
-      item => `
-        <div class="log-line">
-          <span class="log-time">
-            ${new Date(
-              item.lifecycle?.closedAt ||
-              item.timestamp
-            ).toLocaleTimeString("tr-TR")}
-          </span>
-          <span>
-            ${item.symbol} · ${item.action} ·
-            ${item.status}
-          </span>
-        </div>
+    records.slice(0, 12).map(
+      (item, index) => `
+        <button
+          type="button"
+          class="history-row"
+          data-history-index="${index}"
+        >
+          <span>${item.symbol}</span>
+          <span>${item.action}</span>
+          <span>${item.status}</span>
+          <small>${new Date(
+            item.lifecycle?.closedAt ||
+            item.timestamp
+          ).toLocaleString("tr-TR")}</small>
+        </button>
       `
     ).join("");
+
+}
+
+
+function bindSignalHistoryDetails() {
+
+  const element =
+    document.getElementById("signalHistory");
+
+  const detail =
+    document.getElementById("signalDetail");
+
+  if (
+    !element ||
+    !detail ||
+    element.dataset.detailsBound === "true"
+  ) {
+    return;
+  }
+
+  element.dataset.detailsBound = "true";
+
+  element.addEventListener(
+    "click",
+    event => {
+
+      const row =
+        event.target.closest(
+          "[data-history-index]"
+        );
+
+      if (!row) return;
+
+      const item =
+        renderedHistoryRecords[
+          Number(row.dataset.historyIndex)
+        ];
+
+      if (item) {
+        detail.innerHTML =
+          detailMarkup(item);
+      }
+
+    }
+  );
 
 }
 
@@ -5014,30 +5115,69 @@ function renderPerformance(
 }
 
 
-function archiveLocalDecisions(
-  decisions,
+function reconcileScanDecisions(
+  previous,
+  incoming,
   timestamp
 ) {
 
-  return (
-    Array.isArray(decisions)
-      ? decisions
-      : []
-  ).filter(
-    item =>
-      item?.status === "PENDING"
-  ).map(
-    item => ({
-      ...item,
-      status: "EXPIRED",
-      lifecycle: {
-        ...(item.lifecycle || {}),
-        stage: "EXPIRED",
-        closedAt: timestamp,
-      },
-      outcome: "SUPERSEDED_BY_NEW_SCAN",
-    })
-  );
+  const prior =
+    uniqueDecisions(previous);
+
+  const next =
+    uniqueDecisions(incoming);
+
+  const nextKeys =
+    new Set(
+      next.map(decisionSignature)
+    );
+
+  const retained =
+    prior.filter(
+      item =>
+        nextKeys.has(
+          decisionSignature(item)
+        )
+    );
+
+  const archived =
+    prior
+      .filter(
+        item =>
+          !nextKeys.has(
+            decisionSignature(item)
+          )
+      )
+      .map(
+        item => ({
+          ...item,
+          status: "EXPIRED",
+          lifecycle: {
+            ...(item.lifecycle || {}),
+            stage: "EXPIRED",
+            closedAt: timestamp,
+          },
+          outcome: "SUPERSEDED_BY_NEW_SCAN",
+        })
+      );
+
+  const retainedKeys =
+    new Set(
+      retained.map(decisionSignature)
+    );
+
+  return {
+    decisions: [
+      ...retained,
+      ...next.filter(
+        item =>
+          !retainedKeys.has(
+            decisionSignature(item)
+          )
+      ),
+    ],
+    archived,
+  };
 
 }
 
