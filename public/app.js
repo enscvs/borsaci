@@ -5277,6 +5277,92 @@ function renderOpenPositions(
 }
 
 
+function updatePaperPricesFromScan(
+  results
+) {
+
+  const prices =
+    new Map(
+      (Array.isArray(results)
+        ? results
+        : [])
+        .map(
+          item => [
+            item.symbol,
+            Number(item.price),
+          ]
+        )
+    );
+
+  const state =
+    loadLocalTradingState() || {};
+
+  const paper =
+    currentPaperState();
+
+  const updated =
+    paper.positions.map(
+      position => {
+
+        const current =
+          prices.get(position.symbol);
+
+        if (
+          !Number.isFinite(current) ||
+          position.status !== "OPEN"
+        ) {
+          return position;
+        }
+
+        return {
+          ...position,
+          current,
+          pnl:
+            (current - Number(position.entry)) *
+            Number(position.quantity),
+        };
+
+      }
+    );
+
+  const changed =
+    updated.some(
+      (item, index) =>
+        item.current !== paper.positions[index]?.current
+    );
+
+  if (changed) {
+    savePaperState(
+      {
+        ...paper,
+        positions: updated,
+      },
+      "Açık paper pozisyonları güncel fiyatla yenilendi."
+    );
+  }
+
+  updated
+    .filter(
+      item =>
+        item.status === "OPEN" &&
+        (
+          Number(item.current) <= Number(item.stop) ||
+          Number(item.current) >= Number(item.target2)
+        )
+    )
+    .forEach(
+      item =>
+        closePaperPosition(
+          item.decisionId,
+          Number(item.current) <= Number(item.stop)
+            ? "STOPPED"
+            : "TP2_REACHED"
+        )
+    );
+
+}
+
+
 function bindDecisionBoard() {
 
   if (
@@ -6194,6 +6280,7 @@ async function runTradingScanner() {
       decisions:
         reconciled.decisions,
       paper:
+        previousState.paper ||
         data.paper,
       activity:
         data.activity,
@@ -6227,6 +6314,18 @@ async function runTradingScanner() {
 
     saveLocalTradingState(
       nextState
+    );
+
+    renderPaperPortfolio(
+      nextState.paper
+    );
+
+    renderOpenPositions(
+      nextState.paper?.positions
+    );
+
+    updatePaperPricesFromScan(
+      data.results
     );
 
 
