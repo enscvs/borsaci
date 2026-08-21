@@ -4659,112 +4659,41 @@ function renderScannerResults(
   results
 ) {
 
-  if (
-    !scannerResults
-  ) {
-    return;
-  }
+  if (!scannerResults) return;
 
   if (
     !Array.isArray(results) ||
     results.length === 0
   ) {
-
-    scannerResults.innerHTML = `
-      <div class="trading-empty">
-        Uygun setup bulunamadı.
-      </div>
-    `;
-
+    scannerResults.innerHTML =
+      '<div class="trading-empty">Uygun setup bulunamadı.</div>';
     return;
-
   }
-
 
   scannerResults.innerHTML =
     results.map(
-      (item, index) => {
-
-        const scoreClass =
-          item.score >= 80
-            ? "buy"
-            : item.score >= 65
-              ? "watch"
-              : "neutral";
-
-
-        const signals =
-          Array.isArray(
-            item.signals
-          )
-            ? item.signals
-                .slice(0, 4)
-                .join(" • ")
-            : "";
-
-
-        return `
-
-          <div
-            class="scanner-card ${scoreClass}"
-            data-symbol="${item.symbol}"
-          >
-
-            <div class="scanner-rank">
-              #${index + 1}
-            </div>
-
-            <div class="scanner-symbol">
-              ${item.symbol}
-            </div>
-
-            <div class="scanner-price">
-              ₺${formatPrice(item.price)}
-            </div>
-
-            <div class="scanner-score">
-              ${item.score}
-            </div>
-
-            <div class="scanner-decision">
-              ${item.decision}
-            </div>
-
-            <div class="scanner-indicators">
-
-              <span>
-                RSI
-                ${formatPrice(item.rsi)}
-              </span>
-
-              <span>
-                EMA20
-                ₺${formatPrice(item.ema20)}
-              </span>
-
-              <span>
-                EMA50
-                ₺${formatPrice(item.ema50)}
-              </span>
-
-              <span>
-                ATR
-                ₺${formatPrice(item.atr)}
-              </span>
-
-            </div>
-
-            <div class="scanner-signals">
-              ${signals}
-            </div>
-
+      (item, index) => `
+        <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
+          <div class="scanner-head">
+            <strong>#${index + 1} · ${item.symbol}</strong>
+            <strong>₺${formatPrice(item.price)}</strong>
+            <span class="scanner-score">${item.score}</span>
+            <span>${item.decision}</span>
           </div>
-
-        `;
-
-      }
+          <div class="scanner-metrics">
+            RSI ${formatPrice(item.rsi)} ·
+            EMA20 ₺${formatPrice(item.ema20)} ·
+            EMA50 ₺${formatPrice(item.ema50)} ·
+            ATR ₺${formatPrice(item.atr)}
+          </div>
+          <small>${
+            Array.isArray(item.signals)
+              ? item.signals.slice(0, 4).join(" · ")
+              : ""
+          }</small>
+        </div>
+      `
     ).join("");
-
 
 }
 
@@ -4816,6 +4745,8 @@ function saveLocalTradingState(
               : [],
           lastScanAt:
             state?.lastScanAt || null,
+          risk:
+            state?.risk || null,
         }
       )
     );
@@ -4900,38 +4831,48 @@ function renderAiDecisions(
   decisions
 ) {
 
-  if (!aiDecisionFeed) {
-    return;
-  }
+  if (!aiDecisionFeed) return;
 
   if (
     !Array.isArray(decisions) ||
     decisions.length === 0
   ) {
-
     aiDecisionFeed.innerHTML =
       '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
-
     return;
-
   }
 
   aiDecisionFeed.innerHTML =
     decisions.map(
       item => `
-        <div class="decision-item">
-          <strong>${item.symbol}</strong>
-          <span>${item.action} · ${item.status}</span>
-          <span>Güven %${item.confidence}</span>
-          <span>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span>
-          <span>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</span>
-          <span>Risk: ${item.riskPlan?.quantity ?? "--"} lot · ${formatCurrency(item.riskPlan?.positionValue)} · azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}</span>
-          <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
+        <article class="decision-item decision-card">
+          <header>
+            <strong>${item.symbol}</strong>
+            <span>${item.action}</span>
+            <span>${item.status}</span>
+            <span>GÜVEN %${item.confidence}</span>
+          </header>
+          <div class="decision-price-grid">
+            <span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
+            <span><small>STOP</small>${formatCurrency(item.stop)}</span>
+            <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
+          </div>
+          <div class="decision-risk-line">
+            <b>RİSK PLANI</b>
+            ${item.riskPlan?.quantity ?? "--"} lot ·
+            ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
+            azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}
+          </div>
+          <div class="decision-filter-line">
+            Trend ${item.filters?.trend ? "✓" : "—"} ·
+            Hacim ${item.filters?.volume ? "✓" : "—"} ·
+            Momentum ${item.filters?.momentum ? "✓" : "—"} ·
+            RSI ${item.filters?.rsi ? "✓" : "—"}
+          </div>
           <small>${item.reason}</small>
-        </div>
+        </article>
       `
     ).join("");
-
 
 }
 
