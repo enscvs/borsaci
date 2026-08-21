@@ -5788,51 +5788,38 @@ async function loadTradingState() {
     const state =
       await response.json();
 
-    const hasRemoteDecisions =
-      Array.isArray(
-        state.decisions
-      ) &&
-      state.decisions.length > 0;
-
     /*
-     * Sunucudaki boş varsayılan durum,
-     * tarayıcıda saklanan son tarama sonucunu
-     * yenileme sırasında ezmemelidir.
+     * Paper işlemler kalıcı sunucu durumuna dayanır.
+     * Boş olsa bile bu durum, eski tarayıcı verisinden
+     * daha güvenilirdir; hayali OPEN kartlarını önler.
      */
-    if (
-      !localState ||
-      hasRemoteDecisions
-    ) {
+    renderAiDecisions(
+      state.decisions
+    );
 
-      renderAiDecisions(
-        state.decisions
-      );
+    renderPaperPortfolio(
+      state.paper
+    );
 
-      renderPaperPortfolio(
-        state.paper
-      );
+    renderOpenPositions(
+      state.paper?.positions
+    );
 
-      renderOpenPositions(
-        state.paper?.positions
-      );
+    renderTradingActivity(
+      state.activity
+    );
 
-      renderTradingActivity(
-        state.activity
-      );
+    renderSignalHistory(
+      state.history
+    );
 
-      renderSignalHistory(
-        state.history
-      );
+    renderPerformance(
+      state
+    );
 
-      renderPerformance(
-        state
-      );
-
-      saveLocalTradingState(
-        state
-      );
-
-    }
+    saveLocalTradingState(
+      state
+    );
 
   } catch (error) {
 
