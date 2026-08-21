@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 67916.50158996583,
+      "cash": 99487.6024963379,
       "equity": 99487.6024963379,
-      "pnl": -96.59841003417858,
-      "pnlPercent": -0.09659841003417859,
+      "pnl": -512.3975036621091,
+      "pnlPercent": -0.5123975036621091,
       "positions": [
         {
           "id": "paper-2026-08-21T22:28:29.796Z-GESAN",
@@ -58,11 +58,13 @@
           "stop": 101.19,
           "target1": 120.72,
           "target2": 127.23,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-21T22:28:29.796Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": -415.7990936279305
+          "pnl": -415.7990936279305,
+          "closedAt": "2026-08-21T22:55:10.103Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-21T22:25:56.975Z-GESAN",
@@ -223,13 +225,14 @@
       "maxPositions": 3,
       "riskPerTradePercent": 1
     },
-    "decisions": [
+    "decisions": [],
+    "history": [
       {
         "id": "1787351309346-ALARK",
         "rank": 1,
         "symbol": "ALARK",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": 94,
         "entry": {
           "low": 106.4,
@@ -266,17 +269,18 @@
           "volatility": 4.03
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-21T22:28:29.346Z",
           "expiresAt": "2026-08-22T22:28:29.346Z",
-          "openedAt": "2026-08-21T22:28:29.796Z"
+          "openedAt": "2026-08-21T22:28:29.796Z",
+          "closedAt": "2026-08-21T22:55:10.103Z"
         },
         "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
         "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:28:29.346Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-21T22:28:29.346Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": -415.7990936279305
+      },
       {
         "id": "1787351309346-BINBN",
         "rank": 2,
@@ -819,6 +823,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T22:55:10.103Z",
+        "type": "CLOSED",
+        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-415.80."
+      },
       {
         "timestamp": "2026-08-21T22:54:59.479Z",
         "type": "CLOSED",
