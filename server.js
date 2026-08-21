@@ -32,6 +32,65 @@ const VISION_MODEL =
   process.env.GEMINI_VISION_MODEL ||
   "gemini-2.5-flash";
 
+const TELEGRAM_BOT_TOKEN =
+  process.env.TELEGRAM_BOT_TOKEN;
+
+const TELEGRAM_CHAT_ID =
+  process.env.TELEGRAM_CHAT_ID;
+
+async function sendTelegramNotification(
+  message
+) {
+
+  if (
+    !TELEGRAM_BOT_TOKEN ||
+    !TELEGRAM_CHAT_ID ||
+    !message
+  ) {
+    return false;
+  }
+
+  try {
+
+    const response =
+      await fetch(
+        \`https://api.telegram.org/bot\${TELEGRAM_BOT_TOKEN}/sendMessage\`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(
+            {
+              chat_id: TELEGRAM_CHAT_ID,
+              text: String(message).slice(0, 4000),
+            }
+          ),
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        \`Telegram HTTP \${response.status}\`
+      );
+    }
+
+    return true;
+
+  } catch (error) {
+
+    console.error(
+      "TELEGRAM NOTIFICATION ERROR:",
+      error.message
+    );
+
+    return false;
+
+  }
+
+}
+
+
 /*
 ========================================================
 AI PROVIDERS
@@ -3451,6 +3510,571 @@ function decisionFingerprint(
 
 }
 
+function addTradingActivity(
+  state,
+  type,
+  message,
+  timestamp
+) {
+
+  state.activity = [
+    {
+      timestamp,
+      type,
+      message,
+    },
+    ...(Array.isArray(state.activity)
+      ? state.activity
+      : []),
+  ].slice(0, 100);
+
+}
+
+
+function recalculatePaper(
+  paper
+) {
+
+  paper.equity =
+    Number(paper.cash || 0) +
+    (Array.isArray(paper.positions)
+      ? paper.positions
+      : [])
+      .filter(
+        item => item.status === "OPEN"
+      )
+      .reduce(
+        (sum, item) =>
+          sum +
+          Number(item.current || item.entry || 0) *
+          Number(item.quantity || 0),
+        0
+      );
+
+  paper.pnlPercent =
+    Number(paper.initialCapital) > 0
+      ? (Number(paper.pnl || 0) /
+        Number(paper.initialCapital)) * 100
+      : 0;
+
+}
+
+
+function archivePaperDecision(
+  state,
+  decisionId,
+  status,
+  reason,
+  timestamp,
+  totalPnl
+) {
+
+  const decision =
+    (state.decisions || []).find(
+      item => item.id === decisionId
+    );
+
+  state.decisions =
+    (state.decisions || []).filter(
+      item => item.id !== decisionId
+    );
+
+  if (!decision) return;
+
+  state.history = [
+    {
+      ...decision,
+      status,
+      lifecycle: {
+        ...(decision.lifecycle || {}),
+        stage: status,
+        closedAt: timestamp,
+      },
+      outcome: reason,
+      realizedPnL: totalPnl,
+    },
+    ...(Array.isArray(state.history)
+      ? state.history
+      : []),
+  ].slice(0, 100);
+
+}
+
+
+function openEligiblePaperPositions(
+  state,
+  timestamp
+) {
+
+  const paper =
+    state.paper;
+
+  const maxPositions =
+    Math.max(
+      1,
+      Math.floor(
+        Number(state.risk?.maxPositions) || 3
+      )
+    );
+
+  const opened = [];
+
+  for (
+    const decision of state.decisions || []
+  ) {
+
+    if (
+      decision.action !== "BUY SETUP" ||
+      decision.status !== "PENDING" ||
+      paper.positions.filter(
+        item => item.status === "OPEN"
+      ).length >= maxPositions
+    ) {
+      continue;
+    }
+
+    const quantity =
+      Math.floor(
+        Number(decision.riskPlan?.quantity) || 0
+      );
+
+    const entry =
+      Number(decision.entry?.reference) || 0;
+
+    const positionValue =
+      quantity * entry;
+
+    if (
+      quantity <= 0 ||
+      positionValue <= 0 ||
+      positionValue > Number(paper.cash)
+    ) {
+      continue;
+    }
+
+    const position = {
+      id: \`paper-\${timestamp}-\${decision.symbol}\`,
+      decisionId: decision.id,
+      symbol: decision.symbol,
+      quantity,
+      originalQuantity: quantity,
+      entry,
+      current: entry,
+      stop: Number(decision.stop),
+      target1: Number(decision.target1),
+      target2: Number(decision.target2),
+      status: "OPEN",
+      openedAt: timestamp,
+      tp1Hit: false,
+      realizedPnl: 0,
+      pnl: 0,
+    };
+
+    paper.cash =
+      Number(paper.cash) - positionValue;
+
+    paper.positions = [
+      position,
+      ...paper.positions,
+    ];
+
+    decision.status = "OPEN";
+    decision.lifecycle = {
+      ...(decision.lifecycle || {}),
+      stage: "OPEN",
+      openedAt: timestamp,
+    };
+
+    opened.push(position);
+
+    addTradingActivity(
+      state,
+      "PAPER_OPEN",
+      \`\${position.symbol} paper pozisyonu açıldı: \${quantity} lot · ₺\${positionValue.toFixed(2)}.\`,
+      timestamp
+    );
+
+  }
+
+  recalculatePaper(paper);
+  return opened;
+
+}
+
+
+function completedFourHourClose(
+  history
+) {
+
+  const formatter =
+    new Intl.DateTimeFormat(
+      "sv-SE",
+      {
+        timeZone: "Europe/Istanbul",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        hourCycle: "h23",
+      }
+    );
+
+  const groups = new Map();
+
+  for (
+    const candle of history || []
+  ) {
+
+    const parts =
+      Object.fromEntries(
+        formatter
+          .formatToParts(
+            new Date(
+              Number(candle.time) * 1000
+            )
+          )
+          .filter(
+            part => part.type !== "literal"
+          )
+          .map(
+            part => [
+              part.type,
+              part.value,
+            ]
+          )
+      );
+
+    const hour =
+      Number(parts.hour);
+
+    if (
+      !Number.isFinite(hour) ||
+      hour < 10 ||
+      hour >= 18
+    ) {
+      continue;
+    }
+
+    const bucket =
+      hour < 14
+        ? "10-14"
+        : "14-18";
+
+    const key =
+      \`\${parts.year}-\${parts.month}-\${parts.day}-\${bucket}\`;
+
+    const candles =
+      groups.get(key) || [];
+
+    candles.push(candle);
+    groups.set(key, candles);
+
+  }
+
+  const completed =
+    [...groups.values()]
+      .filter(
+        candles => candles.length >= 4
+      )
+      .map(
+        candles =>
+          candles
+            .sort(
+              (a, b) =>
+                Number(a.time) -
+                Number(b.time)
+            )
+            .at(-1)
+      )
+      .sort(
+        (a, b) =>
+          Number(a.time) -
+          Number(b.time)
+      );
+
+  return completed.at(-1) || null;
+
+}
+
+
+function closeMonitoredPaperPosition(
+  state,
+  position,
+  closePrice,
+  status,
+  reason,
+  timestamp
+) {
+
+  const paper =
+    state.paper;
+
+  const closingPnl =
+    (closePrice - Number(position.entry)) *
+    Number(position.quantity);
+
+  const totalPnl =
+    Number(position.realizedPnl || 0) +
+    closingPnl;
+
+  paper.cash =
+    Number(paper.cash) +
+    closePrice * Number(position.quantity);
+
+  paper.pnl =
+    Number(paper.pnl) + closingPnl;
+
+  paper.positions =
+    paper.positions.map(
+      item =>
+        item.id === position.id
+          ? {
+              ...item,
+              current: closePrice,
+              pnl: totalPnl,
+              status,
+              closedAt: timestamp,
+              closeReason: reason,
+            }
+          : item
+    );
+
+  archivePaperDecision(
+    state,
+    position.decisionId,
+    status,
+    reason,
+    timestamp,
+    totalPnl
+  );
+
+  addTradingActivity(
+    state,
+    status,
+    \`\${position.symbol} paper pozisyonu kapatıldı: \${reason} · ₺\${totalPnl.toFixed(2)}.\`,
+    timestamp
+  );
+
+  return {
+    symbol: position.symbol,
+    type: status,
+    message:
+      \`BORSACI PAPER \${status}\\n\${position.symbol}\\nFiyat: ₺\${closePrice.toFixed(2)}\\nToplam P&L: ₺\${totalPnl.toFixed(2)}\\nNeden: \${reason}\`,
+  };
+
+}
+
+
+async function monitorPaperPositions() {
+
+  let stateResult;
+
+  try {
+
+    stateResult =
+      await getTradingState();
+
+  } catch (error) {
+
+    console.error(
+      "PAPER MONITOR STATE ERROR:",
+      error.message
+    );
+
+    return;
+
+  }
+
+  const state =
+    stateResult.content;
+
+  const openPositions =
+    state.paper.positions.filter(
+      item => item.status === "OPEN"
+    );
+
+  if (openPositions.length === 0) {
+    return;
+  }
+
+  const timestamp =
+    new Date().toISOString();
+
+  const notifications = [];
+  let changed = false;
+
+  for (
+    const savedPosition of openPositions
+  ) {
+
+    try {
+
+      const yahoo =
+        await fetchYahooChart(
+          savedPosition.symbol,
+          "1mo",
+          "1h"
+        );
+
+      const hourly =
+        yahoo.history;
+
+      const current =
+        Number(
+          hourly.at(-1)?.close
+        );
+
+      if (!Number.isFinite(current)) {
+        continue;
+      }
+
+      let position =
+        state.paper.positions.find(
+          item => item.id === savedPosition.id
+        );
+
+      if (
+        !position ||
+        position.status !== "OPEN"
+      ) {
+        continue;
+      }
+
+      position.current = current;
+      position.pnl =
+        (current - Number(position.entry)) *
+        Number(position.quantity);
+      changed = true;
+
+      if (
+        !position.tp1Hit &&
+        current >= Number(position.target1)
+      ) {
+
+        const closeQuantity =
+          Math.floor(
+            Number(position.quantity) / 2
+          );
+
+        const realizedPnl =
+          closeQuantity > 0
+            ? (current - Number(position.entry)) *
+              closeQuantity
+            : 0;
+
+        position.quantity =
+          Number(position.quantity) - closeQuantity;
+        position.stop =
+          Number(position.entry);
+        position.tp1Hit = true;
+        position.realizedPnl =
+          Number(position.realizedPnl || 0) +
+          realizedPnl;
+        position.pnl =
+          (current - Number(position.entry)) *
+          Number(position.quantity);
+
+        state.paper.cash =
+          Number(state.paper.cash) +
+          current * closeQuantity;
+        state.paper.pnl =
+          Number(state.paper.pnl) +
+          realizedPnl;
+
+        addTradingActivity(
+          state,
+          "TP1",
+          \`\${position.symbol} TP1: \${closeQuantity} lot kapatıldı, SL maliyete çekildi.\`,
+          timestamp
+        );
+
+        notifications.push(
+          \`BORSACI PAPER TP1\\n\${position.symbol}\\n\${closeQuantity} lot kapandı · ₺\${(current * closeQuantity).toFixed(2)}\\nKalan: \${position.quantity} lot\\nSL maliyete çekildi.\`
+        );
+      }
+
+      if (
+        position.status === "OPEN" &&
+        current >= Number(position.target2)
+      ) {
+
+        notifications.push(
+          closeMonitoredPaperPosition(
+            state,
+            position,
+            current,
+            "CLOSED",
+            "TP2_REACHED",
+            timestamp
+          ).message
+        );
+
+        changed = true;
+        continue;
+
+      }
+
+      /*
+       * Stop yalnızca tamamlanmış 4 saatlik mumun
+       * kapanışı stop seviyesinin ALTINDA olduğunda çalışır.
+       */
+      const fourHour =
+        completedFourHourClose(hourly);
+
+      if (
+        fourHour &&
+        Number(fourHour.close) <
+          Number(position.stop)
+      ) {
+
+        notifications.push(
+          closeMonitoredPaperPosition(
+            state,
+            position,
+            Number(fourHour.close),
+            "STOPPED",
+            "FOUR_HOUR_CLOSE_BELOW_STOP",
+            timestamp
+          ).message
+        );
+
+        changed = true;
+
+      }
+
+    } catch (error) {
+
+      console.error(
+        \`PAPER MONITOR \${savedPosition.symbol}:\`,
+        error.message
+      );
+
+    }
+
+  }
+
+  if (!changed) {
+    return;
+  }
+
+  recalculatePaper(
+    state.paper
+  );
+
+  await saveTradingState(
+    state,
+    stateResult.sha,
+    stateResult.container
+  );
+
+  for (
+    const message of notifications
+  ) {
+    await sendTelegramNotification(message);
+  }
+
+}
+
 
 async function recordAiDecisions(
   decisions
@@ -3537,17 +4161,18 @@ async function recordAiDecisions(
     ),
   ];
 
-  state.activity = [
-    {
-      timestamp: now,
-      type: "SCAN",
-      message:
-        `${state.decisions.length} active AI decision(s) retained or generated.`,
-    },
-    ...(Array.isArray(state.activity)
-      ? state.activity
-      : []),
-  ].slice(0, 100);
+  const opened =
+    openEligiblePaperPositions(
+      state,
+      now
+    );
+
+  addTradingActivity(
+    state,
+    "SCAN",
+    \`\${state.decisions.length} active AI decision(s) retained or generated.\`,
+    now
+  );
 
   await saveTradingState(
     state,
@@ -3555,10 +4180,17 @@ async function recordAiDecisions(
     stateResult.container
   );
 
+  for (
+    const position of opened
+  ) {
+    await sendTelegramNotification(
+      \`BORSACI PAPER OPEN\\n\${position.symbol}\\n\${position.quantity} lot · ₺\${(position.quantity * position.entry).toFixed(2)}\\nGiriş: ₺\${position.entry.toFixed(2)}\\nSL: ₺\${position.stop.toFixed(2)}\\nTP1: ₺\${position.target1.toFixed(2)} · TP2: ₺\${position.target2.toFixed(2)}\`
+    );
+  }
+
   return state;
 
 }
-
 
 async function handleTradingState(
   req,
@@ -4984,6 +5616,38 @@ server.listen(
 
     console.log(
       "==========================================================="
+    );
+
+    setTimeout(
+      () => {
+        monitorPaperPositions()
+          .catch(
+            error =>
+              console.error(
+                "PAPER MONITOR START ERROR:",
+                error.message
+              )
+          );
+      },
+      15000
+    );
+
+    setInterval(
+      () => {
+        monitorPaperPositions()
+          .catch(
+            error =>
+              console.error(
+                "PAPER MONITOR ERROR:",
+                error.message
+              )
+          );
+      },
+      5 * 60 * 1000
+    );
+
+    sendTelegramNotification(
+      "BORSACI bağlantısı aktif. Paper işlem monitörü hazır."
     );
 
   }
