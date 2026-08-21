@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 53264.6024963379,
+      "cash": 68762.6024963379,
       "equity": 99280.40347595216,
-      "pnl": -512.3975036621091,
-      "pnlPercent": -0.5123975036621091,
+      "pnl": -394.7975036621086,
+      "pnlPercent": -0.39479750366210864,
       "positions": [
         {
           "id": "paper-2026-08-21T22:56:13.588Z-GESAN",
@@ -37,11 +37,13 @@
           "stop": 172.5,
           "target1": 204.29,
           "target2": 214.89,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-21T22:56:13.588Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 117.60000000000048
+          "pnl": 117.60000000000048,
+          "closedAt": "2026-08-21T22:57:58.192Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-21T22:56:13.588Z-ALARK",
@@ -328,56 +330,6 @@
         "timestamp": "2026-08-21T22:56:13.195Z"
       },
       {
-        "id": "1787352973195-BINBN",
-        "rank": 2,
-        "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "OPEN",
-        "confidence": 94,
-        "entry": {
-          "low": 180.98,
-          "high": 184.51,
-          "reference": 183.1
-        },
-        "stop": 172.5,
-        "target1": 204.29,
-        "target2": 214.89,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 10.6,
-          "quantity": 84,
-          "positionValue": 15380.4,
-          "actualRisk": 890.4,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 54.69,
-          "atr": 7.06,
-          "volatility": 3.86
-        },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-21T22:56:13.195Z",
-          "expiresAt": "2026-08-22T22:56:13.195Z",
-          "openedAt": "2026-08-21T22:56:13.588Z"
-        },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
-        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:56:13.195Z"
-      },
-      {
         "id": "1787352973195-GESAN",
         "rank": 3,
         "symbol": "GESAN",
@@ -429,6 +381,59 @@
       }
     ],
     "history": [
+      {
+        "id": "1787352973195-BINBN",
+        "rank": 2,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "CLOSED",
+        "confidence": 94,
+        "entry": {
+          "low": 180.98,
+          "high": 184.51,
+          "reference": 183.1
+        },
+        "stop": 172.5,
+        "target1": 204.29,
+        "target2": 214.89,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 10.6,
+          "quantity": 84,
+          "positionValue": 15380.4,
+          "actualRisk": 890.4,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 54.69,
+          "atr": 7.06,
+          "volatility": 3.86
+        },
+        "lifecycle": {
+          "stage": "CLOSED",
+          "createdAt": "2026-08-21T22:56:13.195Z",
+          "expiresAt": "2026-08-22T22:56:13.195Z",
+          "openedAt": "2026-08-21T22:56:13.588Z",
+          "closedAt": "2026-08-21T22:57:58.192Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
+        "timestamp": "2026-08-21T22:56:13.195Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 117.60000000000048
+      },
       {
         "id": "1787351309346-ALARK",
         "rank": 1,
@@ -1025,6 +1030,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T22:57:58.192Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺117.60."
+      },
       {
         "timestamp": "2026-08-21T22:56:13.588Z",
         "type": "SCAN",
