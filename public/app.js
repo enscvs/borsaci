@@ -5376,6 +5376,215 @@ async function loadTradingState() {
 }
 
 
+function normalizeRiskSettings(
+  value
+) {
+
+  return {
+    capital:
+      Math.max(
+        1000,
+        Number(value?.capital) || 100000
+      ),
+    riskPerTradePercent:
+      Math.min(
+        10,
+        Math.max(
+          0.1,
+          Number(value?.riskPerTradePercent) || 1
+        )
+      ),
+    maxPositionPercent:
+      Math.min(
+        100,
+        Math.max(
+          1,
+          Number(value?.maxPositionPercent) || 20
+        )
+      ),
+    maxPositions:
+      Math.min(
+        20,
+        Math.max(
+          1,
+          Math.floor(
+            Number(value?.maxPositions) || 3
+          )
+        )
+      ),
+    dailyLossLimitPercent:
+      Math.min(
+        20,
+        Math.max(
+          0.1,
+          Number(value?.dailyLossLimitPercent) || 3
+        )
+      ),
+  };
+
+}
+
+
+function currentRiskSettings() {
+
+  const state =
+    loadLocalTradingState() || {};
+
+  return normalizeRiskSettings(
+    state.risk
+  );
+
+}
+
+
+function renderRiskSettings(
+  settings
+) {
+
+  const risk =
+    normalizeRiskSettings(settings);
+
+  const display = {
+    maxPositions: risk.maxPositions,
+    riskPerTrade:
+      `%${risk.riskPerTradePercent.toFixed(2)}`,
+    maxPositionSize:
+      `%${risk.maxPositionPercent.toFixed(2)}`,
+    dailyLossLimit:
+      `%${risk.dailyLossLimitPercent.toFixed(2)}`,
+  };
+
+  Object.entries(display).forEach(
+    ([id, value]) => {
+      const element =
+        document.getElementById(id);
+      if (element) {
+        element.textContent = String(value);
+      }
+    }
+  );
+
+  const inputs = {
+    riskCapitalInput: risk.capital,
+    riskPerTradeInput:
+      risk.riskPerTradePercent,
+    maxPositionInput:
+      risk.maxPositionPercent,
+    maxPositionsInput:
+      risk.maxPositions,
+    dailyLossLimitInput:
+      risk.dailyLossLimitPercent,
+  };
+
+  Object.entries(inputs).forEach(
+    ([id, value]) => {
+      const input =
+        document.getElementById(id);
+      if (input) {
+        input.value = String(value);
+      }
+    }
+  );
+
+}
+
+
+function saveRiskSettingsFromForm(
+  event
+) {
+
+  event.preventDefault();
+
+  const risk =
+    normalizeRiskSettings(
+      {
+        capital:
+          document.getElementById(
+            "riskCapitalInput"
+          )?.value,
+        riskPerTradePercent:
+          document.getElementById(
+            "riskPerTradeInput"
+          )?.value,
+        maxPositionPercent:
+          document.getElementById(
+            "maxPositionInput"
+          )?.value,
+        maxPositions:
+          document.getElementById(
+            "maxPositionsInput"
+          )?.value,
+        dailyLossLimitPercent:
+          document.getElementById(
+            "dailyLossLimitInput"
+          )?.value,
+      }
+    );
+
+  const state =
+    loadLocalTradingState() || {};
+
+  const nextState = {
+    ...state,
+    risk,
+  };
+
+  saveLocalTradingState(nextState);
+  renderRiskSettings(risk);
+
+  renderAiDecisions(
+    nextState.decisions
+  );
+
+  const activity =
+    [
+      {
+        timestamp: new Date().toISOString(),
+        type: "RISK",
+        message: "Risk Engine ayarları güncellendi.",
+      },
+      ...(
+        Array.isArray(nextState.activity)
+          ? nextState.activity
+          : []
+      ),
+    ].slice(0, 100);
+
+  nextState.activity = activity;
+  saveLocalTradingState(nextState);
+  renderTradingActivity(activity);
+
+}
+
+
+function bindRiskSettings() {
+
+  const form =
+    document.getElementById(
+      "riskSettingsForm"
+    );
+
+  if (
+    !form ||
+    form.dataset.riskBound === "true"
+  ) {
+    return;
+  }
+
+  form.dataset.riskBound = "true";
+
+  form.addEventListener(
+    "submit",
+    saveRiskSettingsFromForm
+  );
+
+  renderRiskSettings(
+    currentRiskSettings()
+  );
+
+}
+
+
 async function runTradingScanner() {
 
   if (
@@ -5425,9 +5634,26 @@ async function runTradingScanner() {
 
   try {
 
+    const risk =
+      currentRiskSettings();
+
+    const scannerQuery =
+      new URLSearchParams(
+        {
+          capital:
+            String(risk.capital),
+          riskPerTradePercent:
+            String(risk.riskPerTradePercent),
+          maxPositionPercent:
+            String(risk.maxPositionPercent),
+          maxPositions:
+            String(risk.maxPositions),
+        }
+      );
+
     const response =
       await fetch(
-        "/api/trading/scanner",
+        `/api/trading/scanner?${scannerQuery}`,
         {
           method: "GET",
           cache: "no-store"
@@ -5471,30 +5697,39 @@ async function runTradingScanner() {
     const previousState =
       loadLocalTradingState() || {};
 
-    const archived =
-      archiveLocalDecisions(
+    const reconciled =
+      reconcileScanDecisions(
         previousState.decisions,
+        data.decisions,
         data.timestamp
       );
 
     const nextState = {
       decisions:
-        data.decisions,
+        reconciled.decisions,
       paper:
         data.paper,
       activity:
         data.activity,
-      history: [
-        ...archived,
-        ...(
-          Array.isArray(previousState.history)
-            ? previousState.history
-            : []
-        ),
-      ].slice(0, 100),
+      history:
+        uniqueDecisions(
+          [
+            ...reconciled.archived,
+            ...(
+              Array.isArray(previousState.history)
+                ? previousState.history
+                : []
+            ),
+          ]
+        ).slice(0, 100),
       lastScanAt:
         data.timestamp,
+      risk,
     };
+
+    renderAiDecisions(
+      nextState.decisions
+    );
 
     renderSignalHistory(
       nextState.history
@@ -5656,6 +5891,10 @@ function bindTradingScannerControls() {
   }
 
   loadTradingState();
+
+  bindRiskSettings();
+
+  bindSignalHistoryDetails();
 
   if (
     scannerStopButton &&
