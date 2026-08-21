@@ -4326,6 +4326,79 @@ async function readTradingRequest(req) {
   }
 }
 
+async function handleTradingRiskSettings(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+
+    const capital = Math.max(
+      1000,
+      Number(input.capital) ||
+      Number(state.risk?.capital) ||
+      Number(state.paper?.initialCapital) ||
+      100000
+    );
+    const maxPositionPercent = Math.min(
+      31,
+      Math.max(1, Number(input.maxPositionPercent) || 31)
+    );
+    const maxPositions = Math.min(
+      3,
+      Math.max(1, Math.floor(Number(input.maxPositions) || 3))
+    );
+
+    state.risk = {
+      ...(state.risk || {}),
+      capital,
+      maxPositionPercent,
+      maxPositions,
+      capitalSource:
+        input.capitalSource === "BROKER"
+          ? "BROKER"
+          : "MANUAL",
+    };
+
+    /*
+     * Paper portföyünün başlangıç sermayesi Risk Engine
+     * sermayesiyle aynı kaynaktır. Açık işlemler korunur;
+     * yalnızca serbest nakit yeni sermaye farkı kadar
+     * güncellenir ve equity tekrar hesaplanır.
+     */
+    const previousCapital = Math.max(
+      1000,
+      Number(state.paper?.initialCapital) || 100000
+    );
+    const capitalDelta =
+      capital - previousCapital;
+
+    state.paper.initialCapital = capital;
+    state.paper.cash = roundTradingValue(
+      Number(state.paper.cash || 0) + capitalDelta
+    );
+    recalculatePaper(state.paper);
+
+    const timestamp = new Date().toISOString();
+    addTradingActivity(
+      state,
+      "RISK",
+      `Risk Engine ve Paper Portfolio sermayesi ${formatTelegramCurrency(capital)} olarak eşitlendi.`,
+      timestamp
+    );
+
+    await saveTradingState(
+      state,
+      stateResult.sha,
+      stateResult.container
+    );
+
+    return sendJSON(res, 200, state);
+  } catch (error) {
+    console.error("RISK SETTINGS ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
 async function handlePaperOpen(req, res) {
   try {
     const input = await readTradingRequest(req);
@@ -5335,6 +5408,13 @@ if (
     res
   );
 
+}
+
+if (
+  req.method === "POST" &&
+  pathname === "/api/trading/risk-settings"
+) {
+  return handleTradingRiskSettings(req, res);
 }
 
 if (
