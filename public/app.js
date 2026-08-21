@@ -5060,21 +5060,39 @@ async function loadTradingState() {
     const state =
       await response.json();
 
-    renderAiDecisions(
-      state.decisions
-    );
+    const hasRemoteDecisions =
+      Array.isArray(
+        state.decisions
+      ) &&
+      state.decisions.length > 0;
 
-    renderPaperPortfolio(
-      state.paper
-    );
+    /*
+     * Sunucudaki boş varsayılan durum,
+     * tarayıcıda saklanan son tarama sonucunu
+     * yenileme sırasında ezmemelidir.
+     */
+    if (
+      !localState ||
+      hasRemoteDecisions
+    ) {
 
-    renderTradingActivity(
-      state.activity
-    );
+      renderAiDecisions(
+        state.decisions
+      );
 
-    saveLocalTradingState(
-      state
-    );
+      renderPaperPortfolio(
+        state.paper
+      );
+
+      renderTradingActivity(
+        state.activity
+      );
+
+      saveLocalTradingState(
+        state
+      );
+
+    }
 
   } catch (error) {
 
