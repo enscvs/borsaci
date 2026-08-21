@@ -938,6 +938,10 @@ Waiting for input...
 
       </div>
 
+      <div id="aiDecisionDetail" class="decision-detail-panel">
+        Bir karar kartına tıklayarak detayları ve paper işlem seçeneklerini aç.
+      </div>
+
     </section>
 
 
@@ -996,6 +1000,16 @@ Waiting for input...
           <div>
             <span>RESOLVED OUTCOMES</span>
             <strong id="performanceResolved">0</strong>
+          </div>
+
+          <div>
+            <span>WIN RATE</span>
+            <strong id="performanceWinRate">--</strong>
+          </div>
+
+          <div>
+            <span>REALIZED P&L</span>
+            <strong id="performanceRealizedPnL">₺0.00</strong>
           </div>
 
         </div>
@@ -1139,6 +1153,12 @@ Waiting for input...
         </div>
 
         <form id="riskSettingsForm" class="risk-settings">
+          <label>CAPITAL SOURCE
+            <select id="capitalSourceInput">
+              <option value="MANUAL">Manual</option>
+              <option value="BROKER" disabled>Broker balance (yakında)</option>
+            </select>
+          </label>
           <label>CAPITAL (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
           <label>RISK / TRADE (%)<input id="riskPerTradeInput" type="number" min="0.1" max="10" step="0.1" value="1"></label>
           <label>MAX POSITION (%)<input id="maxPositionInput" type="number" min="1" max="100" step="1" value="20"></label>
