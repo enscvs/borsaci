@@ -6436,8 +6436,8 @@ async function runTradingScanner() {
       decisions:
         reconciled.decisions,
       paper:
-        previousState.paper ||
-        data.paper,
+        data.paper ||
+        previousState.paper,
       activity:
         data.activity,
       history:
@@ -6478,10 +6478,6 @@ async function runTradingScanner() {
 
     renderOpenPositions(
       nextState.paper?.positions
-    );
-
-    autoOpenPaperPositions(
-      nextState.decisions
     );
 
     updatePaperPricesFromScan(
