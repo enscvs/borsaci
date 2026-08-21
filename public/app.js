@@ -5773,6 +5773,10 @@ async function loadTradingState() {
       localState
     );
 
+    renderKillSwitch(
+      localState.killSwitch
+    );
+
   }
 
   try {
@@ -5830,6 +5834,10 @@ async function loadTradingState() {
 
       renderPerformance(
         state
+      );
+
+      renderKillSwitch(
+        state.killSwitch
       );
 
       saveLocalTradingState(
@@ -6342,6 +6350,160 @@ BUTTONS
 --------------------------------------------------------
 */
 
+function renderKillSwitch(
+  killSwitch
+) {
+
+  const active =
+    Boolean(killSwitch?.active);
+
+  const status =
+    document.getElementById(
+      "killSwitchStatus"
+    );
+
+  const button =
+    document.getElementById(
+      "killSwitchToggle"
+    );
+
+  if (status) {
+    status.textContent =
+      active
+        ? "ACTIVE · NEW PAPER TRADES BLOCKED"
+        : "SAFE · NEW PAPER TRADES ENABLED";
+  }
+
+  if (button) {
+    button.textContent =
+      active
+        ? "DEACTIVATE KILL SWITCH"
+        : "ACTIVATE KILL SWITCH";
+
+    button.classList.toggle(
+      "is-active",
+      active
+    );
+  }
+
+}
+
+
+async function toggleKillSwitch() {
+
+  const passwordInput =
+    document.getElementById(
+      "killSwitchPassword"
+    );
+
+  const button =
+    document.getElementById(
+      "killSwitchToggle"
+    );
+
+  const current =
+    loadLocalTradingState() || {};
+
+  const active =
+    Boolean(current.killSwitch?.active);
+
+  const password =
+    String(passwordInput?.value || "");
+
+  if (!password) {
+    alert("Kill Switch şifresini girin.");
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+  }
+
+  try {
+    const response = await fetch(
+      "/api/trading/kill-switch",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          {
+            action:
+              active
+                ? "deactivate"
+                : "activate",
+            password,
+          }
+        ),
+      }
+    );
+
+    const state =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        state?.error ||
+        "Kill Switch güncellenemedi."
+      );
+    }
+
+    if (passwordInput) {
+      passwordInput.value = "";
+    }
+
+    saveLocalTradingState(state);
+    renderKillSwitch(state.killSwitch);
+    renderAiDecisions(state.decisions || []);
+    renderPaperPortfolio(state.paper);
+    renderOpenPositions(state.paper?.positions || []);
+    renderTradingActivity(state.activity || []);
+    renderSignalHistory(state.history || []);
+    renderPerformance(state);
+
+  } catch (error) {
+    alert(
+      "Kill Switch güncellenemedi: " +
+      error.message
+    );
+  } finally {
+    if (button) {
+      button.disabled = false;
+    }
+  }
+
+}
+
+
+function bindKillSwitch() {
+
+  const button =
+    document.getElementById(
+      "killSwitchToggle"
+    );
+
+  if (
+    !button ||
+    button.dataset.killSwitchBound === "true"
+  ) {
+    return;
+  }
+
+  button.dataset.killSwitchBound = "true";
+
+  button.addEventListener(
+    "click",
+    toggleKillSwitch
+  );
+
+  renderKillSwitch(
+    (loadLocalTradingState() || {}).killSwitch
+  );
+
+}
+
+
 function bindTradingScannerControls() {
 
   /*
@@ -6376,6 +6538,8 @@ function bindTradingScannerControls() {
   bindSignalHistoryDetails();
 
   bindDecisionBoard();
+
+  bindKillSwitch();
 
   if (
     scannerStopButton &&
