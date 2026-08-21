@@ -3203,6 +3203,11 @@ function createDefaultTradingState() {
       maxPositions: 3,
     },
 
+    killSwitch: {
+      active: false,
+      activatedAt: null,
+    },
+
     decisions: [],
 
     history: [],
@@ -3260,6 +3265,13 @@ function normalizeTradingState(
           Math.floor(Number((value || {}).risk?.maxPositions) || 3)
         )
       ),
+    },
+
+    killSwitch: {
+      ...fallback.killSwitch,
+      ...((value || {}).killSwitch || {}),
+      active:
+        Boolean((value || {}).killSwitch?.active),
     },
 
     decisions:
@@ -3745,6 +3757,10 @@ function openPaperPositionForDecision(
   timestamp
 ) {
   const paper = state.paper;
+
+  if (state.killSwitch?.active) {
+    throw new Error("Kill Switch aktif: yeni paper işlem açılamaz.");
+  }
 
   if (!decision || decision.action !== "BUY SETUP" || decision.status !== "PENDING") {
     throw new Error("Bu karar paper işlem açmak için uygun değil.");
@@ -4395,6 +4411,53 @@ async function handleTradingRiskSettings(req, res) {
     return sendJSON(res, 200, state);
   } catch (error) {
     console.error("RISK SETTINGS ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
+async function handleKillSwitch(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const expectedPassword =
+      String(process.env.KILL_SWITCH_PASSWORD || "");
+
+    if (!expectedPassword) {
+      throw new Error("KILL_SWITCH_PASSWORD Render ortamında ayarlı değil.");
+    }
+
+    if (String(input.password || "") !== expectedPassword) {
+      throw new Error("Kill Switch şifresi yanlış.");
+    }
+
+    const activate = input.action === "activate";
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const timestamp = new Date().toISOString();
+
+    state.killSwitch = {
+      active: activate,
+      activatedAt: activate ? timestamp : null,
+    };
+
+    const message = activate
+      ? "KILL SWITCH AKTİF: yeni paper işlemler durduruldu. Açık pozisyonların TP/SL takibi devam ediyor."
+      : "KILL SWITCH KAPATILDI: yeni paper işlemler yeniden açılabilir.";
+
+    addTradingActivity(state, "KILL_SWITCH", message, timestamp);
+
+    await saveTradingState(
+      state,
+      stateResult.sha,
+      stateResult.container
+    );
+
+    void sendTelegramNotification(
+      (activate ? "🛑" : "🟢") + " BORSACI " + message
+    );
+
+    return sendJSON(res, 200, state);
+  } catch (error) {
+    console.error("KILL SWITCH ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
   }
 }
@@ -5415,6 +5478,13 @@ if (
   pathname === "/api/trading/risk-settings"
 ) {
   return handleTradingRiskSettings(req, res);
+}
+
+if (
+  req.method === "POST" &&
+  pathname === "/api/trading/kill-switch"
+) {
+  return handleKillSwitch(req, res);
 }
 
 if (
