@@ -4,11 +4,28 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 68762.6024963379,
+      "cash": 37818.70249633791,
       "equity": 99280.40347595216,
       "pnl": -394.7975036621086,
       "pnlPercent": -0.39479750366210864,
       "positions": [
+        {
+          "id": "paper-2026-08-21T22:58:12.119Z-BINBN",
+          "decisionId": "1787353091714-BINBN",
+          "symbol": "BINBN",
+          "quantity": 169,
+          "originalQuantity": 169,
+          "entry": 183.1,
+          "current": 183.1,
+          "stop": 172.5,
+          "target1": 204.29,
+          "target2": 214.89,
+          "status": "OPEN",
+          "openedAt": "2026-08-21T22:58:12.119Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-21T22:56:13.588Z-GESAN",
           "decisionId": "1787352973195-GESAN",
@@ -378,6 +395,56 @@
         "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
         "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
         "timestamp": "2026-08-21T22:56:13.195Z"
+      },
+      {
+        "id": "1787353091714-BINBN",
+        "rank": 2,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 94,
+        "entry": {
+          "low": 180.98,
+          "high": 184.51,
+          "reference": 183.1
+        },
+        "stop": 172.5,
+        "target1": 204.29,
+        "target2": 214.89,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 100000,
+          "targetPositionValue": 31000,
+          "reservePercent": 7,
+          "stopDistance": 10.6,
+          "quantity": 169,
+          "positionValue": 30943.9,
+          "actualRisk": 1791.4,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 54.69,
+          "atr": 7.06,
+          "volatility": 3.86
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-21T22:58:11.714Z",
+          "expiresAt": "2026-08-22T22:58:11.714Z",
+          "openedAt": "2026-08-21T22:58:12.119Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
+        "timestamp": "2026-08-21T22:58:11.714Z"
       }
     ],
     "history": [
@@ -1030,6 +1097,16 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T22:58:12.119Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) retained or generated."
+      },
+      {
+        "timestamp": "2026-08-21T22:58:12.119Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN paper pozisyonu açıldı: 169 lot · ₺30943.90."
+      },
       {
         "timestamp": "2026-08-21T22:57:58.192Z",
         "type": "CLOSED",
