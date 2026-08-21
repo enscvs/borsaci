@@ -4980,7 +4980,8 @@ if (
   );
 
 }
-
+window.runTradingScanner =
+  runTradingScanner;
 
 if (
   scannerStopButton
