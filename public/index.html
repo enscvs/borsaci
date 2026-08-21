@@ -938,6 +938,10 @@ Waiting for input...
 
       </div>
 
+      <div id="aiDecisionDetail" class="decision-detail-panel">
+        Bir karar kartına tıklayarak detayları ve paper işlem seçeneklerini aç.
+      </div>
+
     </section>
 
 
@@ -996,6 +1000,16 @@ Waiting for input...
           <div>
             <span>RESOLVED OUTCOMES</span>
             <strong id="performanceResolved">0</strong>
+          </div>
+
+          <div>
+            <span>WIN RATE</span>
+            <strong id="performanceWinRate">--</strong>
+          </div>
+
+          <div>
+            <span>REALIZED P&L</span>
+            <strong id="performanceRealizedPnL">₺0.00</strong>
           </div>
 
         </div>
@@ -1139,6 +1153,12 @@ Waiting for input...
         </div>
 
         <form id="riskSettingsForm" class="risk-settings">
+          <label>CAPITAL SOURCE
+            <select id="capitalSourceInput">
+              <option value="MANUAL">Manual</option>
+              <option value="BROKER" disabled>Broker balance (yakında)</option>
+            </select>
+          </label>
           <label>CAPITAL (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
           <label>RISK / TRADE (%)<input id="riskPerTradeInput" type="number" min="0.1" max="10" step="0.1" value="1"></label>
           <label>MAX POSITION (%)<input id="maxPositionInput" type="number" min="1" max="100" step="1" value="20"></label>
@@ -1396,6 +1416,19 @@ Waiting for input...
     .scanner-head,
     .history-row { grid-template-columns: 1fr 1fr; }
   }
+  .decision-feed { max-height: none !important; overflow: visible !important; display: grid; gap: 8px; }
+  .decision-item.decision-card { display: block !important; padding: 0 !important; border: 1px solid rgba(72,255,104,.28); background: rgba(5,15,6,.72); cursor: pointer; }
+  .decision-card header { display:flex !important; flex-wrap:wrap; gap:8px; padding:10px 12px; border-bottom:1px solid rgba(72,255,104,.15); }
+  .decision-card header strong { min-width:72px; font-size:14px; }
+  .decision-card header span { font-size:10px; padding:2px 6px; border:1px solid rgba(72,255,104,.25); }
+  .decision-price-grid { display:grid !important; grid-template-columns: repeat(3, minmax(0,1fr)); gap:0; }
+  .decision-price-grid span { padding:9px 12px; border-right:1px solid rgba(72,255,104,.13); font-size:11px; }
+  .decision-summary { padding:8px 12px; font-size:10px; color:#a4c7a4; }
+  .decision-detail-panel { margin-top:10px; padding:14px; border:1px solid rgba(72,255,104,.28); background:rgba(5,15,6,.8); font-size:11px; line-height:1.75; }
+  .decision-detail-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:8px 16px; margin:8px 0; }
+  .decision-detail-panel button { margin-top:8px; }
+  .risk-settings select { background:#071007; color:#d7f7d7; border:1px solid #315431; padding:7px; font:inherit; }
+  @media(max-width:800px){.decision-price-grid{grid-template-columns:1fr}.decision-price-grid span{border-bottom:1px solid rgba(72,255,104,.13)}} 
 </style>
 
 

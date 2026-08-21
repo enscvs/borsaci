@@ -3434,6 +3434,24 @@ function createAiDecisions(
 }
 
 
+function decisionFingerprint(
+  decision
+) {
+
+  return [
+    decision?.symbol,
+    decision?.action,
+    Number(
+      decision?.entry?.reference || 0
+    ).toFixed(2),
+    Number(decision?.stop || 0).toFixed(2),
+    Number(decision?.target1 || 0).toFixed(2),
+    Number(decision?.target2 || 0).toFixed(2),
+  ].join("|");
+
+}
+
+
 async function recordAiDecisions(
   decisions
 ) {
@@ -3448,13 +3466,39 @@ async function recordAiDecisions(
   const now =
     new Date().toISOString();
 
-  const archived =
-    (Array.isArray(state.decisions)
+  const incoming =
+    Array.isArray(decisions)
+      ? decisions
+      : [];
+
+  const existing =
+    Array.isArray(state.decisions)
       ? state.decisions
-      : [])
+      : [];
+
+  const incomingKeys =
+    new Set(
+      incoming.map(
+        decisionFingerprint
+      )
+    );
+
+  const retained =
+    existing.filter(
+      decision =>
+        incomingKeys.has(
+          decisionFingerprint(decision)
+        )
+    );
+
+  const archived =
+    existing
       .filter(
         decision =>
-          decision?.status === "PENDING"
+          decision?.status === "PENDING" &&
+          !incomingKeys.has(
+            decisionFingerprint(decision)
+          )
       )
       .map(
         decision => ({
@@ -3469,6 +3513,13 @@ async function recordAiDecisions(
         })
       );
 
+  const retainedKeys =
+    new Set(
+      retained.map(
+        decisionFingerprint
+      )
+    );
+
   state.history = [
     ...archived,
     ...(Array.isArray(state.history)
@@ -3476,14 +3527,22 @@ async function recordAiDecisions(
       : []),
   ].slice(0, 100);
 
-  state.decisions = decisions;
+  state.decisions = [
+    ...retained,
+    ...incoming.filter(
+      decision =>
+        !retainedKeys.has(
+          decisionFingerprint(decision)
+        )
+    ),
+  ];
 
   state.activity = [
     {
       timestamp: now,
       type: "SCAN",
       message:
-        `${decisions.length} AI decision(s) generated; previous pending decisions archived.`,
+        `${state.decisions.length} active AI decision(s) retained or generated.`,
     },
     ...(Array.isArray(state.activity)
       ? state.activity
