@@ -4425,6 +4425,10 @@ async function handleKillSwitch(req, res) {
       throw new Error("KILL_SWITCH_PASSWORD Render ortamında ayarlı değil.");
     }
 
+    /*
+     * Şifre + düğmeye basma, Kill Switch'in toplu
+     * kapatma emri için açık kullanıcı onayıdır.
+     */
     if (String(input.password || "") !== expectedPassword) {
       throw new Error("Kill Switch şifresi yanlış.");
     }
@@ -4433,14 +4437,76 @@ async function handleKillSwitch(req, res) {
     const stateResult = await getTradingState();
     const state = stateResult.content;
     const timestamp = new Date().toISOString();
+    const notifications = [];
+    let liquidatedCount = 0;
 
     state.killSwitch = {
       active: activate,
       activatedAt: activate ? timestamp : null,
     };
 
+    if (activate) {
+      const openPositions =
+        (state.paper?.positions || [])
+          .filter(item => item.status === "OPEN");
+
+      for (const position of openPositions) {
+        let closePrice =
+          Number(position.current) ||
+          Number(position.entry);
+
+        /*
+         * Paper kapanışı için son alınabilen piyasa
+         * kapanışını kullan. Veri kaynağı geçici olarak
+         * erişilemezse ekranda tutulan son fiyatla güvenli
+         * biçimde kapanır.
+         */
+        try {
+          const yahoo =
+            await fetchYahooChart(
+              position.symbol,
+              "5d",
+              "1h"
+            );
+
+          const marketPrice =
+            Number(yahoo.history?.at(-1)?.close);
+
+          if (
+            Number.isFinite(marketPrice) &&
+            marketPrice > 0
+          ) {
+            closePrice = marketPrice;
+          }
+        } catch (error) {
+          console.error(
+            "KILL SWITCH PRICE ERROR:",
+            position.symbol,
+            error.message
+          );
+        }
+
+        const notification =
+          closeMonitoredPaperPosition(
+            state,
+            position,
+            closePrice,
+            "CLOSED",
+            "KILL_SWITCH_MARKET_CLOSE",
+            timestamp
+          );
+
+        notifications.push(notification.message);
+        liquidatedCount += 1;
+      }
+
+      recalculatePaper(state.paper);
+    }
+
     const message = activate
-      ? "KILL SWITCH AKTİF: yeni paper işlemler durduruldu. Açık pozisyonların TP/SL takibi devam ediyor."
+      ? "KILL SWITCH AKTİF: " +
+        liquidatedCount +
+        " açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
       : "KILL SWITCH KAPATILDI: yeni paper işlemler yeniden açılabilir.";
 
     addTradingActivity(state, "KILL_SWITCH", message, timestamp);
@@ -4450,6 +4516,10 @@ async function handleKillSwitch(req, res) {
       stateResult.sha,
       stateResult.container
     );
+
+    for (const notification of notifications) {
+      void sendTelegramNotification(notification);
+    }
 
     void sendTelegramNotification(
       (activate ? "🛑" : "🟢") + " BORSACI " + message
