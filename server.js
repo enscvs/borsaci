@@ -3031,9 +3031,6 @@ PAPER TRADING DECISIONS
 ========================================================
 */
 
-const TRADING_STATE_PATH =
-  "data/trading-state.json";
-
 function createDefaultTradingState() {
 
   return {
