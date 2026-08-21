@@ -4487,10 +4487,15 @@ console.log(
         font-size: 9px;
       `;
 
+      /*
+       * #analyzeBtn, .command-actions içinde yer alır.
+       * Sayaç doğrudan command-footer'a eklenirken
+       * geçerli bir doğrudan çocuk referansı kullanılır.
+       */
       footer.insertBefore(
         counter,
         footer.querySelector(
-          "#analyzeBtn"
+          ".command-actions"
         )
       );
 
