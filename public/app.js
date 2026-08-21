@@ -4659,112 +4659,41 @@ function renderScannerResults(
   results
 ) {
 
-  if (
-    !scannerResults
-  ) {
-    return;
-  }
+  if (!scannerResults) return;
 
   if (
     !Array.isArray(results) ||
     results.length === 0
   ) {
-
-    scannerResults.innerHTML = `
-      <div class="trading-empty">
-        Uygun setup bulunamadı.
-      </div>
-    `;
-
+    scannerResults.innerHTML =
+      '<div class="trading-empty">Uygun setup bulunamadı.</div>';
     return;
-
   }
-
 
   scannerResults.innerHTML =
     results.map(
-      (item, index) => {
-
-        const scoreClass =
-          item.score >= 80
-            ? "buy"
-            : item.score >= 65
-              ? "watch"
-              : "neutral";
-
-
-        const signals =
-          Array.isArray(
-            item.signals
-          )
-            ? item.signals
-                .slice(0, 4)
-                .join(" • ")
-            : "";
-
-
-        return `
-
-          <div
-            class="scanner-card ${scoreClass}"
-            data-symbol="${item.symbol}"
-          >
-
-            <div class="scanner-rank">
-              #${index + 1}
-            </div>
-
-            <div class="scanner-symbol">
-              ${item.symbol}
-            </div>
-
-            <div class="scanner-price">
-              ₺${formatPrice(item.price)}
-            </div>
-
-            <div class="scanner-score">
-              ${item.score}
-            </div>
-
-            <div class="scanner-decision">
-              ${item.decision}
-            </div>
-
-            <div class="scanner-indicators">
-
-              <span>
-                RSI
-                ${formatPrice(item.rsi)}
-              </span>
-
-              <span>
-                EMA20
-                ₺${formatPrice(item.ema20)}
-              </span>
-
-              <span>
-                EMA50
-                ₺${formatPrice(item.ema50)}
-              </span>
-
-              <span>
-                ATR
-                ₺${formatPrice(item.atr)}
-              </span>
-
-            </div>
-
-            <div class="scanner-signals">
-              ${signals}
-            </div>
-
+      (item, index) => `
+        <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
+          <div class="scanner-head">
+            <strong>#${index + 1} · ${item.symbol}</strong>
+            <strong>₺${formatPrice(item.price)}</strong>
+            <span class="scanner-score">${item.score}</span>
+            <span>${item.decision}</span>
           </div>
-
-        `;
-
-      }
+          <div class="scanner-metrics">
+            RSI ${formatPrice(item.rsi)} ·
+            EMA20 ₺${formatPrice(item.ema20)} ·
+            EMA50 ₺${formatPrice(item.ema50)} ·
+            ATR ₺${formatPrice(item.atr)}
+          </div>
+          <small>${
+            Array.isArray(item.signals)
+              ? item.signals.slice(0, 4).join(" · ")
+              : ""
+          }</small>
+        </div>
+      `
     ).join("");
-
 
 }
 
@@ -4816,6 +4745,8 @@ function saveLocalTradingState(
               : [],
           lastScanAt:
             state?.lastScanAt || null,
+          risk:
+            state?.risk || null,
         }
       )
     );
@@ -4900,38 +4831,112 @@ function renderAiDecisions(
   decisions
 ) {
 
-  if (!aiDecisionFeed) {
-    return;
-  }
+  if (!aiDecisionFeed) return;
 
   if (
     !Array.isArray(decisions) ||
     decisions.length === 0
   ) {
-
     aiDecisionFeed.innerHTML =
       '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
-
     return;
-
   }
 
   aiDecisionFeed.innerHTML =
     decisions.map(
       item => `
-        <div class="decision-item">
-          <strong>${item.symbol}</strong>
-          <span>${item.action} · ${item.status}</span>
-          <span>Güven %${item.confidence}</span>
-          <span>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span>
-          <span>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</span>
-          <span>Risk: ${item.riskPlan?.quantity ?? "--"} lot · ${formatCurrency(item.riskPlan?.positionValue)} · azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}</span>
-          <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
+        <article class="decision-item decision-card">
+          <header>
+            <strong>${item.symbol}</strong>
+            <span>${item.action}</span>
+            <span>${item.status}</span>
+            <span>GÜVEN %${item.confidence}</span>
+          </header>
+          <div class="decision-price-grid">
+            <span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
+            <span><small>STOP</small>${formatCurrency(item.stop)}</span>
+            <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
+          </div>
+          <div class="decision-risk-line">
+            <b>RİSK PLANI</b>
+            ${item.riskPlan?.quantity ?? "--"} lot ·
+            ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
+            azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}
+          </div>
+          <div class="decision-filter-line">
+            Trend ${item.filters?.trend ? "✓" : "—"} ·
+            Hacim ${item.filters?.volume ? "✓" : "—"} ·
+            Momentum ${item.filters?.momentum ? "✓" : "—"} ·
+            RSI ${item.filters?.rsi ? "✓" : "—"}
+          </div>
           <small>${item.reason}</small>
-        </div>
+        </article>
       `
     ).join("");
 
+}
+
+
+let renderedHistoryRecords = [];
+
+
+function decisionSignature(
+  item
+) {
+
+  return [
+    item?.symbol,
+    item?.action,
+    Number(item?.entry?.reference || 0).toFixed(2),
+    Number(item?.stop || 0).toFixed(2),
+    Number(item?.target1 || 0).toFixed(2),
+    Number(item?.target2 || 0).toFixed(2),
+  ].join("|");
+
+}
+
+
+function uniqueDecisions(
+  records
+) {
+
+  const seen = new Set();
+
+  return (
+    Array.isArray(records)
+      ? records
+      : []
+  ).filter(
+    item => {
+
+      const signature =
+        decisionSignature(item);
+
+      if (seen.has(signature)) {
+        return false;
+      }
+
+      seen.add(signature);
+      return true;
+
+    }
+  );
+
+}
+
+
+function detailMarkup(
+  item
+) {
+
+  return `
+    <strong>${item.symbol} · ${item.action} · ${item.status}</strong>
+    <div>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</div>
+    <div>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</div>
+    <div>Risk: ${item.riskPlan?.quantity ?? "--"} lot · ${formatCurrency(item.riskPlan?.positionValue)} · azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}</div>
+    <div>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</div>
+    <small>${item.reason || ""}</small>
+  `;
 
 }
 
@@ -4941,55 +4946,92 @@ function renderSignalHistory(
 ) {
 
   const element =
-    document.getElementById(
-      "signalHistory"
-    );
+    document.getElementById("signalHistory");
 
   const status =
-    document.getElementById(
-      "signalHistoryStatus"
-    );
+    document.getElementById("signalHistoryStatus");
 
   const records =
-    Array.isArray(history)
-      ? history
-      : [];
+    uniqueDecisions(history);
+
+  renderedHistoryRecords = records;
 
   if (status) {
     status.textContent =
       `${records.length} RECORDS`;
   }
 
-  if (!element) {
-    return;
-  }
+  if (!element) return;
 
   if (records.length === 0) {
-
     element.innerHTML =
       '<div class="trading-empty">Henüz arşivlenmiş sinyal yok.</div>';
-
     return;
-
   }
 
   element.innerHTML =
-    records.slice(0, 8).map(
-      item => `
-        <div class="log-line">
-          <span class="log-time">
-            ${new Date(
-              item.lifecycle?.closedAt ||
-              item.timestamp
-            ).toLocaleTimeString("tr-TR")}
-          </span>
-          <span>
-            ${item.symbol} · ${item.action} ·
-            ${item.status}
-          </span>
-        </div>
+    records.slice(0, 12).map(
+      (item, index) => `
+        <button
+          type="button"
+          class="history-row"
+          data-history-index="${index}"
+        >
+          <span>${item.symbol}</span>
+          <span>${item.action}</span>
+          <span>${item.status}</span>
+          <small>${new Date(
+            item.lifecycle?.closedAt ||
+            item.timestamp
+          ).toLocaleString("tr-TR")}</small>
+        </button>
       `
     ).join("");
+
+}
+
+
+function bindSignalHistoryDetails() {
+
+  const element =
+    document.getElementById("signalHistory");
+
+  const detail =
+    document.getElementById("signalDetail");
+
+  if (
+    !element ||
+    !detail ||
+    element.dataset.detailsBound === "true"
+  ) {
+    return;
+  }
+
+  element.dataset.detailsBound = "true";
+
+  element.addEventListener(
+    "click",
+    event => {
+
+      const row =
+        event.target.closest(
+          "[data-history-index]"
+        );
+
+      if (!row) return;
+
+      const item =
+        renderedHistoryRecords[
+          Number(row.dataset.historyIndex)
+        ];
+
+      if (item) {
+        detail.innerHTML =
+          detailMarkup(item);
+      }
+
+    }
+  );
 
 }
 
@@ -5073,30 +5115,69 @@ function renderPerformance(
 }
 
 
-function archiveLocalDecisions(
-  decisions,
+function reconcileScanDecisions(
+  previous,
+  incoming,
   timestamp
 ) {
 
-  return (
-    Array.isArray(decisions)
-      ? decisions
-      : []
-  ).filter(
-    item =>
-      item?.status === "PENDING"
-  ).map(
-    item => ({
-      ...item,
-      status: "EXPIRED",
-      lifecycle: {
-        ...(item.lifecycle || {}),
-        stage: "EXPIRED",
-        closedAt: timestamp,
-      },
-      outcome: "SUPERSEDED_BY_NEW_SCAN",
-    })
-  );
+  const prior =
+    uniqueDecisions(previous);
+
+  const next =
+    uniqueDecisions(incoming);
+
+  const nextKeys =
+    new Set(
+      next.map(decisionSignature)
+    );
+
+  const retained =
+    prior.filter(
+      item =>
+        nextKeys.has(
+          decisionSignature(item)
+        )
+    );
+
+  const archived =
+    prior
+      .filter(
+        item =>
+          !nextKeys.has(
+            decisionSignature(item)
+          )
+      )
+      .map(
+        item => ({
+          ...item,
+          status: "EXPIRED",
+          lifecycle: {
+            ...(item.lifecycle || {}),
+            stage: "EXPIRED",
+            closedAt: timestamp,
+          },
+          outcome: "SUPERSEDED_BY_NEW_SCAN",
+        })
+      );
+
+  const retainedKeys =
+    new Set(
+      retained.map(decisionSignature)
+    );
+
+  return {
+    decisions: [
+      ...retained,
+      ...next.filter(
+        item =>
+          !retainedKeys.has(
+            decisionSignature(item)
+          )
+      ),
+    ],
+    archived,
+  };
 
 }
 
@@ -5295,6 +5376,215 @@ async function loadTradingState() {
 }
 
 
+function normalizeRiskSettings(
+  value
+) {
+
+  return {
+    capital:
+      Math.max(
+        1000,
+        Number(value?.capital) || 100000
+      ),
+    riskPerTradePercent:
+      Math.min(
+        10,
+        Math.max(
+          0.1,
+          Number(value?.riskPerTradePercent) || 1
+        )
+      ),
+    maxPositionPercent:
+      Math.min(
+        100,
+        Math.max(
+          1,
+          Number(value?.maxPositionPercent) || 20
+        )
+      ),
+    maxPositions:
+      Math.min(
+        20,
+        Math.max(
+          1,
+          Math.floor(
+            Number(value?.maxPositions) || 3
+          )
+        )
+      ),
+    dailyLossLimitPercent:
+      Math.min(
+        20,
+        Math.max(
+          0.1,
+          Number(value?.dailyLossLimitPercent) || 3
+        )
+      ),
+  };
+
+}
+
+
+function currentRiskSettings() {
+
+  const state =
+    loadLocalTradingState() || {};
+
+  return normalizeRiskSettings(
+    state.risk
+  );
+
+}
+
+
+function renderRiskSettings(
+  settings
+) {
+
+  const risk =
+    normalizeRiskSettings(settings);
+
+  const display = {
+    maxPositions: risk.maxPositions,
+    riskPerTrade:
+      `%${risk.riskPerTradePercent.toFixed(2)}`,
+    maxPositionSize:
+      `%${risk.maxPositionPercent.toFixed(2)}`,
+    dailyLossLimit:
+      `%${risk.dailyLossLimitPercent.toFixed(2)}`,
+  };
+
+  Object.entries(display).forEach(
+    ([id, value]) => {
+      const element =
+        document.getElementById(id);
+      if (element) {
+        element.textContent = String(value);
+      }
+    }
+  );
+
+  const inputs = {
+    riskCapitalInput: risk.capital,
+    riskPerTradeInput:
+      risk.riskPerTradePercent,
+    maxPositionInput:
+      risk.maxPositionPercent,
+    maxPositionsInput:
+      risk.maxPositions,
+    dailyLossLimitInput:
+      risk.dailyLossLimitPercent,
+  };
+
+  Object.entries(inputs).forEach(
+    ([id, value]) => {
+      const input =
+        document.getElementById(id);
+      if (input) {
+        input.value = String(value);
+      }
+    }
+  );
+
+}
+
+
+function saveRiskSettingsFromForm(
+  event
+) {
+
+  event.preventDefault();
+
+  const risk =
+    normalizeRiskSettings(
+      {
+        capital:
+          document.getElementById(
+            "riskCapitalInput"
+          )?.value,
+        riskPerTradePercent:
+          document.getElementById(
+            "riskPerTradeInput"
+          )?.value,
+        maxPositionPercent:
+          document.getElementById(
+            "maxPositionInput"
+          )?.value,
+        maxPositions:
+          document.getElementById(
+            "maxPositionsInput"
+          )?.value,
+        dailyLossLimitPercent:
+          document.getElementById(
+            "dailyLossLimitInput"
+          )?.value,
+      }
+    );
+
+  const state =
+    loadLocalTradingState() || {};
+
+  const nextState = {
+    ...state,
+    risk,
+  };
+
+  saveLocalTradingState(nextState);
+  renderRiskSettings(risk);
+
+  renderAiDecisions(
+    nextState.decisions
+  );
+
+  const activity =
+    [
+      {
+        timestamp: new Date().toISOString(),
+        type: "RISK",
+        message: "Risk Engine ayarları güncellendi.",
+      },
+      ...(
+        Array.isArray(nextState.activity)
+          ? nextState.activity
+          : []
+      ),
+    ].slice(0, 100);
+
+  nextState.activity = activity;
+  saveLocalTradingState(nextState);
+  renderTradingActivity(activity);
+
+}
+
+
+function bindRiskSettings() {
+
+  const form =
+    document.getElementById(
+      "riskSettingsForm"
+    );
+
+  if (
+    !form ||
+    form.dataset.riskBound === "true"
+  ) {
+    return;
+  }
+
+  form.dataset.riskBound = "true";
+
+  form.addEventListener(
+    "submit",
+    saveRiskSettingsFromForm
+  );
+
+  renderRiskSettings(
+    currentRiskSettings()
+  );
+
+}
+
+
 async function runTradingScanner() {
 
   if (
@@ -5344,9 +5634,26 @@ async function runTradingScanner() {
 
   try {
 
+    const risk =
+      currentRiskSettings();
+
+    const scannerQuery =
+      new URLSearchParams(
+        {
+          capital:
+            String(risk.capital),
+          riskPerTradePercent:
+            String(risk.riskPerTradePercent),
+          maxPositionPercent:
+            String(risk.maxPositionPercent),
+          maxPositions:
+            String(risk.maxPositions),
+        }
+      );
+
     const response =
       await fetch(
-        "/api/trading/scanner",
+        `/api/trading/scanner?${scannerQuery}`,
         {
           method: "GET",
           cache: "no-store"
@@ -5390,30 +5697,39 @@ async function runTradingScanner() {
     const previousState =
       loadLocalTradingState() || {};
 
-    const archived =
-      archiveLocalDecisions(
+    const reconciled =
+      reconcileScanDecisions(
         previousState.decisions,
+        data.decisions,
         data.timestamp
       );
 
     const nextState = {
       decisions:
-        data.decisions,
+        reconciled.decisions,
       paper:
         data.paper,
       activity:
         data.activity,
-      history: [
-        ...archived,
-        ...(
-          Array.isArray(previousState.history)
-            ? previousState.history
-            : []
-        ),
-      ].slice(0, 100),
+      history:
+        uniqueDecisions(
+          [
+            ...reconciled.archived,
+            ...(
+              Array.isArray(previousState.history)
+                ? previousState.history
+                : []
+            ),
+          ]
+        ).slice(0, 100),
       lastScanAt:
         data.timestamp,
+      risk,
     };
+
+    renderAiDecisions(
+      nextState.decisions
+    );
 
     renderSignalHistory(
       nextState.history
@@ -5575,6 +5891,10 @@ function bindTradingScannerControls() {
   }
 
   loadTradingState();
+
+  bindRiskSettings();
+
+  bindSignalHistoryDetails();
 
   if (
     scannerStopButton &&

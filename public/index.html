@@ -963,6 +963,10 @@ Waiting for input...
           </div>
         </div>
 
+        <div id="signalDetail" class="trading-empty">
+          Ayrıntıları görmek için bir geçmiş sinyaline tıkla.
+        </div>
+
       </section>
 
       <section class="panel trading-panel">
@@ -1123,74 +1127,25 @@ Waiting for input...
       <section class="panel trading-panel">
 
         <div class="panel-title">
-
-          <span>
-            RISK ENGINE
-          </span>
-
-          <span class="panel-status">
-            ACTIVE
-          </span>
-
+          <span>RISK ENGINE</span>
+          <span class="panel-status">EDITABLE</span>
         </div>
-
 
         <div class="risk-grid">
-
-
-          <div>
-
-            <span>
-              MAX POSITIONS
-            </span>
-
-            <strong id="maxPositions">
-              3
-            </strong>
-
-          </div>
-
-
-          <div>
-
-            <span>
-              RISK / TRADE
-            </span>
-
-            <strong id="riskPerTrade">
-              1.00%
-            </strong>
-
-          </div>
-
-
-          <div>
-
-            <span>
-              MAX PORTFOLIO RISK
-            </span>
-
-            <strong id="maxPortfolioRisk">
-              3.00%
-            </strong>
-
-          </div>
-
-
-          <div>
-
-            <span>
-              DAILY LOSS LIMIT
-            </span>
-
-            <strong id="dailyLossLimit">
-              3.00%
-            </strong>
-
-          </div>
-
-
+          <div><span>MAX POSITIONS</span><strong id="maxPositions">3</strong></div>
+          <div><span>RISK / TRADE</span><strong id="riskPerTrade">1.00%</strong></div>
+          <div><span>MAX POSITION SIZE</span><strong id="maxPositionSize">20.00%</strong></div>
+          <div><span>DAILY LOSS LIMIT</span><strong id="dailyLossLimit">3.00%</strong></div>
         </div>
+
+        <form id="riskSettingsForm" class="risk-settings">
+          <label>CAPITAL (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
+          <label>RISK / TRADE (%)<input id="riskPerTradeInput" type="number" min="0.1" max="10" step="0.1" value="1"></label>
+          <label>MAX POSITION (%)<input id="maxPositionInput" type="number" min="1" max="100" step="1" value="20"></label>
+          <label>MAX POSITIONS<input id="maxPositionsInput" type="number" min="1" max="20" step="1" value="3"></label>
+          <label>DAILY LOSS LIMIT (%)<input id="dailyLossLimitInput" type="number" min="0.1" max="20" step="0.1" value="3"></label>
+          <button type="submit" class="trading-button">APPLY RISK SETTINGS</button>
+        </form>
 
       </section>
 
@@ -1345,6 +1300,103 @@ Waiting for input...
 <script
   src="https://unpkg.com/lightweight-charts@5.0.0/dist/lightweight-charts.standalone.production.js"
 ></script>
+
+
+<style>
+  .scanner-compact {
+    padding: 9px 12px !important;
+    margin: 6px 0 !important;
+    font-size: 11px !important;
+  }
+  .scanner-head {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+  }
+  .scanner-metrics,
+  .scanner-compact small {
+    display: block;
+    margin-top: 5px;
+    color: #a4c7a4;
+    font-size: 10px;
+  }
+  .decision-card {
+    display: grid;
+    gap: 8px;
+    padding: 13px 15px !important;
+  }
+  .decision-card header,
+  .decision-price-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    align-items: center;
+  }
+  .decision-card header span,
+  .decision-price-grid span,
+  .decision-risk-line,
+  .decision-filter-line {
+    font-size: 11px;
+  }
+  .decision-price-grid span {
+    display: grid;
+    gap: 2px;
+  }
+  .decision-price-grid small {
+    color: #7f9b7f;
+    font-size: 9px;
+  }
+  .decision-risk-line,
+  .decision-filter-line {
+    border-top: 1px solid rgba(75, 160, 75, .18);
+    padding-top: 7px;
+  }
+  .history-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1.6fr;
+    gap: 8px;
+    text-align: left;
+    padding: 8px;
+    border: 1px solid rgba(75,160,75,.25);
+    background: rgba(10,25,10,.45);
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+  }
+  .history-row:hover { border-color: #78d878; }
+  .risk-settings {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    padding: 12px 0 0;
+  }
+  .risk-settings label {
+    display: grid;
+    gap: 4px;
+    font-size: 10px;
+    color: #a4c7a4;
+  }
+  .risk-settings input {
+    min-width: 0;
+    background: #071007;
+    color: #d7f7d7;
+    border: 1px solid #315431;
+    padding: 7px;
+    font: inherit;
+  }
+  .risk-settings button { grid-column: 1 / -1; justify-self: start; }
+  #signalDetail { margin-top: 8px; line-height: 1.7; }
+  @media (max-width: 800px) {
+    .decision-card header,
+    .decision-price-grid,
+    .scanner-head,
+    .history-row { grid-template-columns: 1fr 1fr; }
+  }
+</style>
 
 
 <!-- =====================================================

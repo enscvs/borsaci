@@ -3188,7 +3188,8 @@ function roundTradingValue(
 
 function buildAiDecision(
   item,
-  rank
+  rank,
+  riskSettings = {}
 ) {
 
   const price = Number(item.price);
@@ -3243,9 +3244,46 @@ function buildAiDecision(
   const target2 =
     roundTradingValue(price + risk * 3);
 
-  const capital = 100000;
-  const riskBudget = capital * 0.01;
-  const maxPositionValue = capital * 0.2;
+  const capital =
+    Math.max(
+      1000,
+      Number(riskSettings.capital) || 100000
+    );
+
+  const riskPerTradePercent =
+    Math.min(
+      10,
+      Math.max(
+        0.1,
+        Number(riskSettings.riskPerTradePercent) || 1
+      )
+    );
+
+  const maxPositionPercent =
+    Math.min(
+      100,
+      Math.max(
+        1,
+        Number(riskSettings.maxPositionPercent) || 20
+      )
+    );
+
+  const maxPositions =
+    Math.min(
+      20,
+      Math.max(
+        1,
+        Math.floor(
+          Number(riskSettings.maxPositions) || 3
+        )
+      )
+    );
+
+  const riskBudget =
+    capital * (riskPerTradePercent / 100);
+
+  const maxPositionValue =
+    capital * (maxPositionPercent / 100);
   const stopDistance =
     Math.max(entryReference - stop, 0.01);
   const quantity = Math.max(
@@ -3337,6 +3375,9 @@ function buildAiDecision(
       quantity,
       positionValue,
       actualRisk,
+      riskPerTradePercent,
+      maxPositionPercent,
+      maxPositions,
     },
     filters: {
       trend: hasTrend,
@@ -3368,7 +3409,8 @@ function buildAiDecision(
 
 
 function createAiDecisions(
-  results
+  results,
+  riskSettings = {}
 ) {
 
   const candidates =
@@ -3377,7 +3419,8 @@ function createAiDecisions(
         (item, index) =>
           buildAiDecision(
             item,
-            index + 1
+            index + 1,
+            riskSettings
           )
       )
       .sort(
@@ -4096,6 +4139,23 @@ async function handleTradingScanner(
 
   try {
 
+    const requestUrl =
+      new URL(
+        req.url,
+        `http://${req.headers.host || "localhost"}`
+      );
+
+    const riskSettings = {
+      capital:
+        requestUrl.searchParams.get("capital"),
+      riskPerTradePercent:
+        requestUrl.searchParams.get("riskPerTradePercent"),
+      maxPositionPercent:
+        requestUrl.searchParams.get("maxPositionPercent"),
+      maxPositions:
+        requestUrl.searchParams.get("maxPositions"),
+    };
+
     const results = [];
     const batchSize = 8;
     const maximumScanDuration = 45000;
@@ -4159,7 +4219,8 @@ async function handleTradingScanner(
 
     const decisions =
       createAiDecisions(
-        rankedResults
+        rankedResults,
+        riskSettings
       );
 
     let tradingState =
