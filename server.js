@@ -2105,14 +2105,23 @@ async function fetchYahooChart(
       );
 
 
-    if (
-      !Number.isFinite(
-        close
-      )
-    ) {
+    const validOhlc =
+      [open, high, low, close].every(
+        value =>
+          Number.isFinite(value) &&
+          value > 0
+      ) &&
+      high >= Math.max(open, close, low) &&
+      low <= Math.min(open, close, high);
 
+    /*
+     * Yahoo piyasa kapalıyken veya gecikmeli akışta
+     * son mum için 0/null OHLC gönderebiliyor. Bu mum
+     * indikatörlere girerse ATR ve giriş seviyeleri
+     * negatife düşebilir; tamamen yok sayılır.
+     */
+    if (!validOhlc) {
       continue;
-
     }
 
 
@@ -3263,6 +3272,28 @@ function buildAiDecision(
   const volume = Number(item.volume);
   const averageVolume = Number(item.averageVolume);
 
+  /*
+   * Karar katmanı da aynı korumayı uygular. Böylece
+   * geçersiz kaynak verisi hiçbir zaman ekrana veya
+   * paper işlem akışına düşmez.
+   */
+  if (
+    ![
+      price,
+      atr,
+      rsi,
+      Number(item.ema20),
+      Number(item.ema50),
+      Number(item.ema200),
+    ].every(
+      value =>
+        Number.isFinite(value) &&
+        value > 0
+    )
+  ) {
+    return null;
+  }
+
   const hasTrend =
     price > item.ema20 &&
     price > item.ema50 &&
@@ -3487,6 +3518,7 @@ function createAiDecisions(
             riskSettings
           )
       )
+      .filter(Boolean)
       .sort(
         (a, b) =>
           b.confidence -
@@ -4579,6 +4611,28 @@ function calculateScannerScore(
 
   const latestVolume =
     volumes[volumes.length - 1];
+
+  /*
+   * Scanner yalnızca pozitif ve hesaplanabilir fiyat
+   * serileriyle karar üretir. Piyasa kapalıyken gelen
+   * 0 fiyatı burada fail-closed olarak elenir.
+   */
+  if (
+    ![
+      price,
+      ema20,
+      ema50,
+      ema200,
+      rsi,
+      atr,
+    ].every(
+      value =>
+        Number.isFinite(value) &&
+        value > 0
+    )
+  ) {
+    return null;
+  }
 
   let score = 0;
 
