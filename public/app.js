@@ -4786,6 +4786,85 @@ const tradingActivity =
   );
 
 
+const TRADING_STATE_STORAGE_KEY =
+  "borsaci_trading_state_v1";
+
+
+function saveLocalTradingState(
+  state
+) {
+
+  try {
+
+    localStorage.setItem(
+      TRADING_STATE_STORAGE_KEY,
+      JSON.stringify(
+        {
+          decisions:
+            Array.isArray(state?.decisions)
+              ? state.decisions
+              : [],
+          paper:
+            state?.paper || null,
+          activity:
+            Array.isArray(state?.activity)
+              ? state.activity
+              : [],
+        }
+      )
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Trading state yerel kaydedilemedi:",
+      error
+    );
+
+  }
+
+}
+
+
+function loadLocalTradingState() {
+
+  try {
+
+    const raw =
+      localStorage.getItem(
+        TRADING_STATE_STORAGE_KEY
+      );
+
+    if (!raw) {
+      return null;
+    }
+
+    const state =
+      JSON.parse(raw);
+
+    if (
+      !state ||
+      typeof state !== "object"
+    ) {
+      return null;
+    }
+
+    return state;
+
+  } catch (error) {
+
+    console.error(
+      "Trading state yerel yüklenemedi:",
+      error
+    );
+
+    return null;
+
+  }
+
+}
+
+
 function formatCurrency(
   value
 ) {
@@ -4945,6 +5024,25 @@ function renderTradingActivity(
 
 async function loadTradingState() {
 
+  const localState =
+    loadLocalTradingState();
+
+  if (localState) {
+
+    renderAiDecisions(
+      localState.decisions
+    );
+
+    renderPaperPortfolio(
+      localState.paper
+    );
+
+    renderTradingActivity(
+      localState.activity
+    );
+
+  }
+
   try {
 
     const response =
@@ -4972,6 +5070,10 @@ async function loadTradingState() {
 
     renderTradingActivity(
       state.activity
+    );
+
+    saveLocalTradingState(
+      state
     );
 
   } catch (error) {
@@ -5076,6 +5178,17 @@ async function runTradingScanner() {
 
     renderTradingActivity(
       data.activity
+    );
+
+    saveLocalTradingState(
+      {
+        decisions:
+          data.decisions,
+        paper:
+          data.paper,
+        activity:
+          data.activity,
+      }
     );
 
 
