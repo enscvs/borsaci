@@ -5846,6 +5846,21 @@ async function loadTradingState() {
 
     }
 
+    // Karar listesi boş olsa bile Kill Switch sunucudaki gerçek
+    // durumunu her yüklemede ekrana yansıt.
+    renderKillSwitch(
+      state.killSwitch
+    );
+
+    if (localState) {
+      saveLocalTradingState(
+        {
+          ...localState,
+          killSwitch: state.killSwitch,
+        }
+      );
+    }
+
   } catch (error) {
 
     console.error(
@@ -6384,6 +6399,16 @@ function renderKillSwitch(
       "is-active",
       active
     );
+
+    // İşlem yönü, eski localStorage kaydından değil ekranda
+    // sunucunun son bildirdiği durumdan türetilir.
+    button.dataset.killSwitchActive =
+      active ? "true" : "false";
+
+    button.setAttribute(
+      "aria-pressed",
+      active ? "true" : "false"
+    );
   }
 
 }
@@ -6401,11 +6426,11 @@ async function toggleKillSwitch() {
       "killSwitchToggle"
     );
 
-  const current =
-    loadLocalTradingState() || {};
-
+  // Buton, /api/trading/state veya son başarılı işlemden gelen
+  // güncel Kill Switch durumunu taşır. Eski tarayıcı kaydı
+  // deaktif etme isteğini yanlışlıkla tekrar aktive etmemelidir.
   const active =
-    Boolean(current.killSwitch?.active);
+    button?.dataset.killSwitchActive === "true";
 
   const password =
     String(passwordInput?.value || "");
