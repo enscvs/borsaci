@@ -2896,6 +2896,8 @@ async function handleWatchlist(
 
       const watchlist = {
 
+        ...result.content,
+
         symbols,
 
       };
@@ -2970,6 +2972,8 @@ async function handleWatchlist(
 
       const watchlist = {
 
+        ...result.content,
+
         symbols:
           updatedSymbols,
 
@@ -3027,9 +3031,6 @@ PAPER TRADING DECISIONS
 ========================================================
 */
 
-const TRADING_STATE_PATH =
-  "data/trading-state.json";
-
 function createDefaultTradingState() {
 
   return {
@@ -3060,52 +3061,65 @@ function createDefaultTradingState() {
 }
 
 
-async function getTradingState() {
+function normalizeTradingState(
+  value
+) {
 
-  if (
-    !process.env.GITHUB_OWNER ||
-    !process.env.GITHUB_REPO ||
-    !process.env.GITHUB_TOKEN
-  ) {
-    return {
-      content: createDefaultTradingState(),
-      sha: null,
-    };
-  }
-
-  const response =
-    await fetch(
-      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${TRADING_STATE_PATH}`,
-      {
-        headers: {
-          "Authorization":
-            `Bearer ${process.env.GITHUB_TOKEN}`,
-          "Accept":
-            "application/vnd.github+json",
-          "User-Agent":
-            "BorsaCI",
-        },
-      }
-    );
-
-  if (!response.ok) {
-    throw new Error(
-      `Trading state okunamadı: HTTP ${response.status}`
-    );
-  }
-
-  const data =
-    await response.json();
-
-  const content =
-    Buffer.from(
-      data.content.replace(/\n/g, ""),
-      "base64"
-    ).toString("utf8");
+  const fallback =
+    createDefaultTradingState();
 
   return {
-    content: JSON.parse(content),
-    sha: data.sha,
+
+    ...fallback,
+
+    ...(value || {}),
+
+    paper: {
+      ...fallback.paper,
+      ...((value || {}).paper || {}),
+    },
+
+    decisions:
+      Array.isArray(
+        value?.decisions
+      )
+        ? value.decisions
+        : [],
+
+    activity:
+      Array.isArray(
+        value?.activity
+      )
+        ? value.activity
+        : fallback.activity,
+
+  };
+
+}
+
+
+async function getTradingState() {
+
+  /*
+   * Paper kayıtları, watchlist ile aynı kanıtlanmış
+   * GitHub contents akışında saklanır.
+   */
+  const watchlistResult =
+    await getWatchlist();
+
+  return {
+
+    content:
+      normalizeTradingState(
+        watchlistResult.content.trading
+      ),
+
+    sha:
+      watchlistResult.sha,
+
+    container:
+      watchlistResult.content,
+
   };
 
 }
@@ -3113,57 +3127,30 @@ async function getTradingState() {
 
 async function saveTradingState(
   state,
-  sha
+  sha,
+  container
 ) {
 
-  if (
-    !process.env.GITHUB_OWNER ||
-    !process.env.GITHUB_REPO ||
-    !process.env.GITHUB_TOKEN ||
-    !sha
-  ) {
-    return state;
-  }
+  const watchlist = {
 
-  const content =
-    Buffer.from(
-      JSON.stringify(
-        state,
-        null,
-        2
+    ...(container || {}),
+
+    symbols:
+      Array.isArray(
+        container?.symbols
       )
-    ).toString("base64");
+        ? container.symbols
+        : [],
 
-  const response =
-    await fetch(
-      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/${TRADING_STATE_PATH}`,
-      {
-        method: "PUT",
-        headers: {
-          "Authorization":
-            `Bearer ${process.env.GITHUB_TOKEN}`,
-          "Accept":
-            "application/vnd.github+json",
-          "Content-Type":
-            "application/json",
-          "User-Agent":
-            "BorsaCI",
-        },
-        body: JSON.stringify({
-          message: "Record paper trading decisions",
-          content,
-          sha,
-        }),
-      }
-    );
+    trading:
+      normalizeTradingState(state),
 
-  if (!response.ok) {
-    throw new Error(
-      `Trading state kaydedilemedi: HTTP ${response.status}`
-    );
-  }
+  };
 
-  return await response.json();
+  return await saveWatchlist(
+    watchlist,
+    sha
+  );
 
 }
 
@@ -3425,7 +3412,8 @@ async function recordAiDecisions(
 
   await saveTradingState(
     state,
-    stateResult.sha
+    stateResult.sha,
+    stateResult.container
   );
 
   return state;
