@@ -355,6 +355,104 @@
         "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
         "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
         "timestamp": "2026-08-21T22:56:13.195Z"
+      },
+      {
+        "id": "1787355039184-BINBN",
+        "rank": 2,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": 94,
+        "entry": {
+          "low": 180.98,
+          "high": 184.51,
+          "reference": 183.1
+        },
+        "stop": 172.5,
+        "target1": 204.29,
+        "target2": 214.89,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 10.6,
+          "quantity": 84,
+          "positionValue": 15380.4,
+          "actualRisk": 890.4,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 54.69,
+          "atr": 7.06,
+          "volatility": 3.86
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-21T23:30:39.184Z",
+          "expiresAt": "2026-08-22T23:30:39.184Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
+        "timestamp": "2026-08-21T23:30:39.184Z"
+      },
+      {
+        "id": "1787355039184-GESAN",
+        "rank": 3,
+        "symbol": "GESAN",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": 94,
+        "entry": {
+          "low": 85.78,
+          "high": 87.4,
+          "reference": 86.75
+        },
+        "stop": 81.89,
+        "target1": 96.47,
+        "target2": 101.33,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 4.86,
+          "quantity": 178,
+          "positionValue": 15441.5,
+          "actualRisk": 865.08,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 61.52,
+          "atr": 3.24,
+          "volatility": 3.73
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-21T23:30:39.184Z",
+          "expiresAt": "2026-08-22T23:30:39.184Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
+        "timestamp": "2026-08-21T23:30:39.184Z"
       }
     ],
     "history": [
@@ -1113,6 +1211,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T23:30:39.717Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) retained or generated."
+      },
       {
         "timestamp": "2026-08-21T23:30:01.985Z",
         "type": "CLOSED",
