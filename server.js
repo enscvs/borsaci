@@ -2987,7 +2987,696 @@ async function handleWatchlist(
   }
 
 }
+/*
+========================================================
+AI TRADING SCANNER
+========================================================
+*/
 
+const BIST100_SYMBOLS = [
+  "AEFES","AGHOL","AHGAZ","AKBNK","AKCNS","AKFGY","AKFYE",
+  "AKSA","AKSEN","ALARK","ALBRK","ALFAS","ARCLK","ASELS",
+  "ASTOR","AYDEM","BAGFS","BASGZ","BERA","BIMAS","BINBN",
+  "BIOEN","BRSAN","BRYAT","BSOKE","BTCIM","CANTE","CCOLA",
+  "CEMAS","CEMTS","CIMSA","CLEBI","CWENE","DOAS","DOHOL",
+  "ECILC","ECZYT","EGEEN","EKGYO","ENERY","ENJSA","ENKAI",
+  "EREGL","ESEN","EUPWR","FROTO","GARAN","GESAN","GENTS",
+  "GLYHO","GOLTS","GUBRF","GWIND","HALKB","HEKTS","HLGYO",
+  "ISCTR","ISMEN","IZENR","KARSN","KCAER","KCHOL","KONTR",
+  "KONYA","KOZAA","KOZAL","KRDMD","KTLEV","KUYAS","MAVI",
+  "MGROS","MIATK","ODAS","OTKAR","OYAKC","PASEU","PETKM",
+  "PGSUS","QUAGR","REEDR","SAHOL","SASA","SDTTR","SISE",
+  "SKBNK","SMRTG","SOKM","TAVHL","TCELL","THYAO","TKFEN",
+  "TMSN","TOASO","TRCAS","TSKB","TSPOR","TTKOM","TTRAK",
+  "TUKAS","TUPRS","ULKER","VAKBN","VESBE","YKBNK","YEOTK",
+  "ZOREN"
+];
+
+
+/*
+--------------------------------------------------------
+INDICATORS
+--------------------------------------------------------
+*/
+
+function sma(values, period) {
+
+  if (!Array.isArray(values) || values.length < period) {
+    return null;
+  }
+
+  const slice =
+    values.slice(values.length - period);
+
+  return (
+    slice.reduce(
+      (sum, value) => sum + value,
+      0
+    ) / period
+  );
+}
+
+
+function ema(values, period) {
+
+  if (
+    !Array.isArray(values) ||
+    values.length < period
+  ) {
+    return null;
+  }
+
+  const multiplier =
+    2 / (period + 1);
+
+  let result =
+    sma(values.slice(0, period), period);
+
+  if (result === null) {
+    return null;
+  }
+
+  for (
+    let i = period;
+    i < values.length;
+    i++
+  ) {
+
+    result =
+      (
+        values[i] - result
+      ) *
+        multiplier +
+      result;
+
+  }
+
+  return result;
+}
+
+
+function calculateRSI(
+  closes,
+  period = 14
+) {
+
+  if (
+    !Array.isArray(closes) ||
+    closes.length <= period
+  ) {
+    return null;
+  }
+
+  let gains = 0;
+  let losses = 0;
+
+  for (
+    let i = 1;
+    i <= period;
+    i++
+  ) {
+
+    const change =
+      closes[i] -
+      closes[i - 1];
+
+    if (change >= 0) {
+      gains += change;
+    } else {
+      losses -= change;
+    }
+
+  }
+
+  let averageGain =
+    gains / period;
+
+  let averageLoss =
+    losses / period;
+
+  for (
+    let i = period + 1;
+    i < closes.length;
+    i++
+  ) {
+
+    const change =
+      closes[i] -
+      closes[i - 1];
+
+    const gain =
+      change > 0
+        ? change
+        : 0;
+
+    const loss =
+      change < 0
+        ? -change
+        : 0;
+
+    averageGain =
+      (
+        averageGain *
+          (period - 1) +
+        gain
+      ) / period;
+
+    averageLoss =
+      (
+        averageLoss *
+          (period - 1) +
+        loss
+      ) / period;
+
+  }
+
+  if (averageLoss === 0) {
+    return 100;
+  }
+
+  const rs =
+    averageGain /
+    averageLoss;
+
+  return (
+    100 -
+    100 / (1 + rs)
+  );
+
+}
+
+
+function calculateATR(
+  history,
+  period = 14
+) {
+
+  if (
+    !Array.isArray(history) ||
+    history.length <= period
+  ) {
+    return null;
+  }
+
+  const trueRanges = [];
+
+  for (
+    let i = 1;
+    i < history.length;
+    i++
+  ) {
+
+    const current =
+      history[i];
+
+    const previous =
+      history[i - 1];
+
+    const tr =
+      Math.max(
+        current.high - current.low,
+        Math.abs(
+          current.high -
+          previous.close
+        ),
+        Math.abs(
+          current.low -
+          previous.close
+        )
+      );
+
+    trueRanges.push(tr);
+
+  }
+
+  return sma(
+    trueRanges,
+    period
+  );
+
+}
+
+
+/*
+--------------------------------------------------------
+MACD
+--------------------------------------------------------
+*/
+
+function calculateMACD(
+  closes
+) {
+
+  const ema12 =
+    ema(closes, 12);
+
+  const ema26 =
+    ema(closes, 26);
+
+  if (
+    ema12 === null ||
+    ema26 === null
+  ) {
+    return null;
+  }
+
+  const macd =
+    ema12 - ema26;
+
+  return macd;
+}
+
+
+/*
+--------------------------------------------------------
+SCORE
+--------------------------------------------------------
+*/
+
+function calculateScannerScore(
+  history
+) {
+
+  const closes =
+    history.map(
+      item => item.close
+    );
+
+  const volumes =
+    history.map(
+      item => item.volume || 0
+    );
+
+  const price =
+    closes[closes.length - 1];
+
+  const ema20 =
+    ema(closes, 20);
+
+  const ema50 =
+    ema(closes, 50);
+
+  const ema200 =
+    ema(closes, 200);
+
+  const rsi =
+    calculateRSI(closes, 14);
+
+  const atr =
+    calculateATR(history, 14);
+
+  const macd =
+    calculateMACD(closes);
+
+  const averageVolume =
+    sma(volumes, 20);
+
+  const latestVolume =
+    volumes[volumes.length - 1];
+
+  let score = 0;
+
+  const signals = [];
+
+  /*
+  TREND
+  */
+
+  if (
+    ema20 !== null &&
+    price > ema20
+  ) {
+
+    score += 15;
+
+    signals.push(
+      "Price > EMA20"
+    );
+
+  }
+
+  if (
+    ema50 !== null &&
+    price > ema50
+  ) {
+
+    score += 10;
+
+    signals.push(
+      "Price > EMA50"
+    );
+
+  }
+
+  if (
+    ema200 !== null &&
+    price > ema200
+  ) {
+
+    score += 15;
+
+    signals.push(
+      "Price > EMA200"
+    );
+
+  }
+
+
+  /*
+  EMA STRUCTURE
+  */
+
+  if (
+    ema20 !== null &&
+    ema50 !== null &&
+    ema20 > ema50
+  ) {
+
+    score += 10;
+
+    signals.push(
+      "EMA20 > EMA50"
+    );
+
+  }
+
+
+  /*
+  RSI
+  */
+
+  if (
+    rsi !== null &&
+    rsi >= 50 &&
+    rsi <= 70
+  ) {
+
+    score += 15;
+
+    signals.push(
+      "RSI bullish"
+    );
+
+  } else if (
+    rsi !== null &&
+    rsi > 70
+  ) {
+
+    score += 5;
+
+    signals.push(
+      "RSI overbought"
+    );
+
+  }
+
+
+  /*
+  MACD
+  */
+
+  if (
+    macd !== null &&
+    macd > 0
+  ) {
+
+    score += 10;
+
+    signals.push(
+      "MACD positive"
+    );
+
+  }
+
+
+  /*
+  VOLUME
+  */
+
+  if (
+    averageVolume &&
+    latestVolume >
+      averageVolume * 1.2
+  ) {
+
+    score += 15;
+
+    signals.push(
+      "Volume expansion"
+    );
+
+  } else if (
+    averageVolume &&
+    latestVolume >
+      averageVolume
+  ) {
+
+    score += 7;
+
+    signals.push(
+      "Volume above average"
+    );
+
+  }
+
+
+  /*
+  CAP SCORE
+  */
+
+  score =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        score
+      )
+    );
+
+
+  let decision =
+    "WATCH";
+
+  if (score >= 80) {
+    decision = "BUY SETUP";
+  } else if (score >= 65) {
+    decision = "WATCH";
+  } else {
+    decision = "NEUTRAL";
+  }
+
+
+  /*
+  ATR BASED RISK LEVEL
+  */
+
+  let volatility =
+    null;
+
+  if (
+    atr !== null &&
+    price > 0
+  ) {
+
+    volatility =
+      (
+        atr /
+        price
+      ) * 100;
+
+  }
+
+
+  return {
+
+    price,
+    ema20,
+    ema50,
+    ema200,
+    rsi,
+    macd,
+    atr,
+    volume: latestVolume,
+    averageVolume,
+
+    volatility,
+
+    score,
+    decision,
+
+    signals
+
+  };
+
+}
+
+
+/*
+--------------------------------------------------------
+SCAN ONE SYMBOL
+--------------------------------------------------------
+*/
+
+async function scanSymbol(
+  symbol
+) {
+
+  try {
+
+    const yahoo =
+      await fetchYahooChart(
+        symbol,
+        "1y",
+        "1d"
+      );
+
+    const history =
+      yahoo.history;
+
+    if (
+      !history ||
+      history.length < 200
+    ) {
+
+      return null;
+
+    }
+
+    const analysis =
+      calculateScannerScore(
+        history
+      );
+
+    if (!analysis) {
+      return null;
+    }
+
+    return {
+
+      symbol,
+
+      ...analysis,
+
+      timestamp:
+        new Date().toISOString()
+
+    };
+
+  } catch (error) {
+
+    console.error(
+      `SCANNER ${symbol}:`,
+      error.message
+    );
+
+    return null;
+
+  }
+
+}
+
+
+/*
+--------------------------------------------------------
+SCANNER HANDLER
+--------------------------------------------------------
+*/
+
+async function handleTradingScanner(
+  req,
+  res
+) {
+
+  try {
+
+    const results = [];
+
+    const batchSize = 8;
+
+    for (
+      let i = 0;
+      i < BIST100_SYMBOLS.length;
+      i += batchSize
+    ) {
+
+      const batch =
+        BIST100_SYMBOLS.slice(
+          i,
+          i + batchSize
+        );
+
+      const batchResults =
+        await Promise.all(
+          batch.map(
+            scanSymbol
+          )
+        );
+
+      for (
+        const result of batchResults
+      ) {
+
+        if (result) {
+          results.push(result);
+        }
+
+      }
+
+    }
+
+
+    results.sort(
+      (a, b) =>
+        b.score -
+        a.score
+    );
+
+
+    return sendJSON(
+      res,
+      200,
+      {
+
+        success: true,
+
+        timestamp:
+          new Date().toISOString(),
+
+        scanned:
+          BIST100_SYMBOLS.length,
+
+        successful:
+          results.length,
+
+        results:
+          results.slice(0, 15)
+
+      }
+    );
+
+  } catch (error) {
+
+    console.error(
+      "TRADING SCANNER ERROR:",
+      error
+    );
+
+    return sendJSON(
+      res,
+      500,
+      {
+
+        success: false,
+
+        error:
+          error.message
+
+      }
+    );
+
+  }
+
+}
 /*
 ========================================================
 HTTP SERVER
