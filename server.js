@@ -2079,26 +2079,7 @@ async function fetchYahooChart(
 
 }
 
-/*
-========================================================
-AI TRADING SCANNER
-========================================================
-*/
 
-if (
-  req.method === "GET" &&
-  (
-    pathname === "/api/trading/scanner" ||
-    pathname === "/trading/scanner"
-  )
-) {
-
-  return handleTradingScanner(
-    req,
-    res
-  );
-
-}
 /*
 ========================================================
 MARKET HANDLER
