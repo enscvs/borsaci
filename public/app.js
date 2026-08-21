@@ -4810,6 +4810,12 @@ function saveLocalTradingState(
             Array.isArray(state?.activity)
               ? state.activity
               : [],
+          history:
+            Array.isArray(state?.history)
+              ? state.history
+              : [],
+          lastScanAt:
+            state?.lastScanAt || null,
         }
       )
     );
@@ -4919,11 +4925,178 @@ function renderAiDecisions(
           <span>Güven %${item.confidence}</span>
           <span>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span>
           <span>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</span>
+          <span>Risk: ${item.riskPlan?.quantity ?? "--"} lot · ${formatCurrency(item.riskPlan?.positionValue)} · azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}</span>
+          <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
           <small>${item.reason}</small>
         </div>
       `
     ).join("");
 
+
+}
+
+
+function renderSignalHistory(
+  history
+) {
+
+  const element =
+    document.getElementById(
+      "signalHistory"
+    );
+
+  const status =
+    document.getElementById(
+      "signalHistoryStatus"
+    );
+
+  const records =
+    Array.isArray(history)
+      ? history
+      : [];
+
+  if (status) {
+    status.textContent =
+      `${records.length} RECORDS`;
+  }
+
+  if (!element) {
+    return;
+  }
+
+  if (records.length === 0) {
+
+    element.innerHTML =
+      '<div class="trading-empty">Henüz arşivlenmiş sinyal yok.</div>';
+
+    return;
+
+  }
+
+  element.innerHTML =
+    records.slice(0, 8).map(
+      item => `
+        <div class="log-line">
+          <span class="log-time">
+            ${new Date(
+              item.lifecycle?.closedAt ||
+              item.timestamp
+            ).toLocaleTimeString("tr-TR")}
+          </span>
+          <span>
+            ${item.symbol} · ${item.action} ·
+            ${item.status}
+          </span>
+        </div>
+      `
+    ).join("");
+
+}
+
+
+function renderPerformance(
+  state
+) {
+
+  const active =
+    Array.isArray(state?.decisions)
+      ? state.decisions
+      : [];
+
+  const history =
+    Array.isArray(state?.history)
+      ? state.history
+      : [];
+
+  const allSignals = [
+    ...active,
+    ...history,
+  ];
+
+  const averageConfidence =
+    allSignals.length
+      ? Math.round(
+          allSignals.reduce(
+            (sum, item) =>
+              sum + Number(item.confidence || 0),
+            0
+          ) / allSignals.length
+        )
+      : null;
+
+  const fields = {
+    performanceTotalSignals:
+      allSignals.length,
+    performanceActiveSignals:
+      active.filter(
+        item => item.status === "PENDING"
+      ).length,
+    performanceAvgConfidence:
+      averageConfidence === null
+        ? "--"
+        : `%${averageConfidence}`,
+    performanceResolved:
+      history.filter(
+        item =>
+          item.status === "CLOSED" ||
+          item.status === "STOPPED"
+      ).length,
+  };
+
+  Object.entries(fields).forEach(
+    ([id, value]) => {
+
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+        element.textContent = String(value);
+      }
+
+    }
+  );
+
+  const note =
+    document.getElementById(
+      "performanceNote"
+    );
+
+  if (note) {
+
+    note.textContent =
+      fields.performanceResolved > 0
+        ? "Kapanan paper işlemlerin sonuçları hesaplandı."
+        : "Kazanma oranı ve getiri, paper pozisyon açma/kapatma aşamasında ölçülecek.";
+
+  }
+
+}
+
+
+function archiveLocalDecisions(
+  decisions,
+  timestamp
+) {
+
+  return (
+    Array.isArray(decisions)
+      ? decisions
+      : []
+  ).filter(
+    item =>
+      item?.status === "PENDING"
+  ).map(
+    item => ({
+      ...item,
+      status: "EXPIRED",
+      lifecycle: {
+        ...(item.lifecycle || {}),
+        stage: "EXPIRED",
+        closedAt: timestamp,
+      },
+      outcome: "SUPERSEDED_BY_NEW_SCAN",
+    })
+  );
 
 }
 
@@ -5041,6 +5214,14 @@ async function loadTradingState() {
       localState.activity
     );
 
+    renderSignalHistory(
+      localState.history
+    );
+
+    renderPerformance(
+      localState
+    );
+
   }
 
   try {
@@ -5086,6 +5267,14 @@ async function loadTradingState() {
 
       renderTradingActivity(
         state.activity
+      );
+
+      renderSignalHistory(
+        state.history
+      );
+
+      renderPerformance(
+        state
       );
 
       saveLocalTradingState(
@@ -5198,15 +5387,44 @@ async function runTradingScanner() {
       data.activity
     );
 
+    const previousState =
+      loadLocalTradingState() || {};
+
+    const archived =
+      archiveLocalDecisions(
+        previousState.decisions,
+        data.timestamp
+      );
+
+    const nextState = {
+      decisions:
+        data.decisions,
+      paper:
+        data.paper,
+      activity:
+        data.activity,
+      history: [
+        ...archived,
+        ...(
+          Array.isArray(previousState.history)
+            ? previousState.history
+            : []
+        ),
+      ].slice(0, 100),
+      lastScanAt:
+        data.timestamp,
+    };
+
+    renderSignalHistory(
+      nextState.history
+    );
+
+    renderPerformance(
+      nextState
+    );
+
     saveLocalTradingState(
-      {
-        decisions:
-          data.decisions,
-        paper:
-          data.paper,
-        activity:
-          data.activity,
-      }
+      nextState
     );
 
 
