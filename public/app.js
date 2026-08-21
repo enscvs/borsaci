@@ -4970,27 +4970,74 @@ BUTTONS
 --------------------------------------------------------
 */
 
-if (
-  scannerStartButton
-) {
+function bindTradingScannerControls() {
 
-  scannerStartButton.addEventListener(
-    "click",
-    runTradingScanner
-  );
+  /*
+   * Scanner arayüzü DOM tamamen hazır olduğunda bağlanır.
+   * Böylece üstteki görsel/terminal kodlarından bağımsız kalır.
+   */
+  if (
+    scannerStartButton &&
+    scannerStartButton.dataset.scannerBound !== "true"
+  ) {
+
+    scannerStartButton.dataset.scannerBound =
+      "true";
+
+    scannerStartButton.addEventListener(
+      "click",
+      (event) => {
+
+        event.preventDefault();
+
+        runTradingScanner();
+
+      }
+    );
+
+  }
+
+  if (
+    scannerStopButton &&
+    scannerStopButton.dataset.scannerBound !== "true"
+  ) {
+
+    scannerStopButton.dataset.scannerBound =
+      "true";
+
+    scannerStopButton.addEventListener(
+      "click",
+      (event) => {
+
+        event.preventDefault();
+
+        stopTradingScanner();
+
+      }
+    );
+
+  }
 
 }
+
+
 window.runTradingScanner =
   runTradingScanner;
 
+
 if (
-  scannerStopButton
+  document.readyState === "loading"
 ) {
 
-  scannerStopButton.addEventListener(
-    "click",
-    stopTradingScanner
+  document.addEventListener(
+    "DOMContentLoaded",
+    bindTradingScannerControls,
+    { once: true }
   );
+
+} else {
+
+  bindTradingScannerControls();
 
 }
 })();
