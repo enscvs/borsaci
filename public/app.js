@@ -5956,7 +5956,7 @@ function renderRiskSettings(
 }
 
 
-function saveRiskSettingsFromForm(
+async function saveRiskSettingsFromForm(
   event
 ) {
 
@@ -5984,41 +5984,46 @@ function saveRiskSettingsFromForm(
       }
     );
 
-  const state =
-    loadLocalTradingState() || {};
-
-  const nextState = {
-    ...state,
-    risk,
-  };
-
-  saveLocalTradingState(nextState);
-  renderRiskSettings(risk);
-
-  renderAiDecisions(
-    nextState.decisions
-  );
-
-  const activity =
-    [
+  try {
+    const response = await fetch(
+      "/api/trading/risk-settings",
       {
-        timestamp: new Date().toISOString(),
-        type: "RISK",
-        message: "Risk Engine ayarları güncellendi.",
-      },
-      ...(
-        Array.isArray(nextState.activity)
-          ? nextState.activity
-          : []
-      ),
-    ].slice(0, 100);
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(risk),
+      }
+    );
+    const state = await response.json();
 
-  nextState.activity = activity;
-  saveLocalTradingState(nextState);
-  renderTradingActivity(activity);
+    if (!response.ok) {
+      throw new Error(
+        state?.error ||
+        "Risk Engine ayarları kaydedilemedi."
+      );
+    }
+
+    /*
+     * Sunucu kalıcı kaynaktır: aynı anda Risk Engine,
+     * Paper Portfolio ve activity kayıtlarını günceller.
+     */
+    saveLocalTradingState(state);
+    renderRiskSettings(state.risk);
+    renderPaperPortfolio(state.paper);
+    renderAiDecisions(state.decisions || []);
+    renderOpenPositions(state.paper?.positions || []);
+    renderTradingActivity(state.activity || []);
+    renderSignalHistory(state.history || []);
+    renderPerformance(state);
+
+  } catch (error) {
+    alert(
+      `Risk Engine ayarları kaydedilemedi: ${error.message}`
+    );
+  }
 
 }
-
 
 function bindRiskSettings() {
 
