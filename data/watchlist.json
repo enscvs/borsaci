@@ -4,11 +4,45 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 83653.5,
+      "cash": 48658.350000000006,
       "equity": 99917.40046691895,
       "pnl": 131.60000000000053,
       "pnlPercent": 0.13160000000000052,
       "positions": [
+        {
+          "id": "paper-2026-08-21T22:25:56.975Z-GESAN",
+          "decisionId": "1787351156464-GESAN",
+          "symbol": "GESAN",
+          "quantity": 205,
+          "originalQuantity": 205,
+          "entry": 86.75,
+          "current": 86.75,
+          "stop": 81.89,
+          "target1": 96.47,
+          "target2": 101.33,
+          "status": "OPEN",
+          "openedAt": "2026-08-21T22:25:56.975Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-21T22:25:56.975Z-BINBN",
+          "decisionId": "1787351156464-BINBN",
+          "symbol": "BINBN",
+          "quantity": 94,
+          "originalQuantity": 94,
+          "entry": 183.1,
+          "current": 183.1,
+          "stop": 172.5,
+          "target1": 204.29,
+          "target2": 214.89,
+          "status": "OPEN",
+          "openedAt": "2026-08-21T22:25:56.975Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-21T22:17:02.639Z-GESAN",
           "decisionId": "1787350622126-GESAN",
@@ -179,6 +213,108 @@
         "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
         "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
         "timestamp": "2026-08-21T22:17:02.126Z"
+      },
+      {
+        "id": "1787351156464-BINBN",
+        "rank": 2,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 94,
+        "entry": {
+          "low": 180.98,
+          "high": 184.51,
+          "reference": 183.1
+        },
+        "stop": 172.5,
+        "target1": 204.29,
+        "target2": 214.89,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 100000,
+          "riskBudget": 1000,
+          "maxPositionValue": 32000,
+          "stopDistance": 10.6,
+          "quantity": 94,
+          "positionValue": 17211.4,
+          "actualRisk": 996.4,
+          "riskPerTradePercent": 1,
+          "maxPositionPercent": 32,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 54.69,
+          "atr": 7.06,
+          "volatility": 3.86
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-21T22:25:56.464Z",
+          "expiresAt": "2026-08-22T22:25:56.464Z",
+          "openedAt": "2026-08-21T22:25:56.975Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
+        "timestamp": "2026-08-21T22:25:56.464Z"
+      },
+      {
+        "id": "1787351156464-GESAN",
+        "rank": 3,
+        "symbol": "GESAN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 94,
+        "entry": {
+          "low": 85.78,
+          "high": 87.4,
+          "reference": 86.75
+        },
+        "stop": 81.89,
+        "target1": 96.47,
+        "target2": 101.33,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 100000,
+          "riskBudget": 1000,
+          "maxPositionValue": 32000,
+          "stopDistance": 4.86,
+          "quantity": 205,
+          "positionValue": 17783.75,
+          "actualRisk": 996.3,
+          "riskPerTradePercent": 1,
+          "maxPositionPercent": 32,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 61.52,
+          "atr": 3.24,
+          "volatility": 3.73
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-21T22:25:56.464Z",
+          "expiresAt": "2026-08-22T22:25:56.464Z",
+          "openedAt": "2026-08-21T22:25:56.975Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
+        "timestamp": "2026-08-21T22:25:56.464Z"
       }
     ],
     "history": [
@@ -454,6 +590,21 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T22:25:56.975Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) retained or generated."
+      },
+      {
+        "timestamp": "2026-08-21T22:25:56.975Z",
+        "type": "PAPER_OPEN",
+        "message": "GESAN paper pozisyonu açıldı: 205 lot · ₺17783.75."
+      },
+      {
+        "timestamp": "2026-08-21T22:25:56.975Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN paper pozisyonu açıldı: 94 lot · ₺17211.40."
+      },
       {
         "timestamp": "2026-08-21T22:25:55.628Z",
         "type": "CLOSED",
