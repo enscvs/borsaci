@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 34316.10054321289,
+      "cash": 49517.000979614255,
       "equity": 49517.000979614255,
-      "pnl": -282.79696044921707,
-      "pnlPercent": -0.5655939208984342,
+      "pnl": -482.9965240478503,
+      "pnlPercent": -0.9659930480957005,
       "positions": [
         {
           "id": "paper-2026-08-21T22:58:12.119Z-BINBN",
@@ -77,11 +77,13 @@
           "stop": 101.19,
           "target1": 120.72,
           "target2": 127.23,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-21T22:56:13.588Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": -200.19956359863323
+          "pnl": -200.19956359863323,
+          "closedAt": "2026-08-21T23:31:04.169Z",
+          "closeReason": "KILL_SWITCH_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-21T22:28:29.796Z-GESAN",
@@ -303,59 +305,9 @@
     },
     "killSwitch": {
       "active": true,
-      "activatedAt": "2026-08-21T23:23:57.206Z"
+      "activatedAt": "2026-08-21T23:31:04.169Z"
     },
     "decisions": [
-      {
-        "id": "1787352973195-ALARK",
-        "rank": 1,
-        "symbol": "ALARK",
-        "action": "BUY SETUP",
-        "status": "OPEN",
-        "confidence": 94,
-        "entry": {
-          "low": 106.4,
-          "high": 108.57,
-          "reference": 107.7
-        },
-        "stop": 101.19,
-        "target1": 120.72,
-        "target2": 127.23,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 6.51,
-          "quantity": 143,
-          "positionValue": 15401.1,
-          "actualRisk": 930.93,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 55.36,
-          "atr": 4.34,
-          "volatility": 4.03
-        },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-21T22:56:13.195Z",
-          "expiresAt": "2026-08-22T22:56:13.195Z",
-          "openedAt": "2026-08-21T22:56:13.588Z"
-        },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
-        "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:56:13.195Z"
-      },
       {
         "id": "1787355039184-BINBN",
         "rank": 2,
@@ -456,6 +408,59 @@
       }
     ],
     "history": [
+      {
+        "id": "1787352973195-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "BUY SETUP",
+        "status": "CLOSED",
+        "confidence": 94,
+        "entry": {
+          "low": 106.4,
+          "high": 108.57,
+          "reference": 107.7
+        },
+        "stop": 101.19,
+        "target1": 120.72,
+        "target2": 127.23,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 6.51,
+          "quantity": 143,
+          "positionValue": 15401.1,
+          "actualRisk": 930.93,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 55.36,
+          "atr": 4.34,
+          "volatility": 4.03
+        },
+        "lifecycle": {
+          "stage": "CLOSED",
+          "createdAt": "2026-08-21T22:56:13.195Z",
+          "expiresAt": "2026-08-22T22:56:13.195Z",
+          "openedAt": "2026-08-21T22:56:13.588Z",
+          "closedAt": "2026-08-21T23:31:04.169Z"
+        },
+        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
+        "timestamp": "2026-08-21T22:56:13.195Z",
+        "outcome": "KILL_SWITCH_MARKET_CLOSE",
+        "realizedPnL": -200.19956359863323
+      },
       {
         "id": "1787352973195-GESAN",
         "rank": 3,
@@ -1211,6 +1216,16 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T23:31:04.169Z",
+        "type": "KILL_SWITCH",
+        "message": "KILL SWITCH AKTİF: 1 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
+      },
+      {
+        "timestamp": "2026-08-21T23:31:04.169Z",
+        "type": "CLOSED",
+        "message": "ALARK paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-200.20."
+      },
       {
         "timestamp": "2026-08-21T23:30:39.717Z",
         "type": "SCAN",
