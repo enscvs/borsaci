@@ -5270,6 +5270,13 @@ function renderOpenPositions(
           <td>${formatCurrency(item.target2)}</td>
           <td>${formatCurrency(item.pnl)}</td>
           <td>OPEN</td>
+          <td>
+            <button
+              type="button"
+              class="trading-button danger position-close-button"
+              data-position-close="${item.decisionId}"
+            >CLOSE</button>
+          </td>
         </tr>
       `
     ).join("");
@@ -5406,23 +5413,39 @@ function bindDecisionBoard() {
           "[data-paper-action]"
         );
 
-      if (!action) return;
+      if (action) {
 
-      const decision =
-        renderedDecisionRecords.find(
-          item =>
-            item.id ===
-            action.dataset.decisionId
+        const decision =
+          renderedDecisionRecords.find(
+            item =>
+              item.id ===
+              action.dataset.decisionId
+          );
+
+        if (!decision) return;
+
+        if (
+          action.dataset.paperAction === "open"
+        ) {
+          openPaperPosition(decision);
+        } else {
+          closePaperPosition(decision.id);
+        }
+
+        return;
+
+      }
+
+      const closeButton =
+        event.target.closest(
+          "[data-position-close]"
         );
 
-      if (!decision) return;
-
-      if (
-        action.dataset.paperAction === "open"
-      ) {
-        openPaperPosition(decision);
-      } else {
-        closePaperPosition(decision.id);
+      if (closeButton) {
+        closePaperPosition(
+          closeButton.dataset.positionClose,
+          "MANUAL_CLOSE"
+        );
       }
 
     }
