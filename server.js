@@ -54,7 +54,7 @@ async function sendTelegramNotification(
 
     const response =
       await fetch(
-        \`https://api.telegram.org/bot\${TELEGRAM_BOT_TOKEN}/sendMessage\`,
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
         {
           method: "POST",
           headers: {
@@ -71,7 +71,7 @@ async function sendTelegramNotification(
 
     if (!response.ok) {
       throw new Error(
-        \`Telegram HTTP \${response.status}\`
+        `Telegram HTTP ${response.status}`
       );
     }
 
@@ -3653,7 +3653,7 @@ function openEligiblePaperPositions(
     }
 
     const position = {
-      id: \`paper-\${timestamp}-\${decision.symbol}\`,
+      id: `paper-${timestamp}-${decision.symbol}`,
       decisionId: decision.id,
       symbol: decision.symbol,
       quantity,
@@ -3690,7 +3690,7 @@ function openEligiblePaperPositions(
     addTradingActivity(
       state,
       "PAPER_OPEN",
-      \`\${position.symbol} paper pozisyonu açıldı: \${quantity} lot · ₺\${positionValue.toFixed(2)}.\`,
+      `${position.symbol} paper pozisyonu açıldı: ${quantity} lot · ₺${positionValue.toFixed(2)}.`,
       timestamp
     );
 
@@ -3761,7 +3761,7 @@ function completedFourHourClose(
         : "14-18";
 
     const key =
-      \`\${parts.year}-\${parts.month}-\${parts.day}-\${bucket}\`;
+      `${parts.year}-${parts.month}-${parts.day}-${bucket}`;
 
     const candles =
       groups.get(key) || [];
@@ -3851,7 +3851,7 @@ function closeMonitoredPaperPosition(
   addTradingActivity(
     state,
     status,
-    \`\${position.symbol} paper pozisyonu kapatıldı: \${reason} · ₺\${totalPnl.toFixed(2)}.\`,
+    `${position.symbol} paper pozisyonu kapatıldı: ${reason} · ₺${totalPnl.toFixed(2)}.`,
     timestamp
   );
 
@@ -3859,7 +3859,7 @@ function closeMonitoredPaperPosition(
     symbol: position.symbol,
     type: status,
     message:
-      \`BORSACI PAPER \${status}\\n\${position.symbol}\\nFiyat: ₺\${closePrice.toFixed(2)}\\nToplam P&L: ₺\${totalPnl.toFixed(2)}\\nNeden: \${reason}\`,
+      `BORSACI PAPER ${status}\\n${position.symbol}\\nFiyat: ₺${closePrice.toFixed(2)}\\nToplam P&L: ₺${totalPnl.toFixed(2)}\\nNeden: ${reason}`,
   };
 
 }
@@ -3984,12 +3984,12 @@ async function monitorPaperPositions() {
         addTradingActivity(
           state,
           "TP1",
-          \`\${position.symbol} TP1: \${closeQuantity} lot kapatıldı, SL maliyete çekildi.\`,
+          `${position.symbol} TP1: ${closeQuantity} lot kapatıldı, SL maliyete çekildi.`,
           timestamp
         );
 
         notifications.push(
-          \`BORSACI PAPER TP1\\n\${position.symbol}\\n\${closeQuantity} lot kapandı · ₺\${(current * closeQuantity).toFixed(2)}\\nKalan: \${position.quantity} lot\\nSL maliyete çekildi.\`
+          `BORSACI PAPER TP1\\n${position.symbol}\\n${closeQuantity} lot kapandı · ₺${(current * closeQuantity).toFixed(2)}\\nKalan: ${position.quantity} lot\\nSL maliyete çekildi.`
         );
       }
 
@@ -4045,7 +4045,7 @@ async function monitorPaperPositions() {
     } catch (error) {
 
       console.error(
-        \`PAPER MONITOR \${savedPosition.symbol}:\`,
+        `PAPER MONITOR ${savedPosition.symbol}:`,
         error.message
       );
 
@@ -4170,7 +4170,7 @@ async function recordAiDecisions(
   addTradingActivity(
     state,
     "SCAN",
-    \`\${state.decisions.length} active AI decision(s) retained or generated.\`,
+    `${state.decisions.length} active AI decision(s) retained or generated.`,
     now
   );
 
@@ -4184,7 +4184,7 @@ async function recordAiDecisions(
     const position of opened
   ) {
     await sendTelegramNotification(
-      \`BORSACI PAPER OPEN\\n\${position.symbol}\\n\${position.quantity} lot · ₺\${(position.quantity * position.entry).toFixed(2)}\\nGiriş: ₺\${position.entry.toFixed(2)}\\nSL: ₺\${position.stop.toFixed(2)}\\nTP1: ₺\${position.target1.toFixed(2)} · TP2: ₺\${position.target2.toFixed(2)}\`
+      `BORSACI PAPER OPEN\\n${position.symbol}\\n${position.quantity} lot · ₺${(position.quantity * position.entry).toFixed(2)}\\nGiriş: ₺${position.entry.toFixed(2)}\\nSL: ₺${position.stop.toFixed(2)}\\nTP1: ₺${position.target1.toFixed(2)} · TP2: ₺${position.target2.toFixed(2)}`
     );
   }
 
