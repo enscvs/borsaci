@@ -5856,38 +5856,22 @@ function normalizeRiskSettings(
         1000,
         Number(value?.capital) || 100000
       ),
-    riskPerTradePercent:
-      Math.min(
-        10,
-        Math.max(
-          0.1,
-          Number(value?.riskPerTradePercent) || 1
-        )
-      ),
     maxPositionPercent:
       Math.min(
-        100,
+        33,
         Math.max(
           1,
-          Number(value?.maxPositionPercent) || 32
+          Number(value?.maxPositionPercent) || 31
         )
       ),
     maxPositions:
       Math.min(
-        20,
+        3,
         Math.max(
           1,
           Math.floor(
             Number(value?.maxPositions) || 3
           )
-        )
-      ),
-    dailyLossLimitPercent:
-      Math.min(
-        20,
-        Math.max(
-          0.1,
-          Number(value?.dailyLossLimitPercent) || 3
         )
       ),
     capitalSource:
@@ -5918,14 +5902,21 @@ function renderRiskSettings(
   const risk =
     normalizeRiskSettings(settings);
 
+  const reservePercent =
+    Math.max(
+      0,
+      100 -
+      risk.maxPositionPercent *
+      risk.maxPositions
+    );
+
   const display = {
     maxPositions: risk.maxPositions,
-    riskPerTrade:
-      `%${risk.riskPerTradePercent.toFixed(2)}`,
-    maxPositionSize:
+    targetPositionSize:
       `%${risk.maxPositionPercent.toFixed(2)}`,
-    dailyLossLimit:
-      `%${risk.dailyLossLimitPercent.toFixed(2)}`,
+    cashReserve:
+      `%${reservePercent.toFixed(2)}`,
+    stopRule: "AI DECISION",
   };
 
   Object.entries(display).forEach(
@@ -5940,14 +5931,10 @@ function renderRiskSettings(
 
   const inputs = {
     riskCapitalInput: risk.capital,
-    riskPerTradeInput:
-      risk.riskPerTradePercent,
     maxPositionInput:
       risk.maxPositionPercent,
     maxPositionsInput:
       risk.maxPositions,
-    dailyLossLimitInput:
-      risk.dailyLossLimitPercent,
     capitalSourceInput:
       risk.capitalSource,
   };
@@ -5978,10 +5965,6 @@ function saveRiskSettingsFromForm(
           document.getElementById(
             "riskCapitalInput"
           )?.value,
-        riskPerTradePercent:
-          document.getElementById(
-            "riskPerTradeInput"
-          )?.value,
         maxPositionPercent:
           document.getElementById(
             "maxPositionInput"
@@ -5989,10 +5972,6 @@ function saveRiskSettingsFromForm(
         maxPositions:
           document.getElementById(
             "maxPositionsInput"
-          )?.value,
-        dailyLossLimitPercent:
-          document.getElementById(
-            "dailyLossLimitInput"
           )?.value,
         capitalSource:
           document.getElementById(
@@ -6122,8 +6101,6 @@ async function runTradingScanner() {
         {
           capital:
             String(risk.capital),
-          riskPerTradePercent:
-            String(risk.riskPerTradePercent),
           maxPositionPercent:
             String(risk.maxPositionPercent),
           maxPositions:

@@ -3199,8 +3199,7 @@ function createDefaultTradingState() {
     },
 
     risk: {
-      riskPerTradePercent: 1,
-      maxPositionPercent: 32,
+      maxPositionPercent: 31,
       maxPositions: 3,
     },
 
@@ -3424,27 +3423,24 @@ function buildAiDecision(
       Number(riskSettings.capital) || 100000
     );
 
-  const riskPerTradePercent =
-    Math.min(
-      10,
-      Math.max(
-        0.1,
-        Number(riskSettings.riskPerTradePercent) || 1
-      )
-    );
-
+  /*
+   * Pozisyon boyutu artık AI stop mesafesine göre
+   * küçültülmez. Her uygun işlem portföyün hedef
+   * yüzdesi kadar tahsis alır; stop yalnızca teknik
+   * geçersizlik/kapanış kuralıdır.
+   */
   const maxPositionPercent =
     Math.min(
-      100,
+      33,
       Math.max(
         1,
-        Number(riskSettings.maxPositionPercent) || 32
+        Number(riskSettings.maxPositionPercent) || 31
       )
     );
 
   const maxPositions =
     Math.min(
-      20,
+      3,
       Math.max(
         1,
         Math.floor(
@@ -3453,26 +3449,34 @@ function buildAiDecision(
       )
     );
 
-  const riskBudget =
-    capital * (riskPerTradePercent / 100);
-
-  const maxPositionValue =
+  const targetPositionValue =
     capital * (maxPositionPercent / 100);
+
   const stopDistance =
     Math.max(entryReference - stop, 0.01);
+
   const quantity = Math.max(
     0,
     Math.floor(
-      Math.min(
-        riskBudget / stopDistance,
-        maxPositionValue / entryReference
-      )
+      targetPositionValue / entryReference
     )
   );
+
   const positionValue =
     roundTradingValue(quantity * entryReference);
+
+  /*
+   * Bilgi amaçlıdır; lot hesaplamasında veya otomatik
+   * kapatma kuralında limit olarak kullanılmaz.
+   */
   const actualRisk =
     roundTradingValue(quantity * stopDistance);
+
+  const reservePercent =
+    Math.max(
+      0,
+      100 - maxPositionPercent * maxPositions
+    );
 
   let action = "NO TRADE";
   let status = "REJECTED";
@@ -3543,13 +3547,12 @@ function buildAiDecision(
     riskReward: "1:2.0",
     riskPlan: {
       capital,
-      riskBudget,
-      maxPositionValue,
+      targetPositionValue,
+      reservePercent,
       stopDistance: roundTradingValue(stopDistance),
       quantity,
       positionValue,
       actualRisk,
-      riskPerTradePercent,
       maxPositionPercent,
       maxPositions,
     },
