@@ -4775,6 +4775,217 @@ SCAN
 --------------------------------------------------------
 */
 
+const aiDecisionFeed =
+  document.getElementById(
+    "aiDecisionFeed"
+  );
+
+const tradingActivity =
+  document.getElementById(
+    "tradingActivity"
+  );
+
+
+function formatCurrency(
+  value
+) {
+
+  if (
+    !Number.isFinite(
+      Number(value)
+    )
+  ) {
+    return "--";
+  }
+
+  return new Intl.NumberFormat(
+    "tr-TR",
+    {
+      style: "currency",
+      currency: "TRY",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }
+  ).format(Number(value));
+
+}
+
+
+function renderAiDecisions(
+  decisions
+) {
+
+  if (!aiDecisionFeed) {
+    return;
+  }
+
+  if (
+    !Array.isArray(decisions) ||
+    decisions.length === 0
+  ) {
+
+    aiDecisionFeed.innerHTML =
+      '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
+
+    return;
+
+  }
+
+  aiDecisionFeed.innerHTML =
+    decisions.map(
+      item => `
+        <div class="decision-item">
+          <strong>${item.symbol}</strong>
+          <span>${item.action} · ${item.status}</span>
+          <span>Güven %${item.confidence}</span>
+          <span>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span>
+          <span>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</span>
+          <small>${item.reason}</small>
+        </div>
+      `
+    ).join("");
+
+
+}
+
+
+function renderPaperPortfolio(
+  paper
+) {
+
+  if (!paper) {
+    return;
+  }
+
+  const fields = {
+    paperInitialCapital:
+      paper.initialCapital,
+    paperCash:
+      paper.cash,
+    paperEquity:
+      paper.equity,
+    paperPnL:
+      paper.pnl,
+  };
+
+  Object.entries(fields).forEach(
+    ([id, value]) => {
+
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+        element.textContent =
+          formatCurrency(value);
+      }
+
+    }
+  );
+
+  const pnlPercent =
+    document.getElementById(
+      "paperPnLPct"
+    );
+
+  if (pnlPercent) {
+    pnlPercent.textContent =
+      formatPercent(
+        paper.pnlPercent
+      );
+  }
+
+  const positionCount =
+    document.getElementById(
+      "paperPositionCount"
+    );
+
+  if (positionCount) {
+    positionCount.textContent =
+      String(
+        Array.isArray(
+          paper.positions
+        )
+          ? paper.positions.length
+          : 0
+      );
+  }
+
+}
+
+
+function renderTradingActivity(
+  activity
+) {
+
+  if (!tradingActivity) {
+    return;
+  }
+
+  if (
+    !Array.isArray(activity) ||
+    activity.length === 0
+  ) {
+    return;
+  }
+
+  tradingActivity.innerHTML =
+    activity.slice(0, 8).map(
+      item => `
+        <div class="log-line">
+          <span class="log-time">
+            ${new Date(item.timestamp).toLocaleTimeString("tr-TR")}
+          </span>
+          <span>${item.message}</span>
+        </div>
+      `
+    ).join("");
+
+}
+
+
+async function loadTradingState() {
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/trading/state",
+        {
+          cache: "no-store"
+        }
+      );
+
+    if (!response.ok) {
+      return;
+    }
+
+    const state =
+      await response.json();
+
+    renderAiDecisions(
+      state.decisions
+    );
+
+    renderPaperPortfolio(
+      state.paper
+    );
+
+    renderTradingActivity(
+      state.activity
+    );
+
+  } catch (error) {
+
+    console.error(
+      "Trading state yüklenemedi:",
+      error
+    );
+
+  }
+
+}
+
+
 async function runTradingScanner() {
 
   if (
@@ -4853,6 +5064,18 @@ async function runTradingScanner() {
 
     renderScannerResults(
       data.results
+    );
+
+    renderAiDecisions(
+      data.decisions
+    );
+
+    renderPaperPortfolio(
+      data.paper
+    );
+
+    renderTradingActivity(
+      data.activity
     );
 
 
@@ -5001,6 +5224,8 @@ function bindTradingScannerControls() {
     );
 
   }
+
+  loadTradingState();
 
   if (
     scannerStopButton &&
