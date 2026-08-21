@@ -1317,6 +1317,43 @@ Waiting for input...
     </section>
 
 
+    <!-- ==================================================
+         KILL SWITCH
+    ================================================== -->
+
+    <section class="kill-switch-panel" aria-label="Emergency trading stop">
+      <div class="kill-switch-heading">
+        <span class="kill-switch-icon">⚠</span>
+        <div>
+          <strong>KILL SWITCH</strong>
+          <small id="killSwitchStatus">SAFE · NEW PAPER TRADES ENABLED</small>
+        </div>
+      </div>
+
+      <p>
+        Yeni paper işlemleri derhal durdurur. Açık pozisyonların TP/SL takibi devam eder.
+      </p>
+
+      <div class="kill-switch-controls">
+        <input
+          id="killSwitchPassword"
+          type="password"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="KILL SWITCH PASSWORD"
+          aria-label="Kill Switch password"
+        >
+        <button
+          type="button"
+          id="killSwitchToggle"
+          class="kill-switch-button"
+        >
+          ACTIVATE KILL SWITCH
+        </button>
+      </div>
+    </section>
+
+
   </section>
 
 
@@ -1439,6 +1476,76 @@ Waiting for input...
   .decision-detail-panel button { margin-top:8px; }
   .risk-settings select { background:#071007; color:#d7f7d7; border:1px solid #315431; padding:7px; font:inherit; }
   @media(max-width:800px){.decision-price-grid{grid-template-columns:1fr}.decision-price-grid span{border-bottom:1px solid rgba(72,255,104,.13)}} 
+  .kill-switch-panel {
+    max-width: 720px;
+    margin: 30px auto 45px;
+    padding: 18px;
+    border: 1px solid rgba(255, 76, 76, .75);
+    background: linear-gradient(135deg, rgba(56, 5, 5, .92), rgba(17, 5, 5, .95));
+    box-shadow: 0 0 26px rgba(255, 47, 47, .18);
+    text-align: center;
+  }
+  .kill-switch-heading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 11px;
+    color: #ff7070;
+    letter-spacing: .12em;
+  }
+  .kill-switch-heading strong { font-size: 16px; }
+  .kill-switch-heading small {
+    display: block;
+    margin-top: 4px;
+    color: #d7b0b0;
+    font-size: 9px;
+    letter-spacing: .08em;
+  }
+  .kill-switch-icon {
+    font-size: 28px;
+    color: #ff3f3f;
+    text-shadow: 0 0 12px #ff2727;
+  }
+  .kill-switch-panel p {
+    margin: 12px 0;
+    color: #d6bcbc;
+    font-size: 11px;
+  }
+  .kill-switch-controls {
+    display: flex;
+    justify-content: center;
+    gap: 9px;
+    flex-wrap: wrap;
+  }
+  .kill-switch-controls input {
+    min-width: 210px;
+    padding: 10px;
+    border: 1px solid #7f3535;
+    background: #100707;
+    color: #ffe3e3;
+    font: inherit;
+    text-align: center;
+  }
+  .kill-switch-button {
+    padding: 10px 15px;
+    border: 1px solid #ff4d4d;
+    background: #7b1010;
+    color: #fff1f1;
+    font: inherit;
+    cursor: pointer;
+    letter-spacing: .06em;
+    box-shadow: 0 0 10px rgba(255, 45, 45, .27);
+  }
+  .kill-switch-button:hover,
+  .kill-switch-button.is-active {
+    background: #c62828;
+    box-shadow: 0 0 18px rgba(255, 45, 45, .58);
+  }
+  .kill-switch-button:disabled {
+    opacity: .6;
+    cursor: wait;
+  }
+
 </style>
 
 
@@ -1447,7 +1554,7 @@ Waiting for input...
 ===================================================== -->
 
 <script
-  src="/app.js?v=20260822-paper-capital"
+  src="/app.js?v=20260822-kill-switch"
   defer
 ></script>
 
