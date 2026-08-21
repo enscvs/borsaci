@@ -4559,5 +4559,437 @@ console.log(
       padding:4px 8px;
     `
   );
+/*
+========================================================
+AI TRADING SCANNER
+========================================================
+*/
 
+const scannerStartButton =
+  document.getElementById(
+    "startScannerBtn"
+  );
+
+const scannerStopButton =
+  document.getElementById(
+    "stopScannerBtn"
+  );
+
+const scannerResults =
+  document.getElementById(
+    "scannerResults"
+  );
+
+const scannerStatus =
+  document.getElementById(
+    "scannerStatus"
+  );
+
+const tradingEngineStatus =
+  document.getElementById(
+    "tradingEngineStatus"
+  );
+
+const lastScanTime =
+  document.getElementById(
+    "lastScanTime"
+  );
+
+
+let scannerRunning = false;
+
+
+/*
+--------------------------------------------------------
+FORMAT
+--------------------------------------------------------
+*/
+
+function formatPrice(
+  value
+) {
+
+  if (
+    !Number.isFinite(
+      Number(value)
+    )
+  ) {
+    return "--";
+  }
+
+  return Number(value)
+    .toFixed(2);
+
+}
+
+
+function formatPercent(
+  value
+) {
+
+  if (
+    !Number.isFinite(
+      Number(value)
+    )
+  ) {
+    return "--";
+  }
+
+  return (
+    Number(value)
+      .toFixed(1) +
+    "%"
+  );
+
+}
+
+
+/*
+--------------------------------------------------------
+RENDER
+--------------------------------------------------------
+*/
+
+function renderScannerResults(
+  results
+) {
+
+  if (
+    !scannerResults
+  ) {
+    return;
+  }
+
+  if (
+    !Array.isArray(results) ||
+    results.length === 0
+  ) {
+
+    scannerResults.innerHTML = `
+      <div class="trading-empty">
+        Uygun setup bulunamadı.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  scannerResults.innerHTML =
+    results.map(
+      (item, index) => {
+
+        const scoreClass =
+          item.score >= 80
+            ? "buy"
+            : item.score >= 65
+              ? "watch"
+              : "neutral";
+
+
+        const signals =
+          Array.isArray(
+            item.signals
+          )
+            ? item.signals
+                .slice(0, 4)
+                .join(" • ")
+            : "";
+
+
+        return `
+
+          <div
+            class="scanner-card ${scoreClass}"
+            data-symbol="${item.symbol}"
+          >
+
+            <div class="scanner-rank">
+              #${index + 1}
+            </div>
+
+            <div class="scanner-symbol">
+              ${item.symbol}
+            </div>
+
+            <div class="scanner-price">
+              ₺${formatPrice(item.price)}
+            </div>
+
+            <div class="scanner-score">
+              ${item.score}
+            </div>
+
+            <div class="scanner-decision">
+              ${item.decision}
+            </div>
+
+            <div class="scanner-indicators">
+
+              <span>
+                RSI
+                ${formatPrice(item.rsi)}
+              </span>
+
+              <span>
+                EMA20
+                ₺${formatPrice(item.ema20)}
+              </span>
+
+              <span>
+                EMA50
+                ₺${formatPrice(item.ema50)}
+              </span>
+
+              <span>
+                ATR
+                ₺${formatPrice(item.atr)}
+              </span>
+
+            </div>
+
+            <div class="scanner-signals">
+              ${signals}
+            </div>
+
+          </div>
+
+        `;
+
+      }
+    ).join("");
+
+
+}
+
+
+/*
+--------------------------------------------------------
+SCAN
+--------------------------------------------------------
+*/
+
+async function runTradingScanner() {
+
+  if (
+    scannerRunning
+  ) {
+    return;
+  }
+
+  scannerRunning = true;
+
+
+  if (scannerStatus) {
+    scannerStatus.textContent =
+      "SCANNING";
+  }
+
+
+  if (tradingEngineStatus) {
+    tradingEngineStatus.textContent =
+      "SCANNING";
+  }
+
+
+  if (scannerStartButton) {
+    scannerStartButton.disabled =
+      true;
+
+    scannerStartButton.textContent =
+      "SCANNING...";
+  }
+
+
+  if (scannerResults) {
+
+    scannerResults.innerHTML = `
+      <div class="trading-empty">
+        BIST100 taranıyor...
+        <br>
+        <small>
+          Teknik veriler hesaplanıyor.
+        </small>
+      </div>
+    `;
+
+  }
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/api/trading/scanner",
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+
+      throw new Error(
+        data?.error ||
+        "Scanner başarısız."
+      );
+
+    }
+
+
+    renderScannerResults(
+      data.results
+    );
+
+
+    if (scannerStatus) {
+      scannerStatus.textContent =
+        "COMPLETE";
+    }
+
+
+    if (tradingEngineStatus) {
+      tradingEngineStatus.textContent =
+        "READY";
+    }
+
+
+    if (lastScanTime) {
+
+      lastScanTime.textContent =
+        new Date(
+          data.timestamp
+        ).toLocaleTimeString(
+          "tr-TR",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          }
+        );
+
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      "AI Trading Scanner:",
+      error
+    );
+
+
+    if (scannerStatus) {
+      scannerStatus.textContent =
+        "ERROR";
+    }
+
+
+    if (tradingEngineStatus) {
+      tradingEngineStatus.textContent =
+        "ERROR";
+    }
+
+
+    if (scannerResults) {
+
+      scannerResults.innerHTML = `
+        <div class="trading-empty">
+          Scanner hatası:
+          ${error.message}
+        </div>
+      `;
+
+    }
+
+  } finally {
+
+    scannerRunning =
+      false;
+
+
+    if (scannerStartButton) {
+
+      scannerStartButton.disabled =
+        false;
+
+      scannerStartButton.textContent =
+        "START SCANNER";
+
+    }
+
+  }
+
+}
+
+
+/*
+--------------------------------------------------------
+STOP
+--------------------------------------------------------
+*/
+
+function stopTradingScanner() {
+
+  /*
+   * İlk sürümde server tarafındaki
+   * mevcut request'i öldürmüyoruz.
+   * STOP sadece UI durumunu değiştiriyor.
+   *
+   * Gerçek cancellation'ı sonraki
+   * aşamada AbortController ile ekleyeceğiz.
+   */
+
+  scannerRunning = false;
+
+  if (scannerStatus) {
+    scannerStatus.textContent =
+      "IDLE";
+  }
+
+  if (tradingEngineStatus) {
+    tradingEngineStatus.textContent =
+      "READY";
+  }
+
+}
+
+
+/*
+--------------------------------------------------------
+BUTTONS
+--------------------------------------------------------
+*/
+
+if (
+  scannerStartButton
+) {
+
+  scannerStartButton.addEventListener(
+    "click",
+    runTradingScanner
+  );
+
+}
+
+
+if (
+  scannerStopButton
+) {
+
+  scannerStopButton.addEventListener(
+    "click",
+    stopTradingScanner
+  );
+
+}
 })();
