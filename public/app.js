@@ -6177,35 +6177,35 @@ async function runTradingScanner() {
     const previousState =
       loadLocalTradingState() || {};
 
-    const reconciled =
-      reconcileScanDecisions(
-        previousState.decisions,
-        data.decisions,
-        data.timestamp
-      );
-
+    /*
+     * Scanner yanıtı sunucuda kalıcı hale gelen tek
+     * kaynak durumdur. Eski localStorage OPEN etiketleri
+     * yeni PENDING kararlarını ezemez.
+     */
     const nextState = {
       decisions:
-        reconciled.decisions,
+        Array.isArray(data.decisions)
+          ? data.decisions
+          : [],
       paper:
         data.paper ||
         previousState.paper,
       activity:
-        data.activity,
+        Array.isArray(data.activity)
+          ? data.activity
+          : [],
       history:
-        uniqueDecisions(
-          [
-            ...reconciled.archived,
-            ...(
+        Array.isArray(data.history)
+          ? data.history
+          : (
               Array.isArray(previousState.history)
                 ? previousState.history
                 : []
             ),
-          ]
-        ).slice(0, 100),
       lastScanAt:
         data.timestamp,
-      risk,
+      risk:
+        data.risk || risk,
     };
 
     renderAiDecisions(

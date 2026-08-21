@@ -5026,12 +5026,17 @@ async function handleTradingScanner(
     } catch (error) {
 
       /*
-       * Karar kaydı hata verse bile scanner
-       * sonuç üretmeye devam eder.
+       * Paper işlem akışı kalıcı kayda bağlıdır. Kayıt
+       * başarısızken tarayıcıda sahte OPEN/PENDING durum
+       * göstermiyoruz; gerçek hata scanner'a dönsün.
        */
       console.error(
         "TRADING DECISION RECORD ERROR:",
         error
+      );
+
+      throw new Error(
+        `Trading state kaydedilemedi: ${error.message}`
       );
 
     }
@@ -5057,13 +5062,25 @@ async function handleTradingScanner(
         results:
           rankedResults,
 
-        decisions,
+        /*
+         * UI yalnızca kalıcı sunucu durumunu kullanır.
+         * Böylece OPEN kararı ile açık pozisyon kaydı
+         * her zaman aynı yanıttan gelir.
+         */
+        decisions:
+          tradingState.decisions,
 
         paper:
           tradingState.paper,
 
         activity:
           tradingState.activity,
+
+        history:
+          tradingState.history,
+
+        risk:
+          tradingState.risk,
 
       }
     );
