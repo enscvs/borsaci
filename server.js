@@ -144,7 +144,7 @@ function buildPaperOpenNotification(
     `SL: ${formatTelegramCurrency(position.stop)}`,
     `TP1: ${formatTelegramCurrency(position.target1)}`,
     `TP2: ${formatTelegramCurrency(position.target2)}`,
-    `Azami risk: ${formatTelegramCurrency(risk)}`,
+    `SL'ye kadar olası zarar: ${formatTelegramCurrency(risk)}`,
   ].join("\\n");
 
 }
@@ -3241,6 +3241,25 @@ function normalizeTradingState(
     risk: {
       ...fallback.risk,
       ...((value || {}).risk || {}),
+      /*
+       * Eski kayıtlardaki %32 hedefini de yeni portföy
+       * kuralına uydur: en fazla üç işlemle toplam %93,
+       * en az %7 nakit rezerv.
+       */
+      maxPositionPercent: Math.min(
+        31,
+        Math.max(
+          1,
+          Number((value || {}).risk?.maxPositionPercent) || 31
+        )
+      ),
+      maxPositions: Math.min(
+        3,
+        Math.max(
+          1,
+          Math.floor(Number((value || {}).risk?.maxPositions) || 3)
+        )
+      ),
     },
 
     decisions:
@@ -3431,7 +3450,7 @@ function buildAiDecision(
    */
   const maxPositionPercent =
     Math.min(
-      33,
+      31,
       Math.max(
         1,
         Number(riskSettings.maxPositionPercent) || 31

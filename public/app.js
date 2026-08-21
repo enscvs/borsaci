@@ -4857,7 +4857,7 @@ function renderAiDecisionDetail(
       <span>Stop: ${formatCurrency(item.stop)}</span>
       <span>TP1: ${formatCurrency(item.target1)}</span>
       <span>TP2: ${formatCurrency(item.target2)}</span>
-      <span>Risk: ${item.riskPlan?.quantity ?? "--"} lot / ${formatCurrency(item.riskPlan?.actualRisk)}</span>
+      <span>SL'ye kadar olası zarar: ${item.riskPlan?.quantity ?? "--"} lot / ${formatCurrency(item.riskPlan?.actualRisk)}</span>
       <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
     </div>
     <small>${item.reason}</small>
@@ -4911,7 +4911,7 @@ function renderAiDecisions(
           <div class="decision-summary">
             ${item.riskPlan?.quantity ?? "--"} lot ·
             ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
-            azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}
+            SL'ye kadar olası zarar ${formatCurrency(item.riskPlan?.actualRisk)}
           </div>
         </article>
       `
@@ -5858,7 +5858,7 @@ function normalizeRiskSettings(
       ),
     maxPositionPercent:
       Math.min(
-        33,
+        31,
         Math.max(
           1,
           Number(value?.maxPositionPercent) || 31
