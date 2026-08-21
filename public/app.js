@@ -4862,12 +4862,12 @@ function renderAiDecisionDetail(
     </div>
     <small>${item.reason}</small>
     <br>
-    <button
-      type="button"
-      class="trading-button"
-      data-paper-action="${position ? "close" : "open"}"
-      data-decision-id="${item.id}"
-    >${position ? "CLOSE PAPER POSITION" : "OPEN PAPER POSITION"}</button>
+    ${position
+      ? `<button type="button" class="trading-button" data-paper-action="close" data-decision-id="${item.id}">CLOSE PAPER POSITION</button>`
+      : item.action === "BUY SETUP" && item.status === "PENDING"
+        ? `<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`
+        : "<small>Paper işlem için yeni BUY SETUP bekleniyor.</small>"
+    }
   `;
 
 }
@@ -4986,110 +4986,31 @@ function savePaperState(
 }
 
 
-function openPaperPosition(
+async function openPaperPosition(
   decision
 ) {
+  if (!decision?.id) return;
+  try {
+    const response = await fetch("/api/trading/paper/open", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({decisionId: decision.id}),
+    });
+    const state = await response.json();
+    if (!response.ok) throw new Error(state.error || "Paper pozisyon açılamadı.");
 
-  const paper =
-    currentPaperState();
-
-  if (
-    decision?.action !== "BUY SETUP" ||
-    paper.positions.some(
-      item =>
-        item.decisionId === decision.id &&
-        item.status === "OPEN"
-    )
-  ) {
-    return;
+    saveLocalTradingState(state);
+    renderAiDecisions(state.decisions || []);
+    renderPaperPortfolio(state.paper);
+    renderOpenPositions(state.paper?.positions || []);
+    renderTradingActivity(state.activity || []);
+    renderSignalHistory(state.history || []);
+    renderPerformance(state.history || []);
+    renderAiDecisionDetail((state.decisions || []).find(item => item.id === decision.id) || decision);
+  } catch (error) {
+    alert(`Paper pozisyon açılamadı: ${error.message}`);
   }
-
-  const risk =
-    currentRiskSettings();
-
-  if (
-    paper.positions.filter(
-      item => item.status === "OPEN"
-    ).length >= risk.maxPositions
-  ) {
-    return;
-  }
-
-  const quantity =
-    Number(decision.riskPlan?.quantity) || 0;
-
-  const entry =
-    Number(decision.entry?.reference) || 0;
-
-  const positionValue =
-    quantity * entry;
-
-  if (
-    quantity <= 0 ||
-    positionValue > paper.cash
-  ) {
-    return;
-  }
-
-  const position = {
-    id: `paper-${Date.now()}-${decision.symbol}`,
-    decisionId: decision.id,
-    symbol: decision.symbol,
-    quantity,
-    originalQuantity: quantity,
-    entry,
-    current: entry,
-    stop: decision.stop,
-    target1: decision.target1,
-    target2: decision.target2,
-    status: "OPEN",
-    openedAt: new Date().toISOString(),
-    tp1Hit: false,
-    realizedPnl: 0,
-    pnl: 0,
-  };
-
-  const nextPaper = {
-    ...paper,
-    cash: paper.cash - positionValue,
-    positions: [
-      position,
-      ...paper.positions,
-    ],
-  };
-
-  const nextState =
-    savePaperState(
-      nextPaper,
-      `${decision.symbol} paper pozisyonu açıldı: ${quantity} lot · ${formatCurrency(positionValue)}.`
-    );
-
-  nextState.decisions =
-    (nextState.decisions || []).map(
-      item =>
-        item.id === decision.id
-          ? {
-              ...item,
-              status: "OPEN",
-              lifecycle: {
-                ...(item.lifecycle || {}),
-                stage: "OPEN",
-                openedAt: position.openedAt,
-              },
-            }
-          : item
-    );
-
-  saveLocalTradingState(nextState);
-  renderAiDecisions(nextState.decisions);
-  renderAiDecisionDetail(
-    nextState.decisions.find(
-      item => item.id === decision.id
-    )
-  );
-
 }
-
 
 function takePaperProfit1(
   decisionId
@@ -5177,140 +5098,31 @@ function takePaperProfit1(
 
 }
 
-function closePaperPosition(
-  decisionId,
-  reason = "MANUAL_CLOSE"
+async function closePaperPosition(
+  decisionId
 ) {
+  if (!decisionId) return;
+  try {
+    const response = await fetch("/api/trading/paper/close", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({decisionId}),
+    });
+    const state = await response.json();
+    if (!response.ok) throw new Error(state.error || "Paper pozisyon kapatılamadı.");
 
-  const state =
-    loadLocalTradingState() || {};
-
-  const paper =
-    currentPaperState();
-
-  const position =
-    paper.positions.find(
-      item =>
-        item.decisionId === decisionId &&
-        item.status === "OPEN"
-    );
-
-  if (!position) return;
-
-  const current =
-    Number(position.current) ||
-    Number(position.entry);
-
-  const closingPnl =
-    (current - Number(position.entry)) *
-    Number(position.quantity);
-
-  const totalPnl =
-    Number(position.realizedPnl || 0) +
-    closingPnl;
-
-  const nextPaper = {
-    ...paper,
-    cash:
-      paper.cash +
-      current * Number(position.quantity),
-    pnl:
-      paper.pnl + closingPnl,
-    positions:
-      paper.positions.map(
-        item =>
-          item.id === position.id
-            ? {
-                ...item,
-                current,
-                pnl: totalPnl,
-                status:
-                  reason === "STOPPED"
-                    ? "STOPPED"
-                    : "CLOSED",
-                closedAt:
-                  new Date().toISOString(),
-                closeReason: reason,
-              }
-            : item
-      ),
-  };
-
-  nextPaper.equity =
-    nextPaper.cash +
-    nextPaper.positions
-      .filter(
-        item => item.status === "OPEN"
-      )
-      .reduce(
-        (sum, item) =>
-          sum +
-          Number(item.current) *
-          Number(item.quantity),
-        0
-      );
-
-  nextPaper.pnlPercent =
-    (nextPaper.pnl /
-      nextPaper.initialCapital) * 100;
-
-  const nextState =
-    savePaperState(
-      nextPaper,
-      `${position.symbol} paper pozisyonu kapatıldı: ${reason} · ${formatCurrency(totalPnl)}.`
-    );
-
-  nextState.decisions =
-    (nextState.decisions || []).filter(
-      item => item.id !== decisionId
-    );
-
-  nextState.history =
-    uniqueDecisions(
-      [
-        {
-          ...state.decisions?.find(
-            item => item.id === decisionId
-          ),
-          status:
-            reason === "STOPPED"
-              ? "STOPPED"
-              : "CLOSED",
-          lifecycle: {
-            stage:
-              reason === "STOPPED"
-                ? "STOPPED"
-                : "CLOSED",
-            closedAt:
-              new Date().toISOString(),
-          },
-          realizedPnL: totalPnl,
-        },
-        ...(state.history || []),
-      ]
-    );
-
-  saveLocalTradingState(nextState);
-  renderAiDecisions(nextState.decisions);
-  renderSignalHistory(nextState.history);
-  renderAiDecisionDetail({
-    symbol: position.symbol,
-    action: "PAPER",
-    status: reason,
-    entry: { low: position.entry, high: position.entry },
-    stop: position.stop,
-    target1: position.target1,
-    target2: position.target2,
-    riskPlan: {
-      quantity: position.originalQuantity || position.quantity,
-      positionValue:
-        Number(position.originalQuantity || position.quantity) *
-        Number(position.entry),
-      actualRisk: 0,
-    },
-    reason: "Paper pozisyon kapandı.",
-  });
-
+    saveLocalTradingState(state);
+    renderAiDecisions(state.decisions || []);
+    renderPaperPortfolio(state.paper);
+    renderOpenPositions(state.paper?.positions || []);
+    renderTradingActivity(state.activity || []);
+    renderSignalHistory(state.history || []);
+    renderPerformance(state.history || []);
+    const closed = (state.history || []).find(item => item.id === decisionId);
+    if (closed) renderAiDecisionDetail(closed);
+  } catch (error) {
+    alert(`Paper pozisyon kapatılamadı: ${error.message}`);
+  }
 }
 
 function renderOpenPositions(
