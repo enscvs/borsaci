@@ -4,7 +4,7 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 48658.350000000006,
+      "cash": 66442.1,
       "equity": 99917.40046691895,
       "pnl": 131.60000000000053,
       "pnlPercent": 0.13160000000000052,
@@ -20,11 +20,13 @@
           "stop": 81.89,
           "target1": 96.47,
           "target2": 101.33,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-21T22:25:56.975Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0
+          "pnl": 0,
+          "closedAt": "2026-08-21T22:26:03.793Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-21T22:25:56.975Z-BINBN",
@@ -264,13 +266,15 @@
         "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
         "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
         "timestamp": "2026-08-21T22:25:56.464Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787351156464-GESAN",
         "rank": 3,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": 94,
         "entry": {
           "low": 85.78,
@@ -307,17 +311,18 @@
           "volatility": 3.73
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-21T22:25:56.464Z",
           "expiresAt": "2026-08-22T22:25:56.464Z",
-          "openedAt": "2026-08-21T22:25:56.975Z"
+          "openedAt": "2026-08-21T22:25:56.975Z",
+          "closedAt": "2026-08-21T22:26:03.793Z"
         },
         "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
         "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:25:56.464Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-21T22:25:56.464Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0
+      },
       {
         "id": "1787350622126-BINBN",
         "rank": 2,
@@ -590,6 +595,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-21T22:26:03.793Z",
+        "type": "CLOSED",
+        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
       {
         "timestamp": "2026-08-21T22:25:56.975Z",
         "type": "SCAN",
