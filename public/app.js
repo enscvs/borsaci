@@ -5695,14 +5695,18 @@ function renderPaperPortfolio(
     );
 
   if (positionCount) {
+    const closedPositions =
+      (Array.isArray(paper.positions)
+        ? paper.positions
+        : [])
+        .filter(
+          item =>
+            item.status === "CLOSED" ||
+            item.status === "STOPPED"
+        );
+
     positionCount.textContent =
-      String(
-        Array.isArray(
-          paper.positions
-        )
-          ? paper.positions.length
-          : 0
-      );
+      String(closedPositions.length);
   }
 
 }
