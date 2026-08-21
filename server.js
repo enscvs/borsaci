@@ -96,6 +96,85 @@ async function sendTelegramNotification(
 }
 
 
+function formatTelegramCurrency(
+  value
+) {
+
+  const amount =
+    Number(value);
+
+  return `₺${Number.isFinite(amount)
+    ? amount.toLocaleString(
+        "tr-TR",
+        {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }
+      )
+    : "--"}`;
+
+}
+
+
+function buildPaperOpenNotification(
+  position
+) {
+
+  const positionValue =
+    Number(position.quantity) *
+    Number(position.entry);
+
+  const risk =
+    Math.max(
+      0,
+      (
+        Number(position.entry) -
+        Number(position.stop)
+      ) * Number(position.quantity)
+    );
+
+  return [
+    "🟢 BORSACI · PAPER İŞLEM AÇILDI",
+    "",
+    `${position.symbol} · LONG`,
+    `Giriş: ${formatTelegramCurrency(position.entry)}`,
+    `Miktar: ${position.quantity} lot`,
+    `Pozisyon: ${formatTelegramCurrency(positionValue)}`,
+    "",
+    `SL: ${formatTelegramCurrency(position.stop)}`,
+    `TP1: ${formatTelegramCurrency(position.target1)}`,
+    `TP2: ${formatTelegramCurrency(position.target2)}`,
+    `Azami risk: ${formatTelegramCurrency(risk)}`,
+  ].join("\\n");
+
+}
+
+
+function buildPaperCloseNotification(
+  position,
+  closePrice,
+  status,
+  reason,
+  totalPnl
+) {
+
+  const stopped =
+    status === "STOPPED";
+
+  return [
+    stopped
+      ? "🛑 BORSACI · PAPER STOP"
+      : "✅ BORSACI · PAPER İŞLEM KAPANDI",
+    "",
+    `${position.symbol} · LONG`,
+    `Kapanış: ${formatTelegramCurrency(closePrice)}`,
+    `Toplam P&L: ${formatTelegramCurrency(totalPnl)}`,
+    `Neden: ${reason}`,
+  ].join("\\n");
+
+}
+
+
 /*
 ========================================================
 AI PROVIDERS
@@ -3875,7 +3954,13 @@ function closeMonitoredPaperPosition(
     symbol: position.symbol,
     type: status,
     message:
-      `BORSACI PAPER ${status}\\n${position.symbol}\\nFiyat: ₺${closePrice.toFixed(2)}\\nToplam P&L: ₺${totalPnl.toFixed(2)}\\nNeden: ${reason}`,
+      buildPaperCloseNotification(
+        position,
+        closePrice,
+        status,
+        reason,
+        totalPnl
+      ),
   };
 
 }
@@ -4200,7 +4285,9 @@ async function recordAiDecisions(
     const position of opened
   ) {
     await sendTelegramNotification(
-      `BORSACI PAPER OPEN\\n${position.symbol}\\n${position.quantity} lot · ₺${(position.quantity * position.entry).toFixed(2)}\\nGiriş: ₺${position.entry.toFixed(2)}\\nSL: ₺${position.stop.toFixed(2)}\\nTP1: ₺${position.target1.toFixed(2)} · TP2: ₺${position.target2.toFixed(2)}`
+      buildPaperOpenNotification(
+        position
+      )
     );
   }
 
@@ -4231,7 +4318,9 @@ async function handlePaperOpen(req, res) {
 
     await saveTradingState(state, stateResult.sha, stateResult.container);
     void sendTelegramNotification(
-      `BORSACI PAPER OPEN\\n${position.symbol}\\n${position.quantity} lot · ₺${(position.quantity * position.entry).toFixed(2)}`
+      buildPaperOpenNotification(
+        position
+      )
     );
     return sendJSON(res, 200, state);
   } catch (error) {
