@@ -5759,6 +5759,10 @@ async function loadTradingState() {
       localState.paper
     );
 
+    renderOpenPositions(
+      localState.paper?.positions
+    );
+
     renderTradingActivity(
       localState.activity
     );
@@ -5812,6 +5816,10 @@ async function loadTradingState() {
 
       renderPaperPortfolio(
         state.paper
+      );
+
+      renderOpenPositions(
+        state.paper?.positions
       );
 
       renderTradingActivity(
@@ -5888,6 +5896,10 @@ function normalizeRiskSettings(
           Number(value?.dailyLossLimitPercent) || 3
         )
       ),
+    capitalSource:
+      value?.capitalSource === "BROKER"
+        ? "BROKER"
+        : "MANUAL",
   };
 
 }
@@ -5942,6 +5954,8 @@ function renderRiskSettings(
       risk.maxPositions,
     dailyLossLimitInput:
       risk.dailyLossLimitPercent,
+    capitalSourceInput:
+      risk.capitalSource,
   };
 
   Object.entries(inputs).forEach(
@@ -5985,6 +5999,10 @@ function saveRiskSettingsFromForm(
         dailyLossLimitPercent:
           document.getElementById(
             "dailyLossLimitInput"
+          )?.value,
+        capitalSource:
+          document.getElementById(
+            "capitalSourceInput"
           )?.value,
       }
     );
@@ -6363,6 +6381,8 @@ function bindTradingScannerControls() {
   bindRiskSettings();
 
   bindSignalHistoryDetails();
+
+  bindDecisionBoard();
 
   if (
     scannerStopButton &&
