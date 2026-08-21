@@ -4990,13 +4990,11 @@ function openPaperPosition(
   decision
 ) {
 
-  const state =
-    loadLocalTradingState() || {};
-
   const paper =
     currentPaperState();
 
   if (
+    decision?.action !== "BUY SETUP" ||
     paper.positions.some(
       item =>
         item.decisionId === decision.id &&
@@ -5014,7 +5012,6 @@ function openPaperPosition(
       item => item.status === "OPEN"
     ).length >= risk.maxPositions
   ) {
-    alert("Maximum paper pozisyon sınırına ulaşıldı.");
     return;
   }
 
@@ -5031,7 +5028,6 @@ function openPaperPosition(
     quantity <= 0 ||
     positionValue > paper.cash
   ) {
-    alert("Paper bakiye bu pozisyon için yeterli değil.");
     return;
   }
 
@@ -5040,6 +5036,7 @@ function openPaperPosition(
     decisionId: decision.id,
     symbol: decision.symbol,
     quantity,
+    originalQuantity: quantity,
     entry,
     current: entry,
     stop: decision.stop,
@@ -5047,6 +5044,8 @@ function openPaperPosition(
     target2: decision.target2,
     status: "OPEN",
     openedAt: new Date().toISOString(),
+    tp1Hit: false,
+    realizedPnl: 0,
     pnl: 0,
   };
 
@@ -5062,7 +5061,7 @@ function openPaperPosition(
   const nextState =
     savePaperState(
       nextPaper,
-      `${decision.symbol} paper pozisyonu açıldı.`
+      `${decision.symbol} paper pozisyonu açıldı: ${quantity} lot · ${formatCurrency(positionValue)}.`
     );
 
   nextState.decisions =
@@ -5092,6 +5091,92 @@ function openPaperPosition(
 }
 
 
+function takePaperProfit1(
+  decisionId
+) {
+
+  const paper =
+    currentPaperState();
+
+  const position =
+    paper.positions.find(
+      item =>
+        item.decisionId === decisionId &&
+        item.status === "OPEN"
+    );
+
+  if (!position || position.tp1Hit) return;
+
+  const current =
+    Number(position.current) ||
+    Number(position.entry);
+
+  const closeQuantity =
+    Math.floor(
+      Number(position.quantity) / 2
+    );
+
+  const realizedPnl =
+    closeQuantity > 0
+      ? (current - Number(position.entry)) *
+        closeQuantity
+      : 0;
+
+  const remainingQuantity =
+    Number(position.quantity) - closeQuantity;
+
+  const nextPaper = {
+    ...paper,
+    cash:
+      paper.cash + current * closeQuantity,
+    pnl:
+      paper.pnl + realizedPnl,
+    positions:
+      paper.positions.map(
+        item =>
+          item.id === position.id
+            ? {
+                ...item,
+                quantity: remainingQuantity,
+                current,
+                stop: Number(position.entry),
+                tp1Hit: true,
+                realizedPnl:
+                  Number(position.realizedPnl || 0) +
+                  realizedPnl,
+                pnl:
+                  (current - Number(position.entry)) *
+                  remainingQuantity,
+              }
+            : item
+      ),
+  };
+
+  nextPaper.equity =
+    nextPaper.cash +
+    nextPaper.positions
+      .filter(
+        item => item.status === "OPEN"
+      )
+      .reduce(
+        (sum, item) =>
+          sum +
+          Number(item.current) *
+          Number(item.quantity),
+        0
+      );
+
+  nextPaper.pnlPercent =
+    (nextPaper.pnl /
+      nextPaper.initialCapital) * 100;
+
+  savePaperState(
+    nextPaper,
+    `${position.symbol} TP1: ${closeQuantity} lot kapatıldı, SL maliyete çekildi.`
+  );
+
+}
+
 function closePaperPosition(
   decisionId,
   reason = "MANUAL_CLOSE"
@@ -5116,9 +5201,13 @@ function closePaperPosition(
     Number(position.current) ||
     Number(position.entry);
 
-  const pnl =
+  const closingPnl =
     (current - Number(position.entry)) *
     Number(position.quantity);
+
+  const totalPnl =
+    Number(position.realizedPnl || 0) +
+    closingPnl;
 
   const nextPaper = {
     ...paper,
@@ -5126,7 +5215,7 @@ function closePaperPosition(
       paper.cash +
       current * Number(position.quantity),
     pnl:
-      paper.pnl + pnl,
+      paper.pnl + closingPnl,
     positions:
       paper.positions.map(
         item =>
@@ -5134,7 +5223,7 @@ function closePaperPosition(
             ? {
                 ...item,
                 current,
-                pnl,
+                pnl: totalPnl,
                 status:
                   reason === "STOPPED"
                     ? "STOPPED"
@@ -5168,7 +5257,7 @@ function closePaperPosition(
   const nextState =
     savePaperState(
       nextPaper,
-      `${position.symbol} paper pozisyonu kapatıldı: ${reason}.`
+      `${position.symbol} paper pozisyonu kapatıldı: ${reason} · ${formatCurrency(totalPnl)}.`
     );
 
   nextState.decisions =
@@ -5195,7 +5284,7 @@ function closePaperPosition(
             closedAt:
               new Date().toISOString(),
           },
-          realizedPnL: pnl,
+          realizedPnL: totalPnl,
         },
         ...(state.history || []),
       ]
@@ -5213,14 +5302,16 @@ function closePaperPosition(
     target1: position.target1,
     target2: position.target2,
     riskPlan: {
-      quantity: position.quantity,
+      quantity: position.originalQuantity || position.quantity,
+      positionValue:
+        Number(position.originalQuantity || position.quantity) *
+        Number(position.entry),
       actualRisk: 0,
     },
     reason: "Paper pozisyon kapandı.",
   });
 
 }
-
 
 function renderOpenPositions(
   positions
@@ -5253,7 +5344,7 @@ function renderOpenPositions(
 
   if (open.length === 0) {
     element.innerHTML =
-      '<tr><td colspan="9" class="table-empty">No open positions</td></tr>';
+      '<tr><td colspan="12" class="table-empty">No open positions</td></tr>';
     return;
   }
 
@@ -5265,11 +5356,13 @@ function renderOpenPositions(
           <td>LONG</td>
           <td>${formatCurrency(item.entry)}</td>
           <td>${formatCurrency(item.current)}</td>
+          <td>${item.quantity} LOT</td>
+          <td>${formatCurrency(Number(item.quantity) * Number(item.entry))}</td>
           <td>${formatCurrency(item.stop)}</td>
           <td>${formatCurrency(item.target1)}</td>
           <td>${formatCurrency(item.target2)}</td>
           <td>${formatCurrency(item.pnl)}</td>
-          <td>OPEN</td>
+          <td>${item.tp1Hit ? "TP1 ✓ · OPEN" : "OPEN"}</td>
           <td>
             <button
               type="button"
@@ -5282,7 +5375,6 @@ function renderOpenPositions(
     ).join("");
 
 }
-
 
 function updatePaperPricesFromScan(
   results
@@ -5300,9 +5392,6 @@ function updatePaperPricesFromScan(
           ]
         )
     );
-
-  const state =
-    loadLocalTradingState() || {};
 
   const paper =
     currentPaperState();
@@ -5348,27 +5437,71 @@ function updatePaperPricesFromScan(
     );
   }
 
-  updated
-    .filter(
-      item =>
-        item.status === "OPEN" &&
-        (
-          Number(item.current) <= Number(item.stop) ||
-          Number(item.current) >= Number(item.target2)
-        )
-    )
-    .forEach(
-      item =>
+  /*
+   * Günlük tarama fiyatı SL için kullanılmaz.
+   * STOP yalnızca ayrı 4 saatlik mum kapanışı kontrolü
+   * ile tetiklenir. Hedeflerde ise fiyat teması izlenir.
+   */
+  updated.forEach(
+    item => {
+
+      if (
+        item.status !== "OPEN" ||
+        !Number.isFinite(Number(item.current))
+      ) {
+        return;
+      }
+
+      if (
+        !item.tp1Hit &&
+        Number(item.current) >= Number(item.target1)
+      ) {
+        takePaperProfit1(item.decisionId);
+      }
+
+      const latest =
+        currentPaperState()
+          .positions
+          .find(
+            position =>
+              position.decisionId === item.decisionId &&
+              position.status === "OPEN"
+          );
+
+      if (
+        latest &&
+        Number(latest.current) >=
+          Number(latest.target2)
+      ) {
         closePaperPosition(
-          item.decisionId,
-          Number(item.current) <= Number(item.stop)
-            ? "STOPPED"
-            : "TP2_REACHED"
-        )
-    );
+          latest.decisionId,
+          "TP2_REACHED"
+        );
+      }
+
+    }
+  );
 
 }
 
+
+function autoOpenPaperPositions(
+  decisions
+) {
+
+  (Array.isArray(decisions)
+    ? decisions
+    : [])
+    .filter(
+      item =>
+        item.action === "BUY SETUP" &&
+        item.status === "PENDING"
+    )
+    .forEach(
+      item => openPaperPosition(item)
+    );
+
+}
 
 function bindDecisionBoard() {
 
@@ -5984,7 +6117,7 @@ function normalizeRiskSettings(
         100,
         Math.max(
           1,
-          Number(value?.maxPositionPercent) || 20
+          Number(value?.maxPositionPercent) || 32
         )
       ),
     maxPositions:
@@ -6345,6 +6478,10 @@ async function runTradingScanner() {
 
     renderOpenPositions(
       nextState.paper?.positions
+    );
+
+    autoOpenPaperPositions(
+      nextState.decisions
     );
 
     updatePaperPricesFromScan(

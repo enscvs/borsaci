@@ -3048,7 +3048,7 @@ function createDefaultTradingState() {
 
     risk: {
       riskPerTradePercent: 1,
-      maxPositionPercent: 20,
+      maxPositionPercent: 32,
       maxPositions: 3,
     },
 
@@ -3264,7 +3264,7 @@ function buildAiDecision(
       100,
       Math.max(
         1,
-        Number(riskSettings.maxPositionPercent) || 20
+        Number(riskSettings.maxPositionPercent) || 32
       )
     );
 
