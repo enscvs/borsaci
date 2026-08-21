@@ -3754,6 +3754,27 @@ const server =
 
       const pathname =
         url.pathname;
+        
+        /*
+========================================================
+AI TRADING SCANNER ROUTE
+========================================================
+*/
+
+if (
+  req.method === "GET" &&
+  (
+    pathname === "/api/trading/scanner" ||
+    pathname === "/trading/scanner"
+  )
+) {
+
+  return handleTradingScanner(
+    req,
+    res
+  );
+
+}
 /*
 ========================================================
 WATCHLIST
