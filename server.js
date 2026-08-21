@@ -70,11 +70,16 @@ async function sendTelegramNotification(
       );
 
     if (!response.ok) {
+      const detail =
+        (await response.text())
+          .replace(/\s+/g, " ")
+          .slice(0, 500);
       throw new Error(
-        `Telegram HTTP ${response.status}`
+        `Telegram HTTP ${response.status}: ${detail || "No error detail returned"}`
       );
     }
 
+    console.log("TELEGRAM NOTIFICATION SENT");
     return true;
 
   } catch (error) {
@@ -3601,106 +3606,85 @@ function archivePaperDecision(
 }
 
 
+function openPaperPositionForDecision(
+  state,
+  decision,
+  timestamp
+) {
+  const paper = state.paper;
+
+  if (!decision || decision.action !== "BUY SETUP" || decision.status !== "PENDING") {
+    throw new Error("Bu karar paper işlem açmak için uygun değil.");
+  }
+
+  if (paper.positions.some(item => item.decisionId === decision.id && item.status === "OPEN")) {
+    throw new Error("Bu karar için zaten açık bir paper pozisyon var.");
+  }
+
+  const maxPositions = Math.max(1, Math.floor(Number(state.risk?.maxPositions) || 3));
+  if (paper.positions.filter(item => item.status === "OPEN").length >= maxPositions) {
+    throw new Error(`Aynı anda en fazla ${maxPositions} açık pozisyon olabilir.`);
+  }
+
+  const quantity = Math.floor(Number(decision.riskPlan?.quantity) || 0);
+  const entry = Number(decision.entry?.reference) || 0;
+  const positionValue = quantity * entry;
+
+  if (quantity <= 0 || positionValue <= 0) {
+    throw new Error("Kararın lot veya giriş fiyatı geçersiz.");
+  }
+  if (positionValue > Number(paper.cash)) {
+    throw new Error("Paper bakiyesi bu pozisyon için yeterli değil.");
+  }
+
+  const position = {
+    id: `paper-${timestamp}-${decision.symbol}`,
+    decisionId: decision.id,
+    symbol: decision.symbol,
+    quantity,
+    originalQuantity: quantity,
+    entry,
+    current: entry,
+    stop: Number(decision.stop),
+    target1: Number(decision.target1),
+    target2: Number(decision.target2),
+    status: "OPEN",
+    openedAt: timestamp,
+    tp1Hit: false,
+    realizedPnl: 0,
+    pnl: 0,
+  };
+
+  paper.cash = Number(paper.cash) - positionValue;
+  paper.positions = [position, ...paper.positions];
+  decision.status = "OPEN";
+  decision.lifecycle = {...(decision.lifecycle || {}), stage: "OPEN", openedAt: timestamp};
+
+  addTradingActivity(
+    state,
+    "PAPER_OPEN",
+    `${position.symbol} paper pozisyonu açıldı: ${quantity} lot · ₺${positionValue.toFixed(2)}.`,
+    timestamp
+  );
+  recalculatePaper(paper);
+  return position;
+}
+
 function openEligiblePaperPositions(
   state,
   timestamp
 ) {
-
-  const paper =
-    state.paper;
-
-  const maxPositions =
-    Math.max(
-      1,
-      Math.floor(
-        Number(state.risk?.maxPositions) || 3
-      )
-    );
-
   const opened = [];
-
-  for (
-    const decision of state.decisions || []
-  ) {
-
-    if (
-      decision.action !== "BUY SETUP" ||
-      decision.status !== "PENDING" ||
-      paper.positions.filter(
-        item => item.status === "OPEN"
-      ).length >= maxPositions
-    ) {
-      continue;
+  for (const decision of state.decisions || []) {
+    if (decision.action !== "BUY SETUP" || decision.status !== "PENDING") continue;
+    try {
+      opened.push(openPaperPositionForDecision(state, decision, timestamp));
+    } catch (error) {
+      console.warn("PAPER AUTO OPEN SKIPPED:", error.message);
     }
-
-    const quantity =
-      Math.floor(
-        Number(decision.riskPlan?.quantity) || 0
-      );
-
-    const entry =
-      Number(decision.entry?.reference) || 0;
-
-    const positionValue =
-      quantity * entry;
-
-    if (
-      quantity <= 0 ||
-      positionValue <= 0 ||
-      positionValue > Number(paper.cash)
-    ) {
-      continue;
-    }
-
-    const position = {
-      id: `paper-${timestamp}-${decision.symbol}`,
-      decisionId: decision.id,
-      symbol: decision.symbol,
-      quantity,
-      originalQuantity: quantity,
-      entry,
-      current: entry,
-      stop: Number(decision.stop),
-      target1: Number(decision.target1),
-      target2: Number(decision.target2),
-      status: "OPEN",
-      openedAt: timestamp,
-      tp1Hit: false,
-      realizedPnl: 0,
-      pnl: 0,
-    };
-
-    paper.cash =
-      Number(paper.cash) - positionValue;
-
-    paper.positions = [
-      position,
-      ...paper.positions,
-    ];
-
-    decision.status = "OPEN";
-    decision.lifecycle = {
-      ...(decision.lifecycle || {}),
-      stage: "OPEN",
-      openedAt: timestamp,
-    };
-
-    opened.push(position);
-
-    addTradingActivity(
-      state,
-      "PAPER_OPEN",
-      `${position.symbol} paper pozisyonu açıldı: ${quantity} lot · ₺${positionValue.toFixed(2)}.`,
-      timestamp
-    );
-
   }
-
-  recalculatePaper(paper);
   return opened;
-
 }
-
 
 function completedFourHourClose(
   history
@@ -4190,6 +4174,67 @@ async function recordAiDecisions(
 
   return state;
 
+}
+
+async function readTradingRequest(req) {
+  const body = await readBody(req);
+  try {
+    return JSON.parse(body || "{}");
+  } catch {
+    throw new Error("Geçersiz istek verisi.");
+  }
+}
+
+async function handlePaperOpen(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const decisionId = String(input.decisionId || "").trim();
+    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const decision = (state.decisions || []).find(item => item.id === decisionId);
+    const timestamp = new Date().toISOString();
+    const position = openPaperPositionForDecision(state, decision, timestamp);
+
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+    void sendTelegramNotification(
+      `BORSACI PAPER OPEN\\n${position.symbol}\\n${position.quantity} lot · ₺${(position.quantity * position.entry).toFixed(2)}`
+    );
+    return sendJSON(res, 200, state);
+  } catch (error) {
+    console.error("PAPER OPEN ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
+async function handlePaperClose(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const decisionId = String(input.decisionId || "").trim();
+    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const position = (state.paper.positions || []).find(
+      item => item.decisionId === decisionId && item.status === "OPEN"
+    );
+    if (!position) throw new Error("Açık paper pozisyon bulunamadı.");
+
+    const closePrice = Number(position.current) || Number(position.entry);
+    const timestamp = new Date().toISOString();
+    const notification = closeMonitoredPaperPosition(
+      state, position, closePrice, "CLOSED", "MANUAL_CLOSE", timestamp
+    );
+    recalculatePaper(state.paper);
+
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+    void sendTelegramNotification(notification.message);
+    return sendJSON(res, 200, state);
+  } catch (error) {
+    console.error("PAPER CLOSE ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
 }
 
 async function handleTradingState(
@@ -5108,6 +5153,20 @@ if (
     res
   );
 
+}
+
+if (
+  req.method === "POST" &&
+  pathname === "/api/trading/paper/open"
+) {
+  return handlePaperOpen(req, res);
+}
+
+if (
+  req.method === "POST" &&
+  pathname === "/api/trading/paper/close"
+) {
+  return handlePaperClose(req, res);
 }
 /*
 ========================================================
