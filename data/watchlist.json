@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 33487.30054321289,
+      "cash": 48688.20097961426,
       "equity": 48688.20097961426,
-      "pnl": -1111.5930419921856,
-      "pnlPercent": -2.223186083984371,
+      "pnl": -1311.7926055908188,
+      "pnlPercent": -2.623585211181638,
       "positions": [
         {
           "id": "paper-2026-08-22T07:29:50.452Z-GESAN",
@@ -58,11 +58,13 @@
           "stop": 101.19,
           "target1": 120.72,
           "target2": 127.23,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T07:29:50.452Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": -200.19956359863323
+          "pnl": -200.19956359863323,
+          "closedAt": "2026-08-22T09:46:35.879Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-21T23:53:27.795Z-GESAN",
@@ -2214,6 +2216,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-22T09:46:35.879Z",
+        "type": "CLOSED",
+        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-200.20."
+      },
       {
         "timestamp": "2026-08-22T09:46:33.513Z",
         "type": "CLOSED",
