@@ -21,6 +21,10 @@ test("four-hour confirmation requires close above trigger, not merely a wick",()
   const wick={close:100.9,high:102};
   assert.equal(wick.close>trigger,false);
 });
+test("daily Fibonacci entry is rejected once price is more than 5% above the trigger",()=>{
+  assert.ok(fib.entryDistanceAboveTrigger(106.3,100)>.05);
+  assert.ok(fib.entryDistanceAboveTrigger(104.99,100)<=.05);
+});
 test("technical score is capped and not a probability",()=>{
   const history=Array.from({length:230},(_,i)=>({time:Date.UTC(2025,0,1+i)/1000,open:100+i*.1,high:101+i*.1,low:99+i*.1,close:100+i*.1,volume:5000000}));
   const result=fib.score(history,{valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"});

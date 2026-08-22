@@ -3678,7 +3678,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   if (!item?.validation?.ok) return null;
   const fib = item.fibonacci || {};
   // Paper işlem planı yalnızca geçerli günlük A-B-C yapısı ve %2,70
-  // üzeri tamamlanmış 4 saatlik teyit ile oluşturulur.
+  // üzeri tamamlanmış günlük kapanış ile oluşturulur.
   const plan = fib.valid ? fib : null;
   if (!plan || !Number.isFinite(Number(plan.entryPrice)) || !Number.isFinite(Number(plan.stopLoss))) return null;
   const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.min(31,Math.max(1,Number(riskSettings.maxPositionPercent)||31));
@@ -3695,10 +3695,10 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.min(3,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.min(3,Math.max(1,Number(riskSettings.maxPositions)||3))},
     indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
     filters:{trend:item.scoreBreakdown?.trend>0,momentum:item.scoreBreakdown?.momentum>0,volume:item.scoreBreakdown?.volume>0,rsi:item.features.rsi>=45&&item.features.rsi<=70},
-    planMethod:"FIBONACCI_A_B_C_4H",fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
+    planMethod:"FIBONACCI_A_B_C_DAILY",fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
     aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
     lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
-    reason:active?"A-B-C yapısı %2,70 üzerinde tamamlanmış 4 saatlik kapanışla teyit edildi.":(fib.invalidReason||"C'den dönüş için 4 saatlik teyit bekleniyor."),
+    reason:active?"A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.":(fib.invalidReason||"C'den dönüş için günlük teyit bekleniyor."),
     invalidation:`C seviyesinin %4 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`,
     timestamp:now,
   };
@@ -5852,7 +5852,7 @@ async function handleTradingScanner(req,res) {
     updateScannerJob(jobId,2,"Teknik tarama başlatıldı");
     /*
      * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
-     * 4s teyit için daha küçük bir süre bütçesi kullanılır.
+     * Günlük veriyle A-B-C ve kırılım teyidi hesaplanır.
      */
     const within=(promise,ms,fallback)=>Promise.race([
       promise,
@@ -5882,15 +5882,10 @@ async function handleTradingScanner(req,res) {
     const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
     const technicalTopFive=valid.slice(0,5);
     updateScannerJob(jobId,60,`Teknik puanla ilk ${technicalTopFive.length} aday seçildi`);
-    updateScannerJob(jobId,65,"Seçilen 5 aday için 4 saatlik Fibonacci teyidi alınıyor");
-    const hourlyRows=await within(Promise.all(technicalTopFive.map(async item=>{
-      try { return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history]; }
-      catch(error) { console.warn(`SCANNER 4H ${item.symbol}:`,error.message); return [item.symbol,null]; }
-    })),7500,[]);
-    const hourlyBySymbol=new Map(hourlyRows);
-    updateScannerJob(jobId,82,"A-B-C yapıları ve 4 saatlik kapanışlar doğrulanıyor");
+    updateScannerJob(jobId,70,"Seçilen 5 aday için günlük Fibonacci A-B-C hesaplanıyor");
+    updateScannerJob(jobId,82,"Günlük kırılım ve %5 giriş mesafesi doğrulanıyor");
     const enriched=technicalTopFive.map(item=>{
-      const fib=fibonacciEngine.fibonacciPlan(item.history,hourlyBySymbol.get(item.symbol)||null);
+      const fib=fibonacciEngine.fibonacciPlan(item.history);
       const analysis=fibonacciEngine.score(item.history,fib);
       const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
       return {...item,...analysis,fibonacci:fib,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
