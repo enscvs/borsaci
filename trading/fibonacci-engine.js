@@ -59,7 +59,7 @@ function pivotPoints(history) {
 }
 function aggregateFourHour(hourly, now=Date.now()) {
   const fmt=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"}),groups=new Map();
-  for(const bar of hourly||[]){const t=timeMs(bar);if(!finite(t)||t>now)continue;const p=Object.fromEntries(fmt.formatToParts(new Date(t)).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));const hour=Number(p.hour);if(hour<10||hour>=18)continue;const bucket=hour<14?"10-14":"14-18",key=`${p.year}-${p.month}-${p.day}-${bucket}`;const rows=groups.get(key)||[];rows.push({...bar,_time:t});groups.set(key,rows);}
+  for(const bar of hourly||[]){const t=timeMs(bar);if(!finite(t)||t+3600000>now)continue;const p=Object.fromEntries(fmt.formatToParts(new Date(t)).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));const hour=Number(p.hour);if(hour<10||hour>=18)continue;const bucket=hour<14?"10-14":"14-18",key=`${p.year}-${p.month}-${p.day}-${bucket}`;const rows=groups.get(key)||[];rows.push({...bar,_time:t});groups.set(key,rows);}
   return [...groups.values()].filter(rows=>rows.length>=4).map(rows=>{rows.sort((a,b)=>a._time-b._time);return {time:rows.at(-1)._time,open:rows[0].open,high:Math.max(...rows.map(x=>x.high)),low:Math.min(...rows.map(x=>x.low)),close:rows.at(-1).close,volume:rows.reduce((s,x)=>s+(Number(x.volume)||0),0)};}).sort((a,b)=>a.time-b.time);
 }
 function findAbc(history) {
@@ -76,7 +76,10 @@ function fibonacciPlan(daily, hourly) {
   const abc=findAbc(daily);
   const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,confirmationTimeframe:"4h",stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
   if(!abc)return base;
-  let {A,B,C,range,retracement}=abc; const afterC=daily.slice(C.index+1);
+  let {A,B,C,range,retracement}=abc; let afterC=daily.slice(C.index+1);
+  /* Teyit gelmeden yeni düşük dip varsa C dinamik olarak güncellenir. */
+  const lowerIndex=afterC.reduce((best,bar,offset)=>bar.low<C.price&&(best===null||bar.low<daily[best].low)?C.index+1+offset:best,null);
+  if(lowerIndex!==null){C={type:"LOW",index:lowerIndex,price:daily[lowerIndex].low,date:iso(daily[lowerIndex])};retracement=(B.price-C.price)/range;if(C.price<=A.price||retracement<CONFIG.pivot.retracementMin||retracement>CONFIG.pivot.retracementMax)return {...base,valid:false,status:"INVALID",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),invalidReason:"Yeni C noktası A–B düzeltme sınırlarını bozdu."};afterC=daily.slice(C.index+1);}
   const broken=afterC.some(x=>x.low<C.price); if(broken)return {...base,valid:false,status:"INVALID",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),invalidReason:"C noktası günlük yapıda aşağı kırıldı."};
   const trigger=C.price+range*CONFIG.fibonacci.entryTriggerRatio, atr=features(daily).atr, four=aggregateFourHour(hourly);
   const candlesAfterC=four.filter(x=>x.time>timeMs(daily[C.index])); const confirm=candlesAfterC.find(x=>x.close>trigger);
