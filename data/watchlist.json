@@ -784,32 +784,36 @@
     },
     "decisions": [
       {
-        "id": "1787432056785-PASEU",
+        "id": "1787433333482-PASEU",
         "rank": 1,
         "symbol": "PASEU",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
-        "entry": null,
-        "stop": null,
-        "target1": null,
-        "target2": null,
-        "riskReward": null,
+        "entry": {
+          "low": 199.89,
+          "high": 204.71,
+          "reference": 202.3
+        },
+        "stop": 146.68,
+        "target1": 313.54,
+        "target2": 369.15,
+        "riskReward": "1:2",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
           "quantity": 76,
           "positionValue": 15374.8,
-          "actualRisk": null,
+          "actualRisk": 4226.98,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
           "dataQuality": true,
           "regime": "RISK_OFF",
-          "relativeStrength": false,
-          "strategy": false
+          "relativeStrength": true,
+          "strategy": true
         },
         "precision": {
           "engineVersion": "precision-v1",
@@ -818,17 +822,24 @@
           "probability": null,
           "expectedR": null,
           "calibration": {
-            "status": "KALIBRE_EDILMEDI"
+            "status": "KALIBRE_EDILMEDI",
+            "modelVersion": null
           },
           "relativeStrengthRank": 1,
           "relativeStrengthPercentile": 0.009615384615384616,
           "maxHoldingDays": 10,
-          "reasons": [],
+          "reasons": [
+            "Trend yapısı uygun",
+            "Göreceli güç üst çeyrekte"
+          ],
           "invalidators": [
-            "Yeni uzun işlem için piyasa rejimi uygun değil."
+            "RSI kontrollü momentum aralığında",
+            "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
+            "Teyit hacmi ve likidite yeterli",
+            "Yapısal stop, direnç alanı ve risk/getiri uygun"
           ],
           "missing": [],
-          "disclaimer": "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez."
+          "disclaimer": "Garanti değildir."
         },
         "indicators": {
           "rsi": 71.99089415410981,
@@ -844,40 +855,44 @@
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T20:59:53.355Z",
-          "expiresAt": "2026-08-23T20:59:53.449Z"
+          "createdAt": "2026-08-22T21:15:33.482Z",
+          "expiresAt": "2026-08-23T21:15:33.482Z"
         },
-        "reason": "Yeni uzun işlem için piyasa rejimi uygun değil.",
-        "invalidation": "Doğrulanmış veri olmadan işlem yok.",
-        "timestamp": "2026-08-22T20:59:53.355Z"
+        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
+        "invalidation": "Günlük plan geçersizliği: 146.68 altı teyitli kapanış.",
+        "timestamp": "2026-08-22T21:15:33.482Z"
       },
       {
-        "id": "1787432056785-TKFEN",
+        "id": "1787433333482-TKFEN",
         "rank": 2,
         "symbol": "TKFEN",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
-        "entry": null,
-        "stop": null,
-        "target1": null,
-        "target2": null,
-        "riskReward": null,
+        "entry": {
+          "low": 226.78,
+          "high": 230.62,
+          "reference": 228.7
+        },
+        "stop": 215.9,
+        "target1": 254.3,
+        "target2": 267.11,
+        "riskReward": "1:2",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
           "quantity": 67,
           "positionValue": 15322.9,
-          "actualRisk": null,
+          "actualRisk": 857.76,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
           "dataQuality": true,
           "regime": "RISK_OFF",
-          "relativeStrength": false,
-          "strategy": false
+          "relativeStrength": true,
+          "strategy": true
         },
         "precision": {
           "engineVersion": "precision-v1",
@@ -886,17 +901,24 @@
           "probability": null,
           "expectedR": null,
           "calibration": {
-            "status": "KALIBRE_EDILMEDI"
+            "status": "KALIBRE_EDILMEDI",
+            "modelVersion": null
           },
           "relativeStrengthRank": 2,
           "relativeStrengthPercentile": 0.019230769230769232,
           "maxHoldingDays": 10,
-          "reasons": [],
+          "reasons": [
+            "Trend yapısı uygun",
+            "Göreceli güç üst çeyrekte"
+          ],
           "invalidators": [
-            "Yeni uzun işlem için piyasa rejimi uygun değil."
+            "RSI kontrollü momentum aralığında",
+            "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
+            "Teyit hacmi ve likidite yeterli",
+            "Yapısal stop, direnç alanı ve risk/getiri uygun"
           ],
           "missing": [],
-          "disclaimer": "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez."
+          "disclaimer": "Garanti değildir."
         },
         "indicators": {
           "rsi": 75.2268780604635,
@@ -912,40 +934,44 @@
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T20:59:53.449Z",
-          "expiresAt": "2026-08-23T20:59:53.449Z"
+          "createdAt": "2026-08-22T21:15:33.482Z",
+          "expiresAt": "2026-08-23T21:15:33.483Z"
         },
-        "reason": "Yeni uzun işlem için piyasa rejimi uygun değil.",
-        "invalidation": "Doğrulanmış veri olmadan işlem yok.",
-        "timestamp": "2026-08-22T20:59:53.449Z"
+        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
+        "invalidation": "Günlük plan geçersizliği: 215.9 altı teyitli kapanış.",
+        "timestamp": "2026-08-22T21:15:33.482Z"
       },
       {
-        "id": "1787432056785-TUPRS",
+        "id": "1787433333483-TUPRS",
         "rank": 3,
         "symbol": "TUPRS",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
-        "entry": null,
-        "stop": null,
-        "target1": null,
-        "target2": null,
-        "riskReward": null,
+        "entry": {
+          "low": 392.98,
+          "high": 397.52,
+          "reference": 395.25
+        },
+        "stop": 340.44,
+        "target1": 504.87,
+        "target2": 559.67,
+        "riskReward": "1:2",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
           "quantity": 39,
           "positionValue": 15414.75,
-          "actualRisk": null,
+          "actualRisk": 2137.5,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
           "dataQuality": true,
           "regime": "RISK_OFF",
-          "relativeStrength": false,
-          "strategy": false
+          "relativeStrength": true,
+          "strategy": true
         },
         "precision": {
           "engineVersion": "precision-v1",
@@ -954,17 +980,24 @@
           "probability": null,
           "expectedR": null,
           "calibration": {
-            "status": "KALIBRE_EDILMEDI"
+            "status": "KALIBRE_EDILMEDI",
+            "modelVersion": null
           },
           "relativeStrengthRank": 3,
           "relativeStrengthPercentile": 0.028846153846153848,
           "maxHoldingDays": 10,
-          "reasons": [],
+          "reasons": [
+            "Trend yapısı uygun",
+            "Göreceli güç üst çeyrekte"
+          ],
           "invalidators": [
-            "Yeni uzun işlem için piyasa rejimi uygun değil."
+            "RSI kontrollü momentum aralığında",
+            "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
+            "Teyit hacmi ve likidite yeterli",
+            "Yapısal stop, direnç alanı ve risk/getiri uygun"
           ],
           "missing": [],
-          "disclaimer": "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez."
+          "disclaimer": "Garanti değildir."
         },
         "indicators": {
           "rsi": 83.24473535256041,
@@ -980,12 +1013,12 @@
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T20:59:53.449Z",
-          "expiresAt": "2026-08-23T20:59:53.449Z"
+          "createdAt": "2026-08-22T21:15:33.483Z",
+          "expiresAt": "2026-08-23T21:15:33.483Z"
         },
-        "reason": "Yeni uzun işlem için piyasa rejimi uygun değil.",
-        "invalidation": "Doğrulanmış veri olmadan işlem yok.",
-        "timestamp": "2026-08-22T20:59:53.449Z"
+        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
+        "invalidation": "Günlük plan geçersizliği: 340.44 altı teyitli kapanış.",
+        "timestamp": "2026-08-22T21:15:33.483Z"
       }
     ],
     "history": [
@@ -3302,6 +3335,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T21:15:34.137Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-22T20:59:53.986Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3795,11 +3833,6 @@
         "timestamp": "2026-08-21T22:56:13.588Z",
         "type": "PAPER_OPEN",
         "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15380.40."
-      },
-      {
-        "timestamp": "2026-08-21T22:56:13.588Z",
-        "type": "PAPER_OPEN",
-        "message": "ALARK paper pozisyonu açıldı: 143 lot · ₺15401.10."
       }
     ]
   }
