@@ -5385,9 +5385,51 @@ function parseTradingAiJson(
     throw new Error("AI değerlendirmesi JSON formatında değil.");
   }
 
-  return JSON.parse(
-    raw.slice(start, end + 1)
-  );
+  const json =
+    raw.slice(start, end + 1);
+
+  try {
+    return JSON.parse(json);
+  } catch (firstError) {
+    /*
+     * Bazı sağlayıcılar geçerli nesne içinde yalnızca son
+     * virgül bırakabiliyor. Bu sınırlı normalizasyon, serbest
+     * metni JSON'a çevirmeye çalışmadan bu yanıtı kurtarır.
+     */
+    const normalized =
+      json.replace(
+        /,\s*([}\]])/g,
+        "$1"
+      );
+
+    try {
+      return JSON.parse(normalized);
+    } catch {
+      const arrayStart =
+        raw.indexOf("[");
+      const arrayEnd =
+        raw.lastIndexOf("]");
+
+      if (
+        arrayStart >= 0 &&
+        arrayEnd > arrayStart
+      ) {
+        return {
+          reviews: JSON.parse(
+            raw.slice(
+              arrayStart,
+              arrayEnd + 1
+            ).replace(
+              /,\s*([}\]])/g,
+              "$1"
+            )
+          ),
+        };
+      }
+
+      throw firstError;
+    }
+  }
 }
 
 
@@ -5485,6 +5527,9 @@ async function evaluateTradingCandidatesWithAi(
         },
       ],
       temperature: 0.1,
+      response_format: {
+        type: "json_object",
+      },
       max_tokens: 1600,
     }, {
       timeout: 15000,
@@ -5892,7 +5937,7 @@ async function handleTradingScanner(
 
 
     const rankedResults =
-      results.slice(0, 15);
+      results.slice(0, 5);
 
     /*
      * Günlük verinin gecikmesi halinde yalnızca öne çıkan
