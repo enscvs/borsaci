@@ -4,11 +4,62 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 48481.00195922852,
+      "cash": 2080.501959228517,
       "equity": 48481.00195922852,
       "pnl": -1518.991625976561,
       "pnlPercent": -3.037983251953122,
       "positions": [
+        {
+          "id": "paper-2026-08-22T13:36:13.732Z-GESAN",
+          "decisionId": "1787398988343-GESAN",
+          "symbol": "GESAN",
+          "quantity": 180,
+          "originalQuantity": 180,
+          "entry": 86.05,
+          "current": 86.05,
+          "stop": 81.19,
+          "target1": 95.77,
+          "target2": 100.63,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T13:36:13.732Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T13:36:13.732Z-BINBN",
+          "decisionId": "1787405773354-BINBN",
+          "symbol": "BINBN",
+          "quantity": 84,
+          "originalQuantity": 84,
+          "entry": 184.5,
+          "current": 184.5,
+          "stop": 173.9,
+          "target1": 205.69,
+          "target2": 216.29,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T13:36:13.732Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T13:36:13.732Z-ALARK",
+          "decisionId": "1787398988343-ALARK",
+          "symbol": "ALARK",
+          "quantity": 145,
+          "originalQuantity": 145,
+          "entry": 106.3,
+          "current": 106.3,
+          "stop": 99.79,
+          "target1": 119.32,
+          "target2": 125.83,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T13:36:13.732Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-22T10:10:19.480Z-GESAN",
           "decisionId": "1787393418940-GESAN",
@@ -674,7 +725,7 @@
         "rank": 1,
         "symbol": "ALARK",
         "action": "BUY SETUP",
-        "status": "PENDING",
+        "status": "OPEN",
         "confidence": 92,
         "entry": {
           "low": 105,
@@ -714,26 +765,87 @@
           "provider": "GROQ",
           "score": 88,
           "verdict": "APPROVE",
-          "summary": "Strong technicals with price above all EMAs, bullish RSI/MACD, neutral news; score 88, approve.",
-          "chartComment": "Price rose to 113, EMA alignment bullish, volatility moderate.",
-          "newsComment": "News unrelated, neutral impact.",
+          "summary": "Technicals bullish with price above all EMAs, RSI 55, MACD positive; news neutral. APPROVE.",
+          "chartComment": "Price 106.3 above EMA20/50/200, bullish MACD, 12‑day return 6.5%.",
+          "newsComment": "Provided news unrelated, neutral impact on ALARK.",
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-22T11:43:08.343Z",
-          "expiresAt": "2026-08-23T11:43:08.343Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T13:36:13.354Z",
+          "expiresAt": "2026-08-23T13:36:13.354Z",
+          "openedAt": "2026-08-22T13:36:13.732Z"
         },
-        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Strong technicals with price above all EMAs, bullish RSI/MACD, neutral news; score 88, approve.",
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Technicals bullish with price above all EMAs, RSI 55, MACD positive; news neutral. APPROVE.",
         "invalidation": "Stop seviyesi 99.79 altındaki kapanış.",
-        "timestamp": "2026-08-22T11:43:08.343Z"
+        "timestamp": "2026-08-22T13:36:13.354Z"
+      },
+      {
+        "id": "1787405773354-BINBN",
+        "rank": 2,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 92,
+        "entry": {
+          "low": 182.38,
+          "high": 185.91,
+          "reference": 184.5
+        },
+        "stop": 173.9,
+        "target1": 205.69,
+        "target2": 216.29,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 10.6,
+          "quantity": 84,
+          "positionValue": 15498,
+          "actualRisk": 890.4,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 54.69,
+          "atr": 7.06,
+          "volatility": 3.86
+        },
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": 88,
+          "verdict": "APPROVE",
+          "summary": "Technicals bullish with price above all EMAs, RSI 55, MACD positive; news neutral. APPROVE.",
+          "chartComment": "Price 184.5 above EMA20/50/200, bullish MACD, 12‑day return 2.6%.",
+          "newsComment": "Provided news unrelated, neutral impact on BINBN.",
+          "technicalConfidence": 94
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T13:36:13.354Z",
+          "expiresAt": "2026-08-23T13:36:13.354Z",
+          "openedAt": "2026-08-22T13:36:13.732Z"
+        },
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Technicals bullish with price above all EMAs, RSI 55, MACD positive; news neutral. APPROVE.",
+        "invalidation": "Stop seviyesi 173.9 altındaki kapanış.",
+        "timestamp": "2026-08-22T13:36:13.354Z"
       },
       {
         "id": "1787398988343-GESAN",
         "rank": 3,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "PENDING",
+        "status": "OPEN",
         "confidence": 92,
         "entry": {
           "low": 85.08,
@@ -773,26 +885,29 @@
           "provider": "GROQ",
           "score": 88,
           "verdict": "APPROVE",
-          "summary": "Technicals robust, price well above EMAs, strong volume, neutral news; score 88, approve.",
-          "chartComment": "Price surged to 86.75, EMAs bullish, volatility low.",
-          "newsComment": "News unrelated, neutral impact.",
+          "summary": "Technicals bullish with price above all EMAs, RSI 62, MACD positive; news neutral. APPROVE.",
+          "chartComment": "Price 86.05 above EMA20/50/200, bullish MACD, 12‑day return 6.4%.",
+          "newsComment": "Provided news unrelated, neutral impact on GESAN.",
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-22T11:43:08.343Z",
-          "expiresAt": "2026-08-23T11:43:08.343Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T13:36:13.354Z",
+          "expiresAt": "2026-08-23T13:36:13.354Z",
+          "openedAt": "2026-08-22T13:36:13.732Z"
         },
-        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Technicals robust, price well above EMAs, strong volume, neutral news; score 88, approve.",
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Technicals bullish with price above all EMAs, RSI 62, MACD positive; news neutral. APPROVE.",
         "invalidation": "Stop seviyesi 81.19 altındaki kapanış.",
-        "timestamp": "2026-08-22T11:43:08.343Z"
-      },
+        "timestamp": "2026-08-22T13:36:13.354Z"
+      }
+    ],
+    "history": [
       {
         "id": "1787398988343-SDTTR",
         "rank": 4,
         "symbol": "SDTTR",
         "action": "BUY SETUP",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": 92,
         "entry": {
           "low": 258.96,
@@ -838,16 +953,16 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-22T11:43:08.343Z",
-          "expiresAt": "2026-08-23T11:43:08.343Z"
+          "expiresAt": "2026-08-23T11:43:08.343Z",
+          "closedAt": "2026-08-22T13:36:13.732Z"
         },
         "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Very strong technicals with price above EMAs, high MACD, solid return, neutral news; score 90, approve.",
         "invalidation": "Stop seviyesi 242.81 altındaki kapanış.",
-        "timestamp": "2026-08-22T11:43:08.343Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T11:43:08.343Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
+      },
       {
         "id": "1787398426482-ALARK",
         "rank": 1,
@@ -2722,6 +2837,26 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T13:36:13.732Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
+        "timestamp": "2026-08-22T13:36:13.732Z",
+        "type": "PAPER_OPEN",
+        "message": "GESAN paper pozisyonu açıldı: 180 lot · ₺15489.00."
+      },
+      {
+        "timestamp": "2026-08-22T13:36:13.732Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15498.00."
+      },
+      {
+        "timestamp": "2026-08-22T13:36:13.732Z",
+        "type": "PAPER_OPEN",
+        "message": "ALARK paper pozisyonu açıldı: 145 lot · ₺15413.50."
+      },
+      {
         "timestamp": "2026-08-22T13:19:24.611Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-200.20."
@@ -3200,26 +3335,6 @@
         "timestamp": "2026-08-21T22:18:46.399Z",
         "type": "CLOSED",
         "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-21T22:17:02.639Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-21T22:17:02.639Z",
-        "type": "PAPER_OPEN",
-        "message": "GESAN paper pozisyonu açıldı: 205 lot · ₺17783.75."
-      },
-      {
-        "timestamp": "2026-08-21T22:17:02.639Z",
-        "type": "PAPER_OPEN",
-        "message": "BINBN paper pozisyonu açıldı: 94 lot · ₺17211.40."
-      },
-      {
-        "timestamp": "2026-08-21T22:17:02.639Z",
-        "type": "PAPER_OPEN",
-        "message": "ALARK paper pozisyonu açıldı: 153 lot · ₺16478.10."
       }
     ]
   }
