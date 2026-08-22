@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 17585.901751589776,
+      "cash": 32999.402194094655,
       "equity": 48481.002444338796,
-      "pnl": -1518.989874386786,
-      "pnlPercent": -3.037979748773572,
+      "pnl": -1518.9894318819026,
+      "pnlPercent": -3.037978863763805,
       "positions": [
         {
           "id": "paper-2026-08-22T21:40:07.521Z-TSPOR",
@@ -56,11 +56,13 @@
           "stop": 99.73,
           "target1": 119.45,
           "target2": 126.02,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T21:40:07.521Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.0004425048832246148
+          "pnl": 0.0004425048832246148,
+          "closedAt": "2026-08-22T22:19:36.424Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T19:51:00.738Z-GESAN",
@@ -837,66 +839,6 @@
     },
     "decisions": [
       {
-        "id": "1787434807134-ALARK",
-        "rank": 1,
-        "symbol": "ALARK",
-        "action": "BUY SETUP",
-        "status": "OPEN",
-        "confidence": 92,
-        "entry": {
-          "low": 104.99,
-          "high": 107.18,
-          "reference": 106.3
-        },
-        "stop": 99.73,
-        "target1": 119.45,
-        "target2": 126.02,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 6.57,
-          "quantity": 145,
-          "positionValue": 15413.5,
-          "actualRisk": 952.65,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 52.96,
-          "atr": 4.38,
-          "volatility": 4.12
-        },
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": 90,
-          "verdict": "APPROVE",
-          "summary": "Strong technicals with price above key EMAs and neutral news; favorable outlook.",
-          "chartComment": "12‑day return +5.98%, price above EMA20/50/200, bullish momentum.",
-          "newsComment": "News unrelated to company, neutral impact.",
-          "technicalConfidence": 94
-        },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T21:40:07.134Z",
-          "expiresAt": "2026-08-23T21:40:07.134Z",
-          "openedAt": "2026-08-22T21:40:07.521Z"
-        },
-        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Strong technicals with price above key EMAs and neutral news; favorable outlook.",
-        "invalidation": "Stop seviyesi 99.73 altındaki kapanış.",
-        "timestamp": "2026-08-22T21:40:07.134Z"
-      },
-      {
         "id": "1787434807135-TRCAS",
         "rank": 2,
         "symbol": "TRCAS",
@@ -958,6 +900,69 @@
       }
     ],
     "history": [
+      {
+        "id": "1787434807134-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "BUY SETUP",
+        "status": "CLOSED",
+        "confidence": 92,
+        "entry": {
+          "low": 104.99,
+          "high": 107.18,
+          "reference": 106.3
+        },
+        "stop": 99.73,
+        "target1": 119.45,
+        "target2": 126.02,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 6.57,
+          "quantity": 145,
+          "positionValue": 15413.5,
+          "actualRisk": 952.65,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 52.96,
+          "atr": 4.38,
+          "volatility": 4.12
+        },
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": 90,
+          "verdict": "APPROVE",
+          "summary": "Strong technicals with price above key EMAs and neutral news; favorable outlook.",
+          "chartComment": "12‑day return +5.98%, price above EMA20/50/200, bullish momentum.",
+          "newsComment": "News unrelated to company, neutral impact.",
+          "technicalConfidence": 94
+        },
+        "lifecycle": {
+          "stage": "CLOSED",
+          "createdAt": "2026-08-22T21:40:07.134Z",
+          "expiresAt": "2026-08-23T21:40:07.134Z",
+          "openedAt": "2026-08-22T21:40:07.521Z",
+          "closedAt": "2026-08-22T22:19:36.424Z"
+        },
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Strong technicals with price above key EMAs and neutral news; favorable outlook.",
+        "invalidation": "Stop seviyesi 99.73 altındaki kapanış.",
+        "timestamp": "2026-08-22T21:40:07.134Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.0004425048832246148
+      },
       {
         "id": "1787434807135-TSPOR",
         "rank": 3,
@@ -3334,6 +3339,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:19:36.424Z",
+        "type": "CLOSED",
+        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T22:17:43.225Z",
         "type": "CLOSED",
         "message": "TSPOR paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -3825,11 +3835,6 @@
       },
       {
         "timestamp": "2026-08-21T23:04:40.638Z",
-        "type": "RISK",
-        "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
-      },
-      {
-        "timestamp": "2026-08-21T23:04:33.327Z",
         "type": "RISK",
         "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
       }
