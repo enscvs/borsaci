@@ -892,38 +892,38 @@
     },
     "decisions": [
       {
-        "id": "1787438401333-ALARK",
+        "id": "1787438791340-ALARK",
         "rank": 1,
         "symbol": "ALARK",
-        "action": "WATCH",
+        "action": "BUY SETUP",
         "status": "PENDING",
         "confidence": null,
         "entry": {
-          "low": 100.08,
-          "high": 102.43,
-          "reference": 101.9
+          "low": 106.3,
+          "high": 106.3,
+          "reference": 106.3
         },
-        "stop": 96.86,
-        "target1": 109,
-        "target2": 111.2,
-        "target3": 114,
+        "stop": 98.44,
+        "target1": 122.01,
+        "target2": 129.87,
+        "target3": 129.87,
         "riskReward": {
-          "tp1": 1.41,
-          "tp2": 1.85,
-          "tp3": 2.4
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
         },
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 152,
-          "positionValue": 15488.8,
-          "actualRisk": 766.08,
+          "quantity": 145,
+          "positionValue": 15413.5,
+          "actualRisk": 1139.7,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "indicators": {
-          "score": 93,
+          "score": 80,
           "rsi": 52.96,
           "atr": 4.71,
           "macd": 1.12
@@ -934,46 +934,7 @@
           "volume": false,
           "rsi": true
         },
-        "fibonacci": {
-          "valid": true,
-          "status": "TARGET_REACHED",
-          "pointA": {
-            "type": "LOW",
-            "index": 4,
-            "price": 94.4000015258789,
-            "date": "2024-08-27T06:30:00.000Z"
-          },
-          "pointB": {
-            "type": "HIGH",
-            "index": 157,
-            "price": 107.5,
-            "date": "2025-04-04T06:30:00.000Z"
-          },
-          "pointC": {
-            "type": "LOW",
-            "index": 498,
-            "price": 100.9000015258789,
-            "date": "2026-08-13T06:30:00.000Z"
-          },
-          "range": 13.1,
-          "retracementRatio": 0.5038,
-          "entryTriggerPrice": 101.25,
-          "entryZoneLow": 100.08,
-          "entryZoneHigh": 102.43,
-          "stopLoss": 96.86,
-          "tp1": 109,
-          "tp2": 111.2,
-          "tp3": 114,
-          "volumeConfirmation": "STRONG",
-          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
-          "confirmationPassed": true,
-          "confirmationCandleTime": "2026-08-13T10:30:00.000Z",
-          "confirmationCandleClose": 101.9,
-          "entryPrice": 101.9,
-          "riskRewardTp1": 1.41,
-          "riskRewardTp2": 1.85,
-          "riskRewardTp3": 2.4
-        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
         "grade": "A+ / GÜÇLÜ ADAY",
         "reasons": [
           "Fiyat EMA20 üzerinde",
@@ -991,46 +952,46 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-22T22:40:51.837Z",
-          "expiresAt": "2026-08-23T22:40:51.837Z"
+          "createdAt": "2026-08-22T22:46:31.340Z",
+          "expiresAt": "2026-08-23T22:46:31.340Z"
         },
-        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
-        "invalidation": "C seviyesi 100.9000015258789 ve stop 96.86 altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:40:51.837Z"
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:46:31.340Z"
       },
       {
-        "id": "1787438401333-TSPOR",
+        "id": "1787438791340-TSPOR",
         "rank": 2,
         "symbol": "TSPOR",
-        "action": "WATCH",
+        "action": "BUY SETUP",
         "status": "PENDING",
         "confidence": null,
         "entry": {
-          "low": 0.89,
-          "high": 0.92,
-          "reference": 0.92
+          "low": 1.07,
+          "high": 1.07,
+          "reference": 1.07
         },
-        "stop": 0.86,
-        "target1": 0.98,
-        "target2": 1,
-        "target3": 1.03,
+        "stop": 0.89,
+        "target1": 1.43,
+        "target2": 1.6,
+        "target3": 1.6,
         "riskReward": {
-          "tp1": 1,
-          "tp2": 1.33,
-          "tp3": 1.83
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
         },
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 16847,
-          "positionValue": 15499.24,
-          "actualRisk": 1010.82,
+          "quantity": 14485,
+          "positionValue": 15498.95,
+          "actualRisk": 2607.3,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "indicators": {
-          "score": 86,
+          "score": 80,
           "rsi": 61.65,
           "atr": 0.05,
           "macd": 0.04
@@ -1041,46 +1002,7 @@
           "volume": false,
           "rsi": true
         },
-        "fibonacci": {
-          "valid": true,
-          "status": "TARGET_REACHED",
-          "pointA": {
-            "type": "LOW",
-            "index": 169,
-            "price": 0.8700000047683716,
-            "date": "2025-04-22T06:30:00.000Z"
-          },
-          "pointB": {
-            "type": "HIGH",
-            "index": 409,
-            "price": 1,
-            "date": "2026-04-06T06:30:00.000Z"
-          },
-          "pointC": {
-            "type": "LOW",
-            "index": 489,
-            "price": 0.8999999761581421,
-            "date": "2026-07-31T06:30:00.000Z"
-          },
-          "range": 0.13,
-          "retracementRatio": 0.7692,
-          "entryTriggerPrice": 0.9,
-          "entryZoneLow": 0.89,
-          "entryZoneHigh": 0.92,
-          "stopLoss": 0.86,
-          "tp1": 0.98,
-          "tp2": 1,
-          "tp3": 1.03,
-          "volumeConfirmation": "STRONG",
-          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
-          "confirmationPassed": true,
-          "confirmationCandleTime": "2026-07-31T10:30:00.000Z",
-          "confirmationCandleClose": 0.92,
-          "entryPrice": 0.92,
-          "riskRewardTp1": 1,
-          "riskRewardTp2": 1.33,
-          "riskRewardTp3": 1.83
-        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
         "grade": "A+ / GÜÇLÜ ADAY",
         "reasons": [
           "Fiyat EMA20 üzerinde",
@@ -1098,12 +1020,215 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-22T22:40:51.837Z",
-          "expiresAt": "2026-08-23T22:40:51.837Z"
+          "createdAt": "2026-08-22T22:46:31.340Z",
+          "expiresAt": "2026-08-23T22:46:31.340Z"
         },
-        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
-        "invalidation": "C seviyesi 0.8999999761581421 ve stop 0.86 altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:40:51.837Z"
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:46:31.340Z"
+      },
+      {
+        "id": "1787438791340-BIMAS",
+        "rank": 3,
+        "symbol": "BIMAS",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 416.5,
+          "high": 416.5,
+          "reference": 416.5
+        },
+        "stop": 368.36,
+        "target1": 512.78,
+        "target2": 560.93,
+        "target3": 560.93,
+        "riskReward": {
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 37,
+          "positionValue": 15410.5,
+          "actualRisk": 1781.18,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 77,
+          "rsi": 64.63,
+          "atr": 12.61,
+          "macd": 6.68
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
+        "grade": "A / AL ADAYI",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T22:46:31.340Z",
+          "expiresAt": "2026-08-23T22:46:31.340Z"
+        },
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:46:31.340Z"
+      },
+      {
+        "id": "1787438791340-DOHOL",
+        "rank": 4,
+        "symbol": "DOHOL",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 21.6,
+          "high": 21.6,
+          "reference": 21.6
+        },
+        "stop": 20.29,
+        "target1": 24.23,
+        "target2": 25.54,
+        "target3": 25.54,
+        "riskReward": {
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 717,
+          "positionValue": 15487.2,
+          "actualRisk": 939.27,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 74,
+          "rsi": 56.35,
+          "atr": 0.62,
+          "macd": 0.01
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
+        "grade": "A / AL ADAYI",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T22:46:31.340Z",
+          "expiresAt": "2026-08-23T22:46:31.340Z"
+        },
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:46:31.340Z"
+      },
+      {
+        "id": "1787438791340-BINBN",
+        "rank": 5,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 184.5,
+          "high": 184.5,
+          "reference": 184.5
+        },
+        "stop": 170.81,
+        "target1": 211.87,
+        "target2": 225.56,
+        "target3": 225.56,
+        "riskReward": {
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 84,
+          "positionValue": 15498,
+          "actualRisk": 1149.96,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 72,
+          "rsi": 55.94,
+          "atr": 7.91,
+          "macd": 1.51
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
+        "grade": "A / AL ADAYI",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T22:46:31.340Z",
+          "expiresAt": "2026-08-23T22:46:31.340Z"
+        },
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:46:31.340Z"
       },
       {
         "id": "1787438401333-BIMAS",
@@ -1430,6 +1555,224 @@
       }
     ],
     "history": [
+      {
+        "id": "1787438401333-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "WATCH",
+        "status": "EXPIRED",
+        "confidence": null,
+        "entry": {
+          "low": 100.08,
+          "high": 102.43,
+          "reference": 101.9
+        },
+        "stop": 96.86,
+        "target1": 109,
+        "target2": 111.2,
+        "target3": 114,
+        "riskReward": {
+          "tp1": 1.41,
+          "tp2": 1.85,
+          "tp3": 2.4
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 152,
+          "positionValue": 15488.8,
+          "actualRisk": 766.08,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 93,
+          "rsi": 52.96,
+          "atr": 4.71,
+          "macd": 1.12
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "TARGET_REACHED",
+          "pointA": {
+            "type": "LOW",
+            "index": 4,
+            "price": 94.4000015258789,
+            "date": "2024-08-27T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 157,
+            "price": 107.5,
+            "date": "2025-04-04T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 498,
+            "price": 100.9000015258789,
+            "date": "2026-08-13T06:30:00.000Z"
+          },
+          "range": 13.1,
+          "retracementRatio": 0.5038,
+          "entryTriggerPrice": 101.25,
+          "entryZoneLow": 100.08,
+          "entryZoneHigh": 102.43,
+          "stopLoss": 96.86,
+          "tp1": 109,
+          "tp2": 111.2,
+          "tp3": 114,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-13T10:30:00.000Z",
+          "confirmationCandleClose": 101.9,
+          "entryPrice": 101.9,
+          "riskRewardTp1": 1.41,
+          "riskRewardTp2": 1.85,
+          "riskRewardTp3": 2.4
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "EXPIRED",
+          "createdAt": "2026-08-22T22:40:51.837Z",
+          "expiresAt": "2026-08-23T22:40:51.837Z",
+          "closedAt": "2026-08-22T22:46:31.806Z"
+        },
+        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+        "invalidation": "C seviyesi 100.9000015258789 ve stop 96.86 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:51.837Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
+      },
+      {
+        "id": "1787438401333-TSPOR",
+        "rank": 2,
+        "symbol": "TSPOR",
+        "action": "WATCH",
+        "status": "EXPIRED",
+        "confidence": null,
+        "entry": {
+          "low": 0.89,
+          "high": 0.92,
+          "reference": 0.92
+        },
+        "stop": 0.86,
+        "target1": 0.98,
+        "target2": 1,
+        "target3": 1.03,
+        "riskReward": {
+          "tp1": 1,
+          "tp2": 1.33,
+          "tp3": 1.83
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 16847,
+          "positionValue": 15499.24,
+          "actualRisk": 1010.82,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 86,
+          "rsi": 61.65,
+          "atr": 0.05,
+          "macd": 0.04
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "TARGET_REACHED",
+          "pointA": {
+            "type": "LOW",
+            "index": 169,
+            "price": 0.8700000047683716,
+            "date": "2025-04-22T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 409,
+            "price": 1,
+            "date": "2026-04-06T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 489,
+            "price": 0.8999999761581421,
+            "date": "2026-07-31T06:30:00.000Z"
+          },
+          "range": 0.13,
+          "retracementRatio": 0.7692,
+          "entryTriggerPrice": 0.9,
+          "entryZoneLow": 0.89,
+          "entryZoneHigh": 0.92,
+          "stopLoss": 0.86,
+          "tp1": 0.98,
+          "tp2": 1,
+          "tp3": 1.03,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-07-31T10:30:00.000Z",
+          "confirmationCandleClose": 0.92,
+          "entryPrice": 0.92,
+          "riskRewardTp1": 1,
+          "riskRewardTp2": 1.33,
+          "riskRewardTp3": 1.83
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "EXPIRED",
+          "createdAt": "2026-08-22T22:40:51.837Z",
+          "expiresAt": "2026-08-23T22:40:51.837Z",
+          "closedAt": "2026-08-22T22:46:31.806Z"
+        },
+        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+        "invalidation": "C seviyesi 0.8999999761581421 ve stop 0.86 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:51.837Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
+      },
       {
         "id": "1787434807135-TRCAS",
         "rank": 2,
@@ -3932,6 +4275,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:46:31.806Z",
+        "type": "SCAN",
+        "message": "8 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-22T22:40:52.205Z",
         "type": "SCAN",
         "message": "5 active AI decision(s) refreshed or generated."
@@ -4425,11 +4773,6 @@
         "timestamp": "2026-08-21T23:31:04.169Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH AKTİF: 1 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
-      },
-      {
-        "timestamp": "2026-08-21T23:31:04.169Z",
-        "type": "CLOSED",
-        "message": "ALARK paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-200.20."
       }
     ]
   }
