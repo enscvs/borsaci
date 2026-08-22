@@ -4620,6 +4620,8 @@ const lastScanTime =
 
 
 let scannerRunning = false;
+let scannerAbortController = null;
+let scannerRequestId = 0;
 
 
 /*
@@ -6202,6 +6204,8 @@ async function runTradingScanner() {
   }
 
   scannerRunning = true;
+  const requestId = ++scannerRequestId;
+  scannerAbortController = new AbortController();
 
 
   if (scannerStatus) {
@@ -6262,13 +6266,18 @@ async function runTradingScanner() {
         `/api/trading/scanner?${scannerQuery}`,
         {
           method: "GET",
-          cache: "no-store"
+          cache: "no-store",
+          signal: scannerAbortController.signal
         }
       );
 
 
     const data =
       await response.json();
+
+    // STOP'a basılmış ya da yeni bir tarama başlatılmışsa eski yanıt
+    // ekrandaki yeni durumu geri yazamaz.
+    if (requestId !== scannerRequestId) return;
 
 
     if (
@@ -6394,6 +6403,13 @@ async function runTradingScanner() {
 
   } catch (error) {
 
+    if (
+      error?.name === "AbortError" ||
+      requestId !== scannerRequestId
+    ) {
+      return;
+    }
+
     console.error(
       "AI Trading Scanner:",
       error
@@ -6425,8 +6441,12 @@ async function runTradingScanner() {
 
   } finally {
 
+    if (requestId !== scannerRequestId) return;
+
     scannerRunning =
       false;
+
+    scannerAbortController = null;
 
 
     if (scannerStartButton) {
@@ -6452,15 +6472,11 @@ STOP
 
 function stopTradingScanner() {
 
-  /*
-   * İlk sürümde server tarafındaki
-   * mevcut request'i öldürmüyoruz.
-   * STOP sadece UI durumunu değiştiriyor.
-   *
-   * Gerçek cancellation'ı sonraki
-   * aşamada AbortController ile ekleyeceğiz.
-   */
-
+  // Tarayıcıdaki gerçek ağ isteğini iptal et. Sunucu tarafında işlem
+  // sürse bile sonucu tekrar arayüze yazamaz.
+  scannerRequestId += 1;
+  scannerAbortController?.abort();
+  scannerAbortController = null;
   scannerRunning = false;
 
   if (scannerStatus) {
@@ -6471,6 +6487,17 @@ function stopTradingScanner() {
   if (tradingEngineStatus) {
     tradingEngineStatus.textContent =
       "READY";
+  }
+
+  if (scannerStartButton) {
+    scannerStartButton.disabled = false;
+    scannerStartButton.textContent = "START SCANNER";
+  }
+
+  if (scannerResults) {
+    scannerResults.innerHTML = `
+      <div class="trading-empty">Tarama durduruldu.</div>
+    `;
   }
 
 }

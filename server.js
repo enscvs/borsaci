@@ -5833,12 +5833,27 @@ async function handleTradingScanner(req,res) {
      * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
      * 4s teyit için daha küçük bir süre bütçesi kullanılır.
      */
-    const started=Date.now(),dailyBudget=26000,batchSize=12,results=[];let scanned=0;
+    const within=(promise,ms,fallback)=>Promise.race([
+      promise,
+      new Promise(resolve=>setTimeout(()=>resolve(fallback),ms))
+    ]);
+    // Render bağlantısının açık kalması için bütün taramanın mutlak
+    // süresi sınırlandırılır. Yavaş Yahoo çağrıları bir sonraki isteği
+    // kilitlemez; eksik semboller sonraki taramada tekrar denenir.
+    const started=Date.now(),dailyBudget=15000,batchSize=12,results=[];let scanned=0;
+    const xu100Promise=within(
+      fetchYahooChart("XU100","2y","1d").then(value=>fibonacciEngine.xu100Info(value.history)),
+      3000,
+      null
+    ).catch(()=>null);
     for(let i=0;i<BIST100_SYMBOLS.length&&Date.now()-started<dailyBudget;i+=batchSize){
-      const batch=BIST100_SYMBOLS.slice(i,i+batchSize),rows=await Promise.all(batch.map(scanSymbol));scanned+=batch.length;results.push(...rows);
+      const batch=BIST100_SYMBOLS.slice(i,i+batchSize);
+      const rows=await within(Promise.all(batch.map(scanSymbol)),4000,[]);
+      scanned+=batch.length;results.push(...rows);
     }
     let xu100={status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."};
-    try { xu100=fibonacciEngine.xu100Info((await fetchYahooChart("XU100","2y","1d")).history); } catch(error) { console.warn("XU100 INFO:",error.message); }
+    const xu100Result=await xu100Promise;
+    if(xu100Result) xu100=xu100Result;
     const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
     /*
      * Fibonacci için yalnızca günlük kaliteye göre en güçlü 10 hisse
@@ -5846,7 +5861,8 @@ async function handleTradingScanner(req,res) {
      * tarayıcının SCANNING ekranında kalmasını önler.
      */
     const intradayCandidates=valid.slice(0,10);
-    const hourlyBySymbol=new Map(await Promise.all(intradayCandidates.map(async item=>{try{return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history];}catch(error){console.warn(`SCANNER 4H ${item.symbol}:`,error.message);return [item.symbol,null];}})));
+    const hourlyRows=await within(Promise.all(intradayCandidates.map(async item=>{try{return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history];}catch(error){console.warn(`SCANNER 4H ${item.symbol}:`,error.message);return [item.symbol,null];}})),4500,[]);
+    const hourlyBySymbol=new Map(hourlyRows);
     const enriched=results.map(item=>{
       if(!item.validation?.ok)return {...item,score:0,grade:"VERİ YETERSİZ",decision:"VERİ YETERSİZ",reasons:[item.dataStatus||"VERİ YETERSİZ"],risks:[],fibonacci:{valid:false,status:"NO_VALID_STRUCTURE",invalidReason:item.dataStatus||"VERİ YETERSİZ"}};
       const hourly=hourlyBySymbol.get(item.symbol)||null,fib=fibonacciEngine.fibonacciPlan(item.history,hourly),fallback=fib.valid?null:fibonacciEngine.fallbackPlan(item.history,item.features),analysis=fibonacciEngine.score(item.history,fib.valid?fib:{...fallback,valid:false,status:"NO_VALID_STRUCTURE",volumeConfirmation:"WEAK"});
@@ -5856,7 +5872,7 @@ async function handleTradingScanner(req,res) {
     const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}]));
     const rawAi=await Promise.race([
       evaluateTradingCandidatesWithAi(enriched.slice(0,5)),
-      new Promise(resolve=>setTimeout(()=>resolve(noAi),8000))
+      new Promise(resolve=>setTimeout(()=>resolve(noAi),2500))
     ]).catch(()=>noAi);
     const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
