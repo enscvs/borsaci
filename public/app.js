@@ -4675,46 +4675,18 @@ RENDER
 --------------------------------------------------------
 */
 
-function renderScannerResults(
-  results
-) {
-
+function renderScannerResults(results) {
   if (!scannerResults) return;
-
-  if (
-    !Array.isArray(results) ||
-    results.length === 0
-  ) {
-    scannerResults.innerHTML =
-      '<div class="trading-empty">Uygun setup bulunamadı.</div>';
-    return;
-  }
-
-  scannerResults.innerHTML =
-    results.map(
-      (item, index) => `
-        <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
-          <div class="scanner-head">
-            <strong>#${index + 1} · ${item.symbol}</strong>
-            <strong>₺${formatPrice(item.price)}</strong>
-            <span class="scanner-score">${item.score}</span>
-            <span>${item.decision}</span>
-          </div>
-          <div class="scanner-metrics">
-            RSI ${formatPrice(item.rsi)} ·
-            EMA20 ₺${formatPrice(item.ema20)} ·
-            EMA50 ₺${formatPrice(item.ema50)} ·
-            ATR ₺${formatPrice(item.atr)}
-          </div>
-          <small>${
-            Array.isArray(item.signals)
-              ? item.signals.slice(0, 4).join(" · ")
-              : ""
-          }</small>
-        </div>
-      `
-    ).join("");
-
+  if (!Array.isArray(results) || !results.length) { scannerResults.innerHTML='<div class="trading-empty">VERİ YETERSİZ veya tarama sonucu yok.</div>'; return; }
+  scannerResults.innerHTML=results.map((item,index)=>{
+    const fib=item.fibonacci||{}, fibLabel=fib.status||"NO_VALID_STRUCTURE";
+    return `<div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
+      <div class="scanner-head"><strong>#${index+1} · ${item.symbol}</strong><strong>₺${formatPrice(item.price)}</strong><span class="scanner-score">TEKNİK ${item.score??"--"}/100</span><span>${item.grade||item.decision}</span></div>
+      <div class="scanner-metrics">RSI ${formatPrice(item.rsi)} · EMA20 ₺${formatPrice(item.ema20)} · EMA50 ₺${formatPrice(item.ema50)} · EMA200 ₺${formatPrice(item.ema200)} · MACD ${formatPrice(item.macd)} · ATR ₺${formatPrice(item.atr)}</div>
+      <div class="scanner-metrics">Hacim oranı ${formatPrice(item.volumeRatio)} · Fibonacci ${fibLabel}</div>
+      <small>${Array.isArray(item.reasons)&&item.reasons.length?item.reasons.join(" · "):item.dataStatus||"VERİ YETERSİZ"}</small>
+    </div>`;
+  }).join("");
 }
 
 
@@ -4851,98 +4823,18 @@ function formatCurrency(
 let renderedDecisionRecords = [];
 
 
-function renderAiDecisionDetail(
-  item
-) {
-
-  const element =
-    document.getElementById(
-      "aiDecisionDetail"
-    );
-
-  if (!element || !item) return;
-
-  const position =
-    currentPaperState()
-      .positions
-      .find(
-        value =>
-          value.decisionId === item.id &&
-          value.status === "OPEN"
-      );
-
-  element.innerHTML = `
-    <strong>${item.symbol} · ${item.action} · ${item.status}</strong>
-    <div class="decision-detail-grid">
-      <span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span>
-      <span>Stop: ${formatCurrency(item.stop)}</span>
-      <span>TP1: ${formatCurrency(item.target1)}</span>
-      <span>TP2: ${formatCurrency(item.target2)}</span>
-      <span>SL'ye kadar olası zarar: ${item.riskPlan?.quantity ?? "--"} lot / ${formatCurrency(item.riskPlan?.actualRisk)}</span>
-      <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
-      <span>AI incelemesi: ${item.aiReview?.available ? `${item.aiReview.provider} · ${item.aiReview.score}/100 · ${item.aiReview.verdict}` : "Doğrulanmış AI incelemesi yok"}</span>
-    </div>
-    ${item.aiReview?.chartComment ? `<div class="ai-review-comment"><strong>GRAFİK YORUMU</strong><br>${escapeHtml(item.aiReview.chartComment)}</div>` : ""}
-    ${item.aiReview?.newsComment ? `<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>` : ""}
-    ${item.aiReview?.summary ? `<div class="ai-review-comment"><strong>AI ÖZETİ</strong><br>${escapeHtml(item.aiReview.summary)}</div>` : ""}
-    <small>${item.reason}</small>
-    <br>
-    ${position
-      ? `<button type="button" class="trading-button" data-paper-action="close" data-decision-id="${item.id}">CLOSE PAPER POSITION</button>`
-      : item.action === "BUY SETUP" && item.status === "PENDING"
-        ? `<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`
-        : "<small>Paper işlem için yeni BUY SETUP bekleniyor.</small>"
-    }
-  `;
-
+function renderAiDecisionDetail(item) {
+  const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
+  const fib=item.fibonacci||{}, position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
+  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"NO_VALID_STRUCTURE"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>C: ${formatCurrency(fib.pointC?.price)}</span><span>Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${fib.riskRewardTp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${fib.riskRewardTp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${fib.riskRewardTp3??"--"}</span><span>A: ${formatCurrency(fib.pointA?.price)} · B: ${formatCurrency(fib.pointB?.price)} · C: ${formatCurrency(fib.pointC?.price)}</span><span>4 saatlik teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"4 SAATLİK VERİ YOK – GİRİŞ TEYİT EDİLEMEDİ"}</span></div>${item.aiReview?.chartComment?`<div class="ai-review-comment"><strong>GRAFİK YORUMU</strong><br>${escapeHtml(item.aiReview.chartComment)}</div>`:""}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>BORSACI YORUMU</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-decision-id="${item.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING"?`<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`:""}`;
 }
 
 
-function renderAiDecisions(
-  decisions
-) {
-
+function renderAiDecisions(decisions) {
   if (!aiDecisionFeed) return;
-
-  const records =
-    uniqueDecisions(decisions);
-
-  renderedDecisionRecords = records;
-
-  if (records.length === 0) {
-    aiDecisionFeed.innerHTML =
-      '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
-    return;
-  }
-
-  aiDecisionFeed.innerHTML =
-    records.map(
-      (item, index) => `
-        <article
-          class="decision-item decision-card"
-          data-decision-index="${index}"
-        >
-          <header>
-            <strong>${item.symbol}</strong>
-            <span>${item.action}</span>
-            <span>${item.status}</span>
-            <span>GÜVEN %${item.confidence}</span>
-            <span class="ai-score-pill">AI ${item.aiReview?.available ? `${item.aiReview.score}/100` : "BEKLİYOR"}</span>
-          </header>
-          <div class="decision-price-grid">
-            <span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
-            <span><small>STOP</small>${formatCurrency(item.stop)}</span>
-            <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
-          </div>
-          <div class="decision-summary">
-            ${item.riskPlan?.quantity ?? "--"} lot ·
-            ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
-            SL'ye kadar olası zarar ${formatCurrency(item.riskPlan?.actualRisk)}
-          </div>
-        </article>
-      `
-    ).join("");
-
+  const records=uniqueDecisions(decisions); renderedDecisionRecords=records;
+  if (!records.length) { aiDecisionFeed.innerHTML='<div class="trading-empty">Detaylı teknik aday bulunamadı.</div>';return; }
+  aiDecisionFeed.innerHTML=records.map((item,index)=>{const fib=item.fibonacci||{};return `<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span>${fib.status||"NO_VALID_STRUCTURE"}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">Fib C: ${formatCurrency(fib.pointC?.price)} · 4s teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · R/R TP2: ${fib.riskRewardTp2??"--"} · Garanti değildir.</div></article>`;}).join("");
 }
 
 
