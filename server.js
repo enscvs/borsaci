@@ -5794,7 +5794,19 @@ async function refreshScannerPriceFromHourly(
 async function scanSymbol(symbol) {
   try {
     const yahoo = await fetchYahooChart(symbol, "2y", "1d");
-    const history = yahoo.history;
+    const history = [...yahoo.history];
+    /*
+     * Gün içi taramada Yahoo'nun açık günlük mumunu indikatörlere
+     * sokmuyoruz; son tamamlanmış BIST günlük mumla çalışıyoruz.
+     */
+    const latestDaily = history.at(-1);
+    if (latestDaily) {
+      const latestDate = new Date(Number(latestDaily.time) * 1000);
+      const formatter = new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Istanbul", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", hourCycle:"h23" });
+      const latestParts = Object.fromEntries(formatter.formatToParts(latestDate).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+      const nowParts = Object.fromEntries(formatter.formatToParts(new Date()).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+      if (latestParts.year + latestParts.month + latestParts.day === nowParts.year + nowParts.month + nowParts.day && Number(nowParts.hour) < 18) history.pop();
+    }
     const validation = fibonacciEngine.validateDaily(history);
     if (!validation.ok) return { symbol, history, validation, dataStatus: validation.message };
     const baseFib = { valid:false, status:"NO_VALID_STRUCTURE", riskRewardTp2:null, riskRewardTp3:null, volumeConfirmation:"WEAK" };
