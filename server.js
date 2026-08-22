@@ -32,6 +32,10 @@ const VISION_MODEL =
   process.env.GEMINI_VISION_MODEL ||
   "gemini-2.5-flash";
 
+const TRADING_AI_MODEL =
+  process.env.TRADING_AI_MODEL ||
+  MODEL;
+
 const TELEGRAM_BOT_TOKEN =
   process.env.TELEGRAM_BOT_TOKEN;
 
@@ -3525,7 +3529,7 @@ function buildAiDecision(
     action = "BUY SETUP";
     status = "PENDING";
     reason =
-      "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.";
+      "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu.";
   } else if (
     item.score >= 65 &&
     hasTrend
@@ -3533,7 +3537,7 @@ function buildAiDecision(
     action = "WATCH";
     status = "PENDING";
     reason =
-      "Trend olumlu; işlem için hacim, momentum veya RSI teyidi bekleniyor.";
+      "Teknik trend olumlu; ek teyit bekleniyor.";
   } else if (isExtended) {
     action = "WATCH";
     status = "PENDING";
@@ -3541,7 +3545,7 @@ function buildAiDecision(
       "Momentum güçlü ancak RSI uzamış; geri çekilme veya teyit bekleniyor.";
   }
 
-  const confidence =
+  const technicalConfidence =
     Math.max(
       0,
       Math.min(
@@ -3557,6 +3561,53 @@ function buildAiDecision(
         )
       )
     );
+
+  const aiReview =
+    item.aiReview || {};
+
+  const aiScore =
+    Number(aiReview.score);
+
+  const hasAiReview =
+    Boolean(aiReview.available) &&
+    Number.isFinite(aiScore);
+
+  const confidence =
+    hasAiReview
+      ? Math.round(
+          technicalConfidence * 0.6 +
+          aiScore * 0.4
+        )
+      : technicalConfidence;
+
+  /*
+   * Teknik koşullar gerekli, AI incelemesi ise ikinci bir
+   * güvenlik kapısıdır. AI yanıtı yoksa ya da olumsuzsa
+   * otomatik paper işlem açılmaz; karar WATCH olarak kalır.
+   */
+  if (action === "BUY SETUP") {
+    if (!hasAiReview) {
+      action = "WATCH";
+      status = "PENDING";
+      reason =
+        "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.";
+    } else if (
+      aiReview.verdict !== "APPROVE" ||
+      aiScore < 65 ||
+      confidence < 75
+    ) {
+      action = "WATCH";
+      status = "PENDING";
+      reason =
+        `Teknik setup uygun; AI incelemesi otomatik işlem için yeterli teyit vermedi (AI ${aiScore}/100 · ${aiReview.verdict || "WATCH"}).`;
+    } else {
+      reason +=
+        ` AI incelemesi onayladı (${aiScore}/100): ${aiReview.summary || "Grafik ve haber bağlamı olumlu."}`;
+    }
+  } else if (hasAiReview) {
+    reason +=
+      ` AI ${aiScore}/100 · ${aiReview.verdict}: ${aiReview.summary || "Ek yorum yok."}`;
+  }
 
   const now = new Date();
 
@@ -3599,6 +3650,16 @@ function buildAiDecision(
       rsi: roundTradingValue(rsi),
       atr: roundTradingValue(atr),
       volatility: roundTradingValue(volatility),
+    },
+    aiReview: {
+      available: hasAiReview,
+      provider: aiReview.provider || "UNAVAILABLE",
+      score: hasAiReview ? aiScore : null,
+      verdict: aiReview.verdict || "WATCH",
+      summary: aiReview.summary || "",
+      chartComment: aiReview.chartComment || "",
+      newsComment: aiReview.newsComment || "",
+      technicalConfidence,
     },
     lifecycle: {
       stage: status,
@@ -5174,6 +5235,403 @@ SCAN ONE SYMBOL
 --------------------------------------------------------
 */
 
+function buildTradingChartContext(
+  history
+) {
+  const recent =
+    (history || []).slice(-12);
+
+  const closes =
+    recent.map(item => Number(item.close));
+
+  const first =
+    closes[0] || 0;
+
+  const last =
+    closes.at(-1) || 0;
+
+  const highest =
+    Math.max(...recent.map(item => Number(item.high) || 0));
+
+  const lowest =
+    Math.min(...recent.map(item => Number(item.low) || Infinity));
+
+  return {
+    return12d:
+      first > 0
+        ? roundTradingValue(
+            (last - first) / first * 100
+          )
+        : null,
+    range12d:
+      last > 0 && Number.isFinite(lowest)
+        ? roundTradingValue(
+            (highest - lowest) / last * 100
+          )
+        : null,
+    candles: recent.map(item => ({
+      close: roundTradingValue(item.close),
+      high: roundTradingValue(item.high),
+      low: roundTradingValue(item.low),
+      volume: Number(item.volume) || 0,
+    })),
+  };
+}
+
+
+async function fetchTradingNews(
+  symbol
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => controller.abort(),
+    5000
+  );
+
+  try {
+    const response = await fetch(
+      "https://query1.finance.yahoo.com/v1/finance/search?q=" +
+      encodeURIComponent(`${symbol}.IS`) +
+      "&newsCount=3",
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+          "Accept": "application/json",
+        },
+        signal: controller.signal,
+      }
+    );
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const payload = await response.json();
+
+    return (payload?.news || [])
+      .slice(0, 3)
+      .map(item => ({
+        title: String(item?.title || "").slice(0, 240),
+        publisher: String(item?.publisher || "").slice(0, 80),
+        publishedAt:
+          item?.providerPublishTime
+            ? new Date(
+                Number(item.providerPublishTime) * 1000
+              ).toISOString()
+            : null,
+      }))
+      .filter(item => item.title);
+  } catch (error) {
+    console.warn(
+      `TRADING NEWS ${symbol}:`,
+      error.message
+    );
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
+function parseTradingAiJson(
+  content
+) {
+  const raw =
+    String(content || "")
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+
+  if (start < 0 || end < start) {
+    throw new Error("AI değerlendirmesi JSON formatında değil.");
+  }
+
+  return JSON.parse(
+    raw.slice(start, end + 1)
+  );
+}
+
+
+async function evaluateTradingCandidatesWithAi(
+  candidates
+) {
+  const list =
+    Array.isArray(candidates)
+      ? candidates.slice(0, 10)
+      : [];
+
+  if (list.length === 0) {
+    return new Map();
+  }
+
+  if (
+    !process.env.GROQ_API_KEY &&
+    !process.env.GEMINI_API_KEY &&
+    !process.env.MISTRAL_API_KEY
+  ) {
+    return new Map(
+      list.map(item => [
+        item.symbol,
+        {
+          available: false,
+          provider: "UNAVAILABLE",
+          score: null,
+          verdict: "WATCH",
+          summary:
+            "AI anahtarı tanımlı olmadığı için yalnızca teknik analiz kullanıldı.",
+          chartComment: "",
+          newsComment: "",
+        },
+      ])
+    );
+  }
+
+  const enriched =
+    await Promise.all(
+      list.map(async item => ({
+        symbol: item.symbol,
+        technical: {
+          score: item.score,
+          price: item.price,
+          ema20: item.ema20,
+          ema50: item.ema50,
+          ema200: item.ema200,
+          rsi: item.rsi,
+          macd: item.macd,
+          atr: item.atr,
+          volatility: item.volatility,
+          volume: item.volume,
+          averageVolume: item.averageVolume,
+          signals: item.signals,
+        },
+        chart: item.chartContext,
+        news: await fetchTradingNews(item.symbol),
+      }))
+    );
+
+  const prompt = [
+    "BIST için teknik tarama adaylarını değerlendir.",
+    "Bu bir otomasyon güvenlik katmanıdır; yalnızca verilen veriyle çalış.",
+    "Fiyat hedefi, emir veya kesin sonuç üretme.",
+    "Her sembol için grafik verisi, teknik göstergeler ve verilen haber başlıklarının risk/kalite etkisini puanla.",
+    "Haber yoksa bunu nötr kabul et; uydurma haber veya KAP bilgisi üretme.",
+    "Yalnızca aşağıdaki JSON nesnesini döndür:",
+    '{"reviews":[{"symbol":"ASELS","score":0,"verdict":"APPROVE|WATCH|REJECT","chartComment":"kısa yorum","newsComment":"kısa yorum","summary":"en fazla 180 karakter"}]}',
+    "score 0-100: 65 altı APPROVE olamaz. APPROVE yalnızca teknik yapı ve haber riski uyumluysa verilir.",
+    "Adaylar:",
+    JSON.stringify(enriched),
+  ].join("\n\n");
+
+  let response;
+  let provider = "GROQ";
+
+  try {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("GROQ_API_KEY tanımlı değil.");
+    }
+
+    response = await groqAI.chat.completions.create({
+      model: TRADING_AI_MODEL,
+      messages: [
+        {
+          role: "system",
+          content:
+            "Sen temkinli bir BIST araştırma asistanısın. Yalnızca geçerli JSON döndür.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 2200,
+      timeout: 12000,
+    });
+  } catch (groqError) {
+    console.warn(
+      "TRADING AI GROQ:",
+      groqError.message
+    );
+
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY tanımlı değil.");
+      }
+
+      provider = "GEMINI";
+      response = await geminiAI.chat.completions.create({
+        model: VISION_MODEL,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Sen temkinli bir BIST araştırma asistanısın. Yalnızca geçerli JSON döndür.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.1,
+        max_tokens: 2200,
+        timeout: 12000,
+      });
+    } catch (geminiError) {
+      console.warn(
+        "TRADING AI GEMINI:",
+        geminiError.message
+      );
+
+      try {
+        if (!process.env.MISTRAL_API_KEY) {
+          throw new Error("MISTRAL_API_KEY tanımlı değil.");
+        }
+
+        provider = "MISTRAL";
+        response = await mistralAI.chat.completions.create({
+          model: "mistral-small-latest",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Sen temkinli bir BIST araştırma asistanısın. Yalnızca geçerli JSON döndür.",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          temperature: 0.1,
+          max_tokens: 2200,
+          timeout: 12000,
+        });
+      } catch (mistralError) {
+        console.warn(
+          "TRADING AI MISTRAL:",
+          mistralError.message
+        );
+
+        return new Map(
+          list.map(item => [
+            item.symbol,
+            {
+              available: false,
+              provider: "UNAVAILABLE",
+              score: null,
+              verdict: "WATCH",
+              summary:
+                "AI değerlendirmesi alınamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+              chartComment: "",
+              newsComment: "",
+            },
+          ])
+        );
+      }
+    }
+  }
+
+  try {
+    const parsed =
+      parseTradingAiJson(
+        response?.choices?.[0]?.message?.content
+      );
+
+    const reviewBySymbol =
+      new Map(
+        (parsed?.reviews || [])
+          .map(review => {
+            const symbol =
+              String(review?.symbol || "")
+                .trim()
+                .toUpperCase();
+
+            const score =
+              Math.max(
+                0,
+                Math.min(
+                  100,
+                  Math.round(Number(review?.score))
+                )
+              );
+
+            const verdict =
+              ["APPROVE", "WATCH", "REJECT"]
+                .includes(
+                  String(review?.verdict || "")
+                    .toUpperCase()
+                )
+                ? String(review.verdict).toUpperCase()
+                : "WATCH";
+
+            return [
+              symbol,
+              {
+                available: Number.isFinite(score),
+                provider,
+                score:
+                  Number.isFinite(score)
+                    ? score
+                    : null,
+                verdict,
+                chartComment:
+                  String(review?.chartComment || "")
+                    .slice(0, 240),
+                newsComment:
+                  String(review?.newsComment || "")
+                    .slice(0, 240),
+                summary:
+                  String(review?.summary || "")
+                    .slice(0, 300),
+              },
+            ];
+          })
+          .filter(([symbol]) => symbol)
+      );
+
+    return new Map(
+      list.map(item => [
+        item.symbol,
+        reviewBySymbol.get(item.symbol) || {
+          available: false,
+          provider,
+          score: null,
+          verdict: "WATCH",
+          summary:
+            "AI bu sembol için yapılandırılmış değerlendirme döndürmedi.",
+          chartComment: "",
+          newsComment: "",
+        },
+      ])
+    );
+  } catch (error) {
+    console.warn(
+      "TRADING AI PARSE:",
+      error.message
+    );
+
+    return new Map(
+      list.map(item => [
+        item.symbol,
+        {
+          available: false,
+          provider,
+          score: null,
+          verdict: "WATCH",
+          summary:
+            "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          chartComment: "",
+          newsComment: "",
+        },
+      ])
+    );
+  }
+}
+
+
 async function scanSymbol(
   symbol
 ) {
@@ -5213,6 +5671,11 @@ async function scanSymbol(
       symbol,
 
       ...analysis,
+
+      chartContext:
+        buildTradingChartContext(
+          history
+        ),
 
       timestamp:
         new Date().toISOString()
@@ -5324,9 +5787,40 @@ async function handleTradingScanner(
     const rankedResults =
       results.slice(0, 15);
 
+    /*
+     * AI katmanı yalnızca teknik olarak öne çıkan adayları
+     * tek toplu istekle değerlendirir. Böylece 106 ayrı model
+     * çağrısı yerine sınırlı, denetlenebilir bir inceleme yapılır.
+     */
+    const aiCandidates =
+      rankedResults
+        .filter(item => item.score >= 65)
+        .slice(0, 10);
+
+    const aiReviews =
+      await evaluateTradingCandidatesWithAi(
+        aiCandidates
+      );
+
+    const reviewedResults =
+      rankedResults.map(item => ({
+        ...item,
+        aiReview:
+          aiReviews.get(item.symbol) || {
+            available: false,
+            provider: "NOT_REQUESTED",
+            score: null,
+            verdict: "WATCH",
+            summary:
+              "Teknik puan AI değerlendirme eşiğinin altında.",
+            chartComment: "",
+            newsComment: "",
+          },
+      }));
+
     const decisions =
       createAiDecisions(
-        rankedResults,
+        reviewedResults,
         riskSettings
       );
 
@@ -5377,7 +5871,7 @@ async function handleTradingScanner(
           scanned === BIST100_SYMBOLS.length,
 
         results:
-          rankedResults,
+          reviewedResults,
 
         /*
          * UI yalnızca kalıcı sunucu durumunu kullanır.
