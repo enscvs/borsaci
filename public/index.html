@@ -1575,6 +1575,10 @@ Waiting for input...
     cursor: wait;
   }
 
+  #appShell[hidden],
+  #authScreen[hidden] {
+    display: none !important;
+  }
   .auth-screen {
     min-height: 100vh;
     display: grid;
@@ -1584,6 +1588,7 @@ Waiting for input...
   }
   .auth-card {
     width: min(100%, 390px);
+    min-height: 330px;
     display: grid;
     gap: 12px;
     padding: 28px;
@@ -1635,7 +1640,7 @@ Waiting for input...
 ===================================================== -->
 
 <script
-  src="/auth.js?v=20260822-auth"
+  src="/auth.js?v=20260822-auth-landing"
   defer
 ></script>
 
