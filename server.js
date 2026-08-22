@@ -4405,6 +4405,24 @@ async function recordAiDecisions(
       }
     );
 
+  // Yeni taramada seviyeleri değişen açık bir pozisyonun karar kartı
+  // silinmez. Böylece pozisyon, açıldığı planla görünür ve her zaman
+  // kapatılabilir kalır.
+  const retainedOpenDecisions = existing.filter(
+    decision =>
+      decision?.status === "OPEN" &&
+      state.paper.positions.some(
+        position =>
+          position.decisionId === decision.id &&
+          position.status === "OPEN"
+      ) &&
+      !state.decisions.some(next => next.id === decision.id)
+  );
+  state.decisions = [
+    ...state.decisions,
+    ...retainedOpenDecisions,
+  ];
+
   const opened =
     openEligiblePaperPositions(
       state,
@@ -4666,12 +4684,15 @@ async function handlePaperClose(req, res) {
   try {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || "").trim();
-    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+    const positionId = String(input.positionId || "").trim();
+    if (!decisionId && !positionId) throw new Error("Pozisyon kimliği gerekli.");
 
     const stateResult = await getTradingState();
     const state = stateResult.content;
     const position = (state.paper.positions || []).find(
-      item => item.decisionId === decisionId && item.status === "OPEN"
+      item =>
+        item.status === "OPEN" &&
+        (item.id === positionId || item.decisionId === decisionId)
     );
     if (!position) throw new Error("Açık paper pozisyon bulunamadı.");
 
@@ -5854,21 +5875,24 @@ async function handleTradingScanner(req,res) {
     let xu100={status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."};
     const xu100Result=await xu100Promise;
     if(xu100Result) xu100=xu100Result;
+    // İlk seçim yalnızca mevcut teknik kalite kurallarıyla yapılır.
+    // Fibonacci bu sıralamayı değiştirmez; yalnızca ilk beş adayın
+    // giriş/stop/hedef planını doğrular.
     const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
+    const technicalTopFive=valid.slice(0,5);
     /*
-     * Fibonacci için yalnızca günlük kaliteye göre en güçlü 10 hisse
+     * Fibonacci için yalnızca günlük kaliteye göre en güçlü 5 hisse
      * 4 saatlik veriye gider. Bu, 106 ek ağ çağrısı yüzünden
      * tarayıcının SCANNING ekranında kalmasını önler.
      */
-    const intradayCandidates=valid.slice(0,10);
+    const intradayCandidates=technicalTopFive;
     const hourlyRows=await within(Promise.all(intradayCandidates.map(async item=>{try{return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history];}catch(error){console.warn(`SCANNER 4H ${item.symbol}:`,error.message);return [item.symbol,null];}})),4500,[]);
     const hourlyBySymbol=new Map(hourlyRows);
-    const enriched=results.map(item=>{
-      if(!item.validation?.ok)return {...item,score:0,grade:"VERİ YETERSİZ",decision:"VERİ YETERSİZ",reasons:[item.dataStatus||"VERİ YETERSİZ"],risks:[],fibonacci:{valid:false,status:"NO_VALID_STRUCTURE",invalidReason:item.dataStatus||"VERİ YETERSİZ"}};
+    const enriched=technicalTopFive.map(item=>{
       const hourly=hourlyBySymbol.get(item.symbol)||null,fib=fibonacciEngine.fibonacciPlan(item.history,hourly),fallback=fib.valid?null:fibonacciEngine.fallbackPlan(item.history,item.features),analysis=fibonacciEngine.score(item.history,fib.valid?fib:{...fallback,valid:false,status:"NO_VALID_STRUCTURE",volumeConfirmation:"WEAK"});
       const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
       return {...item,...analysis,fibonacci:fib,fallback,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
-    }).sort((a,b)=>b.score-a.score).slice(0,10);
+    });
     const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}]));
     const rawAi=await Promise.race([
       evaluateTradingCandidatesWithAi(enriched.slice(0,5)),

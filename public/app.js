@@ -4828,7 +4828,7 @@ let renderedDecisionRecords = [];
 function renderAiDecisionDetail(item) {
   const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
   const fib=item.fibonacci||{}, position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
-  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"NO_VALID_STRUCTURE"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>C: ${formatCurrency(fib.pointC?.price)}</span><span>Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${fib.riskRewardTp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${fib.riskRewardTp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${fib.riskRewardTp3??"--"}</span><span>A: ${formatCurrency(fib.pointA?.price)} · B: ${formatCurrency(fib.pointB?.price)} · C: ${formatCurrency(fib.pointC?.price)}</span><span>4 saatlik teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"4 SAATLİK VERİ YOK – GİRİŞ TEYİT EDİLEMEDİ"}</span></div>${item.aiReview?.chartComment?`<div class="ai-review-comment"><strong>GRAFİK YORUMU</strong><br>${escapeHtml(item.aiReview.chartComment)}</div>`:""}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>BORSACI YORUMU</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-decision-id="${item.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING"?`<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`:""}`;
+  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"NO_VALID_STRUCTURE"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>C: ${formatCurrency(fib.pointC?.price)}</span><span>Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${fib.riskRewardTp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${fib.riskRewardTp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${fib.riskRewardTp3??"--"}</span><span>A: ${formatCurrency(fib.pointA?.price)} · B: ${formatCurrency(fib.pointB?.price)} · C: ${formatCurrency(fib.pointC?.price)}</span><span>4 saatlik teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"4 SAATLİK VERİ YOK – GİRİŞ TEYİT EDİLEMEDİ"}</span></div>${item.aiReview?.chartComment?`<div class="ai-review-comment"><strong>GRAFİK YORUMU</strong><br>${escapeHtml(item.aiReview.chartComment)}</div>`:""}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>BORSACI YORUMU</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${position.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING"?`<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`:""}`;
 }
 
 
@@ -5019,14 +5019,14 @@ function takePaperProfit1(
 }
 
 async function closePaperPosition(
-  decisionId
+  positionId
 ) {
-  if (!decisionId) return;
+  if (!positionId) return;
   try {
     const response = await fetch("/api/trading/paper/close", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({decisionId}),
+      body: JSON.stringify({positionId}),
     });
     const state = await response.json();
     if (!response.ok) throw new Error(state.error || "Paper pozisyon kapatılamadı.");
@@ -5038,8 +5038,6 @@ async function closePaperPosition(
     renderTradingActivity(state.activity || []);
     renderSignalHistory(state.history || []);
     renderPerformance(state.history || []);
-    const closed = (state.history || []).find(item => item.id === decisionId);
-    if (closed) renderAiDecisionDetail(closed);
   } catch (error) {
     alert(`Paper pozisyon kapatılamadı: ${error.message}`);
   }
@@ -5099,7 +5097,7 @@ function renderOpenPositions(
             <button
               type="button"
               class="trading-button danger position-close-button"
-              data-position-close="${item.decisionId}"
+              data-position-close="${item.id}"
             >CLOSE</button>
           </td>
         </tr>
@@ -5220,6 +5218,11 @@ function bindDecisionBoard() {
 
       if (action) {
 
+        if (action.dataset.paperAction === "close") {
+          closePaperPosition(action.dataset.positionId);
+          return;
+        }
+
         const decision =
           renderedDecisionRecords.find(
             item =>
@@ -5229,12 +5232,8 @@ function bindDecisionBoard() {
 
         if (!decision) return;
 
-        if (
-          action.dataset.paperAction === "open"
-        ) {
+        if (action.dataset.paperAction === "open") {
           openPaperPosition(decision);
-        } else {
-          closePaperPosition(decision.id);
         }
 
         return;
