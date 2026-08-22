@@ -4,11 +4,62 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 48481.002444338796,
+      "cash": 2335.442444338796,
       "equity": 48481.002444338796,
       "pnl": -1518.989181637763,
       "pnlPercent": -3.0379783632755264,
       "positions": [
+        {
+          "id": "paper-2026-08-22T22:40:02.436Z-BINBN",
+          "decisionId": "1787438401333-BINBN",
+          "symbol": "BINBN",
+          "quantity": 87,
+          "originalQuantity": 87,
+          "entry": 177.8,
+          "current": 177.8,
+          "stop": 165.12,
+          "target1": 277.4,
+          "target2": 306.05,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T22:40:02.436Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T22:40:02.436Z-DOHOL",
+          "decisionId": "1787438401333-DOHOL",
+          "symbol": "DOHOL",
+          "quantity": 746,
+          "originalQuantity": 746,
+          "entry": 20.76,
+          "current": 20.76,
+          "stop": 19.66,
+          "target1": 25.28,
+          "target2": 26.58,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T22:40:02.436Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T22:40:02.436Z-BIMAS",
+          "decisionId": "1787438401333-BIMAS",
+          "symbol": "BIMAS",
+          "quantity": 40,
+          "originalQuantity": 40,
+          "entry": 379.75,
+          "current": 379.75,
+          "stop": 355.44,
+          "target1": 468.82,
+          "target2": 495.62,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T22:40:02.436Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-22T21:40:07.521Z-TSPOR",
           "decisionId": "1787434807135-TSPOR",
@@ -839,7 +890,545 @@
       "active": false,
       "activatedAt": null
     },
-    "decisions": [],
+    "decisions": [
+      {
+        "id": "1787438401333-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 100.08,
+          "high": 102.43,
+          "reference": 101.9
+        },
+        "stop": 96.86,
+        "target1": 109,
+        "target2": 111.2,
+        "target3": 114,
+        "riskReward": {
+          "tp1": 1.41,
+          "tp2": 1.85,
+          "tp3": 2.4
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 152,
+          "positionValue": 15488.8,
+          "actualRisk": 766.08,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 93,
+          "rsi": 52.96,
+          "atr": 4.71,
+          "macd": 1.12
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "TARGET_REACHED",
+          "pointA": {
+            "type": "LOW",
+            "index": 4,
+            "price": 94.4000015258789,
+            "date": "2024-08-27T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 157,
+            "price": 107.5,
+            "date": "2025-04-04T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 498,
+            "price": 100.9000015258789,
+            "date": "2026-08-13T06:30:00.000Z"
+          },
+          "range": 13.1,
+          "retracementRatio": 0.5038,
+          "entryTriggerPrice": 101.25,
+          "entryZoneLow": 100.08,
+          "entryZoneHigh": 102.43,
+          "stopLoss": 96.86,
+          "tp1": 109,
+          "tp2": 111.2,
+          "tp3": 114,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-13T10:30:00.000Z",
+          "confirmationCandleClose": 101.9,
+          "entryPrice": 101.9,
+          "riskRewardTp1": 1.41,
+          "riskRewardTp2": 1.85,
+          "riskRewardTp3": 2.4
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T22:40:01.333Z",
+          "expiresAt": "2026-08-23T22:40:01.333Z"
+        },
+        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+        "invalidation": "C seviyesi 100.9000015258789 ve stop 96.86 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:01.333Z"
+      },
+      {
+        "id": "1787438401333-TSPOR",
+        "rank": 2,
+        "symbol": "TSPOR",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 0.89,
+          "high": 0.92,
+          "reference": 0.92
+        },
+        "stop": 0.86,
+        "target1": 0.98,
+        "target2": 1,
+        "target3": 1.03,
+        "riskReward": {
+          "tp1": 1,
+          "tp2": 1.33,
+          "tp3": 1.83
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 16847,
+          "positionValue": 15499.24,
+          "actualRisk": 1010.82,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 86,
+          "rsi": 61.65,
+          "atr": 0.05,
+          "macd": 0.04
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "TARGET_REACHED",
+          "pointA": {
+            "type": "LOW",
+            "index": 169,
+            "price": 0.8700000047683716,
+            "date": "2025-04-22T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 409,
+            "price": 1,
+            "date": "2026-04-06T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 489,
+            "price": 0.8999999761581421,
+            "date": "2026-07-31T06:30:00.000Z"
+          },
+          "range": 0.13,
+          "retracementRatio": 0.7692,
+          "entryTriggerPrice": 0.9,
+          "entryZoneLow": 0.89,
+          "entryZoneHigh": 0.92,
+          "stopLoss": 0.86,
+          "tp1": 0.98,
+          "tp2": 1,
+          "tp3": 1.03,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-07-31T10:30:00.000Z",
+          "confirmationCandleClose": 0.92,
+          "entryPrice": 0.92,
+          "riskRewardTp1": 1,
+          "riskRewardTp2": 1.33,
+          "riskRewardTp3": 1.83
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T22:40:01.333Z",
+          "expiresAt": "2026-08-23T22:40:01.333Z"
+        },
+        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+        "invalidation": "C seviyesi 0.8999999761581421 ve stop 0.86 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:01.333Z"
+      },
+      {
+        "id": "1787438401333-BIMAS",
+        "rank": 3,
+        "symbol": "BIMAS",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": null,
+        "entry": {
+          "low": 371.4,
+          "high": 377.71,
+          "reference": 379.75
+        },
+        "stop": 355.44,
+        "target1": 468.82,
+        "target2": 495.62,
+        "target3": 529.75,
+        "riskReward": {
+          "tp1": 3.66,
+          "tp2": 4.77,
+          "tp3": 6.17
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 40,
+          "positionValue": 15190,
+          "actualRisk": 972.4,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 87,
+          "rsi": 64.63,
+          "atr": 12.61,
+          "macd": 6.68
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "ACTIVE",
+          "pointA": {
+            "type": "LOW",
+            "index": 4,
+            "price": 265.5,
+            "date": "2024-08-27T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 437,
+            "price": 425,
+            "date": "2026-05-14T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 499,
+            "price": 370.25,
+            "date": "2026-08-12T06:30:00.000Z"
+          },
+          "range": 159.5,
+          "retracementRatio": 0.3433,
+          "entryTriggerPrice": 374.56,
+          "entryZoneLow": 371.4,
+          "entryZoneHigh": 377.71,
+          "stopLoss": 355.44,
+          "tp1": 468.82,
+          "tp2": 495.62,
+          "tp3": 529.75,
+          "volumeConfirmation": "WEAK",
+          "invalidReason": null,
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-12T10:30:00.000Z",
+          "confirmationCandleClose": 379.75,
+          "entryPrice": 379.75,
+          "riskRewardTp1": 3.66,
+          "riskRewardTp2": 4.77,
+          "riskRewardTp3": 6.17
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T22:40:01.333Z",
+          "expiresAt": "2026-08-23T22:40:01.333Z",
+          "openedAt": "2026-08-22T22:40:02.436Z"
+        },
+        "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
+        "invalidation": "C seviyesi 370.25 ve stop 355.44 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:01.333Z"
+      },
+      {
+        "id": "1787438401333-DOHOL",
+        "rank": 4,
+        "symbol": "DOHOL",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": null,
+        "entry": {
+          "low": 20.53,
+          "high": 20.84,
+          "reference": 20.76
+        },
+        "stop": 19.66,
+        "target1": 25.28,
+        "target2": 26.58,
+        "target3": 28.24,
+        "riskReward": {
+          "tp1": 4.11,
+          "tp2": 5.29,
+          "tp3": 6.8
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 746,
+          "positionValue": 15486.96,
+          "actualRisk": 820.6,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 87,
+          "rsi": 56.35,
+          "atr": 0.62,
+          "macd": 0.01
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "ACTIVE",
+          "pointA": {
+            "type": "LOW",
+            "index": 4,
+            "price": 14.65999984741211,
+            "date": "2024-08-27T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 375,
+            "price": 22.420000076293945,
+            "date": "2026-02-16T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 501,
+            "price": 20.479999542236328,
+            "date": "2026-08-18T06:30:00.000Z"
+          },
+          "range": 7.76,
+          "retracementRatio": 0.25,
+          "entryTriggerPrice": 20.69,
+          "entryZoneLow": 20.53,
+          "entryZoneHigh": 20.84,
+          "stopLoss": 19.66,
+          "tp1": 25.28,
+          "tp2": 26.58,
+          "tp3": 28.24,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": null,
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-18T10:30:00.000Z",
+          "confirmationCandleClose": 20.76,
+          "entryPrice": 20.76,
+          "riskRewardTp1": 4.11,
+          "riskRewardTp2": 5.29,
+          "riskRewardTp3": 6.8
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T22:40:01.333Z",
+          "expiresAt": "2026-08-23T22:40:01.333Z",
+          "openedAt": "2026-08-22T22:40:02.436Z"
+        },
+        "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
+        "invalidation": "C seviyesi 20.479999542236328 ve stop 19.66 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:01.333Z"
+      },
+      {
+        "id": "1787438401333-BINBN",
+        "rank": 5,
+        "symbol": "BINBN",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": null,
+        "entry": {
+          "low": 174.63,
+          "high": 178.58,
+          "reference": 177.8
+        },
+        "stop": 165.12,
+        "target1": 277.4,
+        "target2": 306.05,
+        "target3": 342.55,
+        "riskReward": {
+          "tp1": 7.85,
+          "tp2": 10.11,
+          "tp3": 12.99
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 87,
+          "positionValue": 15468.6,
+          "actualRisk": 1103.16,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 82,
+          "rsi": 55.94,
+          "atr": 7.91,
+          "macd": 1.51
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "fibonacci": {
+          "valid": true,
+          "status": "ACTIVE",
+          "pointA": {
+            "type": "LOW",
+            "index": 27,
+            "price": 92.19999694824219,
+            "date": "2024-11-20T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 128,
+            "price": 262.75,
+            "date": "2025-04-15T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 461,
+            "price": 172,
+            "date": "2026-08-12T06:30:00.000Z"
+          },
+          "range": 170.55,
+          "retracementRatio": 0.5321,
+          "entryTriggerPrice": 176.6,
+          "entryZoneLow": 174.63,
+          "entryZoneHigh": 178.58,
+          "stopLoss": 165.12,
+          "tp1": 277.4,
+          "tp2": 306.05,
+          "tp3": 342.55,
+          "volumeConfirmation": "WEAK",
+          "invalidReason": null,
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-13T10:30:00.000Z",
+          "confirmationCandleClose": 177.8,
+          "entryPrice": 177.8,
+          "riskRewardTp1": 7.85,
+          "riskRewardTp2": 10.11,
+          "riskRewardTp3": 12.99
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "PENDING",
+          "summary": "AI INTEL PENDING",
+          "chartComment": "",
+          "newsComment": ""
+        },
+        "lifecycle": {
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T22:40:01.333Z",
+          "expiresAt": "2026-08-23T22:40:01.333Z",
+          "openedAt": "2026-08-22T22:40:02.436Z"
+        },
+        "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
+        "invalidation": "C seviyesi 172 ve stop 165.12 altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:40:01.333Z"
+      }
+    ],
     "history": [
       {
         "id": "1787434807135-TRCAS",
@@ -3343,6 +3932,26 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:40:02.436Z",
+        "type": "SCAN",
+        "message": "5 active AI decision(s) refreshed or generated."
+      },
+      {
+        "timestamp": "2026-08-22T22:40:02.436Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN paper pozisyonu açıldı: 87 lot · ₺15468.60."
+      },
+      {
+        "timestamp": "2026-08-22T22:40:02.436Z",
+        "type": "PAPER_OPEN",
+        "message": "DOHOL paper pozisyonu açıldı: 746 lot · ₺15486.96."
+      },
+      {
+        "timestamp": "2026-08-22T22:40:02.436Z",
+        "type": "PAPER_OPEN",
+        "message": "BIMAS paper pozisyonu açıldı: 40 lot · ₺15190.00."
+      },
+      {
         "timestamp": "2026-08-22T22:19:41.768Z",
         "type": "CLOSED",
         "message": "TRCAS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -3821,26 +4430,6 @@
         "timestamp": "2026-08-21T23:30:39.717Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-21T23:30:01.985Z",
-        "type": "CLOSED",
-        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-124.60."
-      },
-      {
-        "timestamp": "2026-08-21T23:29:47.887Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺236.60."
-      },
-      {
-        "timestamp": "2026-08-21T23:23:57.206Z",
-        "type": "KILL_SWITCH",
-        "message": "KILL SWITCH AKTİF: yeni paper işlemler durduruldu. Açık pozisyonların TP/SL takibi devam ediyor."
-      },
-      {
-        "timestamp": "2026-08-21T23:23:41.449Z",
-        "type": "KILL_SWITCH",
-        "message": "KILL SWITCH AKTİF: yeni paper işlemler durduruldu. Açık pozisyonların TP/SL takibi devam ediyor."
       }
     ]
   }
