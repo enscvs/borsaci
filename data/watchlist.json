@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 2465.2009796142593,
+      "cash": 17782.10152282715,
       "equity": 48481.00195922852,
-      "pnl": -1311.7926055908188,
-      "pnlPercent": -2.623585211181638,
+      "pnl": -1436.3920623779281,
+      "pnlPercent": -2.8727841247558565,
       "positions": [
         {
           "id": "paper-2026-08-22T10:10:19.480Z-GESAN",
@@ -20,11 +20,13 @@
           "stop": 81.89,
           "target1": 96.47,
           "target2": 101.33,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T10:10:19.480Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": -124.59945678710938
+          "pnl": -124.59945678710938,
+          "closedAt": "2026-08-22T13:19:18.566Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T09:53:57.185Z-GESAN",
@@ -2716,6 +2718,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T13:19:18.566Z",
+        "type": "CLOSED",
+        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-124.60."
+      },
+      {
         "timestamp": "2026-08-22T11:43:09.250Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3209,11 +3216,6 @@
         "timestamp": "2026-08-21T22:16:10.168Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-21T22:16:07.232Z",
-        "type": "CLOSED",
-        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ]
   }
