@@ -28,12 +28,10 @@ test("missing data fails closed", () => {
   const data = bars(); data[270].volume = 0; data[270].low = data[270].high + 1;
   assert.equal(p.validateHistory(data, { now: new Date("2025-12-31").getTime() }).ok, false);
 });
-test("risk-off regime rejects new long candidates", () => {
-  const index = bars();
-  const f = p.featuresAt(index);
-  const regime = { regime: "RISK_OFF", allowed: false, reason: "test" };
-  const result = p.evaluateSetup({ symbol: "TEST", history: index, features: f }, { regime });
-  assert.equal(result.decision, "NO_TRADE");
+test("risk-off remains informational and does not hard-block a setup", () => {
+  const regime = p.calculateMarketRegime({ indexHistory: bars(), universeFeatures: [] , now: new Date("2025-10-10").getTime() });
+  assert.equal(regime.regime, "RISK_OFF");
+  assert.equal(regime.allowed, true);
 });
 test("risk reward below 1:2 does not pass setup", () => {
   const data = bars();
