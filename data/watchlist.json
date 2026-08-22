@@ -4,11 +4,62 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 48481.00099182129,
+      "cash": 2086.95099182129,
       "equity": 48481.00099182129,
       "pnl": -1518.990634155271,
       "pnlPercent": -3.037981268310542,
       "positions": [
+        {
+          "id": "paper-2026-08-22T21:40:07.521Z-TSPOR",
+          "decisionId": "1787434807135-TSPOR",
+          "symbol": "TSPOR",
+          "quantity": 14485,
+          "originalQuantity": 14485,
+          "entry": 1.07,
+          "current": 1.07,
+          "stop": 0.98,
+          "target1": 1.24,
+          "target2": 1.33,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T21:40:07.521Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T21:40:07.521Z-TRCAS",
+          "decisionId": "1787434807135-TRCAS",
+          "symbol": "TRCAS",
+          "quantity": 328,
+          "originalQuantity": 328,
+          "entry": 47.2,
+          "current": 47.2,
+          "stop": 44.41,
+          "target1": 52.78,
+          "target2": 55.58,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T21:40:07.521Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T21:40:07.521Z-ALARK",
+          "decisionId": "1787434807134-ALARK",
+          "symbol": "ALARK",
+          "quantity": 145,
+          "originalQuantity": 145,
+          "entry": 106.3,
+          "current": 106.3,
+          "stop": 99.73,
+          "target1": 119.45,
+          "target2": 126.02,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T21:40:07.521Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-22T19:51:00.738Z-GESAN",
           "decisionId": "1787428260326-GESAN",
@@ -784,241 +835,184 @@
     },
     "decisions": [
       {
-        "id": "1787434611514-PASEU",
+        "id": "1787434807134-ALARK",
         "rank": 1,
-        "symbol": "PASEU",
-        "action": "NO_TRADE",
-        "status": "REJECTED",
-        "confidence": null,
+        "symbol": "ALARK",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 92,
         "entry": {
-          "low": 199.88,
-          "high": 204.72,
-          "reference": 202.3
+          "low": 104.99,
+          "high": 107.18,
+          "reference": 106.3
         },
-        "stop": 155.16,
-        "target1": 296.59,
-        "target2": 343.73,
-        "riskReward": "1:2",
+        "stop": 99.73,
+        "target1": 119.45,
+        "target2": 126.02,
+        "riskReward": "1:2.0",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 76,
-          "positionValue": 15374.8,
-          "actualRisk": 3582.93,
+          "stopDistance": 6.57,
+          "quantity": 145,
+          "positionValue": 15413.5,
+          "actualRisk": 952.65,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
-          "dataQuality": true,
-          "regime": "RISK_OFF",
-          "relativeStrength": false,
-          "strategy": true
-        },
-        "precision": {
-          "engineVersion": "precision-v1",
-          "marketRegime": "RISK_OFF",
-          "dataQuality": "PASSED",
-          "probability": null,
-          "expectedR": null,
-          "calibration": {
-            "status": "KALIBRE_EDILMEDI",
-            "modelVersion": null
-          },
-          "relativeStrengthRank": 1,
-          "relativeStrengthPercentile": 0.009615384615384616,
-          "maxHoldingDays": null,
-          "reasons": [
-            "EMA20 EMA50'nin üzerinde"
-          ],
-          "invalidators": [
-            "RSI kontrollü momentum aralığında",
-            "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
-            "Son 3 günlük hacim teyidi ve likidite yeterli",
-            "Yapısal stop, direnç alanı ve risk/getiri uygun"
-          ],
-          "missing": [],
-          "disclaimer": "Garanti değildir."
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
         },
         "indicators": {
-          "rsi": 71.99089415410981,
-          "atr": 16.125072286749035,
-          "atrPercent": 7.970871005189005
+          "score": 90,
+          "rsi": 52.96,
+          "atr": 4.38,
+          "volatility": 4.12
         },
         "aiReview": {
-          "available": false,
-          "provider": "GEMINI",
-          "role": "INFORMATIONAL_ONLY",
-          "summary": "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": 90,
+          "verdict": "APPROVE",
+          "summary": "Strong technicals with price above key EMAs and neutral news; favorable outlook.",
+          "chartComment": "12‑day return +5.98%, price above EMA20/50/200, bullish momentum.",
+          "newsComment": "News unrelated to company, neutral impact.",
+          "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:36:51.514Z",
-          "expiresAt": "2026-08-23T21:36:51.514Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T21:40:07.134Z",
+          "expiresAt": "2026-08-23T21:40:07.134Z",
+          "openedAt": "2026-08-22T21:40:07.521Z"
         },
-        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Son 3 günlük hacim teyidi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
-        "invalidation": "Günlük plan geçersizliği: 155.16 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:36:51.514Z"
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Strong technicals with price above key EMAs and neutral news; favorable outlook.",
+        "invalidation": "Stop seviyesi 99.73 altındaki kapanış.",
+        "timestamp": "2026-08-22T21:40:07.134Z"
       },
       {
-        "id": "1787434611514-KTLEV",
+        "id": "1787434807135-TRCAS",
         "rank": 2,
-        "symbol": "KTLEV",
-        "action": "NO_TRADE",
-        "status": "REJECTED",
-        "confidence": null,
+        "symbol": "TRCAS",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 92,
         "entry": {
-          "low": 62.82,
-          "high": 64.18,
-          "reference": 63.5
+          "low": 46.64,
+          "high": 47.57,
+          "reference": 47.2
         },
-        "stop": 47.62,
-        "target1": 95.25,
-        "target2": 111.13,
-        "riskReward": "1:2",
+        "stop": 44.41,
+        "target1": 52.78,
+        "target2": 55.58,
+        "riskReward": "1:2.0",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 244,
-          "positionValue": 15494,
-          "actualRisk": 3873.65,
+          "stopDistance": 2.79,
+          "quantity": 328,
+          "positionValue": 15481.6,
+          "actualRisk": 915.12,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
-          "dataQuality": true,
-          "regime": "RISK_OFF",
-          "relativeStrength": false,
-          "strategy": true
-        },
-        "precision": {
-          "engineVersion": "precision-v1",
-          "marketRegime": "RISK_OFF",
-          "dataQuality": "PASSED",
-          "probability": null,
-          "expectedR": null,
-          "calibration": {
-            "status": "KALIBRE_EDILMEDI",
-            "modelVersion": null
-          },
-          "relativeStrengthRank": 2,
-          "relativeStrengthPercentile": 0.019230769230769232,
-          "maxHoldingDays": null,
-          "reasons": [
-            "EMA20 EMA50'nin üzerinde",
-            "Son 3 günlük hacim teyidi ve likidite yeterli"
-          ],
-          "invalidators": [
-            "RSI kontrollü momentum aralığında",
-            "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
-            "Yapısal stop, direnç alanı ve risk/getiri uygun"
-          ],
-          "missing": [],
-          "disclaimer": "Garanti değildir."
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
         },
         "indicators": {
-          "rsi": 73.18047984748621,
-          "atr": 4.558769367678232,
-          "atrPercent": 7.179164358548397
+          "score": 90,
+          "rsi": 59.42,
+          "atr": 1.86,
+          "volatility": 3.94
         },
         "aiReview": {
-          "available": false,
-          "provider": "GEMINI",
-          "role": "INFORMATIONAL_ONLY",
-          "summary": "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": 90,
+          "verdict": "APPROVE",
+          "summary": "Robust technical setup with price above EMAs and neutral news; positive outlook.",
+          "chartComment": "12‑day return +6.59%, price above all EMAs, strong bullish trend.",
+          "newsComment": "News unrelated to company, neutral impact.",
+          "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:36:51.514Z",
-          "expiresAt": "2026-08-23T21:36:51.514Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T21:40:07.135Z",
+          "expiresAt": "2026-08-23T21:40:07.135Z",
+          "openedAt": "2026-08-22T21:40:07.521Z"
         },
-        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Yapısal stop, direnç alanı ve risk/getiri uygun",
-        "invalidation": "Günlük plan geçersizliği: 47.62 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:36:51.514Z"
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Robust technical setup with price above EMAs and neutral news; positive outlook.",
+        "invalidation": "Stop seviyesi 44.41 altındaki kapanış.",
+        "timestamp": "2026-08-22T21:40:07.135Z"
       },
       {
-        "id": "1787434611514-TUPRS",
+        "id": "1787434807135-TSPOR",
         "rank": 3,
-        "symbol": "TUPRS",
-        "action": "NO_TRADE",
-        "status": "REJECTED",
-        "confidence": null,
+        "symbol": "TSPOR",
+        "action": "BUY SETUP",
+        "status": "OPEN",
+        "confidence": 92,
         "entry": {
-          "low": 404.46,
-          "high": 409.04,
-          "reference": 406.75
+          "low": 1.05,
+          "high": 1.08,
+          "reference": 1.07
         },
-        "stop": 355.67,
-        "target1": 508.92,
-        "target2": 560,
-        "riskReward": "1:2",
+        "stop": 0.98,
+        "target1": 1.24,
+        "target2": 1.33,
+        "riskReward": "1:2.0",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 38,
-          "positionValue": 15456.5,
-          "actualRisk": 1941.23,
+          "stopDistance": 0.09,
+          "quantity": 14485,
+          "positionValue": 15498.95,
+          "actualRisk": 1303.65,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
-          "dataQuality": true,
-          "regime": "RISK_OFF",
-          "relativeStrength": false,
-          "strategy": true
-        },
-        "precision": {
-          "engineVersion": "precision-v1",
-          "marketRegime": "RISK_OFF",
-          "dataQuality": "PASSED",
-          "probability": null,
-          "expectedR": null,
-          "calibration": {
-            "status": "KALIBRE_EDILMEDI",
-            "modelVersion": null
-          },
-          "relativeStrengthRank": 3,
-          "relativeStrengthPercentile": 0.028846153846153848,
-          "maxHoldingDays": null,
-          "reasons": [
-            "EMA20 EMA50'nin üzerinde"
-          ],
-          "invalidators": [
-            "RSI kontrollü momentum aralığında",
-            "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
-            "Son 3 günlük hacim teyidi ve likidite yeterli",
-            "Yapısal stop, direnç alanı ve risk/getiri uygun"
-          ],
-          "missing": [],
-          "disclaimer": "Garanti değildir."
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
         },
         "indicators": {
-          "rsi": 84.90157721208774,
-          "atr": 15.24251306955267,
-          "atrPercent": 3.7473910435286224
+          "score": 90,
+          "rsi": 61.65,
+          "atr": 0.06,
+          "volatility": 5.34
         },
         "aiReview": {
-          "available": false,
-          "provider": "GEMINI",
-          "role": "INFORMATIONAL_ONLY",
-          "summary": "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": 90,
+          "verdict": "APPROVE",
+          "summary": "Excellent technicals with high volume and neutral news; attractive candidate.",
+          "chartComment": "12‑day return +10.31%, price above EMAs, high volume, solid uptrend.",
+          "newsComment": "News unrelated to company, neutral impact.",
+          "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:36:51.514Z",
-          "expiresAt": "2026-08-23T21:36:51.514Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T21:40:07.135Z",
+          "expiresAt": "2026-08-23T21:40:07.135Z",
+          "openedAt": "2026-08-22T21:40:07.521Z"
         },
-        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Son 3 günlük hacim teyidi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
-        "invalidation": "Günlük plan geçersizliği: 355.67 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:36:51.514Z"
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Excellent technicals with high volume and neutral news; attractive candidate.",
+        "invalidation": "Stop seviyesi 0.98 altındaki kapanış.",
+        "timestamp": "2026-08-22T21:40:07.135Z"
       }
     ],
     "history": [
@@ -3335,6 +3329,26 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T21:40:07.521Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
+        "timestamp": "2026-08-22T21:40:07.521Z",
+        "type": "PAPER_OPEN",
+        "message": "TSPOR paper pozisyonu açıldı: 14485 lot · ₺15498.95."
+      },
+      {
+        "timestamp": "2026-08-22T21:40:07.521Z",
+        "type": "PAPER_OPEN",
+        "message": "TRCAS paper pozisyonu açıldı: 328 lot · ₺15481.60."
+      },
+      {
+        "timestamp": "2026-08-22T21:40:07.521Z",
+        "type": "PAPER_OPEN",
+        "message": "ALARK paper pozisyonu açıldı: 145 lot · ₺15413.50."
+      },
+      {
         "timestamp": "2026-08-22T21:36:51.887Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3813,26 +3827,6 @@
         "timestamp": "2026-08-21T23:04:14.600Z",
         "type": "RISK",
         "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
-      },
-      {
-        "timestamp": "2026-08-21T23:04:13.399Z",
-        "type": "RISK",
-        "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
-      },
-      {
-        "timestamp": "2026-08-21T23:04:08.880Z",
-        "type": "RISK",
-        "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
-      },
-      {
-        "timestamp": "2026-08-21T22:58:12.119Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-21T22:58:12.119Z",
-        "type": "PAPER_OPEN",
-        "message": "BINBN paper pozisyonu açıldı: 169 lot · ₺30943.90."
       }
     ]
   }
