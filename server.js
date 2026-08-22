@@ -5683,6 +5683,62 @@ async function evaluateTradingCandidatesWithAi(
 }
 
 
+async function refreshScannerPriceFromHourly(
+  item
+) {
+  try {
+    const intraday =
+      await fetchYahooChart(
+        item.symbol,
+        "5d",
+        "1h"
+      );
+
+    const latest =
+      intraday.history.at(-1);
+
+    const price =
+      Number(latest?.close);
+
+    const timestamp =
+      Number(latest?.time);
+
+    /*
+     * Günlük Yahoo mumunun geç güncellenmesi durumunda son
+     * tamamlanmış saatlik kapanış giriş/SL/TP için önceliklidir.
+     * Eski veya geçersiz bir saatlik kayıt asla kullanılmaz.
+     */
+    if (
+      !Number.isFinite(price) ||
+      price <= 0 ||
+      !Number.isFinite(timestamp) ||
+      Date.now() - timestamp * 1000 >
+        14 * 24 * 60 * 60 * 1000
+    ) {
+      return item;
+    }
+
+    return {
+      ...item,
+      price,
+      priceSource: "YAHOO_1H_LAST_CLOSE",
+      priceTimestamp:
+        new Date(timestamp * 1000).toISOString(),
+    };
+  } catch (error) {
+    console.warn(
+      `SCANNER INTRADAY ${item.symbol}:`,
+      error.message
+    );
+
+    return {
+      ...item,
+      priceSource: "YAHOO_1D_FALLBACK",
+    };
+  }
+}
+
+
 async function scanSymbol(
   symbol
 ) {
@@ -5839,12 +5895,24 @@ async function handleTradingScanner(
       results.slice(0, 15);
 
     /*
+     * Günlük verinin gecikmesi halinde yalnızca öne çıkan
+     * adayların fiyatı saatlik son kapanışla yenilenir.
+     * Böylece 106 sembol için ikinci bir tam tarama yapılmaz.
+     */
+    const pricedResults =
+      await Promise.all(
+        rankedResults.map(
+          refreshScannerPriceFromHourly
+        )
+      );
+
+    /*
      * AI katmanı yalnızca teknik olarak öne çıkan adayları
      * tek toplu istekle değerlendirir. Böylece 106 ayrı model
      * çağrısı yerine sınırlı, denetlenebilir bir inceleme yapılır.
      */
     const aiCandidates =
-      rankedResults
+      pricedResults
         .filter(item => item.score >= 65)
         .slice(0, 6);
 
@@ -5854,7 +5922,7 @@ async function handleTradingScanner(
       );
 
     const reviewedResults =
-      rankedResults.map(item => ({
+      pricedResults.map(item => ({
         ...item,
         aiReview:
           aiReviews.get(item.symbol) || {
