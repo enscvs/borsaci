@@ -18,7 +18,14 @@ const CONFIG = Object.freeze({
   walkForward: { trainBars: 504, calibrationBars: 126, testBars: 126, purgeBars: 10, embargoBars: 5 }
 });
 
-function finite(value) { return Number.isFinite(Number(value)); }
+function finite(value) { return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value)); }
+function barTimestamp(bar) {
+  const raw = bar?.timestamp ?? bar?.date ?? bar?.time;
+  if (raw instanceof Date) return raw.getTime();
+  if (typeof raw === "number" && Number.isFinite(raw)) return raw < 100000000000 ? raw * 1000 : raw;
+  const parsed = new Date(raw || 0).getTime();
+  return Number.isFinite(parsed) ? parsed : NaN;
+}
 function mean(values) { return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null; }
 function stddev(values) { const m = mean(values); return m === null ? null : Math.sqrt(mean(values.map(v => (v - m) ** 2))); }
 function round(value, decimals = 4) { return finite(value) ? Number(Number(value).toFixed(decimals)) : null; }
@@ -95,19 +102,19 @@ function validateHistory(history, { now = Date.now(), config = CONFIG, requireCo
   if (!Array.isArray(history) || !history.length) return { ok: false, errors };
   let previous = null;
   for (const bar of history) {
-    const timestamp = new Date(bar.timestamp || bar.date || 0).getTime();
+    const timestamp = barTimestamp(bar);
     if (!finite(timestamp) || ![bar.open, bar.high, bar.low, bar.close, bar.volume].every(finite)) { errors.push({ code: "INVALID_OHLC", message: "OHLCV alanlarında geçersiz değer var." }); break; }
     if (bar.open <= 0 || bar.high <= 0 || bar.low <= 0 || bar.close <= 0 || bar.volume < 0 || bar.high < Math.max(bar.open, bar.close, bar.low) || bar.low > Math.min(bar.open, bar.close, bar.high)) { errors.push({ code: "INCONSISTENT_OHLC", message: "OHLC değerleri tutarlı değil." }); break; }
     if (previous && timestamp <= previous) { errors.push({ code: "NON_CHRONOLOGICAL_DATA", message: "Mum zamanları kronolojik değil." }); break; }
     if (previous && timestamp - previous > config.data.maxGapDays * 86400000) { errors.push({ code: "CRITICAL_CANDLE_GAP", message: "Kritik dönemde eksik mum var." }); break; }
     previous = timestamp;
   }
-  const last = history[history.length - 1], lastTime = new Date(last.timestamp || last.date || 0).getTime();
+  const last = history[history.length - 1], lastTime = barTimestamp(last);
   if (!finite(lastTime) || now - lastTime > config.data.maxStaleDays * 86400000) errors.push({ code: "STALE_DATA", message: "Son piyasa verisi güncel değil." });
   if (requireComplete && !isDailyCandleComplete(lastTime, now)) errors.push({ code: "INCOMPLETE_LAST_CANDLE", message: "Son günlük mum henüz tamamlanmadı." });
   const avgVolume = mean(history.slice(-20).map(x => Number(x.volume)));
   if (!finite(avgVolume) || avgVolume <= 0) errors.push({ code: "INVALID_VOLUME", message: "Hacim verisi geçerli değil." });
-  return { ok: errors.length === 0, errors, lastTimestamp: new Date(lastTime).toISOString(), averageVolume: avgVolume };
+  return { ok: errors.length === 0, errors, lastTimestamp: Number.isFinite(lastTime) ? new Date(lastTime).toISOString() : null, averageVolume: avgVolume };
 }
 function featuresAt(history, index = history.length - 1) {
   const slice = history.slice(0, index + 1), closes = slice.map(x => Number(x.close)), volumes = slice.map(x => Number(x.volume));
@@ -253,4 +260,4 @@ function brierScore(predictions) {
   return rows.length ? mean(rows.map(x => (x.probability - x.label) ** 2)) : null;
 }
 
-module.exports = { CONFIG, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
+module.exports = { CONFIG, barTimestamp, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
