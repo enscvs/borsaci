@@ -5829,24 +5829,36 @@ async function handleTradingScanner(req,res) {
   try {
     const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);
     const riskSettings={capital:url.searchParams.get("capital"),maxPositionPercent:url.searchParams.get("maxPositionPercent"),maxPositions:url.searchParams.get("maxPositions")};
-    const started=Date.now(),maxDuration=45000,batchSize=8,results=[];let scanned=0;
-    for(let i=0;i<BIST100_SYMBOLS.length&&Date.now()-started<maxDuration;i+=batchSize){
-      const batch=BIST100_SYMBOLS.slice(i,i+batchSize), rows=await Promise.all(batch.map(scanSymbol));scanned+=batch.length;results.push(...rows);
+    /*
+     * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
+     * 4s teyit için daha küçük bir süre bütçesi kullanılır.
+     */
+    const started=Date.now(),dailyBudget=26000,batchSize=12,results=[];let scanned=0;
+    for(let i=0;i<BIST100_SYMBOLS.length&&Date.now()-started<dailyBudget;i+=batchSize){
+      const batch=BIST100_SYMBOLS.slice(i,i+batchSize),rows=await Promise.all(batch.map(scanSymbol));scanned+=batch.length;results.push(...rows);
     }
     let xu100={status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."};
     try { xu100=fibonacciEngine.xu100Info((await fetchYahooChart("XU100","2y","1d")).history); } catch(error) { console.warn("XU100 INFO:",error.message); }
     const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
-    const intradayCandidates=valid.slice(0,30);
+    /*
+     * Fibonacci için yalnızca günlük kaliteye göre en güçlü 10 hisse
+     * 4 saatlik veriye gider. Bu, 106 ek ağ çağrısı yüzünden
+     * tarayıcının SCANNING ekranında kalmasını önler.
+     */
+    const intradayCandidates=valid.slice(0,10);
     const hourlyBySymbol=new Map(await Promise.all(intradayCandidates.map(async item=>{try{return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history];}catch(error){console.warn(`SCANNER 4H ${item.symbol}:`,error.message);return [item.symbol,null];}})));
     const enriched=results.map(item=>{
       if(!item.validation?.ok)return {...item,score:0,grade:"VERİ YETERSİZ",decision:"VERİ YETERSİZ",reasons:[item.dataStatus||"VERİ YETERSİZ"],risks:[],fibonacci:{valid:false,status:"NO_VALID_STRUCTURE",invalidReason:item.dataStatus||"VERİ YETERSİZ"}};
-      const hourly=hourlyBySymbol.get(item.symbol)||null, fib=fibonacciEngine.fibonacciPlan(item.history,hourly), fallback=fib.valid?null:fibonacciEngine.fallbackPlan(item.history,item.features), analysis=fibonacciEngine.score(item.history,fib.valid?fib:{...fallback,valid:false,status:"NO_VALID_STRUCTURE",volumeConfirmation:"WEAK"});
-      const breakdown={trend:0,momentum:0,volume:0,entry:0}; // UI only; reasons carry exact backend evidence.
+      const hourly=hourlyBySymbol.get(item.symbol)||null,fib=fibonacciEngine.fibonacciPlan(item.history,hourly),fallback=fib.valid?null:fibonacciEngine.fallbackPlan(item.history,item.features),analysis=fibonacciEngine.score(item.history,fib.valid?fib:{...fallback,valid:false,status:"NO_VALID_STRUCTURE",volumeConfirmation:"WEAK"});
       const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
-      return {...item,...analysis,scoreBreakdown:breakdown,fibonacci:fib,fallback,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
+      return {...item,...analysis,fibonacci:fib,fallback,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
     }).sort((a,b)=>b.score-a.score).slice(0,10);
-    const rawAi=await evaluateTradingCandidatesWithAi(enriched.slice(0,5));
-    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"AI yorumu alınamadı.",chartComment:"",newsComment:""}}));
+    const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}]));
+    const rawAi=await Promise.race([
+      evaluateTradingCandidatesWithAi(enriched.slice(0,5)),
+      new Promise(resolve=>setTimeout(()=>resolve(noAi),8000))
+    ]).catch(()=>noAi);
+    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
     const state=await recordAiDecisions(decisions);
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:state.paper,activity:state.activity,history:state.history,risk:state.risk});
