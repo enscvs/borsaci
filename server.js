@@ -5429,6 +5429,7 @@ async function evaluateTradingCandidatesWithAi(
 
   let response;
   let provider = "GROQ";
+  const providerErrors = [];
 
   try {
     if (!process.env.GROQ_API_KEY) {
@@ -5459,6 +5460,9 @@ async function evaluateTradingCandidatesWithAi(
     console.warn(
       "TRADING AI GROQ:",
       groqError.message
+    );
+    providerErrors.push(
+      `GROQ: ${String(groqError.message || "unknown error").slice(0, 180)}`
     );
 
     try {
@@ -5492,6 +5496,9 @@ async function evaluateTradingCandidatesWithAi(
         "TRADING AI GEMINI:",
         geminiError.message
       );
+      providerErrors.push(
+        `GEMINI: ${String(geminiError.message || "unknown error").slice(0, 180)}`
+      );
 
       try {
         if (!process.env.MISTRAL_API_KEY) {
@@ -5524,6 +5531,9 @@ async function evaluateTradingCandidatesWithAi(
           "TRADING AI MISTRAL:",
           mistralError.message
         );
+        providerErrors.push(
+          `MISTRAL: ${String(mistralError.message || "unknown error").slice(0, 180)}`
+        );
 
         return new Map(
           list.map(item => [
@@ -5534,7 +5544,9 @@ async function evaluateTradingCandidatesWithAi(
               score: null,
               verdict: "WATCH",
               summary:
-                "AI değerlendirmesi alınamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+                `AI değerlendirmesi alınamadı; otomatik işlem kapalı tutuldu. ${providerErrors.join(" | ")}`.slice(0, 650),
+              error:
+                providerErrors.join(" | ").slice(0, 650),
               chartComment: "",
               newsComment: "",
             },
