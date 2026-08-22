@@ -119,7 +119,9 @@ function validateHistory(history, { now = Date.now(), config = CONFIG, requireCo
 function featuresAt(history, index = history.length - 1, config = CONFIG) {
   const slice = history.slice(0, index + 1), closes = slice.map(x => Number(x.close)), volumes = slice.map(x => Number(x.volume));
   const e20 = emaSeries(closes, 20), e50 = emaSeries(closes, 50), e200 = emaSeries(closes, 200), rsi = rsiSeries(closes), atr = atrSeries(slice), adx = adxSeries(slice), macd = macdHistogram(closes);
-  const volumeLookback = Math.max(1, Number(config.strategy?.volumeLookback) || 20);\n  const recentVolumes = volumes.slice(-volumeLookback);\n  const vol20 = mean(recentVolumes), volStd = stddev(recentVolumes), price = closes.at(-1), last = slice.at(-1);
+  const volumeLookback = Math.max(1, Number(config.strategy?.volumeLookback) || 20);
+  const recentVolumes = volumes.slice(-volumeLookback);
+  const vol20 = mean(recentVolumes), volStd = stddev(recentVolumes), price = closes.at(-1), last = slice.at(-1);
   const lookback = n => pctChange(price, closes[closes.length - 1 - n]);
   return {
     price, ema20: e20.at(-1), ema50: e50.at(-1), ema200: e200.at(-1), rsi14: rsi.at(-1), atr: atr.at(-1), adx: adx.at(-1), macdHistogram: macd.at(-1),
