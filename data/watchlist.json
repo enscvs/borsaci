@@ -4,11 +4,62 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 51160.542728915214,
+      "cash": 4837.592728915213,
       "equity": 51160.542728915214,
       "pnl": 1160.5511029386507,
       "pnlPercent": 2.3211022058773016,
       "positions": [
+        {
+          "id": "paper-2026-08-22T22:52:28.500Z-BIMAS",
+          "decisionId": "1787438791340-BIMAS",
+          "symbol": "BIMAS",
+          "quantity": 37,
+          "originalQuantity": 37,
+          "entry": 416.5,
+          "current": 416.5,
+          "stop": 368.36,
+          "target1": 512.78,
+          "target2": 560.93,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T22:52:28.500Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T22:52:28.500Z-TSPOR",
+          "decisionId": "1787438791340-TSPOR",
+          "symbol": "TSPOR",
+          "quantity": 14485,
+          "originalQuantity": 14485,
+          "entry": 1.07,
+          "current": 1.07,
+          "stop": 0.89,
+          "target1": 1.43,
+          "target2": 1.6,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T22:52:28.500Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
+        {
+          "id": "paper-2026-08-22T22:52:28.500Z-ALARK",
+          "decisionId": "1787438791340-ALARK",
+          "symbol": "ALARK",
+          "quantity": 145,
+          "originalQuantity": 145,
+          "entry": 106.3,
+          "current": 106.3,
+          "stop": 98.44,
+          "target1": 122.01,
+          "target2": 129.87,
+          "status": "OPEN",
+          "openedAt": "2026-08-22T22:52:28.500Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-22T22:40:02.436Z-BINBN",
           "decisionId": "1787438401333-BINBN",
@@ -902,7 +953,7 @@
         "rank": 1,
         "symbol": "ALARK",
         "action": "BUY SETUP",
-        "status": "PENDING",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 106.3,
@@ -950,27 +1001,30 @@
         ],
         "risks": [],
         "aiReview": {
-          "available": false,
-          "provider": "PENDING",
-          "summary": "AI INTEL PENDING",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-22T22:46:31.340Z",
-          "expiresAt": "2026-08-23T22:46:31.340Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T22:52:27.946Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z",
+          "openedAt": "2026-08-22T22:52:28.500Z"
         },
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:46:31.340Z"
+        "timestamp": "2026-08-22T22:52:27.946Z"
       },
       {
         "id": "1787438791340-TSPOR",
         "rank": 2,
         "symbol": "TSPOR",
         "action": "BUY SETUP",
-        "status": "PENDING",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 1.07,
@@ -1018,27 +1072,30 @@
         ],
         "risks": [],
         "aiReview": {
-          "available": false,
-          "provider": "PENDING",
-          "summary": "AI INTEL PENDING",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-22T22:46:31.340Z",
-          "expiresAt": "2026-08-23T22:46:31.340Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T22:52:27.947Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z",
+          "openedAt": "2026-08-22T22:52:28.500Z"
         },
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:46:31.340Z"
+        "timestamp": "2026-08-22T22:52:27.947Z"
       },
       {
         "id": "1787438791340-BIMAS",
         "rank": 3,
         "symbol": "BIMAS",
         "action": "BUY SETUP",
-        "status": "PENDING",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 416.5,
@@ -1086,20 +1143,23 @@
         ],
         "risks": [],
         "aiReview": {
-          "available": false,
-          "provider": "PENDING",
-          "summary": "AI INTEL PENDING",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-22T22:46:31.340Z",
-          "expiresAt": "2026-08-23T22:46:31.340Z"
+          "stage": "OPEN",
+          "createdAt": "2026-08-22T22:52:27.947Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z",
+          "openedAt": "2026-08-22T22:52:28.500Z"
         },
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:46:31.340Z"
+        "timestamp": "2026-08-22T22:52:27.947Z"
       },
       {
         "id": "1787438791340-DOHOL",
@@ -1153,20 +1213,22 @@
         ],
         "risks": [],
         "aiReview": {
-          "available": false,
-          "provider": "PENDING",
-          "summary": "AI INTEL PENDING",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-22T22:46:31.340Z",
-          "expiresAt": "2026-08-23T22:46:31.340Z"
+          "createdAt": "2026-08-22T22:52:27.947Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z"
         },
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:46:31.340Z"
+        "timestamp": "2026-08-22T22:52:27.947Z"
       },
       {
         "id": "1787438791340-BINBN",
@@ -1221,20 +1283,22 @@
         ],
         "risks": [],
         "aiReview": {
-          "available": false,
-          "provider": "PENDING",
-          "summary": "AI INTEL PENDING",
-          "chartComment": "",
-          "newsComment": ""
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-22T22:46:31.340Z",
-          "expiresAt": "2026-08-23T22:46:31.340Z"
+          "createdAt": "2026-08-22T22:52:27.947Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z"
         },
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:46:31.340Z"
+        "timestamp": "2026-08-22T22:52:27.947Z"
       }
     ],
     "history": [
@@ -4290,6 +4354,26 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:52:28.500Z",
+        "type": "SCAN",
+        "message": "5 active AI decision(s) refreshed or generated."
+      },
+      {
+        "timestamp": "2026-08-22T22:52:28.500Z",
+        "type": "PAPER_OPEN",
+        "message": "BIMAS paper pozisyonu açıldı: 37 lot · ₺15410.50."
+      },
+      {
+        "timestamp": "2026-08-22T22:52:28.500Z",
+        "type": "PAPER_OPEN",
+        "message": "TSPOR paper pozisyonu açıldı: 14485 lot · ₺15498.95."
+      },
+      {
+        "timestamp": "2026-08-22T22:52:28.500Z",
+        "type": "PAPER_OPEN",
+        "message": "ALARK paper pozisyonu açıldı: 145 lot · ₺15413.50."
+      },
+      {
         "timestamp": "2026-08-22T22:47:11.509Z",
         "type": "CLOSED",
         "message": "BIMAS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺1470.00."
@@ -4768,26 +4852,6 @@
         "timestamp": "2026-08-21T23:37:17.442Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-21T23:37:17.442Z",
-        "type": "PAPER_OPEN",
-        "message": "ALARK paper pozisyonu açıldı: 143 lot · ₺15401.10."
-      },
-      {
-        "timestamp": "2026-08-21T23:37:17.442Z",
-        "type": "PAPER_OPEN",
-        "message": "GESAN paper pozisyonu açıldı: 178 lot · ₺15441.50."
-      },
-      {
-        "timestamp": "2026-08-21T23:37:17.442Z",
-        "type": "PAPER_OPEN",
-        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15380.40."
-      },
-      {
-        "timestamp": "2026-08-21T23:37:01.012Z",
-        "type": "KILL_SWITCH",
-        "message": "KILL SWITCH KAPATILDI: yeni paper işlemler yeniden açılabilir."
       }
     ]
   }
