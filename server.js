@@ -5792,6 +5792,7 @@ async function evaluateTradingCandidatesWithAi(
           volume: item.volume,
           averageVolume: item.averageVolume,
           signals: item.signals,
+          fibonacci: item.fibonacci || null,
         },
         chart: item.chartContext,
         news: await fetchTradingNews(item.symbol),
@@ -5802,12 +5803,12 @@ async function evaluateTradingCandidatesWithAi(
     "BIST için teknik tarama adaylarını değerlendir.",
     "Bu bir otomasyon güvenlik katmanıdır; yalnızca verilen veriyle çalış.",
     "Fiyat hedefi, emir veya kesin sonuç üretme.",
-    "Her sembol için grafik verisi, teknik göstergeler ve verilen haber başlıklarının risk/kalite etkisini puanla.",
+    "Her sembol için backend tarafından verilen teknik ve Fibonacci verisini kısa ve açıklayıcı biçimde yorumla. Fibonacci seviyesi hesaplama veya değiştirme."
     "Haber yoksa bunu nötr kabul et; uydurma haber veya KAP bilgisi üretme.",
     "Yalnızca aşağıdaki JSON nesnesini döndür:",
-    '{"reviews":[{"symbol":"ASELS","score":0,"verdict":"APPROVE|WATCH|REJECT","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
+    '{"reviews":[{"symbol":"ASELS","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
     "Tüm adayları eksiksiz döndür. Açıklamalar kısa olmalı ve yalnızca JSON döndürmelisin.",
-    "score 0-100: 65 altı APPROVE olamaz. APPROVE yalnızca teknik yapı ve haber riski uyumluysa verilir.",
+    "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme. Backend fibonacci.confirmationPassed false ise C’den dönüş teyidi bekleniyor de; 4 saatlik veri yoksa teyit uydurma."
     "Adaylar:",
     JSON.stringify(enriched),
   ].join("\n\n");
@@ -5974,13 +5975,10 @@ async function evaluateTradingCandidatesWithAi(
             return [
               symbol,
               {
-                available: Number.isFinite(score),
+                available: Boolean(review?.summary || review?.chartComment || review?.newsComment),
                 provider,
-                score:
-                  Number.isFinite(score)
-                    ? score
-                    : null,
-                verdict,
+                score: null,
+                verdict: "INFO",
                 chartComment:
                   String(review?.chartComment || "")
                     .slice(0, 120),
