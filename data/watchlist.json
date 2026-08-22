@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 2086.95099182129,
+      "cash": 17585.901751589776,
       "equity": 48481.002444338796,
-      "pnl": -1518.990634155271,
-      "pnlPercent": -3.037981268310542,
+      "pnl": -1518.989874386786,
+      "pnlPercent": -3.037979748773572,
       "positions": [
         {
           "id": "paper-2026-08-22T21:40:07.521Z-TSPOR",
@@ -20,11 +20,13 @@
           "stop": 0.98,
           "target1": 1.24,
           "target2": 1.33,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T21:40:07.521Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.0007597684851223807
+          "pnl": 0.0007597684851223807,
+          "closedAt": "2026-08-22T22:17:43.225Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T21:40:07.521Z-TRCAS",
@@ -953,13 +955,15 @@
         "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Robust technical setup with price above EMAs and neutral news; positive outlook.",
         "invalidation": "Stop seviyesi 44.41 altındaki kapanış.",
         "timestamp": "2026-08-22T21:40:07.135Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787434807135-TSPOR",
         "rank": 3,
         "symbol": "TSPOR",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": 92,
         "entry": {
           "low": 1.05,
@@ -1005,17 +1009,18 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T21:40:07.135Z",
           "expiresAt": "2026-08-23T21:40:07.135Z",
-          "openedAt": "2026-08-22T21:40:07.521Z"
+          "openedAt": "2026-08-22T21:40:07.521Z",
+          "closedAt": "2026-08-22T22:17:43.225Z"
         },
         "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Excellent technicals with high volume and neutral news; attractive candidate.",
         "invalidation": "Stop seviyesi 0.98 altındaki kapanış.",
-        "timestamp": "2026-08-22T21:40:07.135Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T21:40:07.135Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.0007597684851223807
+      },
       {
         "id": "1787428260326-ALARK",
         "rank": 1,
@@ -3329,6 +3334,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:17:43.225Z",
+        "type": "CLOSED",
+        "message": "TSPOR paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T21:40:07.521Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3820,11 +3830,6 @@
       },
       {
         "timestamp": "2026-08-21T23:04:33.327Z",
-        "type": "RISK",
-        "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
-      },
-      {
-        "timestamp": "2026-08-21T23:04:14.600Z",
         "type": "RISK",
         "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
       }
