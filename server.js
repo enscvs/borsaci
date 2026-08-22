@@ -3718,11 +3718,12 @@ function buildAiDecision(item, rank, riskSettings = {}) {
       atrPercent: item.features?.atrPercent ?? null,
     },
     aiReview: {
-      available: false,
-      provider: "EXPLANATION_ONLY",
-      score: null,
-      verdict: "NOT_USED_FOR_DECISION",
-      summary: "LLM fiyat, stop, hedef, olasılık veya kararı değiştiremez.",
+      available: Boolean(item.aiReview?.available),
+      provider: item.aiReview?.provider || "UNAVAILABLE",
+      role: "INFORMATIONAL_ONLY",
+      summary: item.aiReview?.summary || "AI yorumu alınamadı.",
+      chartComment: item.aiReview?.chartComment || "",
+      newsComment: item.aiReview?.newsComment || "",
     },
     lifecycle: { stage: pending ? "PENDING" : "REJECTED", createdAt: now, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() },
     reason: decision === "WATCH"
@@ -5860,6 +5861,9 @@ async function scanSymbol(symbol) {
       atr: features.atr,
       volume: features.volume,
       averageVolume: features.averageVolume20,
+      macd: features.macdHistogram,
+      volatility: features.atrPercent,
+      chartContext: buildTradingChartContext(history),
       timestamp: new Date().toISOString(),
       priceTimestamp: validation.lastTimestamp,
       priceSource: "YAHOO_1D_COMPLETED",
@@ -5927,13 +5931,34 @@ async function handleTradingScanner(req, res) {
       return rankA - rankB || (a.relativeStrengthRank || 9999) - (b.relativeStrengthRank || 9999);
     }).slice(0, 5);
 
-    const decisions = createAiDecisions(evaluated, riskSettings);
+    /*
+     * AI katmanı yalnızca doğrulanmış teknik veri ve alınabilen haber
+     * başlıklarını açıklar. Dönen skor/verdict bilinçli olarak atılır;
+     * karar motoru, işlem seviyeleri ve paper açma mantığı bundan etkilenmez.
+     */
+    const rawAiReviews = await evaluateTradingCandidatesWithAi(evaluated);
+    const reviewed = evaluated.map(item => {
+      const review = rawAiReviews.get(item.symbol) || {};
+      return {
+        ...item,
+        aiReview: {
+          available: Boolean(review.available),
+          provider: review.provider || "UNAVAILABLE",
+          summary: String(review.summary || "AI yorumu alınamadı.").slice(0, 220),
+          chartComment: String(review.chartComment || "").slice(0, 160),
+          newsComment: String(review.newsComment || "").slice(0, 160),
+          role: "INFORMATIONAL_ONLY",
+        },
+      };
+    });
+
+    const decisions = createAiDecisions(reviewed, riskSettings);
     const tradingState = await recordAiDecisions(decisions);
 
     return sendJSON(res, 200, {
       success: true, timestamp: new Date().toISOString(), scanned, successful: results.length,
       complete: scanned === BIST100_SYMBOLS.length, marketRegime: regime, engine: { version: precision.CONFIG.version, calibration: "KALIBRE_EDILMEDI" },
-      results: evaluated, decisions: tradingState.decisions, paper: tradingState.paper, activity: tradingState.activity, history: tradingState.history, risk: tradingState.risk,
+      results: reviewed, decisions: tradingState.decisions, paper: tradingState.paper, activity: tradingState.activity, history: tradingState.history, risk: tradingState.risk,
     });
   } catch (error) {
     console.error("TRADING SCANNER ERROR:", error.message);
