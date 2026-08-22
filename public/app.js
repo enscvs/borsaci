@@ -4686,7 +4686,9 @@ function renderScannerResults(results) {
     const precision = item.precision || {};
     const calibration = precision.calibration?.status === "CALIBRATED"
       ? `Kalibre olasılık: ${formatPercent((precision.probability || 0) * 100)}`
-      : "KALİBRE EDİLMEDİ";
+      : precision.calibration?.status === "DISABLED"
+        ? "GEÇMİŞ KALİBRASYON KULLANILMIYOR"
+        : "KALİBRE EDİLMEDİ";
     return `
       <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
         <div class="scanner-head">
@@ -4895,6 +4897,11 @@ function renderAiDecisions(decisions) {
   aiDecisionFeed.innerHTML = records.map((item, index) => {
     const p = item.precision || {};
     const calibrated = p.calibration?.status === "CALIBRATED";
+    const calibrationLabel = calibrated
+      ? `Model ${p.calibration?.modelVersion || "v1"} · ${formatPercent((p.probability || 0) * 100)}`
+      : p.calibration?.status === "DISABLED"
+        ? "GEÇMİŞ KALİBRASYON YOK"
+        : "KALİBRE EDİLMEDİ";
     return `
       <article class="decision-item decision-card" data-decision-index="${index}">
         <header>
@@ -4902,7 +4909,7 @@ function renderAiDecisions(decisions) {
           <span>${item.action}</span>
           <span>${item.status}</span>
           <span>${p.marketRegime || "UNKNOWN"}</span>
-          <span class="ai-score-pill">${calibrated ? `Model ${p.calibration?.modelVersion || "v1"} · ${formatPercent((p.probability || 0) * 100)}` : "KALİBRE EDİLMEDİ"}</span>
+          <span class="ai-score-pill">${calibrationLabel}</span>
         </header>
         <div class="decision-price-grid">
           <span><small>PLANLANAN GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
