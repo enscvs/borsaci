@@ -9,6 +9,7 @@ const {
 } = require("./auth");
 
 const OpenAI = require("openai");
+const fibonacciEngine = require("./trading/fibonacci-engine");
 
 const precision = require("./precision/engine");
 
@@ -3656,308 +3657,32 @@ function roundTradingValue(
 }
 
 
-function buildAiDecision(
-  item,
-  rank,
-  riskSettings = {}
-) {
-
-  const price = Number(item.price);
-  const atr = Number(item.atr);
-  const rsi = Number(item.rsi);
-  const volatility = Number(item.volatility);
-  const volume = Number(item.volume);
-  const averageVolume = Number(item.averageVolume);
-
-  /*
-   * Karar katmanı da aynı korumayı uygular. Böylece
-   * geçersiz kaynak verisi hiçbir zaman ekrana veya
-   * paper işlem akışına düşmez.
-   */
-  if (
-    ![
-      price,
-      atr,
-      rsi,
-      Number(item.ema20),
-      Number(item.ema50),
-      Number(item.ema200),
-    ].every(
-      value =>
-        Number.isFinite(value) &&
-        value > 0
-    )
-  ) {
-    return null;
-  }
-
-  const hasTrend =
-    price > item.ema20 &&
-    price > item.ema50 &&
-    price > item.ema200;
-
-  const isRsiInRange =
-    rsi >= 50 &&
-    rsi <= 68;
-
-  const isExtended =
-    rsi > 70;
-
-  const volumeConfirmed =
-    Number.isFinite(volume) &&
-    Number.isFinite(averageVolume) &&
-    averageVolume > 0 &&
-    volume >= averageVolume * 1.1;
-
-  const momentumConfirmed =
-    Number(item.macd) > 0;
-
-  const lowVolatility =
-    volatility <= 6;
-
-  const risk =
-    Math.max(atr * 1.5, price * 0.01);
-
-  const entryLow =
-    roundTradingValue(price - atr * 0.3);
-
-  const entryHigh =
-    roundTradingValue(price + atr * 0.2);
-
-  const entryReference =
-    roundTradingValue(price);
-
-  const stop =
-    roundTradingValue(price - risk);
-
-  const target1 =
-    roundTradingValue(price + risk * 2);
-
-  const target2 =
-    roundTradingValue(price + risk * 3);
-
-  const capital =
-    Math.max(
-      1000,
-      Number(riskSettings.capital) || 100000
-    );
-
-  /*
-   * Pozisyon boyutu artık AI stop mesafesine göre
-   * küçültülmez. Her uygun işlem portföyün hedef
-   * yüzdesi kadar tahsis alır; stop yalnızca teknik
-   * geçersizlik/kapanış kuralıdır.
-   */
-  const maxPositionPercent =
-    Math.min(
-      31,
-      Math.max(
-        1,
-        Number(riskSettings.maxPositionPercent) || 31
-      )
-    );
-
-  const maxPositions =
-    Math.min(
-      3,
-      Math.max(
-        1,
-        Math.floor(
-          Number(riskSettings.maxPositions) || 3
-        )
-      )
-    );
-
-  const targetPositionValue =
-    capital * (maxPositionPercent / 100);
-
-  const stopDistance =
-    Math.max(entryReference - stop, 0.01);
-
-  const quantity = Math.max(
-    0,
-    Math.floor(
-      targetPositionValue / entryReference
-    )
-  );
-
-  const positionValue =
-    roundTradingValue(quantity * entryReference);
-
-  /*
-   * Bilgi amaçlıdır; lot hesaplamasında veya otomatik
-   * kapatma kuralında limit olarak kullanılmaz.
-   */
-  const actualRisk =
-    roundTradingValue(quantity * stopDistance);
-
-  const reservePercent =
-    Math.max(
-      0,
-      100 - maxPositionPercent * maxPositions
-    );
-
-  let action = "NO TRADE";
-  let status = "REJECTED";
-  let reason =
-    "Trend, risk veya kalite filtreleri işlem için yeterli değil.";
-
-  if (
-    item.score >= 80 &&
-    hasTrend &&
-    isRsiInRange &&
-    lowVolatility &&
-    volumeConfirmed &&
-    momentumConfirmed
-  ) {
-    action = "BUY SETUP";
-    status = "PENDING";
-    reason =
-      "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu.";
-  } else if (
-    item.score >= 65 &&
-    hasTrend
-  ) {
-    action = "WATCH";
-    status = "PENDING";
-    reason =
-      "Teknik trend olumlu; ek teyit bekleniyor.";
-  } else if (isExtended) {
-    action = "WATCH";
-    status = "PENDING";
-    reason =
-      "Momentum güçlü ancak RSI uzamış; geri çekilme veya teyit bekleniyor.";
-  }
-
-  const technicalConfidence =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(
-          item.score * 0.65 +
-          (isRsiInRange ? 12 : 0) +
-          (hasTrend ? 10 : 0) +
-          (volumeConfirmed ? 8 : 0) +
-          (momentumConfirmed ? 5 : 0) -
-          (isExtended ? 15 : 0) -
-          (lowVolatility ? 0 : 10)
-        )
-      )
-    );
-
-  const aiReview =
-    item.aiReview || {};
-
-  const aiScore =
-    Number(aiReview.score);
-
-  const hasAiReview =
-    Boolean(aiReview.available) &&
-    Number.isFinite(aiScore);
-
-  const confidence =
-    hasAiReview
-      ? Math.round(
-          technicalConfidence * 0.6 +
-          aiScore * 0.4
-        )
-      : technicalConfidence;
-
-  /*
-   * Teknik koşullar gerekli, AI incelemesi ise ikinci bir
-   * güvenlik kapısıdır. AI yanıtı yoksa ya da olumsuzsa
-   * otomatik paper işlem açılmaz; karar WATCH olarak kalır.
-   */
-  if (action === "BUY SETUP") {
-    if (!hasAiReview) {
-      action = "WATCH";
-      status = "PENDING";
-      reason =
-        "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.";
-    } else if (
-      aiReview.verdict !== "APPROVE" ||
-      aiScore < 65 ||
-      confidence < 75
-    ) {
-      action = "WATCH";
-      status = "PENDING";
-      reason =
-        `Teknik setup uygun; AI incelemesi otomatik işlem için yeterli teyit vermedi (AI ${aiScore}/100 · ${aiReview.verdict || "WATCH"}).`;
-    } else {
-      reason +=
-        ` AI incelemesi onayladı (${aiScore}/100): ${aiReview.summary || "Grafik ve haber bağlamı olumlu."}`;
-    }
-  } else if (hasAiReview) {
-    reason +=
-      ` AI ${aiScore}/100 · ${aiReview.verdict}: ${aiReview.summary || "Ek yorum yok."}`;
-  }
-
-  const now = new Date();
-
+function buildAiDecision(item, rank, riskSettings = {}) {
+  if (!item?.validation?.ok) return null;
+  const fib = item.fibonacci || {};
+  const plan = fib.valid ? fib : item.fallback;
+  if (!plan || !Number.isFinite(Number(plan.entryPrice)) || !Number.isFinite(Number(plan.stopLoss))) return null;
+  const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.min(31,Math.max(1,Number(riskSettings.maxPositionPercent)||31));
+  const entry=Number(plan.entryPrice), stop=Number(plan.stopLoss), quantity=Math.floor(capital*allocation/100/entry);
+  const active=Boolean(fib.valid&&fib.status==="ACTIVE"&&fib.confirmationPassed);
+  const action=active&&item.score>=70?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
+  const status=action==="NO TRADE"?"REJECTED":"PENDING";
+  const now=new Date().toISOString();
   return {
-    id: `${Date.now()}-${item.symbol}`,
-    rank,
-    symbol: item.symbol,
-    action,
-    status,
-    confidence,
-    entry: {
-      low: entryLow,
-      high: entryHigh,
-      reference: entryReference,
-    },
-    stop,
-    target1,
-    target2,
-    riskReward: "1:2.0",
-    riskPlan: {
-      capital,
-      targetPositionValue,
-      reservePercent,
-      stopDistance: roundTradingValue(stopDistance),
-      quantity,
-      positionValue,
-      actualRisk,
-      maxPositionPercent,
-      maxPositions,
-    },
-    filters: {
-      trend: hasTrend,
-      rsi: isRsiInRange,
-      volume: volumeConfirmed,
-      momentum: momentumConfirmed,
-      volatility: lowVolatility,
-    },
-    indicators: {
-      score: item.score,
-      rsi: roundTradingValue(rsi),
-      atr: roundTradingValue(atr),
-      volatility: roundTradingValue(volatility),
-    },
-    aiReview: {
-      available: hasAiReview,
-      provider: aiReview.provider || "UNAVAILABLE",
-      score: hasAiReview ? aiScore : null,
-      verdict: aiReview.verdict || "WATCH",
-      summary: aiReview.summary || "",
-      chartComment: aiReview.chartComment || "",
-      newsComment: aiReview.newsComment || "",
-      technicalConfidence,
-    },
-    lifecycle: {
-      stage: status,
-      createdAt: now.toISOString(),
-      expiresAt: new Date(
-        now.getTime() + 24 * 60 * 60 * 1000
-      ).toISOString(),
-    },
-    reason,
-    invalidation:
-      `Stop seviyesi ${stop} altındaki kapanış.`,
-    timestamp: now.toISOString(),
+    id:`${Date.now()}-${item.symbol}`,rank,symbol:item.symbol,action,status,confidence:null,
+    entry:{low:roundTradingValue(fib.valid?fib.entryZoneLow:entry),high:roundTradingValue(fib.valid?fib.entryZoneHigh:entry),reference:roundTradingValue(entry)},
+    stop:roundTradingValue(stop),target1:roundTradingValue(plan.tp1),target2:roundTradingValue(plan.tp2),target3:roundTradingValue(plan.tp3),
+    riskReward:{tp1:plan.riskRewardTp1??null,tp2:plan.riskRewardTp2??null,tp3:plan.riskRewardTp3??null},
+    riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.min(3,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.min(3,Math.max(1,Number(riskSettings.maxPositions)||3))},
+    indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
+    filters:{trend:item.scoreBreakdown?.trend>0,momentum:item.scoreBreakdown?.momentum>0,volume:item.scoreBreakdown?.volume>0,rsi:item.features.rsi>=45&&item.features.rsi<=70},
+    fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
+    aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
+    lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
+    reason:active?"4 saatlik Fibonacci teyidi ile işlem planı aktif.":fib.valid?(fib.invalidReason||"C'den %2,70 üzeri tamamlanmış 4 saatlik kapanış bekleniyor."):item.fallback?.message||"Teknik yapı izleniyor.",
+    invalidation:fib.valid?`C seviyesi ${fib.pointC?.price} ve stop ${fib.stopLoss} altı geçersizlik oluşturur.`:"Destek seviyesi altı geçersizlik oluşturur.",
+    timestamp:now,
   };
-
 }
 
 
@@ -3983,7 +3708,7 @@ function createAiDecisions(
           a.confidence
       );
 
-  return candidates.slice(0, 3);
+  return candidates.slice(0, 5);
 
 }
 
@@ -5768,6 +5493,7 @@ async function evaluateTradingCandidatesWithAi(
           volume: item.volume,
           averageVolume: item.averageVolume,
           signals: item.signals,
+          fibonacci: item.fibonacci || null,
         },
         chart: item.chartContext,
         news: await fetchTradingNews(item.symbol),
@@ -5778,12 +5504,12 @@ async function evaluateTradingCandidatesWithAi(
     "BIST için teknik tarama adaylarını değerlendir.",
     "Bu bir otomasyon güvenlik katmanıdır; yalnızca verilen veriyle çalış.",
     "Fiyat hedefi, emir veya kesin sonuç üretme.",
-    "Her sembol için grafik verisi, teknik göstergeler ve verilen haber başlıklarının risk/kalite etkisini puanla.",
+    "Her sembol için backend tarafından verilen teknik ve Fibonacci verisini kısa ve açıklayıcı biçimde yorumla. Fibonacci seviyesi hesaplama veya değiştirme.",
     "Haber yoksa bunu nötr kabul et; uydurma haber veya KAP bilgisi üretme.",
     "Yalnızca aşağıdaki JSON nesnesini döndür:",
-    '{"reviews":[{"symbol":"ASELS","score":0,"verdict":"APPROVE|WATCH|REJECT","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
+    '{"reviews":[{"symbol":"ASELS","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
     "Tüm adayları eksiksiz döndür. Açıklamalar kısa olmalı ve yalnızca JSON döndürmelisin.",
-    "score 0-100: 65 altı APPROVE olamaz. APPROVE yalnızca teknik yapı ve haber riski uyumluysa verilir.",
+    "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme. Backend fibonacci.confirmationPassed false ise C’den dönüş teyidi bekleniyor de; 4 saatlik veri yoksa teyit uydurma.",
     "Adaylar:",
     JSON.stringify(enriched),
   ].join("\n\n");
@@ -5950,13 +5676,10 @@ async function evaluateTradingCandidatesWithAi(
             return [
               symbol,
               {
-                available: Number.isFinite(score),
+                available: Boolean(review?.summary || review?.chartComment || review?.newsComment),
                 provider,
-                score:
-                  Number.isFinite(score)
-                    ? score
-                    : null,
-                verdict,
+                score: null,
+                verdict: "INFO",
                 chartComment:
                   String(review?.chartComment || "")
                     .slice(0, 120),
@@ -6068,67 +5791,31 @@ async function refreshScannerPriceFromHourly(
 }
 
 
-async function scanSymbol(
-  symbol
-) {
-
+async function scanSymbol(symbol) {
   try {
-
-    const yahoo =
-      await fetchYahooChart(
-        symbol,
-        "1y",
-        "1d"
-      );
-
-    const history =
-      yahoo.history;
-
-    if (
-      !history ||
-      history.length < 200
-    ) {
-
-      return null;
-
+    const yahoo = await fetchYahooChart(symbol, "2y", "1d");
+    const history = [...yahoo.history];
+    /*
+     * Gün içi taramada Yahoo'nun açık günlük mumunu indikatörlere
+     * sokmuyoruz; son tamamlanmış BIST günlük mumla çalışıyoruz.
+     */
+    const latestDaily = history.at(-1);
+    if (latestDaily) {
+      const latestDate = new Date(Number(latestDaily.time) * 1000);
+      const formatter = new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Istanbul", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", hourCycle:"h23" });
+      const latestParts = Object.fromEntries(formatter.formatToParts(latestDate).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+      const nowParts = Object.fromEntries(formatter.formatToParts(new Date()).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
+      if (latestParts.year + latestParts.month + latestParts.day === nowParts.year + nowParts.month + nowParts.day && Number(nowParts.hour) < 18) history.pop();
     }
-
-    const analysis =
-      calculateScannerScore(
-        history
-      );
-
-    if (!analysis) {
-      return null;
-    }
-
-    return {
-
-      symbol,
-
-      ...analysis,
-
-      chartContext:
-        buildTradingChartContext(
-          history
-        ),
-
-      timestamp:
-        new Date().toISOString()
-
-    };
-
+    const validation = fibonacciEngine.validateDaily(history);
+    if (!validation.ok) return { symbol, history, validation, dataStatus: validation.message };
+    const baseFib = { valid:false, status:"NO_VALID_STRUCTURE", riskRewardTp2:null, riskRewardTp3:null, volumeConfirmation:"WEAK" };
+    const analysis = fibonacciEngine.score(history, baseFib);
+    return { symbol, history, validation, dataStatus:"OK", ...analysis, fibonacci:baseFib, timestamp:new Date().toISOString() };
   } catch (error) {
-
-    console.error(
-      `SCANNER ${symbol}:`,
-      error.message
-    );
-
-    return null;
-
+    console.warn(`SCANNER ${symbol}:`, error.message);
+    return { symbol, history:null, validation:{ok:false,code:"FETCH_FAILED"}, dataStatus:"VERİ YETERSİZ" };
   }
-
 }
 
 
@@ -6138,234 +5825,32 @@ SCANNER HANDLER
 --------------------------------------------------------
 */
 
-async function handleTradingScanner(
-  req,
-  res
-) {
-
+async function handleTradingScanner(req,res) {
   try {
-
-    const requestUrl =
-      new URL(
-        req.url,
-        `http://${req.headers.host || "localhost"}`
-      );
-
-    const riskSettings = {
-      capital:
-        requestUrl.searchParams.get("capital"),
-      riskPerTradePercent:
-        requestUrl.searchParams.get("riskPerTradePercent"),
-      maxPositionPercent:
-        requestUrl.searchParams.get("maxPositionPercent"),
-      maxPositions:
-        requestUrl.searchParams.get("maxPositions"),
-    };
-
-    const results = [];
-    const batchSize = 8;
-    const maximumScanDuration = 45000;
-    const startedAt = Date.now();
-    let scanned = 0;
-
-    for (
-      let i = 0;
-      i < BIST100_SYMBOLS.length;
-      i += batchSize
-    ) {
-
-      /*
-       * Render'ın istek zaman aşımına düşmemesi için,
-       * yavaşlayan veri kaynağında mevcut sonuçlarla dön.
-       */
-      if (
-        Date.now() - startedAt >=
-        maximumScanDuration
-      ) {
-        break;
-      }
-
-      const batch =
-        BIST100_SYMBOLS.slice(
-          i,
-          i + batchSize
-        );
-
-      const batchResults =
-        await Promise.all(
-          batch.map(
-            scanSymbol
-          )
-        );
-
-      scanned += batch.length;
-
-      for (
-        const result of batchResults
-      ) {
-
-        if (result) {
-          results.push(result);
-        }
-
-      }
-
+    const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);
+    const riskSettings={capital:url.searchParams.get("capital"),maxPositionPercent:url.searchParams.get("maxPositionPercent"),maxPositions:url.searchParams.get("maxPositions")};
+    const started=Date.now(),maxDuration=45000,batchSize=8,results=[];let scanned=0;
+    for(let i=0;i<BIST100_SYMBOLS.length&&Date.now()-started<maxDuration;i+=batchSize){
+      const batch=BIST100_SYMBOLS.slice(i,i+batchSize), rows=await Promise.all(batch.map(scanSymbol));scanned+=batch.length;results.push(...rows);
     }
-
-
-    results.sort(
-      (a, b) =>
-        b.score -
-        a.score
-    );
-
-
-    const rankedResults =
-      results.slice(0, 5);
-
-    /*
-     * Günlük verinin gecikmesi halinde yalnızca öne çıkan
-     * adayların fiyatı saatlik son kapanışla yenilenir.
-     * Böylece 106 sembol için ikinci bir tam tarama yapılmaz.
-     */
-    const pricedResults =
-      await Promise.all(
-        rankedResults.map(
-          refreshScannerPriceFromHourly
-        )
-      );
-
-    /*
-     * AI katmanı yalnızca teknik olarak öne çıkan adayları
-     * tek toplu istekle değerlendirir. Böylece 106 ayrı model
-     * çağrısı yerine sınırlı, denetlenebilir bir inceleme yapılır.
-     */
-    const aiCandidates =
-      pricedResults
-        .filter(item => item.score >= 65)
-        .slice(0, 6);
-
-    const aiReviews =
-      await evaluateTradingCandidatesWithAi(
-        aiCandidates
-      );
-
-    const reviewedResults =
-      pricedResults.map(item => ({
-        ...item,
-        aiReview:
-          aiReviews.get(item.symbol) || {
-            available: false,
-            provider: "NOT_REQUESTED",
-            score: null,
-            verdict: "WATCH",
-            summary:
-              "Teknik puan AI değerlendirme eşiğinin altında.",
-            chartComment: "",
-            newsComment: "",
-          },
-      }));
-
-    const decisions =
-      createAiDecisions(
-        reviewedResults,
-        riskSettings
-      );
-
-    let tradingState =
-      createDefaultTradingState();
-
-    try {
-
-      tradingState =
-        await recordAiDecisions(
-          decisions
-        );
-
-    } catch (error) {
-
-      /*
-       * Paper işlem akışı kalıcı kayda bağlıdır. Kayıt
-       * başarısızken tarayıcıda sahte OPEN/PENDING durum
-       * göstermiyoruz; gerçek hata scanner'a dönsün.
-       */
-      console.error(
-        "TRADING DECISION RECORD ERROR:",
-        error
-      );
-
-      throw new Error(
-        `Trading state kaydedilemedi: ${error.message}`
-      );
-
-    }
-
-    return sendJSON(
-      res,
-      200,
-      {
-
-        success: true,
-
-        timestamp:
-          new Date().toISOString(),
-
-        scanned,
-
-        successful:
-          results.length,
-
-        complete:
-          scanned === BIST100_SYMBOLS.length,
-
-        results:
-          reviewedResults,
-
-        /*
-         * UI yalnızca kalıcı sunucu durumunu kullanır.
-         * Böylece OPEN kararı ile açık pozisyon kaydı
-         * her zaman aynı yanıttan gelir.
-         */
-        decisions:
-          tradingState.decisions,
-
-        paper:
-          tradingState.paper,
-
-        activity:
-          tradingState.activity,
-
-        history:
-          tradingState.history,
-
-        risk:
-          tradingState.risk,
-
-      }
-    );
-
-  } catch (error) {
-
-    console.error(
-      "TRADING SCANNER ERROR:",
-      error
-    );
-
-    return sendJSON(
-      res,
-      500,
-      {
-
-        success: false,
-
-        error:
-          error.message
-
-      }
-    );
-
-  }
-
+    let xu100={status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."};
+    try { xu100=fibonacciEngine.xu100Info((await fetchYahooChart("XU100","2y","1d")).history); } catch(error) { console.warn("XU100 INFO:",error.message); }
+    const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
+    const intradayCandidates=valid.slice(0,30);
+    const hourlyBySymbol=new Map(await Promise.all(intradayCandidates.map(async item=>{try{return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history];}catch(error){console.warn(`SCANNER 4H ${item.symbol}:`,error.message);return [item.symbol,null];}})));
+    const enriched=results.map(item=>{
+      if(!item.validation?.ok)return {...item,score:0,grade:"VERİ YETERSİZ",decision:"VERİ YETERSİZ",reasons:[item.dataStatus||"VERİ YETERSİZ"],risks:[],fibonacci:{valid:false,status:"NO_VALID_STRUCTURE",invalidReason:item.dataStatus||"VERİ YETERSİZ"}};
+      const hourly=hourlyBySymbol.get(item.symbol)||null, fib=fibonacciEngine.fibonacciPlan(item.history,hourly), fallback=fib.valid?null:fibonacciEngine.fallbackPlan(item.history,item.features), analysis=fibonacciEngine.score(item.history,fib.valid?fib:{...fallback,valid:false,status:"NO_VALID_STRUCTURE",volumeConfirmation:"WEAK"});
+      const breakdown={trend:0,momentum:0,volume:0,entry:0}; // UI only; reasons carry exact backend evidence.
+      const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
+      return {...item,...analysis,scoreBreakdown:breakdown,fibonacci:fib,fallback,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
+    }).sort((a,b)=>b.score-a.score).slice(0,10);
+    const rawAi=await evaluateTradingCandidatesWithAi(enriched.slice(0,5));
+    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"AI yorumu alınamadı.",chartComment:"",newsComment:""}}));
+    const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
+    const state=await recordAiDecisions(decisions);
+    return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:state.paper,activity:state.activity,history:state.history,risk:state.risk});
+  } catch(error) { console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
 }
 
 
