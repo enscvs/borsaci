@@ -4,6 +4,10 @@ const http = require("http");
 const path = require("path");
 const fs = require("fs");
 
+const {
+  createAuthService,
+} = require("./auth");
+
 const OpenAI = require("openai");
 
 const {
@@ -23,6 +27,16 @@ CONFIG
 
 const PORT =
   process.env.PORT || 3000;
+
+const auth =
+  createAuthService(
+    {
+      passwordHash:
+        process.env.AUTH_PASSWORD_HASH,
+      sessionSecret:
+        process.env.SESSION_SECRET,
+    }
+  );
 
 const MODEL =
   process.env.GROQ_MODEL ||
@@ -1193,7 +1207,8 @@ HTTP HELPERS
 function sendJSON(
   res,
   statusCode,
-  data
+  data,
+  extraHeaders = {}
 ) {
 
   res.writeHead(
@@ -1205,14 +1220,13 @@ function sendJSON(
       "Cache-Control":
         "no-store",
 
-      "Access-Control-Allow-Origin":
-        "*",
+      "X-Content-Type-Options":
+        "nosniff",
 
-      "Access-Control-Allow-Methods":
-        "GET,POST,OPTIONS",
+      "Referrer-Policy":
+        "same-origin",
 
-      "Access-Control-Allow-Headers":
-        "Content-Type",
+      ...extraHeaders,
     }
   );
 
@@ -1227,7 +1241,8 @@ function sendJSON(
 function sendText(
   res,
   statusCode,
-  text
+  text,
+  extraHeaders = {}
 ) {
 
   res.writeHead(
@@ -1236,12 +1251,276 @@ function sendText(
       "Content-Type":
         "text/plain; charset=utf-8",
 
-      "Access-Control-Allow-Origin":
-        "*",
+      "Cache-Control":
+        "no-store",
+
+      "X-Content-Type-Options":
+        "nosniff",
+
+      ...extraHeaders,
     }
   );
 
   res.end(text);
+}
+
+
+/*
+========================================================
+AUTHENTICATION
+========================================================
+*/
+
+function getClientIp(req) {
+  const forwarded =
+    String(
+      req.headers["x-forwarded-for"] || ""
+    )
+      .split(",")[0]
+      .trim();
+
+  return forwarded ||
+    req.socket?.remoteAddress ||
+    "unknown";
+}
+
+
+function expectedOrigin(req) {
+  const host =
+    String(req.headers.host || "")
+      .trim()
+      .toLowerCase();
+
+  const forwardedProto =
+    String(
+      req.headers["x-forwarded-proto"] || ""
+    )
+      .split(",")[0]
+      .trim()
+      .toLowerCase();
+
+  const protocol =
+    forwardedProto === "https" ||
+    req.socket?.encrypted
+      ? "https"
+      : "http";
+
+  return host
+    ? `${protocol}://${host}`
+    : "";
+}
+
+
+function hasTrustedOrigin(req) {
+  const origin =
+    String(req.headers.origin || "")
+      .trim()
+      .replace(/\/$/, "");
+
+  const expected =
+    expectedOrigin(req)
+      .replace(/\/$/, "");
+
+  return Boolean(origin && expected && origin === expected);
+}
+
+
+function isStateChangingRequest(req) {
+  return !["GET", "HEAD", "OPTIONS"]
+    .includes(req.method);
+}
+
+
+function isProtectedPath(pathname) {
+  return (
+    pathname.startsWith("/api/") ||
+    [
+      "/ask",
+      "/quote",
+      "/market",
+      "/chart",
+      "/trading/scanner",
+    ].includes(pathname)
+  );
+}
+
+
+async function handleAuthLogin(req, res) {
+  const ip = getClientIp(req);
+
+  if (!hasTrustedOrigin(req)) {
+    return sendJSON(res, 403, {
+      error: "Request rejected.",
+    });
+  }
+
+  if (
+    !auth.configured() ||
+    !auth.loginAllowed(ip)
+  ) {
+    return sendJSON(
+      res,
+      auth.loginAllowed(ip)
+        ? 503
+        : 429,
+      {
+        error:
+          auth.loginAllowed(ip)
+            ? "Authentication unavailable."
+            : "Too many attempts. Try again later.",
+      }
+    );
+  }
+
+  try {
+    const body = await readBody(req);
+    const data = JSON.parse(body || "{}");
+    const valid =
+      await auth.verifyPassword(
+        data?.password
+      );
+
+    if (!valid) {
+      auth.recordFailedLogin(ip);
+
+      return sendJSON(res, 401, {
+        error: "Invalid credentials.",
+      });
+    }
+
+    auth.clearFailedLogins(ip);
+
+    const session =
+      auth.createSession();
+
+    return sendJSON(
+      res,
+      200,
+      {
+        authenticated: true,
+        csrfToken: session.csrfToken,
+        expiresAt:
+          new Date(
+            session.expiresAt
+          ).toISOString(),
+      },
+      {
+        "Set-Cookie":
+          auth.sessionCookie(
+            session.token
+          ),
+      }
+    );
+  } catch {
+    auth.recordFailedLogin(ip);
+
+    return sendJSON(res, 401, {
+      error: "Invalid credentials.",
+    });
+  }
+}
+
+
+function handleAuthSession(req, res) {
+  const session =
+    auth.getSessionFromRequest(req);
+
+  if (!session) {
+    return sendJSON(res, 401, {
+      authenticated: false,
+    });
+  }
+
+  return sendJSON(res, 200, {
+    authenticated: true,
+    csrfToken: session.csrfToken,
+    expiresAt:
+      new Date(
+        session.expiresAt
+      ).toISOString(),
+  });
+}
+
+
+function handleAuthLogout(req, res) {
+  const session =
+    auth.getSessionFromRequest(req);
+
+  if (
+    !session ||
+    !hasTrustedOrigin(req) ||
+    String(
+      req.headers["x-csrf-token"] || ""
+    ) !== session.csrfToken
+  ) {
+    return sendJSON(res, 401, {
+      error: "Unauthorized.",
+    });
+  }
+
+  const cookies =
+    String(req.headers.cookie || "")
+      .split(";")
+      .map(value => value.trim());
+
+  const sessionCookie =
+    cookies.find(
+      value =>
+        value.startsWith(
+          `${auth.cookieName}=`
+        )
+    );
+
+  if (sessionCookie) {
+    auth.revokeSession(
+      decodeURIComponent(
+        sessionCookie.slice(
+          auth.cookieName.length + 1
+        )
+      )
+    );
+  }
+
+  return sendJSON(
+    res,
+    200,
+    {
+      authenticated: false,
+    },
+    {
+      "Set-Cookie":
+        auth.clearSessionCookie(),
+    }
+  );
+}
+
+
+function authorizeRequest(req, res) {
+  const session =
+    auth.getSessionFromRequest(req);
+
+  if (!session) {
+    sendJSON(res, 401, {
+      error: "Unauthorized.",
+    });
+    return null;
+  }
+
+  if (isStateChangingRequest(req)) {
+    if (
+      !hasTrustedOrigin(req) ||
+      String(
+        req.headers["x-csrf-token"] || ""
+      ) !== session.csrfToken
+    ) {
+      sendJSON(res, 403, {
+        error: "Request rejected.",
+      });
+      return null;
+    }
+  }
+
+  return session;
 }
 
 
@@ -2723,8 +3002,11 @@ function serveFile(
           "Cache-Control":
             "no-cache",
 
-          "Access-Control-Allow-Origin":
-            "*",
+          "X-Content-Type-Options":
+            "nosniff",
+
+          "Referrer-Policy":
+            "same-origin",
 
         }
       );
@@ -6108,22 +6390,19 @@ const server =
         req.method === "OPTIONS"
       ) {
 
+        /*
+         * Cross-origin requests are not supported. Same-origin
+         * requests do not need CORS response headers.
+         */
         res.writeHead(
           204,
           {
-
-            "Access-Control-Allow-Origin":
-              "*",
-
-            "Access-Control-Allow-Methods":
-              "GET,POST,OPTIONS",
-
-            "Access-Control-Allow-Headers":
-              "Content-Type",
-
+            "Allow":
+              "GET, POST, OPTIONS",
+            "Cache-Control":
+              "no-store",
           }
         );
-
 
         res.end();
 
@@ -6162,6 +6441,43 @@ const server =
 
       const pathname =
         url.pathname;
+
+      /*
+       * Public authentication endpoints are intentionally
+       * narrow. All other /api/* routes pass through the
+       * central authorization guard below.
+       */
+      if (
+        req.method === "POST" &&
+        pathname === "/api/auth/login"
+      ) {
+        return handleAuthLogin(req, res);
+      }
+
+      if (
+        req.method === "GET" &&
+        pathname === "/api/auth/session"
+      ) {
+        return handleAuthSession(req, res);
+      }
+
+      if (
+        req.method === "POST" &&
+        pathname === "/api/auth/logout"
+      ) {
+        return handleAuthLogout(req, res);
+      }
+
+      if (isProtectedPath(pathname)) {
+        const session =
+          authorizeRequest(req, res);
+
+        if (!session) {
+          return;
+        }
+
+        req.authSession = session;
+      }
         
         /*
 ========================================================
@@ -6604,6 +6920,30 @@ const answer =
           res,
           filePath,
           "text/css; charset=utf-8"
+        );
+
+      }
+
+
+      /*
+      ========================================
+      AUTH JS
+      ========================================
+      */
+
+      if (
+        req.method === "GET" &&
+        pathname === "/auth.js"
+      ) {
+
+        return serveFile(
+          res,
+          path.join(
+            __dirname,
+            "public",
+            "auth.js"
+          ),
+          "application/javascript; charset=utf-8"
         );
 
       }
