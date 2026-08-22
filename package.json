@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/auth.test.js"
+    "test": "node --test test/*.test.js",
+    "test:precision": "node --test test/precision.test.js"
   },
   "keywords": [],
   "author": "",

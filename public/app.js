@@ -4673,46 +4673,32 @@ RENDER
 --------------------------------------------------------
 */
 
-function renderScannerResults(
-  results
-) {
-
+function renderScannerResults(results) {
   if (!scannerResults) return;
-
-  if (
-    !Array.isArray(results) ||
-    results.length === 0
-  ) {
-    scannerResults.innerHTML =
-      '<div class="trading-empty">Uygun setup bulunamadı.</div>';
+  if (!Array.isArray(results) || results.length === 0) {
+    scannerResults.innerHTML = '<div class="trading-empty">İŞLEM YOK · Doğrulanmış aday bulunamadı.</div>';
     return;
   }
-
-  scannerResults.innerHTML =
-    results.map(
-      (item, index) => `
-        <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
-          <div class="scanner-head">
-            <strong>#${index + 1} · ${item.symbol}</strong>
-            <strong>₺${formatPrice(item.price)}</strong>
-            <span class="scanner-score">${item.score}</span>
-            <span>${item.decision}</span>
-          </div>
-          <div class="scanner-metrics">
-            RSI ${formatPrice(item.rsi)} ·
-            EMA20 ₺${formatPrice(item.ema20)} ·
-            EMA50 ₺${formatPrice(item.ema50)} ·
-            ATR ₺${formatPrice(item.atr)}
-          </div>
-          <small>${
-            Array.isArray(item.signals)
-              ? item.signals.slice(0, 4).join(" · ")
-              : ""
-          }</small>
+  const label = value => ({ FILTERS_PASSED: "FİLTRELERİ GEÇTİ", WATCH: "İZLE", NO_TRADE: "İŞLEM YOK" }[value] || "YETERSİZ KANIT");
+  scannerResults.innerHTML = results.map((item, index) => {
+    const precision = item.precision || {};
+    const calibration = precision.calibration?.status === "CALIBRATED"
+      ? `Kalibre olasılık: ${formatPercent((precision.probability || 0) * 100)}`
+      : "KALİBRE EDİLMEDİ";
+    return `
+      <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
+        <div class="scanner-head">
+          <strong>#${index + 1} · ${item.symbol}</strong>
+          <strong>₺${formatPrice(item.price)}</strong>
+          <span class="scanner-score">${label(item.decision)}</span>
+          <span>${item.marketRegime || "REJİM BİLİNMİYOR"}</span>
         </div>
-      `
-    ).join("");
-
+        <div class="scanner-metrics">
+          Veri: ${item.dataQuality || "FAILED"} · RS sıra: ${item.relativeStrengthRank || "--"} · ${calibration}
+        </div>
+        <small>${Array.isArray(precision.reasons) && precision.reasons.length ? precision.reasons.join(" · ") : (precision.invalidators || ["Yetersiz kanıt."]).join(" · ")}</small>
+      </div>`;
+  }).join("");
 }
 
 
@@ -4895,51 +4881,38 @@ function renderAiDecisionDetail(
 }
 
 
-function renderAiDecisions(
-  decisions
-) {
-
+function renderAiDecisions(decisions) {
   if (!aiDecisionFeed) return;
-
-  const records =
-    uniqueDecisions(decisions);
-
+  const records = uniqueDecisions(decisions);
   renderedDecisionRecords = records;
-
   if (records.length === 0) {
-    aiDecisionFeed.innerHTML =
-      '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
+    aiDecisionFeed.innerHTML = '<div class="trading-empty">İŞLEM YOK · Doğrulanmış karar bulunamadı.</div>';
     return;
   }
-
-  aiDecisionFeed.innerHTML =
-    records.map(
-      (item, index) => `
-        <article
-          class="decision-item decision-card"
-          data-decision-index="${index}"
-        >
-          <header>
-            <strong>${item.symbol}</strong>
-            <span>${item.action}</span>
-            <span>${item.status}</span>
-            <span>GÜVEN %${item.confidence}</span>
-            <span class="ai-score-pill">AI ${item.aiReview?.available ? `${item.aiReview.score}/100` : "BEKLİYOR"}</span>
-          </header>
-          <div class="decision-price-grid">
-            <span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
-            <span><small>STOP</small>${formatCurrency(item.stop)}</span>
-            <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
-          </div>
-          <div class="decision-summary">
-            ${item.riskPlan?.quantity ?? "--"} lot ·
-            ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
-            SL'ye kadar olası zarar ${formatCurrency(item.riskPlan?.actualRisk)}
-          </div>
-        </article>
-      `
-    ).join("");
-
+  aiDecisionFeed.innerHTML = records.map((item, index) => {
+    const p = item.precision || {};
+    const calibrated = p.calibration?.status === "CALIBRATED";
+    return `
+      <article class="decision-item decision-card" data-decision-index="${index}">
+        <header>
+          <strong>${item.symbol}</strong>
+          <span>${item.action}</span>
+          <span>${item.status}</span>
+          <span>${p.marketRegime || "UNKNOWN"}</span>
+          <span class="ai-score-pill">${calibrated ? `Model ${p.calibration?.modelVersion || "v1"} · ${formatPercent((p.probability || 0) * 100)}` : "KALİBRE EDİLMEDİ"}</span>
+        </header>
+        <div class="decision-price-grid">
+          <span><small>PLANLANAN GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
+          <span><small>STOP</small>${formatCurrency(item.stop)}</span>
+          <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
+        </div>
+        <div class="decision-summary">
+          Beklenen değer: ${Number.isFinite(Number(p.expectedR)) ? `${Number(p.expectedR).toFixed(2)}R` : "KALİBRE EDİLMEDİ"} ·
+          Azami taşıma: ${p.maxHoldingDays || "--"} seans ·
+          RS sıra: ${p.relativeStrengthRank || "--"} · Garanti değildir.
+        </div>
+      </article>`;
+  }).join("");
 }
 
 

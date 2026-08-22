@@ -10,6 +10,8 @@ const {
 
 const OpenAI = require("openai");
 
+const precision = require("./precision/engine");
+
 const {
   Client,
 } = require("@modelcontextprotocol/sdk/client/index.js");
@@ -3654,308 +3656,81 @@ function roundTradingValue(
 }
 
 
-function buildAiDecision(
-  item,
-  rank,
-  riskSettings = {}
-) {
+function buildAiDecision(item, rank, riskSettings = {}) {
+  const precisionResult = item?.precision;
+  if (!precisionResult) return null;
 
-  const price = Number(item.price);
-  const atr = Number(item.atr);
-  const rsi = Number(item.rsi);
-  const volatility = Number(item.volatility);
-  const volume = Number(item.volume);
-  const averageVolume = Number(item.averageVolume);
-
-  /*
-   * Karar katmanı da aynı korumayı uygular. Böylece
-   * geçersiz kaynak verisi hiçbir zaman ekrana veya
-   * paper işlem akışına düşmez.
-   */
-  if (
-    ![
-      price,
-      atr,
-      rsi,
-      Number(item.ema20),
-      Number(item.ema50),
-      Number(item.ema200),
-    ].every(
-      value =>
-        Number.isFinite(value) &&
-        value > 0
-    )
-  ) {
-    return null;
-  }
-
-  const hasTrend =
-    price > item.ema20 &&
-    price > item.ema50 &&
-    price > item.ema200;
-
-  const isRsiInRange =
-    rsi >= 50 &&
-    rsi <= 68;
-
-  const isExtended =
-    rsi > 70;
-
-  const volumeConfirmed =
-    Number.isFinite(volume) &&
-    Number.isFinite(averageVolume) &&
-    averageVolume > 0 &&
-    volume >= averageVolume * 1.1;
-
-  const momentumConfirmed =
-    Number(item.macd) > 0;
-
-  const lowVolatility =
-    volatility <= 6;
-
-  const risk =
-    Math.max(atr * 1.5, price * 0.01);
-
-  const entryLow =
-    roundTradingValue(price - atr * 0.3);
-
-  const entryHigh =
-    roundTradingValue(price + atr * 0.2);
-
-  const entryReference =
-    roundTradingValue(price);
-
-  const stop =
-    roundTradingValue(price - risk);
-
-  const target1 =
-    roundTradingValue(price + risk * 2);
-
-  const target2 =
-    roundTradingValue(price + risk * 3);
-
-  const capital =
-    Math.max(
-      1000,
-      Number(riskSettings.capital) || 100000
-    );
-
-  /*
-   * Pozisyon boyutu artık AI stop mesafesine göre
-   * küçültülmez. Her uygun işlem portföyün hedef
-   * yüzdesi kadar tahsis alır; stop yalnızca teknik
-   * geçersizlik/kapanış kuralıdır.
-   */
-  const maxPositionPercent =
-    Math.min(
-      31,
-      Math.max(
-        1,
-        Number(riskSettings.maxPositionPercent) || 31
-      )
-    );
-
-  const maxPositions =
-    Math.min(
-      3,
-      Math.max(
-        1,
-        Math.floor(
-          Number(riskSettings.maxPositions) || 3
-        )
-      )
-    );
-
-  const targetPositionValue =
-    capital * (maxPositionPercent / 100);
-
-  const stopDistance =
-    Math.max(entryReference - stop, 0.01);
-
-  const quantity = Math.max(
-    0,
-    Math.floor(
-      targetPositionValue / entryReference
-    )
-  );
-
-  const positionValue =
-    roundTradingValue(quantity * entryReference);
-
-  /*
-   * Bilgi amaçlıdır; lot hesaplamasında veya otomatik
-   * kapatma kuralında limit olarak kullanılmaz.
-   */
-  const actualRisk =
-    roundTradingValue(quantity * stopDistance);
-
-  const reservePercent =
-    Math.max(
-      0,
-      100 - maxPositionPercent * maxPositions
-    );
-
-  let action = "NO TRADE";
-  let status = "REJECTED";
-  let reason =
-    "Trend, risk veya kalite filtreleri işlem için yeterli değil.";
-
-  if (
-    item.score >= 80 &&
-    hasTrend &&
-    isRsiInRange &&
-    lowVolatility &&
-    volumeConfirmed &&
-    momentumConfirmed
-  ) {
-    action = "BUY SETUP";
-    status = "PENDING";
-    reason =
-      "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu.";
-  } else if (
-    item.score >= 65 &&
-    hasTrend
-  ) {
-    action = "WATCH";
-    status = "PENDING";
-    reason =
-      "Teknik trend olumlu; ek teyit bekleniyor.";
-  } else if (isExtended) {
-    action = "WATCH";
-    status = "PENDING";
-    reason =
-      "Momentum güçlü ancak RSI uzamış; geri çekilme veya teyit bekleniyor.";
-  }
-
-  const technicalConfidence =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Math.round(
-          item.score * 0.65 +
-          (isRsiInRange ? 12 : 0) +
-          (hasTrend ? 10 : 0) +
-          (volumeConfirmed ? 8 : 0) +
-          (momentumConfirmed ? 5 : 0) -
-          (isExtended ? 15 : 0) -
-          (lowVolatility ? 0 : 10)
-        )
-      )
-    );
-
-  const aiReview =
-    item.aiReview || {};
-
-  const aiScore =
-    Number(aiReview.score);
-
-  const hasAiReview =
-    Boolean(aiReview.available) &&
-    Number.isFinite(aiScore);
-
-  const confidence =
-    hasAiReview
-      ? Math.round(
-          technicalConfidence * 0.6 +
-          aiScore * 0.4
-        )
-      : technicalConfidence;
-
-  /*
-   * Teknik koşullar gerekli, AI incelemesi ise ikinci bir
-   * güvenlik kapısıdır. AI yanıtı yoksa ya da olumsuzsa
-   * otomatik paper işlem açılmaz; karar WATCH olarak kalır.
-   */
-  if (action === "BUY SETUP") {
-    if (!hasAiReview) {
-      action = "WATCH";
-      status = "PENDING";
-      reason =
-        "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.";
-    } else if (
-      aiReview.verdict !== "APPROVE" ||
-      aiScore < 65 ||
-      confidence < 75
-    ) {
-      action = "WATCH";
-      status = "PENDING";
-      reason =
-        `Teknik setup uygun; AI incelemesi otomatik işlem için yeterli teyit vermedi (AI ${aiScore}/100 · ${aiReview.verdict || "WATCH"}).`;
-    } else {
-      reason +=
-        ` AI incelemesi onayladı (${aiScore}/100): ${aiReview.summary || "Grafik ve haber bağlamı olumlu."}`;
-    }
-  } else if (hasAiReview) {
-    reason +=
-      ` AI ${aiScore}/100 · ${aiReview.verdict}: ${aiReview.summary || "Ek yorum yok."}`;
-  }
-
-  const now = new Date();
+  const plan = precisionResult.plan || {};
+  const capital = Math.max(1000, Number(riskSettings.capital) || 100000);
+  const allocation = Math.min(31, Math.max(1, Number(riskSettings.maxPositionPercent) || 31));
+  const reference = Number(plan?.entry?.reference || item.price);
+  const quantity = reference > 0 ? Math.floor((capital * allocation / 100) / reference) : 0;
+  const decision = precisionResult.decision === "FILTERS_PASSED" ? "FILTERS_PASSED" : precisionResult.decision || "NO_TRADE";
+  const pending = decision === "WATCH";
+  const now = new Date().toISOString();
 
   return {
     id: `${Date.now()}-${item.symbol}`,
     rank,
     symbol: item.symbol,
-    action,
-    status,
-    confidence,
-    entry: {
-      low: entryLow,
-      high: entryHigh,
-      reference: entryReference,
-    },
-    stop,
-    target1,
-    target2,
-    riskReward: "1:2.0",
+    action: decision,
+    status: pending ? "PENDING" : "REJECTED",
+    confidence: null,
+    entry: plan.entry || null,
+    stop: plan.stop || null,
+    target1: plan.target1 || null,
+    target2: plan.target2 || null,
+    riskReward: plan.riskReward ? `1:${plan.riskReward}` : null,
     riskPlan: {
       capital,
-      targetPositionValue,
-      reservePercent,
-      stopDistance: roundTradingValue(stopDistance),
+      targetPositionValue: Math.round(capital * allocation / 100 * 100) / 100,
+      reservePercent: Math.max(0, 100 - allocation * Math.min(3, Number(riskSettings.maxPositions) || 3)),
       quantity,
-      positionValue,
-      actualRisk,
-      maxPositionPercent,
-      maxPositions,
+      positionValue: Math.round(quantity * reference * 100) / 100,
+      actualRisk: plan.risk && quantity ? Math.round(plan.risk * quantity * 100) / 100 : null,
+      maxPositionPercent: allocation,
+      maxPositions: Math.min(3, Math.max(1, Number(riskSettings.maxPositions) || 3)),
     },
     filters: {
-      trend: hasTrend,
-      rsi: isRsiInRange,
-      volume: volumeConfirmed,
-      momentum: momentumConfirmed,
-      volatility: lowVolatility,
+      dataQuality: precisionResult.dataQuality === "PASSED",
+      regime: precisionResult.marketRegime,
+      relativeStrength: Boolean(precisionResult.reasons?.some(x => x.includes("Göreceli güç"))),
+      strategy: Boolean(precisionResult.reasons?.length),
+    },
+    precision: {
+      engineVersion: precision.CONFIG.version,
+      marketRegime: precisionResult.marketRegime || "UNKNOWN",
+      dataQuality: precisionResult.dataQuality || "FAILED",
+      probability: precisionResult.probability ?? null,
+      expectedR: precisionResult.expectedR ?? null,
+      calibration: precisionResult.calibration || { status: "KALIBRE_EDILMEDI" },
+      relativeStrengthRank: item.relativeStrengthRank ?? null,
+      relativeStrengthPercentile: item.relativeStrengthPercentile ?? null,
+      maxHoldingDays: plan.maxHoldingDays || precision.CONFIG.strategy.maxHoldingDays,
+      reasons: precisionResult.reasons || [],
+      invalidators: precisionResult.invalidators || [],
+      missing: precisionResult.missing || [],
+      disclaimer: precisionResult.disclaimer || "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez.",
     },
     indicators: {
-      score: item.score,
-      rsi: roundTradingValue(rsi),
-      atr: roundTradingValue(atr),
-      volatility: roundTradingValue(volatility),
+      rsi: item.features?.rsi14 ?? null,
+      atr: item.features?.atr ?? null,
+      atrPercent: item.features?.atrPercent ?? null,
     },
     aiReview: {
-      available: hasAiReview,
-      provider: aiReview.provider || "UNAVAILABLE",
-      score: hasAiReview ? aiScore : null,
-      verdict: aiReview.verdict || "WATCH",
-      summary: aiReview.summary || "",
-      chartComment: aiReview.chartComment || "",
-      newsComment: aiReview.newsComment || "",
-      technicalConfidence,
+      available: false,
+      provider: "EXPLANATION_ONLY",
+      score: null,
+      verdict: "NOT_USED_FOR_DECISION",
+      summary: "LLM fiyat, stop, hedef, olasılık veya kararı değiştiremez.",
     },
-    lifecycle: {
-      stage: status,
-      createdAt: now.toISOString(),
-      expiresAt: new Date(
-        now.getTime() + 24 * 60 * 60 * 1000
-      ).toISOString(),
-    },
-    reason,
-    invalidation:
-      `Stop seviyesi ${stop} altındaki kapanış.`,
-    timestamp: now.toISOString(),
+    lifecycle: { stage: pending ? "PENDING" : "REJECTED", createdAt: now, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() },
+    reason: decision === "WATCH"
+      ? "Filtreleri geçti; model henüz kalibre edilmediği için işlem açılmaz."
+      : (precisionResult.invalidators || ["Yetersiz kanıt."]).join(" · "),
+    invalidation: plan.stop ? `Günlük plan geçersizliği: ${plan.stop} altı teyitli kapanış.` : "Doğrulanmış veri olmadan işlem yok.",
+    timestamp: now,
   };
-
 }
 
 
@@ -6066,67 +5841,33 @@ async function refreshScannerPriceFromHourly(
 }
 
 
-async function scanSymbol(
-  symbol
-) {
-
+async function scanSymbol(symbol) {
   try {
-
-    const yahoo =
-      await fetchYahooChart(
-        symbol,
-        "1y",
-        "1d"
-      );
-
-    const history =
-      yahoo.history;
-
-    if (
-      !history ||
-      history.length < 200
-    ) {
-
-      return null;
-
-    }
-
-    const analysis =
-      calculateScannerScore(
-        history
-      );
-
-    if (!analysis) {
-      return null;
-    }
-
+    const yahoo = await fetchYahooChart(symbol, "2y", "1d");
+    const history = yahoo.history;
+    const validation = precision.validateHistory(history);
+    const features = precision.featuresAt(history);
     return {
-
       symbol,
-
-      ...analysis,
-
-      chartContext:
-        buildTradingChartContext(
-          history
-        ),
-
-      timestamp:
-        new Date().toISOString()
-
+      history,
+      features,
+      validation,
+      price: features.price,
+      ema20: features.ema20,
+      ema50: features.ema50,
+      ema200: features.ema200,
+      rsi: features.rsi14,
+      atr: features.atr,
+      volume: features.volume,
+      averageVolume: features.averageVolume20,
+      timestamp: new Date().toISOString(),
+      priceTimestamp: validation.lastTimestamp,
+      priceSource: "YAHOO_1D_COMPLETED",
     };
-
   } catch (error) {
-
-    console.error(
-      `SCANNER ${symbol}:`,
-      error.message
-    );
-
+    console.error(`SCANNER ${symbol}:`, error.message);
     return null;
-
   }
-
 }
 
 
@@ -6136,234 +5877,68 @@ SCANNER HANDLER
 --------------------------------------------------------
 */
 
-async function handleTradingScanner(
-  req,
-  res
-) {
-
+async function handleTradingScanner(req, res) {
   try {
-
-    const requestUrl =
-      new URL(
-        req.url,
-        `http://${req.headers.host || "localhost"}`
-      );
-
+    const requestUrl = new URL(req.url, `http://${req.headers.host || "localhost"}`);
     const riskSettings = {
-      capital:
-        requestUrl.searchParams.get("capital"),
-      riskPerTradePercent:
-        requestUrl.searchParams.get("riskPerTradePercent"),
-      maxPositionPercent:
-        requestUrl.searchParams.get("maxPositionPercent"),
-      maxPositions:
-        requestUrl.searchParams.get("maxPositions"),
+      capital: requestUrl.searchParams.get("capital"),
+      maxPositionPercent: requestUrl.searchParams.get("maxPositionPercent"),
+      maxPositions: requestUrl.searchParams.get("maxPositions"),
     };
+    const startedAt = Date.now(), maximumScanDuration = 45000, batchSize = 8;
+    const results = []; let scanned = 0;
+    const indexPromise = fetchYahooChart("XU100", "2y", "1d");
 
-    const results = [];
-    const batchSize = 8;
-    const maximumScanDuration = 45000;
-    const startedAt = Date.now();
-    let scanned = 0;
-
-    for (
-      let i = 0;
-      i < BIST100_SYMBOLS.length;
-      i += batchSize
-    ) {
-
-      /*
-       * Render'ın istek zaman aşımına düşmemesi için,
-       * yavaşlayan veri kaynağında mevcut sonuçlarla dön.
-       */
-      if (
-        Date.now() - startedAt >=
-        maximumScanDuration
-      ) {
-        break;
-      }
-
-      const batch =
-        BIST100_SYMBOLS.slice(
-          i,
-          i + batchSize
-        );
-
-      const batchResults =
-        await Promise.all(
-          batch.map(
-            scanSymbol
-          )
-        );
-
+    for (let i = 0; i < BIST100_SYMBOLS.length && Date.now() - startedAt < maximumScanDuration; i += batchSize) {
+      const batch = BIST100_SYMBOLS.slice(i, i + batchSize);
+      const values = await Promise.all(batch.map(scanSymbol));
       scanned += batch.length;
-
-      for (
-        const result of batchResults
-      ) {
-
-        if (result) {
-          results.push(result);
-        }
-
-      }
-
+      values.filter(Boolean).forEach(value => results.push(value));
     }
 
+    let indexHistory;
+    try { indexHistory = (await indexPromise).history; }
+    catch (error) { throw new Error(`XU100 rejimi doğrulanamadı: ${error.message}`); }
 
-    results.sort(
-      (a, b) =>
-        b.score -
-        a.score
-    );
+    const valid = results.filter(item => item.validation?.ok);
+    const ranked = precision.rankRelativeStrength(valid, indexHistory);
+    const bySymbol = new Map(ranked.map(item => [item.symbol, item]));
+    const regime = precision.calculateMarketRegime({ indexHistory, universeFeatures: valid.map(item => item.features) });
 
-
-    const rankedResults =
-      results.slice(0, 5);
-
-    /*
-     * Günlük verinin gecikmesi halinde yalnızca öne çıkan
-     * adayların fiyatı saatlik son kapanışla yenilenir.
-     * Böylece 106 sembol için ikinci bir tam tarama yapılmaz.
-     */
-    const pricedResults =
-      await Promise.all(
-        rankedResults.map(
-          refreshScannerPriceFromHourly
-        )
-      );
-
-    /*
-     * AI katmanı yalnızca teknik olarak öne çıkan adayları
-     * tek toplu istekle değerlendirir. Böylece 106 ayrı model
-     * çağrısı yerine sınırlı, denetlenebilir bir inceleme yapılır.
-     */
-    const aiCandidates =
-      pricedResults
-        .filter(item => item.score >= 65)
-        .slice(0, 6);
-
-    const aiReviews =
-      await evaluateTradingCandidatesWithAi(
-        aiCandidates
-      );
-
-    const reviewedResults =
-      pricedResults.map(item => ({
+    const evaluated = results.map(item => {
+      const rankedItem = bySymbol.get(item.symbol) || item;
+      const decision = precision.evaluateSetup(rankedItem, { regime, model: null });
+      return {
         ...item,
-        aiReview:
-          aiReviews.get(item.symbol) || {
-            available: false,
-            provider: "NOT_REQUESTED",
-            score: null,
-            verdict: "WATCH",
-            summary:
-              "Teknik puan AI değerlendirme eşiğinin altında.",
-            chartComment: "",
-            newsComment: "",
-          },
-      }));
+        ...rankedItem,
+        precision: decision,
+        decision: decision.decision,
+        score: null,
+        signals: decision.reasons || [],
+        dataQuality: decision.dataQuality,
+        marketRegime: decision.marketRegime || regime.regime,
+        calibratedProbability: decision.probability ?? null,
+        calibration: decision.calibration,
+        expectedR: decision.expectedR ?? null,
+      };
+    }).sort((a, b) => {
+      const rankA = a.decision === "WATCH" ? 0 : a.decision === "NO_TRADE" ? 1 : 2;
+      const rankB = b.decision === "WATCH" ? 0 : b.decision === "NO_TRADE" ? 1 : 2;
+      return rankA - rankB || (a.relativeStrengthRank || 9999) - (b.relativeStrengthRank || 9999);
+    }).slice(0, 5);
 
-    const decisions =
-      createAiDecisions(
-        reviewedResults,
-        riskSettings
-      );
+    const decisions = createAiDecisions(evaluated, riskSettings);
+    const tradingState = await recordAiDecisions(decisions);
 
-    let tradingState =
-      createDefaultTradingState();
-
-    try {
-
-      tradingState =
-        await recordAiDecisions(
-          decisions
-        );
-
-    } catch (error) {
-
-      /*
-       * Paper işlem akışı kalıcı kayda bağlıdır. Kayıt
-       * başarısızken tarayıcıda sahte OPEN/PENDING durum
-       * göstermiyoruz; gerçek hata scanner'a dönsün.
-       */
-      console.error(
-        "TRADING DECISION RECORD ERROR:",
-        error
-      );
-
-      throw new Error(
-        `Trading state kaydedilemedi: ${error.message}`
-      );
-
-    }
-
-    return sendJSON(
-      res,
-      200,
-      {
-
-        success: true,
-
-        timestamp:
-          new Date().toISOString(),
-
-        scanned,
-
-        successful:
-          results.length,
-
-        complete:
-          scanned === BIST100_SYMBOLS.length,
-
-        results:
-          reviewedResults,
-
-        /*
-         * UI yalnızca kalıcı sunucu durumunu kullanır.
-         * Böylece OPEN kararı ile açık pozisyon kaydı
-         * her zaman aynı yanıttan gelir.
-         */
-        decisions:
-          tradingState.decisions,
-
-        paper:
-          tradingState.paper,
-
-        activity:
-          tradingState.activity,
-
-        history:
-          tradingState.history,
-
-        risk:
-          tradingState.risk,
-
-      }
-    );
-
+    return sendJSON(res, 200, {
+      success: true, timestamp: new Date().toISOString(), scanned, successful: results.length,
+      complete: scanned === BIST100_SYMBOLS.length, marketRegime: regime, engine: { version: precision.CONFIG.version, calibration: "KALIBRE_EDILMEDI" },
+      results: evaluated, decisions: tradingState.decisions, paper: tradingState.paper, activity: tradingState.activity, history: tradingState.history, risk: tradingState.risk,
+    });
   } catch (error) {
-
-    console.error(
-      "TRADING SCANNER ERROR:",
-      error
-    );
-
-    return sendJSON(
-      res,
-      500,
-      {
-
-        success: false,
-
-        error:
-          error.message
-
-      }
-    );
-
+    console.error("TRADING SCANNER ERROR:", error.message);
+    return sendJSON(res, 500, { success: false, error: error.message });
   }
-
 }
 
 
