@@ -5504,12 +5504,12 @@ async function evaluateTradingCandidatesWithAi(
     "BIST için teknik tarama adaylarını değerlendir.",
     "Bu bir otomasyon güvenlik katmanıdır; yalnızca verilen veriyle çalış.",
     "Fiyat hedefi, emir veya kesin sonuç üretme.",
-    "Her sembol için backend tarafından verilen teknik ve Fibonacci verisini kısa ve açıklayıcı biçimde yorumla. Fibonacci seviyesi hesaplama veya değiştirme."
+    "Her sembol için backend tarafından verilen teknik ve Fibonacci verisini kısa ve açıklayıcı biçimde yorumla. Fibonacci seviyesi hesaplama veya değiştirme.",
     "Haber yoksa bunu nötr kabul et; uydurma haber veya KAP bilgisi üretme.",
     "Yalnızca aşağıdaki JSON nesnesini döndür:",
     '{"reviews":[{"symbol":"ASELS","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
     "Tüm adayları eksiksiz döndür. Açıklamalar kısa olmalı ve yalnızca JSON döndürmelisin.",
-    "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme. Backend fibonacci.confirmationPassed false ise C’den dönüş teyidi bekleniyor de; 4 saatlik veri yoksa teyit uydurma."
+    "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme. Backend fibonacci.confirmationPassed false ise C’den dönüş teyidi bekleniyor de; 4 saatlik veri yoksa teyit uydurma.",
     "Adaylar:",
     JSON.stringify(enriched),
   ].join("\n\n");
