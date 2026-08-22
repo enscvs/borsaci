@@ -11,7 +11,7 @@ const CONFIG = Object.freeze({
   strategy: {
     rsiMin: 50, rsiMax: 65, rsLookbacks: [20, 60], topRelativeStrengthPercent: 0.25,
     maxDistanceFromEma20Atr: 1.25, maxAtrPercent: 7, pullbackDays: 5,
-    volumeConfirmationRatio: 1.05, minRiskReward: 2, maxHoldingDays: 10,
+    volumeConfirmationRatio: 1.05, minRiskReward: 2,
     stopAtrBuffer: 0.35, slippageBps: 10, commissionBps: 10, maxHoldingDays: null
   },
   validation: { minModelSamples: 300, minCalibrationSamples: 100, minHighConfidenceWins: 0.60 },
