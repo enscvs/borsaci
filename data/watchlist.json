@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 35747.0434886837,
+      "cash": 51160.543931188586,
       "equity": 51160.543931188586,
-      "pnl": 1160.5518627071358,
-      "pnlPercent": 2.3211037254142717,
+      "pnl": 1160.552305212019,
+      "pnlPercent": 2.3211046104240385,
       "positions": [
         {
           "id": "paper-2026-08-22T22:52:28.500Z-BIMAS",
@@ -58,11 +58,13 @@
           "stop": 98.44,
           "target1": 122.01,
           "target2": 129.87,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T22:52:28.500Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.0004425048832246148
+          "pnl": 0.0004425048832246148,
+          "closedAt": "2026-08-22T23:29:18.872Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T22:40:02.436Z-BINBN",
@@ -953,77 +955,6 @@
     },
     "decisions": [
       {
-        "id": "1787438791340-ALARK",
-        "rank": 1,
-        "symbol": "ALARK",
-        "action": "BUY SETUP",
-        "status": "OPEN",
-        "confidence": null,
-        "entry": {
-          "low": 106.3,
-          "high": 106.3,
-          "reference": 106.3
-        },
-        "stop": 98.44,
-        "target1": 122.01,
-        "target2": 129.87,
-        "target3": 129.87,
-        "riskReward": {
-          "tp1": 2,
-          "tp2": 3,
-          "tp3": 3
-        },
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "quantity": 145,
-          "positionValue": 15413.5,
-          "actualRisk": 1139.7,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "indicators": {
-          "score": 80,
-          "rsi": 52.96,
-          "atr": 4.71,
-          "macd": 1.12
-        },
-        "filters": {
-          "trend": false,
-          "momentum": false,
-          "volume": false,
-          "rsi": true
-        },
-        "planMethod": "ATR_SUPPORT_RESISTANCE",
-        "grade": "A+ / GÜÇLÜ ADAY",
-        "reasons": [
-          "Fiyat EMA20 üzerinde",
-          "EMA20 EMA50 üzerinde",
-          "Fiyat EMA200 üzerinde",
-          "EMA20 son 5 günde yükseliyor"
-        ],
-        "risks": [],
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": null,
-          "verdict": "INFO",
-          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-          "summary": "Doğrulanmış haber başlığı alınamadı."
-        },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T22:52:27.946Z",
-          "expiresAt": "2026-08-23T22:52:27.947Z",
-          "openedAt": "2026-08-22T22:52:28.500Z"
-        },
-        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
-        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:52:27.946Z"
-      },
-      {
         "id": "1787438791340-DOHOL",
         "rank": 4,
         "symbol": "DOHOL",
@@ -1164,6 +1095,80 @@
       }
     ],
     "history": [
+      {
+        "id": "1787438791340-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "BUY SETUP",
+        "status": "CLOSED",
+        "confidence": null,
+        "entry": {
+          "low": 106.3,
+          "high": 106.3,
+          "reference": 106.3
+        },
+        "stop": 98.44,
+        "target1": 122.01,
+        "target2": 129.87,
+        "target3": 129.87,
+        "riskReward": {
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 145,
+          "positionValue": 15413.5,
+          "actualRisk": 1139.7,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 80,
+          "rsi": 52.96,
+          "atr": 4.71,
+          "macd": 1.12
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
+        },
+        "lifecycle": {
+          "stage": "CLOSED",
+          "createdAt": "2026-08-22T22:52:27.946Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z",
+          "openedAt": "2026-08-22T22:52:28.500Z",
+          "closedAt": "2026-08-22T23:29:18.872Z"
+        },
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:52:27.946Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.0004425048832246148
+      },
       {
         "id": "1787438791340-TSPOR",
         "rank": 2,
@@ -4364,6 +4369,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T23:29:18.872Z",
+        "type": "CLOSED",
+        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T23:29:13.705Z",
         "type": "CLOSED",
         "message": "TSPOR paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -4857,11 +4867,6 @@
         "timestamp": "2026-08-21T23:37:53.397Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺117.60."
-      },
-      {
-        "timestamp": "2026-08-21T23:37:53.397Z",
-        "type": "CLOSED",
-        "message": "GESAN paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-124.60."
       }
     ]
   }
