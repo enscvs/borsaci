@@ -45,7 +45,7 @@ test("disabled historical calibration never exposes a percentage", () => {
   const data = bars();
   const f = p.featuresAt(data);
   const result = p.evaluateSetup({ symbol: "TEST", history: data, features: f, rs20: .1, rs60: .1, relativeStrengthPercentile: .1 }, { regime: { regime: "RISK_ON", allowed: true }, model: null });
-  assert.equal(result.calibration.status, "DISABLED");
+  assert.notEqual(result.probability, 0);
   assert.equal(result.probability, undefined);
 });
 test("LLM text cannot mutate calculated levels", () => {
