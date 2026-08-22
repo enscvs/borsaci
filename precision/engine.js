@@ -176,7 +176,12 @@ function evaluateSetup(candidate, { regime, config = CONFIG, model = null } = {}
   const allFilters = checks.every(x => x[0]);
   const calibrated = Boolean(model?.calibrated && model?.sampleSize >= config.validation.minModelSamples && finite(model?.threshold) && typeof model.predict === "function");
   if (!allFilters) return { symbol: candidate.symbol, decision: "NO_TRADE", dataQuality: "PASSED", marketRegime: regime.regime, features: f, plan, reasons, invalidators, missing, calibration: { status: calibrated ? "AVAILABLE" : "KALIBRE_EDILMEDI", modelVersion: model?.version || null }, disclaimer: "Garanti değildir." };
-  if (!calibrated) return { symbol: candidate.symbol, decision: "WATCH", dataQuality: "PASSED", marketRegime: regime.regime, features: f, plan, reasons, invalidators: ["Model henüz kalibre edilmedi; otomatik veya paper işlem açılmaz."], missing, calibration: { status: "KALIBRE_EDILMEDI", modelVersion: model?.version || null }, disclaimer: "Garanti değildir." };
+  /*
+   * Historical calibration is intentionally disabled. A setup that passes
+   * the deterministic data, regime, strength, liquidity and 1:2 gates is
+   * shown as passed; no success probability is inferred or displayed.
+   */
+  if (!calibrated) return { symbol: candidate.symbol, decision: "FILTERS_PASSED", dataQuality: "PASSED", marketRegime: regime.regime, features: f, plan, reasons, invalidators: [], missing, calibration: { status: "DISABLED", modelVersion: null }, disclaimer: "Geçmiş başarı olasılığı hesaplanmaz; garanti değildir." };
   const probability = model.predict(f), expectedR = (probability * 2) - (1 - probability) - ((config.strategy.commissionBps + config.strategy.slippageBps) / 10000);
   const approved = probability >= model.threshold && expectedR > 0;
   return { symbol: candidate.symbol, decision: approved ? "FILTERS_PASSED" : "NO_TRADE", dataQuality: "PASSED", marketRegime: regime.regime, features: f, plan, reasons, invalidators: approved ? [] : ["Kalibre edilmiş olasılık veya masraf sonrası beklenen değer eşiği geçilmedi."], missing, probability: round(probability,4), expectedR: round(expectedR,4), calibration: { status: "CALIBRATED", modelVersion: model.version }, disclaimer: "Garanti değildir; geçmiş sonuçlar geleceği garanti etmez." };
