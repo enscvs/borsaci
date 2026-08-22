@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 20248.092728915213,
+      "cash": 35747.0434886837,
       "equity": 51160.543931188586,
-      "pnl": 1160.5511029386507,
-      "pnlPercent": 2.3211022058773016,
+      "pnl": 1160.5518627071358,
+      "pnlPercent": 2.3211037254142717,
       "positions": [
         {
           "id": "paper-2026-08-22T22:52:28.500Z-BIMAS",
@@ -39,11 +39,13 @@
           "stop": 0.89,
           "target1": 1.43,
           "target2": 1.6,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T22:52:28.500Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.0007597684851223807
+          "pnl": 0.0007597684851223807,
+          "closedAt": "2026-08-22T23:29:13.705Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T22:52:28.500Z-ALARK",
@@ -1022,77 +1024,6 @@
         "timestamp": "2026-08-22T22:52:27.946Z"
       },
       {
-        "id": "1787438791340-TSPOR",
-        "rank": 2,
-        "symbol": "TSPOR",
-        "action": "BUY SETUP",
-        "status": "OPEN",
-        "confidence": null,
-        "entry": {
-          "low": 1.07,
-          "high": 1.07,
-          "reference": 1.07
-        },
-        "stop": 0.89,
-        "target1": 1.43,
-        "target2": 1.6,
-        "target3": 1.6,
-        "riskReward": {
-          "tp1": 2,
-          "tp2": 3,
-          "tp3": 3
-        },
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "quantity": 14485,
-          "positionValue": 15498.95,
-          "actualRisk": 2607.3,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "indicators": {
-          "score": 80,
-          "rsi": 61.65,
-          "atr": 0.05,
-          "macd": 0.04
-        },
-        "filters": {
-          "trend": false,
-          "momentum": false,
-          "volume": false,
-          "rsi": true
-        },
-        "planMethod": "ATR_SUPPORT_RESISTANCE",
-        "grade": "A+ / GÜÇLÜ ADAY",
-        "reasons": [
-          "Fiyat EMA20 üzerinde",
-          "EMA20 EMA50 üzerinde",
-          "Fiyat EMA200 üzerinde",
-          "EMA20 son 5 günde yükseliyor"
-        ],
-        "risks": [],
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": null,
-          "verdict": "INFO",
-          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-          "summary": "Doğrulanmış haber başlığı alınamadı."
-        },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T22:52:27.947Z",
-          "expiresAt": "2026-08-23T22:52:27.947Z",
-          "openedAt": "2026-08-22T22:52:28.500Z"
-        },
-        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
-        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:52:27.947Z"
-      },
-      {
         "id": "1787438791340-DOHOL",
         "rank": 4,
         "symbol": "DOHOL",
@@ -1233,6 +1164,80 @@
       }
     ],
     "history": [
+      {
+        "id": "1787438791340-TSPOR",
+        "rank": 2,
+        "symbol": "TSPOR",
+        "action": "BUY SETUP",
+        "status": "CLOSED",
+        "confidence": null,
+        "entry": {
+          "low": 1.07,
+          "high": 1.07,
+          "reference": 1.07
+        },
+        "stop": 0.89,
+        "target1": 1.43,
+        "target2": 1.6,
+        "target3": 1.6,
+        "riskReward": {
+          "tp1": 2,
+          "tp2": 3,
+          "tp3": 3
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 14485,
+          "positionValue": 15498.95,
+          "actualRisk": 2607.3,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 80,
+          "rsi": 61.65,
+          "atr": 0.05,
+          "macd": 0.04
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "ATR_SUPPORT_RESISTANCE",
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
+        },
+        "lifecycle": {
+          "stage": "CLOSED",
+          "createdAt": "2026-08-22T22:52:27.947Z",
+          "expiresAt": "2026-08-23T22:52:27.947Z",
+          "openedAt": "2026-08-22T22:52:28.500Z",
+          "closedAt": "2026-08-22T23:29:13.705Z"
+        },
+        "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
+        "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+        "timestamp": "2026-08-22T22:52:27.947Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.0007597684851223807
+      },
       {
         "id": "1787438791340-BIMAS",
         "rank": 3,
@@ -4359,6 +4364,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T23:29:13.705Z",
+        "type": "CLOSED",
+        "message": "TSPOR paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T23:29:09.421Z",
         "type": "CLOSED",
         "message": "BIMAS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -4852,11 +4862,6 @@
         "timestamp": "2026-08-21T23:37:53.397Z",
         "type": "CLOSED",
         "message": "GESAN paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-124.60."
-      },
-      {
-        "timestamp": "2026-08-21T23:37:53.397Z",
-        "type": "CLOSED",
-        "message": "ALARK paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-200.20."
       }
     ]
   }
