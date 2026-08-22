@@ -41,6 +41,9 @@ let chartHistory = [];
 
 let analysisRunning = false;
 
+let performanceState = null;
+let performanceRange = "ALL";
+
 const WATCHLIST_STORAGE_KEY =
   "borsaci_watchlist_v1";
 
@@ -5005,7 +5008,7 @@ async function openPaperPosition(
     renderOpenPositions(state.paper?.positions || []);
     renderTradingActivity(state.activity || []);
     renderSignalHistory(state.history || []);
-    renderPerformance(state.history || []);
+    renderPerformance(state);
     renderAiDecisionDetail((state.decisions || []).find(item => item.id === decision.id) || decision);
   } catch (error) {
     alert(`Paper pozisyon açılamadı: ${error.message}`);
@@ -5498,24 +5501,156 @@ function bindSignalHistoryDetails() {
 }
 
 
+function performanceRecordDate(
+  item
+) {
+  const value =
+    item?.closedAt ||
+    item?.lifecycle?.closedAt ||
+    item?.openedAt ||
+    item?.lifecycle?.openedAt ||
+    item?.timestamp;
+
+  const date =
+    new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
+}
+
+
+function matchesPerformanceRange(
+  item,
+  start,
+  end
+) {
+  const date =
+    performanceRecordDate(item);
+
+  return Boolean(date) &&
+    (!start || date >= start) &&
+    (!end || date <= end);
+}
+
+
+function performanceRangeBounds() {
+  const customStart =
+    document.getElementById(
+      "performanceStartDate"
+    )?.value;
+
+  const customEnd =
+    document.getElementById(
+      "performanceEndDate"
+    )?.value;
+
+  if (
+    performanceRange === "CUSTOM" &&
+    (customStart || customEnd)
+  ) {
+    return {
+      start: customStart
+        ? new Date(`${customStart}T00:00:00`)
+        : null,
+      end: customEnd
+        ? new Date(`${customEnd}T23:59:59.999`)
+        : null,
+      label: "CUSTOM RANGE",
+    };
+  }
+
+  const months =
+    {
+      "1M": 1,
+      "3M": 3,
+      "6M": 6,
+    }[performanceRange];
+
+  if (!months) {
+    return {
+      start: null,
+      end: null,
+      label: "ALL TIME",
+    };
+  }
+
+  const start = new Date();
+  start.setMonth(start.getMonth() - months);
+
+  return {
+    start,
+    end: null,
+    label: `LAST ${months} MONTH${months > 1 ? "S" : ""}`,
+  };
+}
+
+
 function renderPerformance(
   state
 ) {
 
+  if (
+    state &&
+    !Array.isArray(state)
+  ) {
+    performanceState = state;
+  }
+
+  const source =
+    performanceState || {};
+
+  const bounds =
+    performanceRangeBounds();
+
   const active =
-    Array.isArray(state?.decisions)
-      ? state.decisions
-      : [];
+    (Array.isArray(source.decisions)
+      ? source.decisions
+      : [])
+      .filter(
+        item =>
+          matchesPerformanceRange(
+            item,
+            bounds.start,
+            bounds.end
+          )
+      );
 
   const history =
-    Array.isArray(state?.history)
-      ? state.history
-      : [];
+    (Array.isArray(source.history)
+      ? source.history
+      : [])
+      .filter(
+        item =>
+          matchesPerformanceRange(
+            item,
+            bounds.start,
+            bounds.end
+          )
+      );
 
-  const allSignals = [
-    ...active,
-    ...history,
-  ];
+  const allSignals =
+    uniqueDecisions(
+      [
+        ...active,
+        ...history,
+      ]
+    );
+
+  const closedPositions =
+    (Array.isArray(source.paper?.positions)
+      ? source.paper.positions
+      : [])
+      .filter(
+        item =>
+          (item.status === "CLOSED" ||
+            item.status === "STOPPED") &&
+          matchesPerformanceRange(
+            item,
+            bounds.start,
+            bounds.end
+          )
+      );
 
   const averageConfidence =
     allSignals.length
@@ -5528,37 +5663,61 @@ function renderPerformance(
         )
       : null;
 
+  const realizedPnl =
+    closedPositions.reduce(
+      (sum, item) =>
+        sum + Number(item.pnl || 0),
+      0
+    );
+
+  const wins =
+    closedPositions.filter(
+      item => Number(item.pnl || 0) > 0
+    ).length;
+
   const fields = {
     performanceTotalSignals:
       allSignals.length,
     performanceActiveSignals:
       active.filter(
-        item => item.status === "PENDING"
+        item =>
+          item.status === "PENDING" ||
+          item.status === "OPEN"
       ).length,
     performanceAvgConfidence:
       averageConfidence === null
         ? "--"
         : `%${averageConfidence}`,
     performanceResolved:
-      history.filter(
-        item =>
-          item.status === "CLOSED" ||
-          item.status === "STOPPED"
-      ).length,
+      closedPositions.length,
+    performanceWinRate:
+      closedPositions.length
+        ? `%${Math.round(
+            wins / closedPositions.length * 100
+          )}`
+        : "--",
+    performanceRealizedPnL:
+      formatCurrency(realizedPnl),
   };
 
   Object.entries(fields).forEach(
     ([id, value]) => {
-
       const element =
         document.getElementById(id);
-
       if (element) {
         element.textContent = String(value);
       }
-
     }
   );
+
+  const label =
+    document.getElementById(
+      "performanceRangeLabel"
+    );
+
+  if (label) {
+    label.textContent = bounds.label;
+  }
 
   const note =
     document.getElementById(
@@ -5566,16 +5725,59 @@ function renderPerformance(
     );
 
   if (note) {
-
     note.textContent =
-      fields.performanceResolved > 0
-        ? "Kapanan paper işlemlerin sonuçları hesaplandı."
-        : "Kazanma oranı ve getiri, paper pozisyon açma/kapatma aşamasında ölçülecek.";
-
+      closedPositions.length > 0
+        ? `${bounds.label}: ${closedPositions.length} kapanan paper işlem · ${wins} kârlı işlem.`
+        : `${bounds.label}: seçilen aralıkta kapanan paper işlem yok.`;
   }
 
 }
 
+
+function bindPerformanceRange() {
+  const range =
+    document.getElementById(
+      "performanceRange"
+    );
+
+  const start =
+    document.getElementById(
+      "performanceStartDate"
+    );
+
+  const end =
+    document.getElementById(
+      "performanceEndDate"
+    );
+
+  if (!range || range.dataset.bound === "true") {
+    return;
+  }
+
+  range.dataset.bound = "true";
+
+  const refresh = () => {
+    performanceRange = range.value || "ALL";
+    renderPerformance();
+  };
+
+  range.addEventListener("change", refresh);
+
+  [start, end].forEach(
+    input => {
+      if (input) {
+        input.addEventListener(
+          "change",
+          () => {
+            performanceRange = "CUSTOM";
+            range.value = "CUSTOM";
+            renderPerformance();
+          }
+        );
+      }
+    }
+  );
+}
 
 function reconcileScanDecisions(
   previous,
@@ -6561,6 +6763,8 @@ function bindTradingScannerControls() {
   bindRiskSettings();
 
   bindSignalHistoryDetails();
+
+  bindPerformanceRange();
 
   bindDecisionBoard();
 
