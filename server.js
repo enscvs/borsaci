@@ -5361,7 +5361,7 @@ async function evaluateTradingCandidatesWithAi(
 ) {
   const list =
     Array.isArray(candidates)
-      ? candidates.slice(0, 10)
+      ? candidates.slice(0, 6)
       : [];
 
   if (list.length === 0) {
@@ -5420,7 +5420,8 @@ async function evaluateTradingCandidatesWithAi(
     "Her sembol için grafik verisi, teknik göstergeler ve verilen haber başlıklarının risk/kalite etkisini puanla.",
     "Haber yoksa bunu nötr kabul et; uydurma haber veya KAP bilgisi üretme.",
     "Yalnızca aşağıdaki JSON nesnesini döndür:",
-    '{"reviews":[{"symbol":"ASELS","score":0,"verdict":"APPROVE|WATCH|REJECT","chartComment":"kısa yorum","newsComment":"kısa yorum","summary":"en fazla 180 karakter"}]}',
+    '{"reviews":[{"symbol":"ASELS","score":0,"verdict":"APPROVE|WATCH|REJECT","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
+    "Tüm adayları eksiksiz döndür. Açıklamalar kısa olmalı ve yalnızca JSON döndürmelisin.",
     "score 0-100: 65 altı APPROVE olamaz. APPROVE yalnızca teknik yapı ve haber riski uyumluysa verilir.",
     "Adaylar:",
     JSON.stringify(enriched),
@@ -5448,8 +5449,11 @@ async function evaluateTradingCandidatesWithAi(
         },
       ],
       temperature: 0.1,
-      max_tokens: 2200,
-      timeout: 12000,
+      response_format: {
+        type: "json_object",
+      },
+      max_tokens: 1600,
+      timeout: 15000,
     });
   } catch (groqError) {
     console.warn(
@@ -5477,8 +5481,11 @@ async function evaluateTradingCandidatesWithAi(
           },
         ],
         temperature: 0.1,
-        max_tokens: 2200,
-        timeout: 12000,
+      response_format: {
+        type: "json_object",
+      },
+      max_tokens: 1600,
+      timeout: 15000,
       });
     } catch (geminiError) {
       console.warn(
@@ -5506,8 +5513,11 @@ async function evaluateTradingCandidatesWithAi(
             },
           ],
           temperature: 0.1,
-          max_tokens: 2200,
-          timeout: 12000,
+      response_format: {
+        type: "json_object",
+      },
+      max_tokens: 1600,
+      timeout: 15000,
         });
       } catch (mistralError) {
         console.warn(
@@ -5579,13 +5589,13 @@ async function evaluateTradingCandidatesWithAi(
                 verdict,
                 chartComment:
                   String(review?.chartComment || "")
-                    .slice(0, 240),
+                    .slice(0, 120),
                 newsComment:
                   String(review?.newsComment || "")
-                    .slice(0, 240),
+                    .slice(0, 120),
                 summary:
                   String(review?.summary || "")
-                    .slice(0, 300),
+                    .slice(0, 160),
               },
             ];
           })
@@ -5795,7 +5805,7 @@ async function handleTradingScanner(
     const aiCandidates =
       rankedResults
         .filter(item => item.score >= 65)
-        .slice(0, 10);
+        .slice(0, 6);
 
     const aiReviews =
       await evaluateTradingCandidatesWithAi(
