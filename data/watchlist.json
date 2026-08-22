@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 2672.4000000000015,
+      "cash": 17989.300543212892,
       "equity": 48688.20097961426,
-      "pnl": -1104.5935852050768,
-      "pnlPercent": -2.2091871704101536,
+      "pnl": -1229.1930419921862,
+      "pnlPercent": -2.4583860839843723,
       "positions": [
         {
           "id": "paper-2026-08-22T07:29:50.452Z-GESAN",
@@ -20,11 +20,13 @@
           "stop": 81.89,
           "target1": 96.47,
           "target2": 101.33,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T07:29:50.452Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": -124.59945678710938
+          "pnl": -124.59945678710938,
+          "closedAt": "2026-08-22T09:46:30.570Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T07:29:50.452Z-BINBN",
@@ -2210,6 +2212,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-22T09:46:30.570Z",
+        "type": "CLOSED",
+        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-124.60."
+      },
       {
         "timestamp": "2026-08-22T09:42:11.312Z",
         "type": "SCAN",
