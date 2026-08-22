@@ -4300,19 +4300,21 @@ async function recordAiDecisions(
       ? state.decisions
       : [];
 
+  const existingByFingerprint =
+    new Map(
+      existing.map(
+        decision => [
+          decisionFingerprint(decision),
+          decision,
+        ]
+      )
+    );
+
   const incomingKeys =
     new Set(
       incoming.map(
         decisionFingerprint
       )
-    );
-
-  const retained =
-    existing.filter(
-      decision =>
-        incomingKeys.has(
-          decisionFingerprint(decision)
-        )
     );
 
   const archived =
@@ -4337,13 +4339,6 @@ async function recordAiDecisions(
         })
       );
 
-  const retainedKeys =
-    new Set(
-      retained.map(
-        decisionFingerprint
-      )
-    );
-
   state.history = [
     ...archived,
     ...(Array.isArray(state.history)
@@ -4351,15 +4346,55 @@ async function recordAiDecisions(
       : []),
   ].slice(0, 100);
 
-  state.decisions = [
-    ...retained,
-    ...incoming.filter(
-      decision =>
-        !retainedKeys.has(
-          decisionFingerprint(decision)
-        )
-    ),
-  ];
+  /*
+   * Aynı teknik karar tekrar gelirse eski kartı olduğu gibi
+   * korumak yerine yeni AI incelemesini kullan. Açık pozisyon
+   * varsa karar kimliği ve OPEN yaşam döngüsü korunur.
+   */
+  state.decisions =
+    incoming.map(
+      decision => {
+        const previous =
+          existingByFingerprint.get(
+            decisionFingerprint(decision)
+          );
+
+        if (!previous) {
+          return decision;
+        }
+
+        const hasOpenPosition =
+          state.paper.positions.some(
+            position =>
+              position.decisionId === previous.id &&
+              position.status === "OPEN"
+          );
+
+        return {
+          ...decision,
+          id: previous.id,
+          action:
+            hasOpenPosition
+              ? previous.action
+              : decision.action,
+          status:
+            hasOpenPosition
+              ? "OPEN"
+              : decision.status,
+          lifecycle:
+            hasOpenPosition
+              ? {
+                  ...(decision.lifecycle || {}),
+                  stage: "OPEN",
+                  openedAt:
+                    previous.lifecycle?.openedAt ||
+                    previous.timestamp ||
+                    now,
+                }
+              : decision.lifecycle,
+        };
+      }
+    );
 
   const opened =
     openEligiblePaperPositions(
@@ -4370,7 +4405,7 @@ async function recordAiDecisions(
   addTradingActivity(
     state,
     "SCAN",
-    `${state.decisions.length} active AI decision(s) retained or generated.`,
+    `${state.decisions.length} active AI decision(s) refreshed or generated.`,
     now
   );
 
