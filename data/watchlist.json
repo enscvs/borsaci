@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 17782.10152282715,
+      "cash": 33280.10152282715,
       "equity": 48481.00195922852,
-      "pnl": -1436.3920623779281,
-      "pnlPercent": -2.8727841247558565,
+      "pnl": -1318.7920623779278,
+      "pnlPercent": -2.6375841247558554,
       "positions": [
         {
           "id": "paper-2026-08-22T10:10:19.480Z-GESAN",
@@ -58,11 +58,13 @@
           "stop": 172.5,
           "target1": 204.29,
           "target2": 214.89,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T09:53:57.185Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 117.60000000000048
+          "pnl": 117.60000000000048,
+          "closedAt": "2026-08-22T13:19:21.369Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T09:53:57.185Z-ALARK",
@@ -2718,6 +2720,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T13:19:21.369Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺117.60."
+      },
+      {
         "timestamp": "2026-08-22T13:19:18.566Z",
         "type": "CLOSED",
         "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-124.60."
@@ -3211,11 +3218,6 @@
         "timestamp": "2026-08-21T22:16:12.448Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-21T22:16:10.168Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ]
   }
