@@ -987,6 +987,21 @@ Waiting for input...
 
         </div>
 
+        <div class="performance-filter">
+          <label>PERIOD
+            <select id="performanceRange">
+              <option value="ALL">All time</option>
+              <option value="1M">Last 1 month</option>
+              <option value="3M">Last 3 months</option>
+              <option value="6M">Last 6 months</option>
+              <option value="CUSTOM">Custom range</option>
+            </select>
+          </label>
+          <label>START DATE<input id="performanceStartDate" type="date"></label>
+          <label>END DATE<input id="performanceEndDate" type="date"></label>
+          <span id="performanceRangeLabel" class="panel-status">ALL TIME</span>
+        </div>
+
         <p
           id="performanceNote"
           class="trading-empty"
@@ -1448,6 +1463,11 @@ Waiting for input...
   .decision-detail-grid { display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:8px 16px; margin:8px 0; }
   .decision-detail-panel button { margin-top:8px; }
   .risk-settings select { background:#071007; color:#d7f7d7; border:1px solid #315431; padding:7px; font:inherit; }
+  .performance-filter { display:grid; grid-template-columns:1.2fr 1fr 1fr auto; gap:8px; align-items:end; margin-top:12px; padding-top:10px; border-top:1px solid rgba(72,255,104,.15); }
+  .performance-filter label { display:grid; gap:4px; color:#a4c7a4; font-size:9px; }
+  .performance-filter input, .performance-filter select { min-width:0; padding:7px; background:#071007; color:#d7f7d7; border:1px solid #315431; font:inherit; font-size:10px; }
+  .performance-filter .panel-status { align-self:center; white-space:nowrap; }
+  @media(max-width:800px){.performance-filter{grid-template-columns:1fr 1fr}.performance-filter .panel-status{grid-column:1/-1}}
   @media(max-width:800px){.decision-price-grid{grid-template-columns:1fr}.decision-price-grid span{border-bottom:1px solid rgba(72,255,104,.13)}} 
   .kill-switch-panel {
     max-width: 720px;
@@ -1527,7 +1547,7 @@ Waiting for input...
 ===================================================== -->
 
 <script
-  src="/app.js?v=20260822-kill-switch-state"
+  src="/app.js?v=20260822-performance-range"
   defer
 ></script>
 
