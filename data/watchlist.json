@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 2335.442444338796,
+      "cash": 18386.942444338798,
       "equity": 51160.542728915214,
-      "pnl": -1518.989181637763,
-      "pnlPercent": -3.0379783632755264,
+      "pnl": -936.0891816377641,
+      "pnlPercent": -1.872178363275528,
       "positions": [
         {
           "id": "paper-2026-08-22T22:40:02.436Z-BINBN",
@@ -20,11 +20,13 @@
           "stop": 165.12,
           "target1": 277.4,
           "target2": 306.05,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T22:40:02.436Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 582.899999999999
+          "pnl": 582.899999999999,
+          "closedAt": "2026-08-22T22:46:59.577Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T22:40:02.436Z-DOHOL",
@@ -1444,13 +1446,15 @@
         "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
         "invalidation": "C seviyesi 20.479999542236328 ve stop 19.66 altı geçersizlik oluşturur.",
         "timestamp": "2026-08-22T22:40:51.837Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787438401333-BINBN",
         "rank": 5,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 174.63,
@@ -1544,17 +1548,18 @@
           "newsComment": ""
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T22:40:51.837Z",
           "expiresAt": "2026-08-23T22:40:51.838Z",
-          "openedAt": "2026-08-22T22:40:02.436Z"
+          "openedAt": "2026-08-22T22:40:02.436Z",
+          "closedAt": "2026-08-22T22:46:59.577Z"
         },
         "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
         "invalidation": "C seviyesi 172 ve stop 165.12 altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:40:51.837Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T22:40:51.837Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 582.899999999999
+      },
       {
         "id": "1787438401333-ALARK",
         "rank": 1,
@@ -4275,6 +4280,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:46:59.577Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺582.90."
+      },
+      {
         "timestamp": "2026-08-22T22:46:31.806Z",
         "type": "SCAN",
         "message": "8 active AI decision(s) refreshed or generated."
@@ -4768,11 +4778,6 @@
         "timestamp": "2026-08-21T23:31:17.994Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH AKTİF: 0 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
-      },
-      {
-        "timestamp": "2026-08-21T23:31:04.169Z",
-        "type": "KILL_SWITCH",
-        "message": "KILL SWITCH AKTİF: 1 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
       }
     ]
   }
