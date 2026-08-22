@@ -4675,34 +4675,46 @@ RENDER
 --------------------------------------------------------
 */
 
-function renderScannerResults(results) {
+function renderScannerResults(
+  results
+) {
+
   if (!scannerResults) return;
-  if (!Array.isArray(results) || results.length === 0) {
-    scannerResults.innerHTML = '<div class="trading-empty">İŞLEM YOK · Doğrulanmış aday bulunamadı.</div>';
+
+  if (
+    !Array.isArray(results) ||
+    results.length === 0
+  ) {
+    scannerResults.innerHTML =
+      '<div class="trading-empty">Uygun setup bulunamadı.</div>';
     return;
   }
-  const label = value => ({ FILTERS_PASSED: "FİLTRELERİ GEÇTİ", WATCH: "İZLE", NO_TRADE: "İŞLEM YOK" }[value] || "YETERSİZ KANIT");
-  scannerResults.innerHTML = results.map((item, index) => {
-    const precision = item.precision || {};
-    const calibration = precision.calibration?.status === "CALIBRATED"
-      ? `Kalibre olasılık: ${formatPercent((precision.probability || 0) * 100)}`
-      : precision.calibration?.status === "DISABLED"
-        ? "GEÇMİŞ KALİBRASYON KULLANILMIYOR"
-        : "OLASILIK HESAPLANMIYOR";
-    return `
-      <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
-        <div class="scanner-head">
-          <strong>#${index + 1} · ${item.symbol}</strong>
-          <strong>₺${formatPrice(item.price)}</strong>
-          <span class="scanner-score">${label(item.decision)}</span>
-          <span>${item.marketRegime || "REJİM BİLİNMİYOR"}</span>
+
+  scannerResults.innerHTML =
+    results.map(
+      (item, index) => `
+        <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
+          <div class="scanner-head">
+            <strong>#${index + 1} · ${item.symbol}</strong>
+            <strong>₺${formatPrice(item.price)}</strong>
+            <span class="scanner-score">${item.score}</span>
+            <span>${item.decision}</span>
+          </div>
+          <div class="scanner-metrics">
+            RSI ${formatPrice(item.rsi)} ·
+            EMA20 ₺${formatPrice(item.ema20)} ·
+            EMA50 ₺${formatPrice(item.ema50)} ·
+            ATR ₺${formatPrice(item.atr)}
+          </div>
+          <small>${
+            Array.isArray(item.signals)
+              ? item.signals.slice(0, 4).join(" · ")
+              : ""
+          }</small>
         </div>
-        <div class="scanner-metrics">
-          Veri: ${item.dataQuality || "FAILED"} · RS sıra: ${item.relativeStrengthRank || "--"} · ${calibration}
-        </div>
-        <small>${Array.isArray(precision.reasons) && precision.reasons.length ? precision.reasons.join(" · ") : (precision.invalidators || ["Yetersiz kanıt."]).join(" · ")}</small>
-      </div>`;
-  }).join("");
+      `
+    ).join("");
+
 }
 
 
@@ -4867,8 +4879,8 @@ function renderAiDecisionDetail(
       <span>TP1: ${formatCurrency(item.target1)}</span>
       <span>TP2: ${formatCurrency(item.target2)}</span>
       <span>SL'ye kadar olası zarar: ${item.riskPlan?.quantity ?? "--"} lot / ${formatCurrency(item.riskPlan?.actualRisk)}</span>
-      <span>Veri kalitesi: ${item.precision?.dataQuality || "BİLİNMİYOR"} · Piyasa rejimi: ${item.precision?.marketRegime || "BİLİNMİYOR"} · RS sıra: ${item.precision?.relativeStrengthRank || "--"}</span>
-      <span>AI incelemesi: ${item.aiReview?.available ? `${item.aiReview.provider} · yalnızca bilgi amaçlı yorum` : "AI yorumu alınamadı"}</span>
+      <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
+      <span>AI incelemesi: ${item.aiReview?.available ? `${item.aiReview.provider} · ${item.aiReview.score}/100 · ${item.aiReview.verdict}` : "Doğrulanmış AI incelemesi yok"}</span>
     </div>
     ${item.aiReview?.chartComment ? `<div class="ai-review-comment"><strong>GRAFİK YORUMU</strong><br>${escapeHtml(item.aiReview.chartComment)}</div>` : ""}
     ${item.aiReview?.newsComment ? `<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>` : ""}
@@ -4886,39 +4898,51 @@ function renderAiDecisionDetail(
 }
 
 
-function renderAiDecisions(decisions) {
+function renderAiDecisions(
+  decisions
+) {
+
   if (!aiDecisionFeed) return;
-  const records = uniqueDecisions(decisions);
+
+  const records =
+    uniqueDecisions(decisions);
+
   renderedDecisionRecords = records;
+
   if (records.length === 0) {
-    aiDecisionFeed.innerHTML = '<div class="trading-empty">İŞLEM YOK · Doğrulanmış karar bulunamadı.</div>';
+    aiDecisionFeed.innerHTML =
+      '<div class="trading-empty">Uygun AI kararı bulunamadı.</div>';
     return;
   }
-  aiDecisionFeed.innerHTML = records.map((item, index) => {
-    const p = item.precision || {};
-    const intelligenceLabel = item.aiReview?.available
-      ? "AI INTEL RECEIVED"
-      : "AI INTEL PENDING";
-    return `
-      <article class="decision-item decision-card" data-decision-index="${index}">
-        <header>
-          <strong>${item.symbol}</strong>
-          <span>${item.action}</span>
-          <span>${item.status}</span>
-          <span>${p.marketRegime || "UNKNOWN"}</span>
-          <span class="ai-score-pill">${intelligenceLabel}</span>
-        </header>
-        <div class="decision-price-grid">
-          <span><small>PLANLANAN GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
-          <span><small>STOP</small>${formatCurrency(item.stop)}</span>
-          <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
-        </div>
-        <div class="decision-summary">
-          Beklenen değer: ${p.expectedR !== null && p.expectedR !== undefined && Number.isFinite(Number(p.expectedR)) ? `${Number(p.expectedR).toFixed(2)}R` : "HESAPLANMIYOR"} ·
-          RS sıra: ${p.relativeStrengthRank || "--"} · Garanti değildir.
-        </div>
-      </article>`;
-  }).join("");
+
+  aiDecisionFeed.innerHTML =
+    records.map(
+      (item, index) => `
+        <article
+          class="decision-item decision-card"
+          data-decision-index="${index}"
+        >
+          <header>
+            <strong>${item.symbol}</strong>
+            <span>${item.action}</span>
+            <span>${item.status}</span>
+            <span>GÜVEN %${item.confidence}</span>
+            <span class="ai-score-pill">AI ${item.aiReview?.available ? `${item.aiReview.score}/100` : "BEKLİYOR"}</span>
+          </header>
+          <div class="decision-price-grid">
+            <span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
+            <span><small>STOP</small>${formatCurrency(item.stop)}</span>
+            <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
+          </div>
+          <div class="decision-summary">
+            ${item.riskPlan?.quantity ?? "--"} lot ·
+            ${formatCurrency(item.riskPlan?.positionValue)} pozisyon ·
+            SL'ye kadar olası zarar ${formatCurrency(item.riskPlan?.actualRisk)}
+          </div>
+        </article>
+      `
+    ).join("");
+
 }
 
 
