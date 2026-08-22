@@ -11,8 +11,8 @@ const CONFIG = Object.freeze({
   strategy: {
     rsiMin: 50, rsiMax: 65, rsLookbacks: [20, 60], topRelativeStrengthPercent: 0.25,
     maxDistanceFromEma20Atr: 1.25, maxAtrPercent: 7, pullbackDays: 5,
-    volumeConfirmationRatio: 1.05, minRiskReward: 2, maxHoldingDays: 10,
-    stopAtrBuffer: 0.35, slippageBps: 10, commissionBps: 10
+    volumeConfirmationRatio: 1.05, minRiskReward: 2,
+    stopAtrBuffer: 0.35, slippageBps: 10, commissionBps: 10, maxHoldingDays: null
   },
   validation: { minModelSamples: 300, minCalibrationSamples: 100, minHighConfidenceWins: 0.60 },
   walkForward: { trainBars: 504, calibrationBars: 126, testBars: 126, purgeBars: 10, embargoBars: 5 }
@@ -155,7 +155,7 @@ function buildPlan(history, features, config = CONFIG) {
   const risk = price - rawStop;
   const entryLow = price - features.atr * .15, entryHigh = price + features.atr * .15, target1 = price + risk * 2, target2 = price + risk * 3;
   const resistance = Math.max(...history.slice(-60, -1).map(x => x.high));
-  return { entry: { low: round(entryLow,2), high: round(entryHigh,2), reference: round(price,2) }, stop: round(rawStop,2), target1: round(target1,2), target2: round(target2,2), risk: round(risk,4), riskReward: round((target1 - price) / risk,2), resistance: round(resistance,2), resistanceRoomR: round((resistance - price) / risk,2), maxHoldingDays: config.strategy.maxHoldingDays };
+  return { entry: { low: round(entryLow,2), high: round(entryHigh,2), reference: round(price,2) }, stop: round(rawStop,2), target1: round(target1,2), target2: round(target2,2), risk: round(risk,4), riskReward: round((target1 - price) / risk,2), resistance: round(resistance,2), resistanceRoomR: round((resistance - price) / risk,2), maxHoldingDays: config.strategy.maxHoldingDays ?? null };
 }
 function evaluateSetup(candidate, { regime, config = CONFIG, model = null } = {}) {
   const quality = validateHistory(candidate.history, { config });
@@ -190,7 +190,8 @@ function labelTrade(history, signalIndex, plan, config = CONFIG) {
   const entryBar = history[signalIndex + 1];
   if (!entryBar) return null;
   const entry = entryBar.open * (1 + config.strategy.slippageBps / 10000), stop = plan.stop, target = entry + (entry - stop) * 2;
-  for (let i = signalIndex + 1; i <= Math.min(history.length - 1, signalIndex + config.strategy.maxHoldingDays); i += 1) {
+  const maxHoldingDays = finite(config.strategy.maxHoldingDays) ? Number(config.strategy.maxHoldingDays) : history.length - signalIndex - 1;
+  for (let i = signalIndex + 1; i <= Math.min(history.length - 1, signalIndex + maxHoldingDays); i += 1) {
     const bar = history[i];
     if (bar.open <= stop) return { outcome: "LOSS", exit: bar.open, holdingDays: i - signalIndex, entry, stop, target, r: round((bar.open - entry) / (entry - stop)) };
     const stopHit = bar.low <= stop, targetHit = bar.high >= target;
@@ -198,8 +199,8 @@ function labelTrade(history, signalIndex, plan, config = CONFIG) {
     if (stopHit) return { outcome: "LOSS", exit: stop, holdingDays: i - signalIndex, entry, stop, target, r: -1 };
     if (targetHit) return { outcome: "WIN", exit: target, holdingDays: i - signalIndex, entry, stop, target, r: 2 };
   }
-  const exit = history[Math.min(history.length - 1, signalIndex + config.strategy.maxHoldingDays)].close;
-  return { outcome: "TIMEOUT", exit, holdingDays: config.strategy.maxHoldingDays, entry, stop, target, r: round((exit - entry) / (entry - stop)) };
+  const exit = history[Math.min(history.length - 1, signalIndex + maxHoldingDays)].close;
+  return { outcome: "TIMEOUT", exit, holdingDays: maxHoldingDays, entry, stop, target, r: round((exit - entry) / (entry - stop)) };
 }
 function summarizeBacktest(trades) {
   const counts = { WIN: 0, LOSS: 0, TIMEOUT: 0 }; trades.forEach(x => { counts[x.outcome] = (counts[x.outcome] || 0) + 1; });
