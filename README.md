@@ -25,6 +25,15 @@ Copy each generated value into its matching Render environment variable. Do not 
 
 Sessions expire after 12 hours and are removed on logout or server restart. API requests require an authenticated session; state-changing requests also require same-origin and CSRF validation.
 
+## Telegram paper approval
+
+Paper işlemleri tarama sonunda otomatik açılmaz. Uygun adaylar önce sitedeki `PAPER TRADE APPROVAL` kutusunda ve Telegram'da onay bekler. Telegram içi onay düğmesi için Render'a şu değişkenleri ekleyin:
+
+- `TELEGRAM_WEBHOOK_SECRET` — uzun, rastgele ve yalnızca Render'da saklanan bir değer.
+- `PUBLIC_BASE_URL` — örneğin `https://gemini-borsaci.onrender.com` (Render `RENDER_EXTERNAL_URL` veriyorsa gerekmez).
+
+Servis yeniden başlatıldığında webhook otomatik kaydedilir. Telegram onayı, yalnızca yapılandırılmış chat ID'den gelen ve webhook secret ile doğrulanan callback'lerde paper işlem açar.
+
 ## Local verification
 
 ```powershell
