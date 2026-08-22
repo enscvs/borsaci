@@ -4868,7 +4868,7 @@ function renderAiDecisionDetail(
       <span>TP2: ${formatCurrency(item.target2)}</span>
       <span>SL'ye kadar olası zarar: ${item.riskPlan?.quantity ?? "--"} lot / ${formatCurrency(item.riskPlan?.actualRisk)}</span>
       <span>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</span>
-      <span>AI incelemesi: ${item.aiReview?.available ? `${item.aiReview.provider} · ${item.aiReview.score}/100 · ${item.aiReview.verdict}` : "Doğrulanmış AI incelemesi yok"}</span>
+      <span>AI incelemesi: ${item.aiReview?.available ? `${item.aiReview.provider} · bilgi amaçlı yorum` : "AI yorumu alınamadı"}</span>
     </div>
     ${item.aiReview?.chartComment ? `<div class="ai-review-comment"><strong>GRAFİK YORUMU</strong><br>${escapeHtml(item.aiReview.chartComment)}</div>` : ""}
     ${item.aiReview?.newsComment ? `<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>` : ""}
