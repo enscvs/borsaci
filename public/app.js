@@ -4688,7 +4688,7 @@ function renderScannerResults(results) {
       ? `Kalibre olasılık: ${formatPercent((precision.probability || 0) * 100)}`
       : precision.calibration?.status === "DISABLED"
         ? "GEÇMİŞ KALİBRASYON KULLANILMIYOR"
-        : "KALİBRE EDİLMEDİ";
+        : "OLASILIK HESAPLANMIYOR";
     return `
       <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
         <div class="scanner-head">
@@ -4901,7 +4901,7 @@ function renderAiDecisions(decisions) {
       ? `Model ${p.calibration?.modelVersion || "v1"} · ${formatPercent((p.probability || 0) * 100)}`
       : p.calibration?.status === "DISABLED"
         ? "GEÇMİŞ KALİBRASYON YOK"
-        : "KALİBRE EDİLMEDİ";
+        : "OLASILIK HESAPLANMIYOR";
     return `
       <article class="decision-item decision-card" data-decision-index="${index}">
         <header>
@@ -4917,8 +4917,7 @@ function renderAiDecisions(decisions) {
           <span><small>TP1 / TP2</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)}</span>
         </div>
         <div class="decision-summary">
-          Beklenen değer: ${Number.isFinite(Number(p.expectedR)) ? `${Number(p.expectedR).toFixed(2)}R` : "KALİBRE EDİLMEDİ"} ·
-          Azami taşıma: ${p.maxHoldingDays || "--"} seans ·
+          Beklenen değer: ${p.expectedR !== null && p.expectedR !== undefined && Number.isFinite(Number(p.expectedR)) ? `${Number(p.expectedR).toFixed(2)}R` : "HESAPLANMIYOR"} ·
           RS sıra: ${p.relativeStrengthRank || "--"} · Garanti değildir.
         </div>
       </article>`;
