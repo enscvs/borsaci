@@ -784,20 +784,20 @@
     },
     "decisions": [
       {
-        "id": "1787433333482-PASEU",
+        "id": "1787434611514-PASEU",
         "rank": 1,
         "symbol": "PASEU",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
         "entry": {
-          "low": 199.89,
-          "high": 204.71,
+          "low": 199.88,
+          "high": 204.72,
           "reference": 202.3
         },
-        "stop": 146.68,
-        "target1": 313.54,
-        "target2": 369.15,
+        "stop": 155.16,
+        "target1": 296.59,
+        "target2": 343.73,
         "riskReward": "1:2",
         "riskPlan": {
           "capital": 50000,
@@ -805,14 +805,14 @@
           "reservePercent": 7,
           "quantity": 76,
           "positionValue": 15374.8,
-          "actualRisk": 4226.98,
+          "actualRisk": 3582.93,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
           "dataQuality": true,
           "regime": "RISK_OFF",
-          "relativeStrength": true,
+          "relativeStrength": false,
           "strategy": true
         },
         "precision": {
@@ -829,13 +829,12 @@
           "relativeStrengthPercentile": 0.009615384615384616,
           "maxHoldingDays": null,
           "reasons": [
-            "Trend yapısı uygun",
-            "Göreceli güç üst çeyrekte"
+            "EMA20 EMA50'nin üzerinde"
           ],
           "invalidators": [
             "RSI kontrollü momentum aralığında",
             "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
-            "Teyit hacmi ve likidite yeterli",
+            "Son 3 günlük hacim teyidi ve likidite yeterli",
             "Yapısal stop, direnç alanı ve risk/getiri uygun"
           ],
           "missing": [],
@@ -843,56 +842,56 @@
         },
         "indicators": {
           "rsi": 71.99089415410981,
-          "atr": 16.052007893214032,
-          "atrPercent": 7.93475415277536
+          "atr": 16.125072286749035,
+          "atrPercent": 7.970871005189005
         },
         "aiReview": {
-          "available": true,
-          "provider": "GROQ",
+          "available": false,
+          "provider": "GEMINI",
           "role": "INFORMATIONAL_ONLY",
-          "summary": "Technical uptrend, price above EMAs, RSI high but no adverse news; approve.",
-          "chartComment": "Price rose from 141.8 to 202.3, strong uptrend with low volatility.",
-          "newsComment": "News unrelated to market; neutral impact."
+          "summary": "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          "chartComment": "",
+          "newsComment": ""
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:27:44.469Z",
-          "expiresAt": "2026-08-23T21:27:44.469Z"
+          "createdAt": "2026-08-22T21:36:51.514Z",
+          "expiresAt": "2026-08-23T21:36:51.514Z"
         },
-        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
-        "invalidation": "Günlük plan geçersizliği: 146.68 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:27:44.469Z"
+        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Son 3 günlük hacim teyidi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
+        "invalidation": "Günlük plan geçersizliği: 155.16 altı teyitli kapanış.",
+        "timestamp": "2026-08-22T21:36:51.514Z"
       },
       {
-        "id": "1787433333482-TKFEN",
+        "id": "1787434611514-KTLEV",
         "rank": 2,
-        "symbol": "TKFEN",
+        "symbol": "KTLEV",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
         "entry": {
-          "low": 226.78,
-          "high": 230.62,
-          "reference": 228.7
+          "low": 62.82,
+          "high": 64.18,
+          "reference": 63.5
         },
-        "stop": 215.9,
-        "target1": 254.3,
-        "target2": 267.11,
+        "stop": 47.62,
+        "target1": 95.25,
+        "target2": 111.13,
         "riskReward": "1:2",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 67,
-          "positionValue": 15322.9,
-          "actualRisk": 857.76,
+          "quantity": 244,
+          "positionValue": 15494,
+          "actualRisk": 3873.65,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
           "dataQuality": true,
           "regime": "RISK_OFF",
-          "relativeStrength": true,
+          "relativeStrength": false,
           "strategy": true
         },
         "precision": {
@@ -909,70 +908,69 @@
           "relativeStrengthPercentile": 0.019230769230769232,
           "maxHoldingDays": null,
           "reasons": [
-            "Trend yapısı uygun",
-            "Göreceli güç üst çeyrekte"
+            "EMA20 EMA50'nin üzerinde",
+            "Son 3 günlük hacim teyidi ve likidite yeterli"
           ],
           "invalidators": [
             "RSI kontrollü momentum aralığında",
             "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
-            "Teyit hacmi ve likidite yeterli",
             "Yapısal stop, direnç alanı ve risk/getiri uygun"
           ],
           "missing": [],
           "disclaimer": "Garanti değildir."
         },
         "indicators": {
-          "rsi": 75.2268780604635,
-          "atr": 12.802436988744358,
-          "atrPercent": 5.597917428762239
+          "rsi": 73.18047984748621,
+          "atr": 4.558769367678232,
+          "atrPercent": 7.179164358548397
         },
         "aiReview": {
-          "available": true,
-          "provider": "GROQ",
+          "available": false,
+          "provider": "GEMINI",
           "role": "INFORMATIONAL_ONLY",
-          "summary": "Uptrend confirmed, price above EMAs, RSI elevated, no negative news; approve.",
-          "chartComment": "Price climbed to 228.7, maintaining upward momentum, moderate volatility.",
-          "newsComment": "News unrelated to market; neutral impact."
+          "summary": "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          "chartComment": "",
+          "newsComment": ""
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:27:44.469Z",
-          "expiresAt": "2026-08-23T21:27:44.469Z"
+          "createdAt": "2026-08-22T21:36:51.514Z",
+          "expiresAt": "2026-08-23T21:36:51.514Z"
         },
-        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
-        "invalidation": "Günlük plan geçersizliği: 215.9 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:27:44.469Z"
+        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Yapısal stop, direnç alanı ve risk/getiri uygun",
+        "invalidation": "Günlük plan geçersizliği: 47.62 altı teyitli kapanış.",
+        "timestamp": "2026-08-22T21:36:51.514Z"
       },
       {
-        "id": "1787433333483-TUPRS",
+        "id": "1787434611514-TUPRS",
         "rank": 3,
         "symbol": "TUPRS",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
         "entry": {
-          "low": 392.98,
-          "high": 397.52,
-          "reference": 395.25
+          "low": 404.46,
+          "high": 409.04,
+          "reference": 406.75
         },
-        "stop": 340.44,
-        "target1": 504.87,
-        "target2": 559.67,
+        "stop": 355.67,
+        "target1": 508.92,
+        "target2": 560,
         "riskReward": "1:2",
         "riskPlan": {
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 39,
-          "positionValue": 15414.75,
-          "actualRisk": 2137.5,
+          "quantity": 38,
+          "positionValue": 15456.5,
+          "actualRisk": 1941.23,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
           "dataQuality": true,
           "regime": "RISK_OFF",
-          "relativeStrength": true,
+          "relativeStrength": false,
           "strategy": true
         },
         "precision": {
@@ -989,39 +987,38 @@
           "relativeStrengthPercentile": 0.028846153846153848,
           "maxHoldingDays": null,
           "reasons": [
-            "Trend yapısı uygun",
-            "Göreceli güç üst çeyrekte"
+            "EMA20 EMA50'nin üzerinde"
           ],
           "invalidators": [
             "RSI kontrollü momentum aralığında",
             "Fiyat EMA20'ye ve volatiliteye göre kontrollü",
-            "Teyit hacmi ve likidite yeterli",
+            "Son 3 günlük hacim teyidi ve likidite yeterli",
             "Yapısal stop, direnç alanı ve risk/getiri uygun"
           ],
           "missing": [],
           "disclaimer": "Garanti değildir."
         },
         "indicators": {
-          "rsi": 83.24473535256041,
-          "atr": 15.164438157176157,
-          "atrPercent": 3.836669995490489
+          "rsi": 84.90157721208774,
+          "atr": 15.24251306955267,
+          "atrPercent": 3.7473910435286224
         },
         "aiReview": {
-          "available": true,
-          "provider": "GROQ",
+          "available": false,
+          "provider": "GEMINI",
           "role": "INFORMATIONAL_ONLY",
-          "summary": "Robust uptrend, price well above EMAs, RSI very high, neutral news; approve.",
-          "chartComment": "Price surged to 395.25, strong momentum, low volatility.",
-          "newsComment": "News unrelated to market; neutral impact."
+          "summary": "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          "chartComment": "",
+          "newsComment": ""
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:27:44.469Z",
-          "expiresAt": "2026-08-23T21:27:44.469Z"
+          "createdAt": "2026-08-22T21:36:51.514Z",
+          "expiresAt": "2026-08-23T21:36:51.514Z"
         },
-        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
-        "invalidation": "Günlük plan geçersizliği: 340.44 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:27:44.469Z"
+        "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Son 3 günlük hacim teyidi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
+        "invalidation": "Günlük plan geçersizliği: 355.67 altı teyitli kapanış.",
+        "timestamp": "2026-08-22T21:36:51.514Z"
       }
     ],
     "history": [
@@ -3338,6 +3335,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T21:36:51.887Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-22T21:27:44.917Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3831,11 +3833,6 @@
         "timestamp": "2026-08-21T22:58:12.119Z",
         "type": "PAPER_OPEN",
         "message": "BINBN paper pozisyonu açıldı: 169 lot · ₺30943.90."
-      },
-      {
-        "timestamp": "2026-08-21T22:57:58.192Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺117.60."
       }
     ]
   }
