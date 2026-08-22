@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 17989.300543212892,
+      "cash": 33487.30054321289,
       "equity": 48688.20097961426,
-      "pnl": -1229.1930419921862,
-      "pnlPercent": -2.4583860839843723,
+      "pnl": -1111.5930419921856,
+      "pnlPercent": -2.223186083984371,
       "positions": [
         {
           "id": "paper-2026-08-22T07:29:50.452Z-GESAN",
@@ -39,11 +39,13 @@
           "stop": 172.5,
           "target1": 204.29,
           "target2": 214.89,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T07:29:50.452Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 117.60000000000048
+          "pnl": 117.60000000000048,
+          "closedAt": "2026-08-22T09:46:33.513Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T07:29:50.452Z-ALARK",
@@ -2212,6 +2214,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-22T09:46:33.513Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺117.60."
+      },
       {
         "timestamp": "2026-08-22T09:46:30.570Z",
         "type": "CLOSED",
