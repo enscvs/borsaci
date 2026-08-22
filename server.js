@@ -5485,10 +5485,8 @@ async function evaluateTradingCandidatesWithAi(
         },
       ],
       temperature: 0.1,
-      response_format: {
-        type: "json_object",
-      },
       max_tokens: 1600,
+    }, {
       timeout: 15000,
     });
   } catch (groqError) {
@@ -5520,12 +5518,10 @@ async function evaluateTradingCandidatesWithAi(
           },
         ],
         temperature: 0.1,
-      response_format: {
-        type: "json_object",
-      },
       max_tokens: 1600,
+    }, {
       timeout: 15000,
-      });
+    });
     } catch (geminiError) {
       console.warn(
         "TRADING AI GEMINI:",
@@ -5555,12 +5551,10 @@ async function evaluateTradingCandidatesWithAi(
             },
           ],
           temperature: 0.1,
-      response_format: {
-        type: "json_object",
-      },
       max_tokens: 1600,
+    }, {
       timeout: 15000,
-        });
+    });
       } catch (mistralError) {
         console.warn(
           "TRADING AI MISTRAL:",
