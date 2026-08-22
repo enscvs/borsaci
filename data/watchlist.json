@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 18386.942444338798,
+      "cash": 34500.542728915214,
       "equity": 51160.542728915214,
-      "pnl": -936.0891816377641,
-      "pnlPercent": -1.872178363275528,
+      "pnl": -309.44889706134927,
+      "pnlPercent": -0.6188977941226985,
       "positions": [
         {
           "id": "paper-2026-08-22T22:40:02.436Z-BINBN",
@@ -39,11 +39,13 @@
           "stop": 19.66,
           "target1": 25.28,
           "target2": 26.58,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T22:40:02.436Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 626.6402845764148
+          "pnl": 626.6402845764148,
+          "closedAt": "2026-08-22T22:47:08.361Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T22:40:02.436Z-BIMAS",
@@ -1339,13 +1341,15 @@
         "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
         "invalidation": "C seviyesi 370.25 ve stop 355.44 altı geçersizlik oluşturur.",
         "timestamp": "2026-08-22T22:40:51.837Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787438401333-DOHOL",
         "rank": 4,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 20.53,
@@ -1438,17 +1442,18 @@
           "newsComment": ""
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T22:40:51.837Z",
           "expiresAt": "2026-08-23T22:40:51.837Z",
-          "openedAt": "2026-08-22T22:40:02.436Z"
+          "openedAt": "2026-08-22T22:40:02.436Z",
+          "closedAt": "2026-08-22T22:47:08.361Z"
         },
         "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
         "invalidation": "C seviyesi 20.479999542236328 ve stop 19.66 altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:40:51.837Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T22:40:51.837Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 626.6402845764148
+      },
       {
         "id": "1787438401333-BINBN",
         "rank": 5,
@@ -4280,6 +4285,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:47:08.361Z",
+        "type": "CLOSED",
+        "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺626.64."
+      },
+      {
         "timestamp": "2026-08-22T22:46:59.577Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺582.90."
@@ -4771,11 +4781,6 @@
       },
       {
         "timestamp": "2026-08-21T23:31:40.154Z",
-        "type": "KILL_SWITCH",
-        "message": "KILL SWITCH AKTİF: 0 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
-      },
-      {
-        "timestamp": "2026-08-21T23:31:17.994Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH AKTİF: 0 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
       }
