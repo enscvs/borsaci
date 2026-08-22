@@ -138,7 +138,7 @@ function calculateMarketRegime({ indexHistory, universeFeatures, config = CONFIG
   if (![feature.price, feature.ema50, feature.ema200, feature.ema50Slope, feature.atrPercent].every(finite)) return { regime: "UNKNOWN", allowed: false, reason: "Rejim için gerekli endeks göstergeleri eksik.", dataQuality: quality };
   const riskOn = feature.price > feature.ema50 && feature.price > feature.ema200 && feature.ema50 > feature.ema200 && feature.ema50Slope > 0 && breadth >= config.regime.breadthRiskOn && feature.atrPercent <= config.regime.maxAtrPercent;
   const riskOff = feature.price < feature.ema200 || feature.ema50 < feature.ema200 || breadth < config.regime.breadthRiskOff || feature.atrPercent > config.regime.maxAtrPercent * 1.35;
-  return { regime: riskOn ? "RISK_ON" : riskOff ? "RISK_OFF" : "NEUTRAL", allowed: !riskOff, breadth: round(breadth, 4), index: feature, dataQuality: quality, reason: riskOn ? "Endeks trendi ve piyasa genişliği uygun." : riskOff ? "Yeni uzun işlem için piyasa rejimi uygun değil." : "Koşullar karışık; yalnızca çok güçlü adaylar değerlendirilir." };
+  return { regime: riskOn ? "RISK_ON" : riskOff ? "RISK_OFF" : "NEUTRAL", allowed: true, breadth: round(breadth, 4), index: feature, dataQuality: quality, reason: riskOn ? "Endeks trendi ve piyasa genişliği uygun." : riskOff ? "Endeks zayıf; ancak hisse bazlı filtreler işlem kararını belirler." : "Koşullar karışık; hisse bazlı filtreler işlem kararını belirler." };
 }
 function rankRelativeStrength(candidates, indexHistory) {
   const index = featuresAt(indexHistory), scored = candidates.map(candidate => {
