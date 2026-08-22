@@ -3,6 +3,7 @@ require("dotenv").config();
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 const {
   createAuthService,
@@ -59,6 +60,13 @@ const TELEGRAM_BOT_TOKEN =
 const TELEGRAM_CHAT_ID =
   process.env.TELEGRAM_CHAT_ID;
 
+const TELEGRAM_WEBHOOK_SECRET =
+  process.env.TELEGRAM_WEBHOOK_SECRET;
+
+const PUBLIC_BASE_URL =
+  process.env.PUBLIC_BASE_URL ||
+  process.env.RENDER_EXTERNAL_URL;
+
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
@@ -77,7 +85,8 @@ function updateScannerJob(jobId, progress, message, status = "RUNNING") {
 }
 
 async function sendTelegramNotification(
-  message
+  message,
+  replyMarkup = null
 ) {
 
   if (
@@ -98,12 +107,11 @@ async function sendTelegramNotification(
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(
-            {
-              chat_id: TELEGRAM_CHAT_ID,
-              text: String(message).slice(0, 4000),
-            }
-          ),
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: String(message).slice(0, 4000),
+            ...(replyMarkup ? {reply_markup: replyMarkup} : {}),
+          }),
         }
       );
 
@@ -131,6 +139,59 @@ async function sendTelegramNotification(
 
   }
 
+}
+
+function telegramApprovalButtonsReady() {
+  return Boolean(
+    TELEGRAM_BOT_TOKEN &&
+    TELEGRAM_CHAT_ID &&
+    TELEGRAM_WEBHOOK_SECRET &&
+    PUBLIC_BASE_URL
+  );
+}
+
+async function telegramApi(method, payload) {
+  if (!TELEGRAM_BOT_TOKEN) return false;
+  const response = await fetch(
+    `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${method}`,
+    {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    }
+  );
+  if (!response.ok) throw new Error(`Telegram HTTP ${response.status}`);
+  return true;
+}
+
+async function answerTelegramCallback(callbackId, text) {
+  if (!callbackId) return;
+  try {
+    await telegramApi("answerCallbackQuery", {
+      callback_query_id: callbackId,
+      text: String(text || "İşlem alındı.").slice(0, 180),
+      show_alert: false,
+    });
+  } catch (error) {
+    console.error("TELEGRAM CALLBACK ERROR:", error.message);
+  }
+}
+
+async function configureTelegramWebhook() {
+  if (!telegramApprovalButtonsReady()) return false;
+  try {
+    const webhookUrl = `${String(PUBLIC_BASE_URL).replace(/\/$/, "")}/api/telegram/webhook`;
+    await telegramApi("setWebhook", {
+      url: webhookUrl,
+      secret_token: TELEGRAM_WEBHOOK_SECRET,
+      allowed_updates: ["callback_query"],
+    });
+    console.log("TELEGRAM APPROVAL WEBHOOK CONFIGURED");
+    return true;
+  } catch (error) {
+    console.error("TELEGRAM WEBHOOK ERROR:", error.message);
+    return false;
+  }
 }
 
 
@@ -185,6 +246,30 @@ function buildPaperOpenNotification(
     `SL'ye kadar olası zarar: ${formatTelegramCurrency(risk)}`,
   ].join("\\n");
 
+}
+
+function buildPaperApprovalNotification(decision) {
+  return [
+    "⏳ BORSACI · PAPER İŞLEM ONAYI",
+    "",
+    `${decision.symbol} · ${decision.grade || "BUY SETUP"}`,
+    `Giriş: ${formatTelegramCurrency(decision.entry?.reference)}`,
+    `Miktar: ${decision.riskPlan?.quantity || 0} lot · ${formatTelegramCurrency(decision.riskPlan?.positionValue)}`,
+    "",
+    `SL: ${formatTelegramCurrency(decision.stop)}`,
+    `TP1: ${formatTelegramCurrency(decision.target1)} · TP2: ${formatTelegramCurrency(decision.target2)}`,
+    "",
+    "Onay verirsen paper işlem açılır.",
+  ].join("\\n");
+}
+
+function paperApprovalKeyboard(decision) {
+  return {
+    inline_keyboard: [[{
+      text: `✅ ${decision.symbol} PAPER İŞLEMİNİ ONAYLA`,
+      callback_data: `paper_approve:${decision.id}`,
+    }]],
+  };
 }
 
 
@@ -3685,7 +3770,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   const entry=Number(plan.entryPrice), stop=Number(plan.stopLoss), quantity=Math.floor(capital*allocation/100/entry);
   const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed);
   const action=active&&item.score>=70?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
-  const status=action==="NO TRADE"?"REJECTED":"PENDING";
+  const status=action==="BUY SETUP"?"PENDING_APPROVAL":action==="NO TRADE"?"REJECTED":"PENDING";
   const now=new Date().toISOString();
   return {
     id:`${Date.now()}-${item.symbol}`,rank,symbol:item.symbol,action,status,confidence:null,
@@ -3723,11 +3808,23 @@ function createAiDecisions(
       .filter(Boolean)
       .sort(
         (a, b) =>
-          b.confidence -
-          a.confidence
+          Number(b.indicators?.score || 0) -
+          Number(a.indicators?.score || 0)
       );
 
-  return candidates.slice(0, 5);
+  let approvals = 0;
+  return candidates.slice(0, 5).map(decision => {
+    if (decision.action !== "BUY SETUP") return decision;
+    approvals += 1;
+    if (approvals <= 3) return decision;
+    return {
+      ...decision,
+      action: "WATCH",
+      status: "PENDING",
+      lifecycle: {...decision.lifecycle, stage: "PENDING"},
+      reason: "İlk üç paper işlem onay kontenjanı dolu; bu kurulum izleniyor.",
+    };
+  });
 
 }
 
@@ -3851,7 +3948,7 @@ function openPaperPositionForDecision(
     throw new Error("Kill Switch aktif: yeni paper işlem açılamaz.");
   }
 
-  if (!decision || decision.action !== "BUY SETUP" || decision.status !== "PENDING") {
+  if (!decision || decision.action !== "BUY SETUP" || !["PENDING", "PENDING_APPROVAL"].includes(decision.status)) {
     throw new Error("Bu karar paper işlem açmak için uygun değil.");
   }
 
@@ -4352,7 +4449,7 @@ async function recordAiDecisions(
     existing
       .filter(
         decision =>
-          decision?.status === "PENDING" &&
+          ["PENDING", "PENDING_APPROVAL"].includes(decision?.status) &&
           !incomingKeys.has(
             decisionFingerprint(decision)
           )
@@ -4445,8 +4542,25 @@ async function recordAiDecisions(
     ...retainedOpenDecisions,
   ];
 
-  // En yüksek teknik skorlu en fazla üç BUY SETUP paper pozisyonu açılır.
-  const opened = openEligiblePaperPositions(state, now);
+  // Paper işlem scanner tarafından otomatik açılmaz. Yeni BUY SETUP'lar
+  // Telegram veya sitedeki tek kullanımlık onaydan sonra açılabilir.
+  const previouslyQueued = new Set(
+    existing
+      .filter(item => item?.status === "PENDING_APPROVAL")
+      .map(item => item.id)
+  );
+  const approvalRequests = state.decisions
+    .filter(item => item.action === "BUY SETUP" && item.status === "PENDING_APPROVAL")
+    .filter(item => !previouslyQueued.has(item.id));
+
+  for (const decision of approvalRequests) {
+    addTradingActivity(
+      state,
+      "PAPER_APPROVAL_REQUESTED",
+      `${decision.symbol} için paper işlem onayı bekleniyor.`,
+      now
+    );
+  }
 
   addTradingActivity(
     state,
@@ -4461,9 +4575,14 @@ async function recordAiDecisions(
     stateResult.container
   );
 
-  for (const position of opened) {
-    // Bildirim teslimi scanner HTTP yanıtını geciktiremez.
-    void sendTelegramNotification(buildPaperOpenNotification(position));
+  if (telegramApprovalButtonsReady()) {
+    for (const decision of approvalRequests) {
+      // Bildirim teslimi scanner HTTP yanıtını geciktiremez.
+      void sendTelegramNotification(
+        buildPaperApprovalNotification(decision),
+        paperApprovalKeyboard(decision)
+      );
+    }
   }
 
   return state;
@@ -4669,29 +4788,67 @@ async function handleKillSwitch(req, res) {
   }
 }
 
-async function handlePaperOpen(req, res) {
+async function approvePaperDecision(decisionId, source) {
+  const stateResult = await getTradingState();
+  const state = stateResult.content;
+  const decision = (state.decisions || []).find(item => item.id === decisionId);
+  if (!decision || decision.status !== "PENDING_APPROVAL") {
+    throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
+  }
+  const timestamp = new Date().toISOString();
+  const position = openPaperPositionForDecision(state, decision, timestamp);
+  addTradingActivity(
+    state,
+    "PAPER_APPROVED",
+    `${position.symbol} paper işlemi ${source} üzerinden onaylandı.`,
+    timestamp
+  );
+  await saveTradingState(state, stateResult.sha, stateResult.container);
+  void sendTelegramNotification(buildPaperOpenNotification(position));
+  return state;
+}
+
+async function handlePaperApproval(req, res) {
   try {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || "").trim();
     if (!decisionId) throw new Error("Karar kimliği gerekli.");
-
-    const stateResult = await getTradingState();
-    const state = stateResult.content;
-    const decision = (state.decisions || []).find(item => item.id === decisionId);
-    const timestamp = new Date().toISOString();
-    const position = openPaperPositionForDecision(state, decision, timestamp);
-
-    await saveTradingState(state, stateResult.sha, stateResult.container);
-    void sendTelegramNotification(
-      buildPaperOpenNotification(
-        position
-      )
-    );
-    return sendJSON(res, 200, state);
+    return sendJSON(res, 200, await approvePaperDecision(decisionId, "SITE"));
   } catch (error) {
-    console.error("PAPER OPEN ERROR:", error.message);
+    console.error("PAPER APPROVAL ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
   }
+}
+
+async function handleTelegramWebhook(req, res) {
+  const receivedSecret = String(req.headers["x-telegram-bot-api-secret-token"] || "");
+  const expectedSecret = String(TELEGRAM_WEBHOOK_SECRET || "");
+  const isValidSecret = Boolean(expectedSecret) &&
+    receivedSecret.length === expectedSecret.length &&
+    crypto.timingSafeEqual(Buffer.from(receivedSecret), Buffer.from(expectedSecret));
+  if (!isValidSecret) {
+    return sendJSON(res, 401, {error: "Unauthorized"});
+  }
+  let update;
+  try {
+    update = JSON.parse((await readBody(req)) || "{}");
+  } catch {
+    return sendJSON(res, 400, {error: "Bad request"});
+  }
+  const callback = update?.callback_query;
+  if (!callback?.id || String(callback?.message?.chat?.id || "") !== String(TELEGRAM_CHAT_ID || "")) {
+    return sendJSON(res, 200, {ok: true});
+  }
+  const match = /^paper_approve:([A-Za-z0-9_-]{1,80})$/.exec(String(callback.data || ""));
+  if (!match) return sendJSON(res, 200, {ok: true});
+  try {
+    await approvePaperDecision(match[1], "TELEGRAM");
+    void answerTelegramCallback(callback.id, "Paper işlem açıldı.");
+  } catch (error) {
+    void answerTelegramCallback(callback.id, "Onay işlenemedi: işlem artık geçerli olmayabilir.");
+    console.error("TELEGRAM PAPER APPROVAL ERROR:", error.message);
+  }
+  return sendJSON(res, 200, {ok: true});
 }
 
 async function handlePaperClose(req, res) {
@@ -6014,6 +6171,15 @@ const server =
         return handleAuthLogout(req, res);
       }
 
+      // Telegram bu imzalı callback endpoint'ine tarayıcı oturumu olmadan
+      // ulaşır; doğrulama webhook secret ile burada yapılır.
+      if (
+        req.method === "POST" &&
+        pathname === "/api/telegram/webhook"
+      ) {
+        return handleTelegramWebhook(req, res);
+      }
+
       if (isProtectedPath(pathname)) {
         const session =
           authorizeRequest(req, res);
@@ -6086,9 +6252,12 @@ if (
 
 if (
   req.method === "POST" &&
-  pathname === "/api/trading/paper/open"
+  (
+    pathname === "/api/trading/paper/approve" ||
+    pathname === "/api/trading/paper/open"
+  )
 ) {
-  return handlePaperOpen(req, res);
+  return handlePaperApproval(req, res);
 }
 
 if (
@@ -6661,6 +6830,8 @@ server.listen(
     sendTelegramNotification(
       "BORSACI bağlantısı aktif. Paper işlem monitörü hazır."
     );
+
+    void configureTelegramWebhook();
 
   }
 );

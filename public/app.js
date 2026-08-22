@@ -4856,7 +4856,7 @@ function renderAiDecisionDetail(item) {
   const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
   const position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
   const fib=item.fibonacci||{};
-  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"FIBONACCI YOK"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>C: ${formatCurrency(fib.pointC?.price)} · Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK"}</span></div>${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${position.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING"?`<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`:""}`;
+  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"FIBONACCI YOK"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · B: ${formatCurrency(fib.pointB?.price)} · C: ${formatCurrency(fib.pointC?.price)}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)} · Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK"}</span></div>${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${position.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL"?`<button type="button" class="trading-button" data-paper-action="approve" data-decision-id="${item.id}">APPROVE PAPER POSITION</button>`:""}`;
 }
 
 
@@ -4864,7 +4864,9 @@ function renderAiDecisions(decisions) {
   if (!aiDecisionFeed) return;
   const records=uniqueDecisions(decisions); renderedDecisionRecords=records;
   if (!records.length) { aiDecisionFeed.innerHTML='<div class="trading-empty">Detaylı teknik aday bulunamadı.</div>';return; }
-  aiDecisionFeed.innerHTML=records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
+  const approvals=records.filter(item=>item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL");
+  const approvalBox=approvals.length?`<section style="max-width:720px;margin:16px auto 24px;padding:18px;border:1px solid #ffb000;background:rgba(255,176,0,.06);text-align:center"><strong style="color:#ffb000">PAPER TRADE APPROVAL</strong><div style="margin:10px 0;color:#bfffc8">İşlem açılmadan önce onayını bekliyor.</div>${approvals.map(item=>`<button type="button" class="trading-button" style="margin:5px" data-paper-action="approve" data-decision-id="${item.id}">APPROVE ${item.symbol}</button>`).join("")}</section>`:"";
+  aiDecisionFeed.innerHTML=approvalBox+records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span>${item.status==="PENDING_APPROVAL"?"ONAY BEKLİYOR":item.status}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
 }
 
 
@@ -4934,18 +4936,18 @@ function savePaperState(
 }
 
 
-async function openPaperPosition(
+async function approvePaperPosition(
   decision
 ) {
   if (!decision?.id) return;
   try {
-    const response = await fetch("/api/trading/paper/open", {
+    const response = await fetch("/api/trading/paper/approve", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({decisionId: decision.id}),
     });
     const state = await response.json();
-    if (!response.ok) throw new Error(state.error || "Paper pozisyon açılamadı.");
+    if (!response.ok) throw new Error(state.error || "Paper işlem onaylanamadı.");
 
     saveLocalTradingState(state);
     renderAiDecisions(state.decisions || []);
@@ -4956,7 +4958,7 @@ async function openPaperPosition(
     renderPerformance(state);
     renderAiDecisionDetail((state.decisions || []).find(item => item.id === decision.id) || decision);
   } catch (error) {
-    alert(`Paper pozisyon açılamadı: ${error.message}`);
+    alert(`Paper işlem onaylanamadı: ${error.message}`);
   }
 }
 
@@ -5260,8 +5262,8 @@ function bindDecisionBoard() {
 
         if (!decision) return;
 
-        if (action.dataset.paperAction === "open") {
-          openPaperPosition(decision);
+        if (action.dataset.paperAction === "approve") {
+          approvePaperPosition(decision);
         }
 
         return;
