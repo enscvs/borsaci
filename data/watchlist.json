@@ -588,11 +588,11 @@
     },
     "decisions": [
       {
-        "id": "1787383790022-ALARK",
+        "id": "1787390937941-ALARK",
         "rank": 1,
         "symbol": "ALARK",
-        "action": "BUY SETUP",
-        "status": "OPEN",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": 94,
         "entry": {
           "low": 106.4,
@@ -627,22 +627,31 @@
           "atr": 4.34,
           "volatility": 4.03
         },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T07:29:50.022Z",
-          "expiresAt": "2026-08-23T07:29:50.022Z",
-          "openedAt": "2026-08-22T07:29:50.452Z"
+        "aiReview": {
+          "available": false,
+          "provider": "UNAVAILABLE",
+          "score": null,
+          "verdict": "WATCH",
+          "summary": "AI değerlendirmesi alınamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          "chartComment": "",
+          "newsComment": "",
+          "technicalConfidence": 94
         },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T09:28:57.941Z",
+          "expiresAt": "2026-08-23T09:28:57.941Z"
+        },
+        "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
         "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
-        "timestamp": "2026-08-22T07:29:50.022Z"
+        "timestamp": "2026-08-22T09:28:57.941Z"
       },
       {
-        "id": "1787383790022-BINBN",
+        "id": "1787390937941-BINBN",
         "rank": 2,
         "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "OPEN",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": 94,
         "entry": {
           "low": 180.98,
@@ -677,22 +686,31 @@
           "atr": 7.06,
           "volatility": 3.86
         },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T07:29:50.022Z",
-          "expiresAt": "2026-08-23T07:29:50.022Z",
-          "openedAt": "2026-08-22T07:29:50.452Z"
+        "aiReview": {
+          "available": false,
+          "provider": "UNAVAILABLE",
+          "score": null,
+          "verdict": "WATCH",
+          "summary": "AI değerlendirmesi alınamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          "chartComment": "",
+          "newsComment": "",
+          "technicalConfidence": 94
         },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T09:28:57.941Z",
+          "expiresAt": "2026-08-23T09:28:57.941Z"
+        },
+        "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
         "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
-        "timestamp": "2026-08-22T07:29:50.022Z"
+        "timestamp": "2026-08-22T09:28:57.941Z"
       },
       {
-        "id": "1787383790022-GESAN",
+        "id": "1787390937941-GESAN",
         "rank": 3,
         "symbol": "GESAN",
-        "action": "BUY SETUP",
-        "status": "OPEN",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": 94,
         "entry": {
           "low": 85.78,
@@ -727,15 +745,24 @@
           "atr": 3.24,
           "volatility": 3.73
         },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T07:29:50.022Z",
-          "expiresAt": "2026-08-23T07:29:50.022Z",
-          "openedAt": "2026-08-22T07:29:50.452Z"
+        "aiReview": {
+          "available": false,
+          "provider": "UNAVAILABLE",
+          "score": null,
+          "verdict": "WATCH",
+          "summary": "AI değerlendirmesi alınamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
+          "chartComment": "",
+          "newsComment": "",
+          "technicalConfidence": 94
         },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T09:28:57.941Z",
+          "expiresAt": "2026-08-23T09:28:57.941Z"
+        },
+        "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
         "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
-        "timestamp": "2026-08-22T07:29:50.022Z"
+        "timestamp": "2026-08-22T09:28:57.941Z"
       }
     ],
     "history": [
@@ -2183,6 +2210,11 @@
       }
     ],
     "activity": [
+      {
+        "timestamp": "2026-08-22T09:28:58.335Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) retained or generated."
+      },
       {
         "timestamp": "2026-08-22T08:53:33.931Z",
         "type": "SCAN",
