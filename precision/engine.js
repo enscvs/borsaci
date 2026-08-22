@@ -207,4 +207,49 @@ function walkForward(samples, config = CONFIG) {
 function attachLlmExplanation(decision, explanation) {
   return { ...decision, llmExplanation: String(explanation || "").slice(0, 500) };
 }
-module.exports = { CONFIG, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, emaSeries, rsiSeries, atrSeries };
+
+function runBacktest(signals, config = CONFIG) {
+  const trades = [];
+  const openSymbols = new Set();
+  const ordered = [...(signals || [])].sort((a, b) => Number(a.signalIndex) - Number(b.signalIndex));
+  for (const signal of ordered) {
+    if (!signal?.history || openSymbols.has(signal.symbol)) continue;
+    const label = labelTrade(signal.history, signal.signalIndex, signal.plan, config);
+    if (!label) continue;
+    openSymbols.add(signal.symbol);
+    trades.push({ ...label, symbol: signal.symbol, sector: signal.sector || "UNKNOWN", regime: signal.regime || "UNKNOWN", signalIndex: signal.signalIndex });
+    openSymbols.delete(signal.symbol);
+  }
+  const summary = summarizeBacktest(trades);
+  const group = key => Object.fromEntries([...new Set(trades.map(x => x[key]))].map(value => [value, summarizeBacktest(trades.filter(x => x[key] === value))]));
+  return {
+    ...summary,
+    beforeCosts: { ...summary },
+    afterCosts: summary,
+    byRegime: group("regime"),
+    bySector: group("sector"),
+    coverage: { evaluatedSignals: ordered.length, executedSignals: trades.length },
+    assumptions: { nextSessionOpen: true, conservativeSameBarLoss: true, maxHoldingDays: config.strategy.maxHoldingDays, commissionBps: config.strategy.commissionBps, slippageBps: config.strategy.slippageBps },
+  };
+}
+function trainLogistic(samples, featureNames, iterations = 300, learningRate = 0.05) {
+  const rows = (samples || []).filter(x => featureNames.every(key => finite(x.features?.[key])) && (x.label === 0 || x.label === 1));
+  if (rows.length < 20) return null;
+  const weights = new Array(featureNames.length + 1).fill(0);
+  const sigmoid = z => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, z))));
+  for (let step = 0; step < iterations; step += 1) {
+    const gradient = new Array(weights.length).fill(0);
+    for (const row of rows) {
+      const x = [1, ...featureNames.map(key => Number(row.features[key]))];
+      const error = sigmoid(x.reduce((sum, value, i) => sum + value * weights[i], 0)) - row.label;
+      x.forEach((value, i) => { gradient[i] += error * value; });
+    }
+    weights.forEach((_, i) => { weights[i] -= learningRate * gradient[i] / rows.length; });
+  }
+  return { type: "LOGISTIC_REGRESSION", featureNames, sampleSize: rows.length, predict(features) { const x = [1, ...featureNames.map(key => Number(features[key] || 0))]; return sigmoid(x.reduce((sum, value, i) => sum + value * weights[i], 0)); } };
+}
+function brierScore(predictions) {
+  const rows = (predictions || []).filter(x => finite(x.probability) && (x.label === 0 || x.label === 1));
+  return rows.length ? mean(rows.map(x => (x.probability - x.label) ** 2)) : null;
+}
+\nmodule.exports = { CONFIG, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
