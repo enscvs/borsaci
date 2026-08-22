@@ -4633,9 +4633,10 @@ function formatPrice(
 ) {
 
   if (
-    !Number.isFinite(
-      Number(value)
-    )
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    !Number.isFinite(Number(value))
   ) {
     return "--";
   }
@@ -4651,9 +4652,10 @@ function formatPercent(
 ) {
 
   if (
-    !Number.isFinite(
-      Number(value)
-    )
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    !Number.isFinite(Number(value))
   ) {
     return "--";
   }
@@ -4811,9 +4813,10 @@ function formatCurrency(
 ) {
 
   if (
-    !Number.isFinite(
-      Number(value)
-    )
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    !Number.isFinite(Number(value))
   ) {
     return "--";
   }

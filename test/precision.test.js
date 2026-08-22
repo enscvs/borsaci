@@ -59,3 +59,11 @@ test("walk-forward is chronological and purged", () => {
   assert.equal(output.type, "CHRONOLOGICAL_WALK_FORWARD");
   assert.ok(output.purgeBars > 0 && output.embargoBars > 0);
 });
+
+test("Yahoo epoch timestamps keep the latest completed closing price valid while market is closed", () => {
+  const data = bars().map((bar, i) => ({ ...bar, time: Math.floor(new Date(bar.timestamp).getTime() / 1000), timestamp: undefined }));
+  const last = new Date(data.at(-1).time * 1000);
+  const validation = p.validateHistory(data, { now: last.getTime() + 2 * 24 * 60 * 60 * 1000 });
+  assert.equal(validation.ok, true);
+  assert.equal(p.featuresAt(data).price, data.at(-1).close);
+});
