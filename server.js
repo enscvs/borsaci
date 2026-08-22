@@ -3666,7 +3666,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   const reference = Number(plan?.entry?.reference || item.price);
   const quantity = reference > 0 ? Math.floor((capital * allocation / 100) / reference) : 0;
   const decision = precisionResult.decision === "FILTERS_PASSED" ? "FILTERS_PASSED" : precisionResult.decision || "NO_TRADE";
-  const pending = decision === "WATCH";
+  const pending = decision === "WATCH" || decision === "FILTERS_PASSED";
   const now = new Date().toISOString();
 
   return {
