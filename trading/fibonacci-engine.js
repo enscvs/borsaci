@@ -2,7 +2,7 @@
 
 const CONFIG = Object.freeze({
   pivot: { left: 3, right: 3, minImpulseAtr: 3, retracementMin: 0.236, retracementMax: 0.786 },
-  fibonacci: { entryTriggerRatio: 0.027, tp1Ratio: 0.618, tp2Ratio: 0.786, tp3Ratio: 1, stopLossPercentBelowC: 4, entryZoneAtr: 0.25 },
+  fibonacci: { entryTriggerRatio: 0.027, maxEntryDistanceAboveTrigger: 0.05, tp1Ratio: 0.618, tp2Ratio: 0.786, tp3Ratio: 1, stopLossPercentBelowC: 4 },
   scoring: {
     volumeLookback: 20, volumeStrongRatio: 1.2, volumeNeutralMin: 0.8,
     turnoverStrong: 500000000, turnoverMedium: 200000000, emaDistanceAtr: 1,
@@ -72,23 +72,26 @@ function findAbc(history) {
   } return best;
 }
 function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*.96,tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
-function fibonacciPlan(daily, hourly) {
+function entryDistanceAboveTrigger(lastClose, trigger) { return finite(lastClose)&&finite(trigger)&&Number(trigger)>0 ? (Number(lastClose)-Number(trigger))/Number(trigger) : null; }
+function fibonacciPlan(daily) {
   const abc=findAbc(daily);
-  const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,confirmationTimeframe:"4h",stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
+  const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,maxEntryDistanceAboveTrigger:CONFIG.fibonacci.maxEntryDistanceAboveTrigger,confirmationTimeframe:"1d",stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
   if(!abc)return base;
   let {A,B,C,range,retracement}=abc; let afterC=daily.slice(C.index+1);
   /* Teyit gelmeden yeni düşük dip varsa C dinamik olarak güncellenir. */
   const lowerIndex=afterC.reduce((best,bar,offset)=>bar.low<C.price&&(best===null||bar.low<daily[best].low)?C.index+1+offset:best,null);
   if(lowerIndex!==null){C={type:"LOW",index:lowerIndex,price:daily[lowerIndex].low,date:iso(daily[lowerIndex])};retracement=(B.price-C.price)/range;if(C.price<=A.price||retracement<CONFIG.pivot.retracementMin||retracement>CONFIG.pivot.retracementMax)return {...base,valid:false,status:"INVALID",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),invalidReason:"Yeni C noktası A–B düzeltme sınırlarını bozdu."};afterC=daily.slice(C.index+1);}
   const broken=afterC.some(x=>x.low<C.price); if(broken)return {...base,valid:false,status:"INVALID",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),invalidReason:"C noktası günlük yapıda aşağı kırıldı."};
-  const trigger=C.price+range*CONFIG.fibonacci.entryTriggerRatio, atr=features(daily).atr, four=aggregateFourHour(hourly);
-  const candlesAfterC=four.filter(x=>x.time>timeMs(daily[C.index])); const confirm=candlesAfterC.find(x=>x.close>trigger);
+  const trigger=C.price+range*CONFIG.fibonacci.entryTriggerRatio;
+  const candlesAfterC=daily.slice(C.index+1); const confirm=candlesAfterC.find(x=>x.close>trigger);
   const last=daily.at(-1), volumeStrong=finite(features(daily).volumeRatio)&&features(daily).volumeRatio>=1;
   const levels=fibonacciLevels(C.price,range);
-  const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(levels.entryTriggerPrice),entryZoneLow:round(trigger-atr*CONFIG.fibonacci.entryZoneAtr),entryZoneHigh:round(trigger+atr*CONFIG.fibonacci.entryZoneAtr),stopLoss:round(levels.stopLoss),tp1:round(levels.tp1),tp2:round(levels.tp2),tp3:round(levels.tp3),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
-  if(!hourly||!hourly.length)return {...fields,status:"WAITING_CONFIRMATION",invalidReason:"4 SAATLİK VERİ YOK – GİRİŞ TEYİT EDİLEMEDİ"};
+  const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(levels.entryTriggerPrice),entryZoneLow:round(trigger),entryZoneHigh:round(trigger*(1+CONFIG.fibonacci.maxEntryDistanceAboveTrigger)),stopLoss:round(levels.stopLoss),tp1:round(levels.tp1),tp2:round(levels.tp2),tp3:round(levels.tp3),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
   if(!confirm)return fields;
-  const entry=confirm.close, risk=entry-fields.stopLoss;
+  if(!(last.close>trigger))return {...fields,status:"WAITING_CONFIRMATION",invalidReason:"Günlük kapanış Fibonacci tetik seviyesinin üzerinde değil."};
+  const distance=entryDistanceAboveTrigger(last.close,trigger);
+  if(distance>CONFIG.fibonacci.maxEntryDistanceAboveTrigger)return {...fields,status:"ENTRY_TOO_FAR",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(last.close),invalidReason:"GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir."};
+  const entry=last.close, risk=entry-fields.stopLoss;
   const targetReached=last.high>=fields.tp1;
   if(targetReached)return {...fields,status:"TARGET_REACHED",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(entry),riskRewardTp1:round((fields.tp1-entry)/risk,2),riskRewardTp2:round((fields.tp2-entry)/risk,2),riskRewardTp3:round((fields.tp3-entry)/risk,2),invalidReason:"TP1'e ulaşmış eski yapıdan yeni giriş önerilmez."};
   return {...fields,status:"ACTIVE",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(entry),riskRewardTp1:round((fields.tp1-entry)/risk,2),riskRewardTp2:round((fields.tp2-entry)/risk,2),riskRewardTp3:round((fields.tp3-entry)/risk,2)};
@@ -112,4 +115,4 @@ function score(history, fib) {
   return {score:value,grade,features:f,reasons,risks};
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
-module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
+module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,fibonacciLevels,fibonacciPlan,entryDistanceAboveTrigger,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
