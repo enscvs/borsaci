@@ -3894,8 +3894,11 @@ function openEligiblePaperPositions(
   timestamp
 ) {
   const opened = [];
-  for (const decision of state.decisions || []) {
-    if (decision.action !== "BUY SETUP" || decision.status !== "PENDING") continue;
+  const eligible = (state.decisions || [])
+    .filter(decision => decision.action === "BUY SETUP" && decision.status === "PENDING")
+    .sort((a,b) => Number(b.indicators?.score || 0) - Number(a.indicators?.score || 0))
+    .slice(0, 3);
+  for (const decision of eligible) {
     try {
       opened.push(openPaperPositionForDecision(state, decision, timestamp));
     } catch (error) {
@@ -4423,9 +4426,8 @@ async function recordAiDecisions(
     ...retainedOpenDecisions,
   ];
 
-  // Tarama yalnızca karar üretir. Paper pozisyonu, sonuç ekranda
-  // görüldükten sonra kullanıcı tarafından OPEN PAPER POSITION ile açılır.
-  const opened = [];
+  // En yüksek teknik skorlu en fazla üç BUY SETUP paper pozisyonu açılır.
+  const opened = openEligiblePaperPositions(state, now);
 
   addTradingActivity(
     state,
@@ -4439,6 +4441,11 @@ async function recordAiDecisions(
     stateResult.sha,
     stateResult.container
   );
+
+  for (const position of opened) {
+    // Bildirim teslimi scanner HTTP yanıtını geciktiremez.
+    void sendTelegramNotification(buildPaperOpenNotification(position));
+  }
 
   return state;
 
@@ -5477,9 +5484,9 @@ async function evaluateTradingCandidatesWithAi(
           score: null,
           verdict: "WATCH",
           summary:
-            "AI anahtarı tanımlı olmadığı için yalnızca teknik analiz kullanıldı.",
-          chartComment: "",
+            "AI haber yorumu için anahtar tanımlı değil.",
           newsComment: "",
+          expertComment: "",
         },
       ])
     );
@@ -5489,36 +5496,19 @@ async function evaluateTradingCandidatesWithAi(
     await Promise.all(
       list.map(async item => ({
         symbol: item.symbol,
-        technical: {
-          score: item.score,
-          price: item.price,
-          ema20: item.ema20,
-          ema50: item.ema50,
-          ema200: item.ema200,
-          rsi: item.rsi,
-          macd: item.macd,
-          atr: item.atr,
-          volatility: item.volatility,
-          volume: item.volume,
-          averageVolume: item.averageVolume,
-          signals: item.signals,
-          fibonacci: item.fibonacci || null,
-        },
-        chart: item.chartContext,
         news: await fetchTradingNews(item.symbol),
       }))
     );
 
   const prompt = [
-    "BIST için teknik tarama adaylarını değerlendir.",
-    "Bu bir otomasyon güvenlik katmanıdır; yalnızca verilen veriyle çalış.",
-    "Fiyat hedefi, emir veya kesin sonuç üretme.",
-    "Her sembol için backend tarafından verilen teknik ve Fibonacci verisini kısa ve açıklayıcı biçimde yorumla. Fibonacci seviyesi hesaplama veya değiştirme.",
-    "Haber yoksa bunu nötr kabul et; uydurma haber veya KAP bilgisi üretme.",
+    "BIST tarama adayları için yalnızca doğrulanmış haber başlıklarını özetle.",
+    "Teknik analiz, fiyat, indikatör, hedef, emir, puan veya olasılık yorumu yapma.",
+    "Haber başlığında veya kaynakta olmayan KAP, bilanço, analist ya da uzman görüşü uydurma.",
+    "Uzman yorumu alanı, gerçek bir uzman alıntısı değildir: yalnızca verilen başlıkların ihtiyatlı AI yorumu olmalı. Başlık yoksa 'Doğrulanmış haber başlığı alınamadı.' yaz.",
     "Yalnızca aşağıdaki JSON nesnesini döndür:",
-    '{"reviews":[{"symbol":"ASELS","chartComment":"en fazla 90 karakter","newsComment":"en fazla 90 karakter","summary":"en fazla 120 karakter"}]}',
+    '{"reviews":[{"symbol":"ASELS","newsComment":"en fazla 120 karakter","expertComment":"en fazla 120 karakter","summary":"en fazla 120 karakter"}]}',
     "Tüm adayları eksiksiz döndür. Açıklamalar kısa olmalı ve yalnızca JSON döndürmelisin.",
-    "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme. Backend fibonacci.confirmationPassed false ise C’den dönüş teyidi bekleniyor de; 4 saatlik veri yoksa teyit uydurma.",
+    "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme.",
     "Adaylar:",
     JSON.stringify(enriched),
   ].join("\n\n");
@@ -5637,11 +5627,11 @@ async function evaluateTradingCandidatesWithAi(
               score: null,
               verdict: "WATCH",
               summary:
-                `AI değerlendirmesi alınamadı; otomatik işlem kapalı tutuldu. ${providerErrors.join(" | ")}`.slice(0, 650),
+                `AI haber yorumu alınamadı. ${providerErrors.join(" | ")}`.slice(0, 650),
               error:
                 providerErrors.join(" | ").slice(0, 650),
-              chartComment: "",
               newsComment: "",
+              expertComment: "",
             },
           ])
         );
@@ -5685,15 +5675,15 @@ async function evaluateTradingCandidatesWithAi(
             return [
               symbol,
               {
-                available: Boolean(review?.summary || review?.chartComment || review?.newsComment),
+              available: Boolean(review?.summary || review?.newsComment || review?.expertComment),
                 provider,
                 score: null,
                 verdict: "INFO",
-                chartComment:
-                  String(review?.chartComment || "")
-                    .slice(0, 120),
                 newsComment:
                   String(review?.newsComment || "")
+                    .slice(0, 120),
+                expertComment:
+                  String(review?.expertComment || "")
                     .slice(0, 120),
                 summary:
                   String(review?.summary || "")
@@ -5714,8 +5704,8 @@ async function evaluateTradingCandidatesWithAi(
           verdict: "WATCH",
           summary:
             "AI bu sembol için yapılandırılmış değerlendirme döndürmedi.",
-          chartComment: "",
           newsComment: "",
+          expertComment: "",
         },
       ])
     );
@@ -5734,9 +5724,9 @@ async function evaluateTradingCandidatesWithAi(
           score: null,
           verdict: "WATCH",
           summary:
-            "AI yanıtı doğrulanamadı; otomatik işlem güvenlik nedeniyle kapalı tutuldu.",
-          chartComment: "",
+            "AI haber yorumu doğrulanamadı.",
           newsComment: "",
+          expertComment: "",
         },
       ])
     );
@@ -5876,12 +5866,12 @@ async function handleTradingScanner(req,res) {
       const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
       return {...item,...analysis,plan,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
     });
-    const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}]));
+    const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}]));
     const rawAi=await Promise.race([
       evaluateTradingCandidatesWithAi(enriched.slice(0,5)),
-      new Promise(resolve=>setTimeout(()=>resolve(noAi),2500))
+      new Promise(resolve=>setTimeout(()=>resolve(noAi),7000))
     ]).catch(()=>noAi);
-    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",chartComment:"",newsComment:""}}));
+    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
     const state=await recordAiDecisions(decisions);
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:state.paper,activity:state.activity,history:state.history,risk:state.risk});
