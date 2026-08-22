@@ -252,4 +252,5 @@ function brierScore(predictions) {
   const rows = (predictions || []).filter(x => finite(x.probability) && (x.label === 0 || x.label === 1));
   return rows.length ? mean(rows.map(x => (x.probability - x.label) ** 2)) : null;
 }
-\nmodule.exports = { CONFIG, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
+
+module.exports = { CONFIG, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
