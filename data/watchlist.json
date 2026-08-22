@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 38352.884489278804,
+      "cash": 53840.0847627926,
       "equity": 53840.0847627926,
-      "pnl": 3840.0928633022254,
-      "pnlPercent": 7.680185726604451,
+      "pnl": 3840.093136816018,
+      "pnlPercent": 7.680186273632036,
       "positions": [
         {
           "id": "paper-2026-08-22T23:42:15.261Z-BINBN",
@@ -39,11 +39,13 @@
           "stop": 19.66,
           "target1": 25.28,
           "target2": 26.58,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T23:42:15.261Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.0002735137929263942
+          "pnl": 0.0002735137929263942,
+          "closedAt": "2026-08-22T23:57:18.945Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T23:39:46.847Z-BINBN",
@@ -1408,13 +1410,15 @@
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
         "invalidation": "C seviyesinin %4 altındaki stop (355.44) planı geçersiz kılar.",
         "timestamp": "2026-08-22T23:42:14.738Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787442134738-DOHOL",
         "rank": 4,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 20.69,
@@ -1510,17 +1514,18 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T23:42:14.738Z",
           "expiresAt": "2026-08-23T23:42:14.739Z",
-          "openedAt": "2026-08-22T23:42:15.261Z"
+          "openedAt": "2026-08-22T23:42:15.261Z",
+          "closedAt": "2026-08-22T23:57:18.945Z"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-22T23:42:14.738Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T23:42:14.738Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.0002735137929263942
+      },
       {
         "id": "1787442134739-BINBN",
         "rank": 5,
@@ -5844,6 +5849,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T23:57:18.945Z",
+        "type": "CLOSED",
+        "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T23:57:15.582Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -6337,11 +6347,6 @@
         "timestamp": "2026-08-21T23:51:47.075Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH AKTİF: 3 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
-      },
-      {
-        "timestamp": "2026-08-21T23:51:47.075Z",
-        "type": "CLOSED",
-        "message": "ALARK paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-200.20."
       }
     ]
   }
