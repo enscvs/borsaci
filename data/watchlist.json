@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 32999.402194094655,
+      "cash": 48481.002444338796,
       "equity": 48481.002444338796,
-      "pnl": -1518.9894318819026,
-      "pnlPercent": -3.037978863763805,
+      "pnl": -1518.989181637763,
+      "pnlPercent": -3.0379783632755264,
       "positions": [
         {
           "id": "paper-2026-08-22T21:40:07.521Z-TSPOR",
@@ -39,11 +39,13 @@
           "stop": 44.41,
           "target1": 52.78,
           "target2": 55.58,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T21:40:07.521Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.00025024413969276793
+          "pnl": 0.00025024413969276793,
+          "closedAt": "2026-08-22T22:19:41.768Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T21:40:07.521Z-ALARK",
@@ -837,13 +839,14 @@
       "active": false,
       "activatedAt": null
     },
-    "decisions": [
+    "decisions": [],
+    "history": [
       {
         "id": "1787434807135-TRCAS",
         "rank": 2,
         "symbol": "TRCAS",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": 92,
         "entry": {
           "low": 46.64,
@@ -889,17 +892,18 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T21:40:07.135Z",
           "expiresAt": "2026-08-23T21:40:07.135Z",
-          "openedAt": "2026-08-22T21:40:07.521Z"
+          "openedAt": "2026-08-22T21:40:07.521Z",
+          "closedAt": "2026-08-22T22:19:41.768Z"
         },
         "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Robust technical setup with price above EMAs and neutral news; positive outlook.",
         "invalidation": "Stop seviyesi 44.41 altındaki kapanış.",
-        "timestamp": "2026-08-22T21:40:07.135Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T21:40:07.135Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.00025024413969276793
+      },
       {
         "id": "1787434807134-ALARK",
         "rank": 1,
@@ -3339,6 +3343,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:19:41.768Z",
+        "type": "CLOSED",
+        "message": "TRCAS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T22:19:36.424Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -3832,11 +3841,6 @@
         "timestamp": "2026-08-21T23:23:41.449Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH AKTİF: yeni paper işlemler durduruldu. Açık pozisyonların TP/SL takibi devam ediyor."
-      },
-      {
-        "timestamp": "2026-08-21T23:04:40.638Z",
-        "type": "RISK",
-        "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
       }
     ]
   }
