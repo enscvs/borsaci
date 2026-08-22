@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 37180.0844892788,
+      "cash": 53840.0844892788,
       "equity": 53840.0844892788,
-      "pnl": 2370.0928633022254,
-      "pnlPercent": 4.740185726604451,
+      "pnl": 3840.0928633022254,
+      "pnlPercent": 7.680185726604451,
       "positions": [
         {
           "id": "paper-2026-08-22T23:39:46.847Z-BINBN",
@@ -96,11 +96,13 @@
           "stop": 355.44,
           "target1": 468.82,
           "target2": 495.62,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T23:30:15.714Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 1470
+          "pnl": 1470,
+          "closedAt": "2026-08-22T23:41:18.375Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T22:52:28.500Z-BIMAS",
@@ -1370,13 +1372,15 @@
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
         "invalidation": "C seviyesinin %4 altındaki stop (355.44) planı geçersiz kılar.",
         "timestamp": "2026-08-22T23:39:46.014Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787441415063-BIMAS",
         "rank": 3,
         "symbol": "BIMAS",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 371.4,
@@ -1473,17 +1477,18 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T23:30:15.063Z",
           "expiresAt": "2026-08-23T23:30:15.063Z",
-          "openedAt": "2026-08-22T23:30:15.714Z"
+          "openedAt": "2026-08-22T23:30:15.714Z",
+          "closedAt": "2026-08-22T23:41:18.375Z"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış 4 saatlik kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (355.44) planı geçersiz kılar.",
-        "timestamp": "2026-08-22T23:30:15.063Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T23:30:15.063Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 1470
+      },
       {
         "id": "1787441986014-DOHOL",
         "rank": 4,
@@ -5579,6 +5584,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T23:41:18.375Z",
+        "type": "CLOSED",
+        "message": "BIMAS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺1470.00."
+      },
+      {
         "timestamp": "2026-08-22T23:41:10.159Z",
         "type": "CLOSED",
         "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -6072,11 +6082,6 @@
         "timestamp": "2026-08-21T23:51:00.418Z",
         "type": "PAPER_OPEN",
         "message": "GESAN paper pozisyonu açıldı: 178 lot · ₺15441.50."
-      },
-      {
-        "timestamp": "2026-08-21T23:51:00.418Z",
-        "type": "PAPER_OPEN",
-        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15380.40."
       }
     ]
   }
