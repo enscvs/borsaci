@@ -664,11 +664,190 @@
     },
     "decisions": [
       {
+        "id": "1787398988343-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": 92,
+        "entry": {
+          "low": 105,
+          "high": 107.17,
+          "reference": 106.3
+        },
+        "stop": 99.79,
+        "target1": 119.32,
+        "target2": 125.83,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 6.51,
+          "quantity": 145,
+          "positionValue": 15413.5,
+          "actualRisk": 943.95,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 55.36,
+          "atr": 4.34,
+          "volatility": 4.03
+        },
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": 88,
+          "verdict": "APPROVE",
+          "summary": "Strong technicals with price above all EMAs, bullish RSI/MACD, neutral news; score 88, approve.",
+          "chartComment": "Price rose to 113, EMA alignment bullish, volatility moderate.",
+          "newsComment": "News unrelated, neutral impact.",
+          "technicalConfidence": 94
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T11:43:08.343Z",
+          "expiresAt": "2026-08-23T11:43:08.343Z"
+        },
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Strong technicals with price above all EMAs, bullish RSI/MACD, neutral news; score 88, approve.",
+        "invalidation": "Stop seviyesi 99.79 altındaki kapanış.",
+        "timestamp": "2026-08-22T11:43:08.343Z"
+      },
+      {
+        "id": "1787398988343-GESAN",
+        "rank": 3,
+        "symbol": "GESAN",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": 92,
+        "entry": {
+          "low": 85.08,
+          "high": 86.7,
+          "reference": 86.05
+        },
+        "stop": 81.19,
+        "target1": 95.77,
+        "target2": 100.63,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 4.86,
+          "quantity": 180,
+          "positionValue": 15489,
+          "actualRisk": 874.8,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 61.52,
+          "atr": 3.24,
+          "volatility": 3.73
+        },
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": 88,
+          "verdict": "APPROVE",
+          "summary": "Technicals robust, price well above EMAs, strong volume, neutral news; score 88, approve.",
+          "chartComment": "Price surged to 86.75, EMAs bullish, volatility low.",
+          "newsComment": "News unrelated, neutral impact.",
+          "technicalConfidence": 94
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T11:43:08.343Z",
+          "expiresAt": "2026-08-23T11:43:08.343Z"
+        },
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (88/100): Technicals robust, price well above EMAs, strong volume, neutral news; score 88, approve.",
+        "invalidation": "Stop seviyesi 81.19 altındaki kapanış.",
+        "timestamp": "2026-08-22T11:43:08.343Z"
+      },
+      {
+        "id": "1787398988343-SDTTR",
+        "rank": 4,
+        "symbol": "SDTTR",
+        "action": "BUY SETUP",
+        "status": "PENDING",
+        "confidence": 92,
+        "entry": {
+          "low": 258.96,
+          "high": 265.69,
+          "reference": 263
+        },
+        "stop": 242.81,
+        "target1": 303.38,
+        "target2": 323.57,
+        "riskReward": "1:2.0",
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "stopDistance": 20.19,
+          "quantity": 58,
+          "positionValue": 15254,
+          "actualRisk": 1171.02,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "filters": {
+          "trend": true,
+          "rsi": true,
+          "volume": true,
+          "momentum": true,
+          "volatility": true
+        },
+        "indicators": {
+          "score": 90,
+          "rsi": 56.78,
+          "atr": 13.46,
+          "volatility": 5.21
+        },
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": 90,
+          "verdict": "APPROVE",
+          "summary": "Very strong technicals with price above EMAs, high MACD, solid return, neutral news; score 90, approve.",
+          "chartComment": "Price climbed to 258.5, EMAs bullish, volatility moderate.",
+          "newsComment": "News unrelated, neutral impact.",
+          "technicalConfidence": 94
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-22T11:43:08.343Z",
+          "expiresAt": "2026-08-23T11:43:08.343Z"
+        },
+        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Very strong technicals with price above EMAs, high MACD, solid return, neutral news; score 90, approve.",
+        "invalidation": "Stop seviyesi 242.81 altındaki kapanış.",
+        "timestamp": "2026-08-22T11:43:08.343Z"
+      }
+    ],
+    "history": [
+      {
         "id": "1787398426482-ALARK",
         "rank": 1,
         "symbol": "ALARK",
         "action": "WATCH",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": 94,
         "entry": {
           "low": 105,
@@ -714,20 +893,22 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-22T11:33:46.482Z",
-          "expiresAt": "2026-08-23T11:33:46.482Z"
+          "expiresAt": "2026-08-23T11:33:46.482Z",
+          "closedAt": "2026-08-22T11:43:09.250Z"
         },
         "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
         "invalidation": "Stop seviyesi 99.79 altındaki kapanış.",
-        "timestamp": "2026-08-22T11:33:46.482Z"
+        "timestamp": "2026-08-22T11:33:46.482Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
       },
       {
         "id": "1787398426482-BINBN",
         "rank": 2,
         "symbol": "BINBN",
         "action": "WATCH",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": 94,
         "entry": {
           "low": 182.38,
@@ -773,20 +954,22 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-22T11:33:46.482Z",
-          "expiresAt": "2026-08-23T11:33:46.482Z"
+          "expiresAt": "2026-08-23T11:33:46.482Z",
+          "closedAt": "2026-08-22T11:43:09.250Z"
         },
         "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
         "invalidation": "Stop seviyesi 173.9 altındaki kapanış.",
-        "timestamp": "2026-08-22T11:33:46.482Z"
+        "timestamp": "2026-08-22T11:33:46.482Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
       },
       {
         "id": "1787398426482-GESAN",
         "rank": 3,
         "symbol": "GESAN",
         "action": "WATCH",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": 94,
         "entry": {
           "low": 85.08,
@@ -832,16 +1015,16 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-22T11:33:46.482Z",
-          "expiresAt": "2026-08-23T11:33:46.482Z"
+          "expiresAt": "2026-08-23T11:33:46.482Z",
+          "closedAt": "2026-08-22T11:43:09.250Z"
         },
         "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
         "invalidation": "Stop seviyesi 81.19 altındaki kapanış.",
-        "timestamp": "2026-08-22T11:33:46.482Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T11:33:46.482Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
+      },
       {
         "id": "1787392436793-GESAN",
         "rank": 3,
@@ -2533,6 +2716,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T11:43:09.250Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-22T11:33:46.968Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3026,11 +3214,6 @@
         "timestamp": "2026-08-21T22:16:07.232Z",
         "type": "CLOSED",
         "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-21T22:15:53.468Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
       }
     ]
   }
