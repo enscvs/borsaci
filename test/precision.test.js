@@ -65,3 +65,13 @@ test("Yahoo epoch timestamps keep the latest completed closing price valid while
   assert.equal(validation.ok, true);
   assert.equal(p.featuresAt(data).price, data.at(-1).close);
 });
+
+test("volume confirmation uses the latest three sessions", () => {
+  const data = bars();
+  data[data.length - 3].volume = 100;
+  data[data.length - 2].volume = 200;
+  data[data.length - 1].volume = 300;
+  const features = p.featuresAt(data);
+  assert.equal(features.averageVolume20, 200);
+  assert.equal(features.volumeRatio, 1.5);
+});
