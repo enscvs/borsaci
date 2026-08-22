@@ -59,6 +59,23 @@ const TELEGRAM_BOT_TOKEN =
 const TELEGRAM_CHAT_ID =
   process.env.TELEGRAM_CHAT_ID;
 
+// Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
+// kalıcı işlem/veri durumunun kaynağı değildir.
+const scannerJobs = new Map();
+
+function updateScannerJob(jobId, progress, message, status = "RUNNING") {
+  if (!jobId) return;
+  scannerJobs.set(jobId, {
+    progress: Math.max(0, Math.min(100, Math.round(Number(progress) || 0))),
+    message: String(message || "Hazırlanıyor"),
+    status,
+    updatedAt: new Date().toISOString(),
+  });
+  for (const [id, job] of scannerJobs) {
+    if (Date.now() - new Date(job.updatedAt).getTime() > 10 * 60 * 1000) scannerJobs.delete(id);
+  }
+}
+
 async function sendTelegramNotification(
   message
 ) {
@@ -3659,28 +3676,30 @@ function roundTradingValue(
 
 function buildAiDecision(item, rank, riskSettings = {}) {
   if (!item?.validation?.ok) return null;
-  // Fibonacci aşaması geçici olarak kapalıdır. Paper planı yalnızca
-  // günlük teknik veriden üretilen destek/direnç + ATR seviyelerini kullanır.
-  const plan = item.plan;
+  const fib = item.fibonacci || {};
+  // Paper işlem planı yalnızca geçerli günlük A-B-C yapısı ve %2,70
+  // üzeri tamamlanmış 4 saatlik teyit ile oluşturulur.
+  const plan = fib.valid ? fib : null;
   if (!plan || !Number.isFinite(Number(plan.entryPrice)) || !Number.isFinite(Number(plan.stopLoss))) return null;
   const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.min(31,Math.max(1,Number(riskSettings.maxPositionPercent)||31));
   const entry=Number(plan.entryPrice), stop=Number(plan.stopLoss), quantity=Math.floor(capital*allocation/100/entry);
-  const action=item.score>=70?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
+  const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed);
+  const action=active&&item.score>=70?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
   const status=action==="NO TRADE"?"REJECTED":"PENDING";
   const now=new Date().toISOString();
   return {
     id:`${Date.now()}-${item.symbol}`,rank,symbol:item.symbol,action,status,confidence:null,
-    entry:{low:roundTradingValue(entry),high:roundTradingValue(entry),reference:roundTradingValue(entry)},
+    entry:{low:roundTradingValue(fib.entryZoneLow),high:roundTradingValue(fib.entryZoneHigh),reference:roundTradingValue(entry)},
     stop:roundTradingValue(stop),target1:roundTradingValue(plan.tp1),target2:roundTradingValue(plan.tp2),target3:roundTradingValue(plan.tp3),
     riskReward:{tp1:plan.riskRewardTp1??null,tp2:plan.riskRewardTp2??null,tp3:plan.riskRewardTp3??null},
     riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.min(3,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.min(3,Math.max(1,Number(riskSettings.maxPositions)||3))},
     indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
     filters:{trend:item.scoreBreakdown?.trend>0,momentum:item.scoreBreakdown?.momentum>0,volume:item.scoreBreakdown?.volume>0,rsi:item.features.rsi>=45&&item.features.rsi<=70},
-    planMethod:plan.method,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
+    planMethod:"FIBONACCI_A_B_C_4H",fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
     aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
     lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
-    reason:plan.message||"Teknik yapı izleniyor.",
-    invalidation:"Planlanan stop seviyesinin altı geçersizlik oluşturur.",
+    reason:active?"A-B-C yapısı %2,70 üzerinde tamamlanmış 4 saatlik kapanışla teyit edildi.":(fib.invalidReason||"C'den dönüş için 4 saatlik teyit bekleniyor."),
+    invalidation:`C seviyesinin %4 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`,
     timestamp:now,
   };
 }
@@ -5825,9 +5844,12 @@ SCANNER HANDLER
 */
 
 async function handleTradingScanner(req,res) {
+  let jobId = "";
   try {
     const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);
     const riskSettings={capital:url.searchParams.get("capital"),maxPositionPercent:url.searchParams.get("maxPositionPercent"),maxPositions:url.searchParams.get("maxPositions")};
+    jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
+    updateScannerJob(jobId,2,"Teknik tarama başlatıldı");
     /*
      * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
      * 4s teyit için daha küçük bir süre bütçesi kullanılır.
@@ -5849,6 +5871,7 @@ async function handleTradingScanner(req,res) {
       const batch=BIST100_SYMBOLS.slice(i,i+batchSize);
       const rows=await within(Promise.all(batch.map(scanSymbol)),4000,[]);
       scanned+=batch.length;results.push(...rows);
+      updateScannerJob(jobId,5+Math.round(50*scanned/BIST100_SYMBOLS.length),`${scanned}/${BIST100_SYMBOLS.length} hisse için günlük veri kontrol edildi`);
     }
     let xu100={status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."};
     const xu100Result=await xu100Promise;
@@ -5858,14 +5881,21 @@ async function handleTradingScanner(req,res) {
     // giriş/stop/hedef planını doğrular.
     const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
     const technicalTopFive=valid.slice(0,5);
-    /* Fibonacci ve 4 saatlik veri çağrıları geçici olarak devre dışı.
-       Bu sürüm yalnızca günlük teknik puanlamayla ilk beşi üretir. */
+    updateScannerJob(jobId,60,`Teknik puanla ilk ${technicalTopFive.length} aday seçildi`);
+    updateScannerJob(jobId,65,"Seçilen 5 aday için 4 saatlik Fibonacci teyidi alınıyor");
+    const hourlyRows=await within(Promise.all(technicalTopFive.map(async item=>{
+      try { return [item.symbol,(await fetchYahooChart(item.symbol,"3mo","1h")).history]; }
+      catch(error) { console.warn(`SCANNER 4H ${item.symbol}:`,error.message); return [item.symbol,null]; }
+    })),7500,[]);
+    const hourlyBySymbol=new Map(hourlyRows);
+    updateScannerJob(jobId,82,"A-B-C yapıları ve 4 saatlik kapanışlar doğrulanıyor");
     const enriched=technicalTopFive.map(item=>{
-      const plan=fibonacciEngine.fallbackPlan(item.history,item.features);
-      const analysis=fibonacciEngine.score(item.history,{...plan,valid:false,status:"DISABLED",volumeConfirmation:"WEAK"});
+      const fib=fibonacciEngine.fibonacciPlan(item.history,hourlyBySymbol.get(item.symbol)||null);
+      const analysis=fibonacciEngine.score(item.history,fib);
       const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
-      return {...item,...analysis,plan,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
+      return {...item,...analysis,fibonacci:fib,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
     });
+    updateScannerJob(jobId,88,"Haber başlıkları için AI özeti hazırlanıyor");
     const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}]));
     const rawAi=await Promise.race([
       evaluateTradingCandidatesWithAi(enriched.slice(0,5)),
@@ -5873,9 +5903,18 @@ async function handleTradingScanner(req,res) {
     ]).catch(()=>noAi);
     const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
+    updateScannerJob(jobId,96,"Uygun Fibonacci kurulumları kaydediliyor");
     const state=await recordAiDecisions(decisions);
+    updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:state.paper,activity:state.activity,history:state.history,risk:state.risk});
-  } catch(error) { console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
+  } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
+}
+
+function handleTradingScannerStatus(req,res) {
+  const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);
+  const jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
+  const job=scannerJobs.get(jobId);
+  return sendJSON(res,200,job||{progress:0,message:"Tarama durumu bekleniyor",status:"PENDING"});
 }
 
 
@@ -5996,6 +6035,13 @@ const server =
 AI TRADING SCANNER ROUTE
 ========================================================
 */
+
+if (
+  req.method === "GET" &&
+  pathname === "/api/trading/scanner/status"
+) {
+  return handleTradingScannerStatus(req, res);
+}
 
 if (
   req.method === "GET" &&

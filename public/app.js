@@ -4622,6 +4622,33 @@ const lastScanTime =
 let scannerRunning = false;
 let scannerAbortController = null;
 let scannerRequestId = 0;
+let scannerProgressTimer = null;
+
+function renderScannerProgress(progress, message, status = "RUNNING") {
+  if (!scannerResults) return;
+  const percent=Math.max(0,Math.min(100,Number(progress)||0));
+  scannerResults.innerHTML=`<div class="trading-empty scanner-progress"><strong>${status === "ERROR" ? "SCANNER ERROR" : status === "COMPLETE" ? "SCANNER COMPLETE" : "SCANNER WORKING"}</strong><br><small>${escapeHtml(String(message||"Hazırlanıyor"))}</small><div style="height:8px;border:1px solid #2f6;background:#071008;margin:12px auto;max-width:480px"><div style="height:100%;width:${percent}%;background:#34ff75;transition:width .3s ease"></div></div><small>${percent}%</small></div>`;
+}
+
+function stopScannerProgress() {
+  if (scannerProgressTimer) clearInterval(scannerProgressTimer);
+  scannerProgressTimer = null;
+}
+
+function startScannerProgress(jobId, requestId) {
+  stopScannerProgress();
+  const poll=async()=>{
+    try {
+      const response=await fetch(`/api/trading/scanner/status?jobId=${encodeURIComponent(jobId)}`,{cache:"no-store"});
+      const job=await response.json();
+      if (requestId !== scannerRequestId) return stopScannerProgress();
+      renderScannerProgress(job.progress,job.message,job.status);
+      if (job.status === "COMPLETE" || job.status === "ERROR") stopScannerProgress();
+    } catch { /* Ana scanner isteği sonucu hatayı gösterecek. */ }
+  };
+  void poll();
+  scannerProgressTimer=setInterval(poll,700);
+}
 
 
 /*
@@ -4681,10 +4708,11 @@ function renderScannerResults(results) {
   if (!scannerResults) return;
   if (!Array.isArray(results) || !results.length) { scannerResults.innerHTML='<div class="trading-empty">VERİ YETERSİZ veya tarama sonucu yok.</div>'; return; }
   scannerResults.innerHTML=results.map((item,index)=>{
+    const fib=item.fibonacci||{};
     return `<div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
       <div class="scanner-head"><strong>#${index+1} · ${item.symbol}</strong><strong>₺${formatPrice(item.price)}</strong><span class="scanner-score">TEKNİK ${item.score??"--"}/100</span><span>${item.grade||item.decision}</span></div>
       <div class="scanner-metrics">RSI ${formatPrice(item.rsi)} · EMA20 ₺${formatPrice(item.ema20)} · EMA50 ₺${formatPrice(item.ema50)} · EMA200 ₺${formatPrice(item.ema200)} · MACD ${formatPrice(item.macd)} · ATR ₺${formatPrice(item.atr)}</div>
-      <div class="scanner-metrics">Hacim oranı ${formatPrice(item.volumeRatio)} · Plan ${item.plan?.method||"DESTEK / DİRENÇ + ATR"}</div>
+      <div class="scanner-metrics">Hacim oranı ${formatPrice(item.volumeRatio)} · Fibonacci ${fib.status||"YAPI YOK"} · 4s teyit ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"}</div>
       <small>${Array.isArray(item.reasons)&&item.reasons.length?item.reasons.join(" · "):item.dataStatus||"VERİ YETERSİZ"}</small>
     </div>`;
   }).join("");
@@ -4827,7 +4855,8 @@ let renderedDecisionRecords = [];
 function renderAiDecisionDetail(item) {
   const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
   const position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
-  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${item.riskReward?.tp3??"--"}</span><span>Plan: ${item.planMethod||"DESTEK / DİRENÇ + ATR"}</span></div>${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${position.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING"?`<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`:""}`;
+  const fib=item.fibonacci||{};
+  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"FIBONACCI YOK"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>C: ${formatCurrency(fib.pointC?.price)} · Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${item.riskReward?.tp3??"--"}</span><span>4s teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK"}</span></div>${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${position.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING"?`<button type="button" class="trading-button" data-paper-action="open" data-decision-id="${item.id}">OPEN PAPER POSITION</button>`:""}`;
 }
 
 
@@ -6204,6 +6233,7 @@ async function runTradingScanner() {
   scannerRunning = true;
   const requestId = ++scannerRequestId;
   scannerAbortController = new AbortController();
+  const jobId = window.crypto?.randomUUID?.() || `scan-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 
   if (scannerStatus) {
@@ -6227,19 +6257,8 @@ async function runTradingScanner() {
   }
 
 
-  if (scannerResults) {
-
-    scannerResults.innerHTML = `
-      <div class="trading-empty">
-        BIST100 taranıyor...
-        <br>
-        <small>
-          Teknik veriler hesaplanıyor.
-        </small>
-      </div>
-    `;
-
-  }
+  renderScannerProgress(1,"Teknik tarama başlatılıyor");
+  startScannerProgress(jobId, requestId);
 
 
   try {
@@ -6256,6 +6275,7 @@ async function runTradingScanner() {
             String(risk.maxPositionPercent),
           maxPositions:
             String(risk.maxPositions),
+          jobId,
         }
       );
 
@@ -6272,6 +6292,8 @@ async function runTradingScanner() {
 
     const data =
       await response.json();
+
+    stopScannerProgress();
 
     // STOP'a basılmış ya da yeni bir tarama başlatılmışsa eski yanıt
     // ekrandaki yeni durumu geri yazamaz.
@@ -6401,6 +6423,8 @@ async function runTradingScanner() {
 
   } catch (error) {
 
+    stopScannerProgress();
+
     if (
       error?.name === "AbortError" ||
       requestId !== scannerRequestId
@@ -6441,6 +6465,8 @@ async function runTradingScanner() {
 
     if (requestId !== scannerRequestId) return;
 
+    stopScannerProgress();
+
     scannerRunning =
       false;
 
@@ -6475,6 +6501,7 @@ function stopTradingScanner() {
   scannerRequestId += 1;
   scannerAbortController?.abort();
   scannerAbortController = null;
+  stopScannerProgress();
   scannerRunning = false;
 
   if (scannerStatus) {
