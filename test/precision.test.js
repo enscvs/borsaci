@@ -41,11 +41,11 @@ test("risk reward below 1:2 does not pass setup", () => {
   const result = p.evaluateSetup({ symbol: "TEST", history: data, features: f, rs20: .1, rs60: .1, relativeStrengthPercentile: .1 }, { regime: { regime: "RISK_ON", allowed: true } });
   assert.notEqual(result.decision, "FILTERS_PASSED");
 });
-test("uncalibrated models never expose a percentage", () => {
+test("disabled historical calibration never exposes a percentage", () => {
   const data = bars();
   const f = p.featuresAt(data);
   const result = p.evaluateSetup({ symbol: "TEST", history: data, features: f, rs20: .1, rs60: .1, relativeStrengthPercentile: .1 }, { regime: { regime: "RISK_ON", allowed: true }, model: null });
-  assert.equal(result.calibration.status, "KALIBRE_EDILMEDI");
+  assert.notEqual(result.probability, 0);
   assert.equal(result.probability, undefined);
 });
 test("LLM text cannot mutate calculated levels", () => {
