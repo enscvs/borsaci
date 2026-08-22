@@ -4,7 +4,7 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 22854.884489278804,
+      "cash": 38352.884489278804,
       "equity": 53840.0847627926,
       "pnl": 3840.0928633022254,
       "pnlPercent": 7.680185726604451,
@@ -20,11 +20,13 @@
           "stop": 165.12,
           "target1": 277.4,
           "target2": 306.05,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T23:42:15.261Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0
+          "pnl": 0,
+          "closedAt": "2026-08-22T23:57:15.582Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T23:42:15.261Z-DOHOL",
@@ -1516,13 +1518,15 @@
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (19.66) planı geçersiz kılar.",
         "timestamp": "2026-08-22T23:42:14.738Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787442134739-BINBN",
         "rank": 5,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 176.6,
@@ -1619,17 +1623,18 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T23:42:14.739Z",
           "expiresAt": "2026-08-23T23:42:14.739Z",
-          "openedAt": "2026-08-22T23:42:15.261Z"
+          "openedAt": "2026-08-22T23:42:15.261Z",
+          "closedAt": "2026-08-22T23:57:15.582Z"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (165.12) planı geçersiz kılar.",
-        "timestamp": "2026-08-22T23:42:14.739Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T23:42:14.739Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0
+      },
       {
         "id": "1787441415063-BIMAS",
         "rank": 3,
@@ -5839,6 +5844,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T23:57:15.582Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T23:42:15.261Z",
         "type": "SCAN",
         "message": "5 active AI decision(s) refreshed or generated."
@@ -6332,11 +6342,6 @@
         "timestamp": "2026-08-21T23:51:47.075Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺-200.20."
-      },
-      {
-        "timestamp": "2026-08-21T23:51:47.075Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺117.60."
       }
     ]
   }
