@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 33067.500549316406,
+      "cash": 48481.00099182129,
       "equity": 48481.00099182129,
-      "pnl": -1518.9910766601542,
-      "pnlPercent": -3.0379821533203084,
+      "pnl": -1518.990634155271,
+      "pnlPercent": -3.037981268310542,
       "positions": [
         {
           "id": "paper-2026-08-22T13:36:13.732Z-GESAN",
@@ -58,11 +58,13 @@
           "stop": 99.79,
           "target1": 119.32,
           "target2": 125.83,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T13:36:13.732Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0.0004425048832246148
+          "pnl": 0.0004425048832246148,
+          "closedAt": "2026-08-22T19:50:38.188Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T10:10:19.480Z-GESAN",
@@ -723,13 +725,14 @@
       "active": false,
       "activatedAt": null
     },
-    "decisions": [
+    "decisions": [],
+    "history": [
       {
         "id": "1787398988343-ALARK",
         "rank": 1,
         "symbol": "ALARK",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": 92,
         "entry": {
           "low": 105,
@@ -775,17 +778,18 @@
           "technicalConfidence": 94
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T19:49:00.363Z",
           "expiresAt": "2026-08-23T19:49:00.363Z",
-          "openedAt": "2026-08-22T13:36:13.732Z"
+          "openedAt": "2026-08-22T13:36:13.732Z",
+          "closedAt": "2026-08-22T19:50:38.188Z"
         },
         "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Strong technicals: price > EMA20/50/200, RSI 55, MACD positive, volume expansion; no relevant news.",
         "invalidation": "Stop seviyesi 99.79 altındaki kapanış.",
-        "timestamp": "2026-08-22T19:49:00.363Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T19:49:00.363Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0.0004425048832246148
+      },
       {
         "id": "1787405773354-BINBN",
         "rank": 2,
@@ -2847,6 +2851,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T19:50:38.188Z",
+        "type": "CLOSED",
+        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-22T19:50:35.333Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -3340,11 +3349,6 @@
         "timestamp": "2026-08-21T22:26:03.793Z",
         "type": "CLOSED",
         "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-21T22:25:56.975Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
       }
     ]
   }
