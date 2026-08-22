@@ -4683,7 +4683,7 @@ function renderScannerResults(results) {
   scannerResults.innerHTML = results.map((item, index) => {
     const precision = item.precision || {};
     const calibration = precision.calibration?.status === "CALIBRATED"
-      ? `Kalibre olasılık: %${formatPercent((precision.probability || 0) * 100)}`
+      ? `Kalibre olasılık: ${formatPercent((precision.probability || 0) * 100)}`
       : "KALİBRE EDİLMEDİ";
     return `
       <div class="scanner-card scanner-compact" data-symbol="${item.symbol}">
@@ -4899,7 +4899,7 @@ function renderAiDecisions(decisions) {
           <span>${item.action}</span>
           <span>${item.status}</span>
           <span>${p.marketRegime || "UNKNOWN"}</span>
-          <span class="ai-score-pill">${calibrated ? `Model ${p.calibration?.modelVersion || "v1"} · %${formatPercent((p.probability || 0) * 100)}` : "KALİBRE EDİLMEDİ"}</span>
+          <span class="ai-score-pill">${calibrated ? `Model ${p.calibration?.modelVersion || "v1"} · ${formatPercent((p.probability || 0) * 100)}` : "KALİBRE EDİLMEDİ"}</span>
         </header>
         <div class="decision-price-grid">
           <span><small>PLANLANAN GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
