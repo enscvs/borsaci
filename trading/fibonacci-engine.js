@@ -71,7 +71,7 @@ function findAbc(history) {
     if(!best||C.index>best.C.index)best={A,B,C,range,retracement};
   } return best;
 }
-function fibonacciPlan(daily, hourly) {
+function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*.96,tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }\nfunction fibonacciPlan(daily, hourly) {
   const abc=findAbc(daily);
   const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,confirmationTimeframe:"4h",stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
   if(!abc)return base;
@@ -80,7 +80,7 @@ function fibonacciPlan(daily, hourly) {
   const trigger=C.price+range*CONFIG.fibonacci.entryTriggerRatio, atr=features(daily).atr, four=aggregateFourHour(hourly);
   const candlesAfterC=four.filter(x=>x.time>timeMs(daily[C.index])); const confirm=candlesAfterC.find(x=>x.close>trigger);
   const last=daily.at(-1), volumeStrong=finite(features(daily).volumeRatio)&&features(daily).volumeRatio>=1;
-  const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(trigger),entryZoneLow:round(trigger-atr*CONFIG.fibonacci.entryZoneAtr),entryZoneHigh:round(trigger+atr*CONFIG.fibonacci.entryZoneAtr),stopLoss:round(C.price*.96),tp1:round(C.price+range*.618),tp2:round(C.price+range*.786),tp3:round(C.price+range),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
+  const levels=fibonacciLevels(C.price,range);\n  const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(levels.entryTriggerPrice),entryZoneLow:round(trigger-atr*CONFIG.fibonacci.entryZoneAtr),entryZoneHigh:round(trigger+atr*CONFIG.fibonacci.entryZoneAtr),stopLoss:round(levels.stopLoss),tp1:round(levels.tp1),tp2:round(levels.tp2),tp3:round(levels.tp3),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
   if(!hourly||!hourly.length)return {...fields,status:"WAITING_CONFIRMATION",invalidReason:"4 SAATLİK VERİ YOK – GİRİŞ TEYİT EDİLEMEDİ"};
   if(!confirm)return fields;
   const entry=confirm.close, risk=entry-fields.stopLoss;
@@ -107,4 +107,4 @@ function score(history, fib) {
   return {score:value,grade,features:f,reasons,risks};
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
-module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
+module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
