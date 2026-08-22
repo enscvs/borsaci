@@ -3642,6 +3642,21 @@ async function initializeBorsaCI() {
    START
 ====================================================== */
 
+async function startBorsaCIWhenAuthenticated() {
+  if (!window.borsaciAuth?.authenticated) {
+    await new Promise(
+      resolve =>
+        window.addEventListener(
+          "borsaci:auth-ready",
+          resolve,
+          { once: true }
+        )
+    );
+  }
+
+  initializeBorsaCI();
+}
+
 if (
   document.readyState ===
   "loading"
@@ -3649,7 +3664,7 @@ if (
 
   document.addEventListener(
     "DOMContentLoaded",
-    initializeBorsaCI,
+    startBorsaCIWhenAuthenticated,
     {
       once: true
     }
@@ -3657,7 +3672,7 @@ if (
 
 } else {
 
-  initializeBorsaCI();
+  startBorsaCIWhenAuthenticated();
 
 }
 
@@ -6803,19 +6818,34 @@ window.runTradingScanner =
   runTradingScanner;
 
 
+async function startTradingWhenAuthenticated() {
+  if (!window.borsaciAuth?.authenticated) {
+    await new Promise(
+      resolve =>
+        window.addEventListener(
+          "borsaci:auth-ready",
+          resolve,
+          { once: true }
+        )
+    );
+  }
+
+  bindTradingScannerControls();
+}
+
 if (
   document.readyState === "loading"
 ) {
 
   document.addEventListener(
     "DOMContentLoaded",
-    bindTradingScannerControls,
+    startTradingWhenAuthenticated,
     { once: true }
   );
 
 } else {
 
-  bindTradingScannerControls();
+  startTradingWhenAuthenticated();
 
 }
 })();
