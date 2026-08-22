@@ -847,20 +847,21 @@
           "atrPercent": 7.93475415277536
         },
         "aiReview": {
-          "available": false,
-          "provider": "EXPLANATION_ONLY",
-          "score": null,
-          "verdict": "NOT_USED_FOR_DECISION",
-          "summary": "LLM fiyat, stop, hedef, olasılık veya kararı değiştiremez."
+          "available": true,
+          "provider": "GROQ",
+          "role": "INFORMATIONAL_ONLY",
+          "summary": "Strong uptrend with price well above EMAs, but RSI overbought; news neutral.",
+          "chartComment": "Price 202.3 above EMA20/50/200, RSI 72, MACD positive.",
+          "newsComment": "No relevant news, neutral effect."
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:19:51.759Z",
-          "expiresAt": "2026-08-23T21:19:51.759Z"
+          "createdAt": "2026-08-22T21:24:49.122Z",
+          "expiresAt": "2026-08-23T21:24:49.122Z"
         },
         "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
         "invalidation": "Günlük plan geçersizliği: 146.68 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:19:51.759Z"
+        "timestamp": "2026-08-22T21:24:49.122Z"
       },
       {
         "id": "1787433333482-TKFEN",
@@ -926,20 +927,21 @@
           "atrPercent": 5.597917428762239
         },
         "aiReview": {
-          "available": false,
-          "provider": "EXPLANATION_ONLY",
-          "score": null,
-          "verdict": "NOT_USED_FOR_DECISION",
-          "summary": "LLM fiyat, stop, hedef, olasılık veya kararı değiştiremez."
+          "available": true,
+          "provider": "GROQ",
+          "role": "INFORMATIONAL_ONLY",
+          "summary": "Robust uptrend, price far above EMAs, RSI high indicating overbought; news neutral.",
+          "chartComment": "Price 228.7 above EMA20/50/200, RSI 75, MACD positive.",
+          "newsComment": "No relevant news, neutral effect."
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:19:51.759Z",
-          "expiresAt": "2026-08-23T21:19:51.854Z"
+          "createdAt": "2026-08-22T21:24:49.122Z",
+          "expiresAt": "2026-08-23T21:24:49.122Z"
         },
         "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
         "invalidation": "Günlük plan geçersizliği: 215.9 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:19:51.759Z"
+        "timestamp": "2026-08-22T21:24:49.122Z"
       },
       {
         "id": "1787433333483-TUPRS",
@@ -1005,20 +1007,21 @@
           "atrPercent": 3.836669995490489
         },
         "aiReview": {
-          "available": false,
-          "provider": "EXPLANATION_ONLY",
-          "score": null,
-          "verdict": "NOT_USED_FOR_DECISION",
-          "summary": "LLM fiyat, stop, hedef, olasılık veya kararı değiştiremez."
+          "available": true,
+          "provider": "GROQ",
+          "role": "INFORMATIONAL_ONLY",
+          "summary": "Very strong uptrend, price well above EMAs, RSI very high (overbought); news neutral.",
+          "chartComment": "Price 395.25 above EMA20/50/200, RSI 83, MACD strong.",
+          "newsComment": "No relevant news, neutral effect."
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T21:19:51.854Z",
-          "expiresAt": "2026-08-23T21:19:51.854Z"
+          "createdAt": "2026-08-22T21:24:49.122Z",
+          "expiresAt": "2026-08-23T21:24:49.122Z"
         },
         "reason": "RSI kontrollü momentum aralığında · Fiyat EMA20'ye ve volatiliteye göre kontrollü · Teyit hacmi ve likidite yeterli · Yapısal stop, direnç alanı ve risk/getiri uygun",
         "invalidation": "Günlük plan geçersizliği: 340.44 altı teyitli kapanış.",
-        "timestamp": "2026-08-22T21:19:51.854Z"
+        "timestamp": "2026-08-22T21:24:49.122Z"
       }
     ],
     "history": [
@@ -3335,6 +3338,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T21:24:49.536Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-22T21:19:52.335Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3828,11 +3836,6 @@
         "timestamp": "2026-08-21T22:56:13.588Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-21T22:56:13.588Z",
-        "type": "PAPER_OPEN",
-        "message": "GESAN paper pozisyonu açıldı: 178 lot · ₺15441.50."
       }
     ]
   }
