@@ -784,9 +784,9 @@
     },
     "decisions": [
       {
-        "id": "1787431031466-AEFES",
+        "id": "1787432056785-PASEU",
         "rank": 1,
-        "symbol": "AEFES",
+        "symbol": "PASEU",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
@@ -799,40 +799,41 @@
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 809,
-          "positionValue": 15492.35,
+          "quantity": 76,
+          "positionValue": 15374.8,
           "actualRisk": null,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
-          "dataQuality": false,
+          "dataQuality": true,
+          "regime": "RISK_OFF",
           "relativeStrength": false,
           "strategy": false
         },
         "precision": {
           "engineVersion": "precision-v1",
-          "marketRegime": "UNKNOWN",
-          "dataQuality": "FAILED",
+          "marketRegime": "RISK_OFF",
+          "dataQuality": "PASSED",
           "probability": null,
           "expectedR": null,
           "calibration": {
             "status": "KALIBRE_EDILMEDI"
           },
-          "relativeStrengthRank": null,
-          "relativeStrengthPercentile": null,
+          "relativeStrengthRank": 1,
+          "relativeStrengthPercentile": 0.009615384615384616,
           "maxHoldingDays": 10,
           "reasons": [],
-          "invalidators": [],
-          "missing": [
-            "STALE_DATA"
+          "invalidators": [
+            "Yeni uzun işlem için piyasa rejimi uygun değil."
           ],
+          "missing": [],
           "disclaimer": "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez."
         },
         "indicators": {
-          "rsi": 36.6223601054179,
-          "atr": 0.6750378877037372,
-          "atrPercent": 3.525002094780956
+          "rsi": 71.99089415410981,
+          "atr": 16.052007893214032,
+          "atrPercent": 7.93475415277536
         },
         "aiReview": {
           "available": false,
@@ -843,17 +844,17 @@
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T20:37:11.466Z",
-          "expiresAt": "2026-08-23T20:37:11.466Z"
+          "createdAt": "2026-08-22T20:54:16.785Z",
+          "expiresAt": "2026-08-23T20:54:16.785Z"
         },
-        "reason": "",
+        "reason": "Yeni uzun işlem için piyasa rejimi uygun değil.",
         "invalidation": "Doğrulanmış veri olmadan işlem yok.",
-        "timestamp": "2026-08-22T20:37:11.466Z"
+        "timestamp": "2026-08-22T20:54:16.785Z"
       },
       {
-        "id": "1787431031466-AGHOL",
+        "id": "1787432056785-TKFEN",
         "rank": 2,
-        "symbol": "AGHOL",
+        "symbol": "TKFEN",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
@@ -866,40 +867,41 @@
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 499,
-          "positionValue": 15498.94,
+          "quantity": 67,
+          "positionValue": 15322.9,
           "actualRisk": null,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
-          "dataQuality": false,
+          "dataQuality": true,
+          "regime": "RISK_OFF",
           "relativeStrength": false,
           "strategy": false
         },
         "precision": {
           "engineVersion": "precision-v1",
-          "marketRegime": "UNKNOWN",
-          "dataQuality": "FAILED",
+          "marketRegime": "RISK_OFF",
+          "dataQuality": "PASSED",
           "probability": null,
           "expectedR": null,
           "calibration": {
             "status": "KALIBRE_EDILMEDI"
           },
-          "relativeStrengthRank": null,
-          "relativeStrengthPercentile": null,
+          "relativeStrengthRank": 2,
+          "relativeStrengthPercentile": 0.019230769230769232,
           "maxHoldingDays": 10,
           "reasons": [],
-          "invalidators": [],
-          "missing": [
-            "STALE_DATA"
+          "invalidators": [
+            "Yeni uzun işlem için piyasa rejimi uygun değil."
           ],
+          "missing": [],
           "disclaimer": "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez."
         },
         "indicators": {
-          "rsi": 34.12345610051656,
-          "atr": 1.0982092310451657,
-          "atrPercent": 3.5357670635164165
+          "rsi": 75.2268780604635,
+          "atr": 12.802436988744358,
+          "atrPercent": 5.597917428762239
         },
         "aiReview": {
           "available": false,
@@ -910,17 +912,17 @@
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T20:37:11.466Z",
-          "expiresAt": "2026-08-23T20:37:11.466Z"
+          "createdAt": "2026-08-22T20:54:16.785Z",
+          "expiresAt": "2026-08-23T20:54:16.785Z"
         },
-        "reason": "",
+        "reason": "Yeni uzun işlem için piyasa rejimi uygun değil.",
         "invalidation": "Doğrulanmış veri olmadan işlem yok.",
-        "timestamp": "2026-08-22T20:37:11.466Z"
+        "timestamp": "2026-08-22T20:54:16.785Z"
       },
       {
-        "id": "1787431031466-AHGAZ",
+        "id": "1787432056785-TUPRS",
         "rank": 3,
-        "symbol": "AHGAZ",
+        "symbol": "TUPRS",
         "action": "NO_TRADE",
         "status": "REJECTED",
         "confidence": null,
@@ -933,40 +935,41 @@
           "capital": 50000,
           "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 459,
-          "positionValue": 15468.3,
+          "quantity": 39,
+          "positionValue": 15414.75,
           "actualRisk": null,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
         "filters": {
-          "dataQuality": false,
+          "dataQuality": true,
+          "regime": "RISK_OFF",
           "relativeStrength": false,
           "strategy": false
         },
         "precision": {
           "engineVersion": "precision-v1",
-          "marketRegime": "UNKNOWN",
-          "dataQuality": "FAILED",
+          "marketRegime": "RISK_OFF",
+          "dataQuality": "PASSED",
           "probability": null,
           "expectedR": null,
           "calibration": {
             "status": "KALIBRE_EDILMEDI"
           },
-          "relativeStrengthRank": null,
-          "relativeStrengthPercentile": null,
+          "relativeStrengthRank": 3,
+          "relativeStrengthPercentile": 0.028846153846153848,
           "maxHoldingDays": 10,
           "reasons": [],
-          "invalidators": [],
-          "missing": [
-            "STALE_DATA"
+          "invalidators": [
+            "Yeni uzun işlem için piyasa rejimi uygun değil."
           ],
+          "missing": [],
           "disclaimer": "Garanti değildir; model kalibrasyonu olmadan işlem önerilmez."
         },
         "indicators": {
-          "rsi": 50.7135202492281,
-          "atr": 1.180445077682068,
-          "atrPercent": 3.5028043055127362
+          "rsi": 83.24473535256041,
+          "atr": 15.164438157176157,
+          "atrPercent": 3.836669995490489
         },
         "aiReview": {
           "available": false,
@@ -977,12 +980,12 @@
         },
         "lifecycle": {
           "stage": "REJECTED",
-          "createdAt": "2026-08-22T20:37:11.466Z",
-          "expiresAt": "2026-08-23T20:37:11.466Z"
+          "createdAt": "2026-08-22T20:54:16.785Z",
+          "expiresAt": "2026-08-23T20:54:16.785Z"
         },
-        "reason": "",
+        "reason": "Yeni uzun işlem için piyasa rejimi uygun değil.",
         "invalidation": "Doğrulanmış veri olmadan işlem yok.",
-        "timestamp": "2026-08-22T20:37:11.466Z"
+        "timestamp": "2026-08-22T20:54:16.785Z"
       }
     ],
     "history": [
@@ -3299,6 +3302,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T20:54:17.354Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-22T20:37:12.062Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -3792,11 +3800,6 @@
         "timestamp": "2026-08-21T22:55:10.103Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-415.80."
-      },
-      {
-        "timestamp": "2026-08-21T22:54:59.479Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺243.60."
       }
     ]
   }
