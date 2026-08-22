@@ -4896,12 +4896,9 @@ function renderAiDecisions(decisions) {
   }
   aiDecisionFeed.innerHTML = records.map((item, index) => {
     const p = item.precision || {};
-    const calibrated = p.calibration?.status === "CALIBRATED";
-    const calibrationLabel = calibrated
-      ? `Model ${p.calibration?.modelVersion || "v1"} · ${formatPercent((p.probability || 0) * 100)}`
-      : p.calibration?.status === "DISABLED"
-        ? "GEÇMİŞ KALİBRASYON YOK"
-        : "OLASILIK HESAPLANMIYOR";
+    const intelligenceLabel = item.aiReview?.available
+      ? "AI INTEL RECEIVED"
+      : "AI INTEL PENDING";
     return `
       <article class="decision-item decision-card" data-decision-index="${index}">
         <header>
@@ -4909,7 +4906,7 @@ function renderAiDecisions(decisions) {
           <span>${item.action}</span>
           <span>${item.status}</span>
           <span>${p.marketRegime || "UNKNOWN"}</span>
-          <span class="ai-score-pill">${calibrationLabel}</span>
+          <span class="ai-score-pill">${intelligenceLabel}</span>
         </header>
         <div class="decision-price-grid">
           <span><small>PLANLANAN GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span>
