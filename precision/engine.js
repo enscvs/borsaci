@@ -11,7 +11,7 @@ const CONFIG = Object.freeze({
   strategy: {
     rsiMin: 50, rsiMax: 65, rsLookbacks: [20, 60], topRelativeStrengthPercent: 0.25,
     maxDistanceFromEma20Atr: 1.25, maxAtrPercent: 7, pullbackDays: 5,
-    volumeConfirmationRatio: 1.05, minRiskReward: 2,
+    volumeConfirmationRatio: 1.05, volumeLookback: 3, minRiskReward: 2,
     stopAtrBuffer: 0.35, slippageBps: 10, commissionBps: 10, maxHoldingDays: null
   },
   validation: { minModelSamples: 300, minCalibrationSamples: 100, minHighConfidenceWins: 0.60 },
@@ -116,10 +116,10 @@ function validateHistory(history, { now = Date.now(), config = CONFIG, requireCo
   if (!finite(avgVolume) || avgVolume <= 0) errors.push({ code: "INVALID_VOLUME", message: "Hacim verisi geçerli değil." });
   return { ok: errors.length === 0, errors, lastTimestamp: Number.isFinite(lastTime) ? new Date(lastTime).toISOString() : null, averageVolume: avgVolume };
 }
-function featuresAt(history, index = history.length - 1) {
+function featuresAt(history, index = history.length - 1, config = CONFIG) {
   const slice = history.slice(0, index + 1), closes = slice.map(x => Number(x.close)), volumes = slice.map(x => Number(x.volume));
   const e20 = emaSeries(closes, 20), e50 = emaSeries(closes, 50), e200 = emaSeries(closes, 200), rsi = rsiSeries(closes), atr = atrSeries(slice), adx = adxSeries(slice), macd = macdHistogram(closes);
-  const vol20 = mean(volumes.slice(-20)), volStd = stddev(volumes.slice(-20)), price = closes.at(-1), last = slice.at(-1);
+  const volumeLookback = Math.max(1, Number(config.strategy?.volumeLookback) || 20);\n  const recentVolumes = volumes.slice(-volumeLookback);\n  const vol20 = mean(recentVolumes), volStd = stddev(recentVolumes), price = closes.at(-1), last = slice.at(-1);
   const lookback = n => pctChange(price, closes[closes.length - 1 - n]);
   return {
     price, ema20: e20.at(-1), ema50: e50.at(-1), ema200: e200.at(-1), rsi14: rsi.at(-1), atr: atr.at(-1), adx: adx.at(-1), macdHistogram: macd.at(-1),
@@ -165,11 +165,10 @@ function evaluateSetup(candidate, { regime, config = CONFIG, model = null } = {}
   if (!regime || !regime.allowed) return { symbol: candidate.symbol, decision: "NO_TRADE", dataQuality: "PASSED", marketRegime: regime?.regime || "UNKNOWN", reasons, invalidators: [regime?.reason || "Piyasa rejimi bilinmiyor."], missing, calibration: { status: "KALIBRE_EDILMEDI" } };
   const plan = buildPlan(candidate.history, f, config);
   const checks = [
-    [f.price > f.ema200 && f.ema20 > f.ema50 && f.ema50 > f.ema200 && f.ema20Slope > 0 && f.ema50Slope > 0, "Trend yapısı uygun"],
-    [finite(candidate.rs20) && finite(candidate.rs60) && candidate.rs20 > 0 && candidate.rs60 > 0 && candidate.relativeStrengthPercentile <= config.strategy.topRelativeStrengthPercent, "Göreceli güç üst çeyrekte"],
+    [f.ema20 > f.ema50, "EMA20 EMA50'nin üzerinde"],
     [f.rsi14 >= config.strategy.rsiMin && f.rsi14 <= config.strategy.rsiMax, "RSI kontrollü momentum aralığında"],
     [Math.abs(f.price - f.ema20) <= f.atr * config.strategy.maxDistanceFromEma20Atr && f.atrPercent <= config.strategy.maxAtrPercent, "Fiyat EMA20'ye ve volatiliteye göre kontrollü"],
-    [f.volumeRatio >= config.strategy.volumeConfirmationRatio && f.averageVolume20 >= config.data.minAverageVolume, "Teyit hacmi ve likidite yeterli"],
+    [f.volumeRatio >= config.strategy.volumeConfirmationRatio && f.averageVolume20 >= config.data.minAverageVolume, "Son 3 günlük hacim teyidi ve likidite yeterli"],
     [plan.stop > 0 && plan.stop < f.price && plan.riskReward >= config.strategy.minRiskReward && plan.resistanceRoomR >= config.strategy.minRiskReward, "Yapısal stop, direnç alanı ve risk/getiri uygun"]
   ];
   checks.forEach(([ok, text]) => ok ? reasons.push(text) : invalidators.push(text));
