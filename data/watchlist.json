@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 34500.542728915214,
+      "cash": 51160.542728915214,
       "equity": 51160.542728915214,
-      "pnl": -309.44889706134927,
-      "pnlPercent": -0.6188977941226985,
+      "pnl": 1160.5511029386507,
+      "pnlPercent": 2.3211022058773016,
       "positions": [
         {
           "id": "paper-2026-08-22T22:40:02.436Z-BINBN",
@@ -58,11 +58,13 @@
           "stop": 355.44,
           "target1": 468.82,
           "target2": 495.62,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-22T22:40:02.436Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 1470
+          "pnl": 1470,
+          "closedAt": "2026-08-22T22:47:11.509Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T21:40:07.521Z-TSPOR",
@@ -1233,13 +1235,15 @@
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Planlanan stop seviyesinin altı geçersizlik oluşturur.",
         "timestamp": "2026-08-22T22:46:31.340Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787438401333-BIMAS",
         "rank": 3,
         "symbol": "BIMAS",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 371.4,
@@ -1333,17 +1337,18 @@
           "newsComment": ""
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-22T22:40:51.837Z",
           "expiresAt": "2026-08-23T22:40:51.837Z",
-          "openedAt": "2026-08-22T22:40:02.436Z"
+          "openedAt": "2026-08-22T22:40:02.436Z",
+          "closedAt": "2026-08-22T22:47:11.509Z"
         },
         "reason": "4 saatlik Fibonacci teyidi ile işlem planı aktif.",
         "invalidation": "C seviyesi 370.25 ve stop 355.44 altı geçersizlik oluşturur.",
-        "timestamp": "2026-08-22T22:40:51.837Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-22T22:40:51.837Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 1470
+      },
       {
         "id": "1787438401333-DOHOL",
         "rank": 4,
@@ -4285,6 +4290,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-22T22:47:11.509Z",
+        "type": "CLOSED",
+        "message": "BIMAS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺1470.00."
+      },
+      {
         "timestamp": "2026-08-22T22:47:08.361Z",
         "type": "CLOSED",
         "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺626.64."
@@ -4778,11 +4788,6 @@
         "timestamp": "2026-08-21T23:37:01.012Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH KAPATILDI: yeni paper işlemler yeniden açılabilir."
-      },
-      {
-        "timestamp": "2026-08-21T23:31:40.154Z",
-        "type": "KILL_SWITCH",
-        "message": "KILL SWITCH AKTİF: 0 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
       }
     ]
   }
