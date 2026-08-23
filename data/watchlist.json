@@ -4,7 +4,7 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 38352.8847627926,
+      "cash": 53840.0847627926,
       "equity": 53840.0847627926,
       "pnl": 3840.093136816018,
       "pnlPercent": 7.680186273632036,
@@ -39,11 +39,13 @@
           "stop": 19.66,
           "target1": 25.28,
           "target2": 26.58,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-23T00:00:21.425Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 0
+          "pnl": 0,
+          "closedAt": "2026-08-23T00:00:39.026Z",
+          "closeReason": "MANUAL_CLOSE"
         },
         {
           "id": "paper-2026-08-22T23:42:15.261Z-BINBN",
@@ -1124,116 +1126,6 @@
     },
     "decisions": [
       {
-        "id": "1787443096851-DOHOL",
-        "rank": 4,
-        "symbol": "DOHOL",
-        "action": "BUY SETUP",
-        "status": "OPEN",
-        "confidence": null,
-        "entry": {
-          "low": 20.69,
-          "high": 21.72,
-          "reference": 21.6
-        },
-        "stop": 19.66,
-        "target1": 25.28,
-        "target2": 26.58,
-        "target3": 28.24,
-        "riskReward": {
-          "tp1": 1.9,
-          "tp2": 2.57,
-          "tp3": 3.42
-        },
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "quantity": 717,
-          "positionValue": 15487.2,
-          "actualRisk": 1390.98,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "indicators": {
-          "score": 87,
-          "rsi": 56.35,
-          "atr": 0.62,
-          "macd": 0.01
-        },
-        "filters": {
-          "trend": false,
-          "momentum": false,
-          "volume": false,
-          "rsi": true
-        },
-        "planMethod": "FIBONACCI_A_B_C_DAILY",
-        "fibonacci": {
-          "valid": true,
-          "status": "ACTIVE",
-          "pointA": {
-            "type": "LOW",
-            "index": 4,
-            "price": 14.65999984741211,
-            "date": "2024-08-27T06:30:00.000Z"
-          },
-          "pointB": {
-            "type": "HIGH",
-            "index": 375,
-            "price": 22.420000076293945,
-            "date": "2026-02-16T06:30:00.000Z"
-          },
-          "pointC": {
-            "type": "LOW",
-            "index": 501,
-            "price": 20.479999542236328,
-            "date": "2026-08-18T06:30:00.000Z"
-          },
-          "range": 7.76,
-          "retracementRatio": 0.25,
-          "entryTriggerPrice": 20.69,
-          "entryZoneLow": 20.69,
-          "entryZoneHigh": 21.72,
-          "stopLoss": 19.66,
-          "tp1": 25.28,
-          "tp2": 26.58,
-          "tp3": 28.24,
-          "volumeConfirmation": "STRONG",
-          "invalidReason": null,
-          "confirmationPassed": true,
-          "confirmationCandleTime": "2026-08-19T06:30:00.000Z",
-          "confirmationCandleClose": 21.16,
-          "entryPrice": 21.6,
-          "riskRewardTp1": 1.9,
-          "riskRewardTp2": 2.57,
-          "riskRewardTp3": 3.42
-        },
-        "grade": "A+ / GÜÇLÜ ADAY",
-        "reasons": [
-          "Fiyat EMA20 üzerinde",
-          "Fiyat EMA200 üzerinde",
-          "EMA20 son 5 günde yükseliyor"
-        ],
-        "risks": [],
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": null,
-          "verdict": "INFO",
-          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-          "summary": "Doğrulanmış haber başlığı alınamadı."
-        },
-        "lifecycle": {
-          "stage": "OPEN",
-          "createdAt": "2026-08-22T23:59:56.121Z",
-          "expiresAt": "2026-08-23T23:59:56.121Z",
-          "openedAt": "2026-08-23T00:00:21.425Z"
-        },
-        "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
-        "invalidation": "C seviyesinin %4 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-22T23:59:56.121Z"
-      },
-      {
         "id": "1787441986014-ALARK",
         "rank": 1,
         "symbol": "ALARK",
@@ -1559,6 +1451,119 @@
       }
     ],
     "history": [
+      {
+        "id": "1787443096851-DOHOL",
+        "rank": 4,
+        "symbol": "DOHOL",
+        "action": "BUY SETUP",
+        "status": "CLOSED",
+        "confidence": null,
+        "entry": {
+          "low": 20.69,
+          "high": 21.72,
+          "reference": 21.6
+        },
+        "stop": 19.66,
+        "target1": 25.28,
+        "target2": 26.58,
+        "target3": 28.24,
+        "riskReward": {
+          "tp1": 1.9,
+          "tp2": 2.57,
+          "tp3": 3.42
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 717,
+          "positionValue": 15487.2,
+          "actualRisk": 1390.98,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 87,
+          "rsi": 56.35,
+          "atr": 0.62,
+          "macd": 0.01
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ACTIVE",
+          "pointA": {
+            "type": "LOW",
+            "index": 4,
+            "price": 14.65999984741211,
+            "date": "2024-08-27T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 375,
+            "price": 22.420000076293945,
+            "date": "2026-02-16T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 501,
+            "price": 20.479999542236328,
+            "date": "2026-08-18T06:30:00.000Z"
+          },
+          "range": 7.76,
+          "retracementRatio": 0.25,
+          "entryTriggerPrice": 20.69,
+          "entryZoneLow": 20.69,
+          "entryZoneHigh": 21.72,
+          "stopLoss": 19.66,
+          "tp1": 25.28,
+          "tp2": 26.58,
+          "tp3": 28.24,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": null,
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-19T06:30:00.000Z",
+          "confirmationCandleClose": 21.16,
+          "entryPrice": 21.6,
+          "riskRewardTp1": 1.9,
+          "riskRewardTp2": 2.57,
+          "riskRewardTp3": 3.42
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
+        },
+        "lifecycle": {
+          "stage": "CLOSED",
+          "createdAt": "2026-08-22T23:59:56.121Z",
+          "expiresAt": "2026-08-23T23:59:56.121Z",
+          "openedAt": "2026-08-23T00:00:21.425Z",
+          "closedAt": "2026-08-23T00:00:39.026Z"
+        },
+        "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
+        "invalidation": "C seviyesinin %4 altındaki stop (19.66) planı geçersiz kılar.",
+        "timestamp": "2026-08-22T23:59:56.121Z",
+        "outcome": "MANUAL_CLOSE",
+        "realizedPnL": 0
+      },
       {
         "id": "1787443096851-BINBN",
         "rank": 5,
@@ -6109,6 +6114,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-23T00:00:39.026Z",
+        "type": "CLOSED",
+        "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
+      },
+      {
         "timestamp": "2026-08-23T00:00:33.927Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
@@ -6602,11 +6612,6 @@
         "timestamp": "2026-08-22T07:29:50.452Z",
         "type": "PAPER_OPEN",
         "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15380.40."
-      },
-      {
-        "timestamp": "2026-08-22T07:29:50.452Z",
-        "type": "PAPER_OPEN",
-        "message": "ALARK paper pozisyonu açıldı: 143 lot · ₺15401.10."
       }
     ]
   }
