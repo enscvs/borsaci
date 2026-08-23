@@ -4514,8 +4514,6 @@ async function recordAiDecisions(
           status:
             hasOpenPosition
               ? "OPEN"
-              : previous.status === "REJECTED_BY_USER"
-                ? "REJECTED_BY_USER"
               : decision.status,
           lifecycle:
             hasOpenPosition
@@ -4527,9 +4525,7 @@ async function recordAiDecisions(
                     previous.timestamp ||
                     now,
                 }
-              : previous.status === "REJECTED_BY_USER"
-                ? previous.lifecycle
-                : decision.lifecycle,
+              : decision.lifecycle,
         };
       }
     );
