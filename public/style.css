@@ -2302,3 +2302,83 @@ textarea::placeholder {
   }
 
 }
+
+/* =========================================================
+   AI DECISION // CHART PLAN OVERLAY
+========================================================= */
+
+.chart-area .market-chart {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.chart-area .market-chart canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.chart-area .chart-empty {
+  z-index: 3;
+  pointer-events: none;
+  background: rgba(4, 8, 4, .72);
+}
+
+.chart-area .tradingview-widget-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+/* The existing TradingView embed remains as a visual fallback. */
+.chart-area.has-borsaci-chart .tradingview-widget-container {
+  visibility: hidden;
+}
+
+.decision-chart-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  margin: 10px 0 4px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(72, 255, 104, .16);
+  color: #a4c7a4;
+  font-size: 10px;
+}
+
+.decision-chart-status strong {
+  color: #9fc9ff;
+  letter-spacing: .06em;
+}
+
+.decision-chart-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 5px;
+  border: 1px solid rgba(72, 255, 104, .22);
+  color: #cdeed3;
+  font-size: 9px;
+}
+
+.decision-chart-key::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  display: inline-block;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
+}
+
+.decision-chart-key.trigger { color: #82b9ff; }
+.decision-chart-key.entry { color: #7fe3e3; }
+.decision-chart-key.stop { color: #ff7f7f; }
+.decision-chart-key.target { color: #84f298; }
+
+@media (max-width: 600px) {
+  .decision-chart-status {
+    line-height: 1.55;
+  }
+}

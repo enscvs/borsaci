@@ -218,9 +218,23 @@
         id="chartArea"
       >
 
-        <!-- TradingView Widget -->
+        <!-- BorsaCI'nin seçilen sembol ve işlem planı katmanlarını çizdiği grafik. -->
+        <div
+          id="market_chart"
+          class="market-chart"
+          aria-label="BorsaCI piyasa grafiği"
+        ></div>
 
         <div
+          id="chartEmpty"
+          class="chart-empty"
+          aria-live="polite"
+        ></div>
+
+        <!-- BorsaCI grafiği kullanılamazsa görünür kalan TradingView yedeği. -->
+
+        <div
+          id="tradingviewChartFallback"
           class="tradingview-widget-container"
           style="height:100%;width:100%"
         >
@@ -1645,7 +1659,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260822-auth"
+  src="/app.js?v=20260823-decision-chart"
   defer
 ></script>
 

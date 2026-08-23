@@ -11,6 +11,7 @@ const {
 
 const OpenAI = require("openai");
 const fibonacciEngine = require("./trading/fibonacci-engine");
+const dailySummary = require("./trading/daily-summary");
 
 const precision = require("./precision/engine");
 
@@ -139,6 +140,79 @@ async function sendTelegramNotification(
 
   }
 
+}
+
+/*
+ * Günlük özet, yalnızca aynı günün tamamlanmış scanner snapshot'ı varsa
+ * gönderilir. İşaret GitHub'daki trading state'e Telegram isteğinden önce
+ * yazılır; Render yeniden başlasa bile aynı seans için çift bildirim olmaz.
+ * Bir dış servis çağrısı ile kalıcı kayıt arasında tam olarak-once garantisi
+ * teknik olarak mümkün olmadığından burada güvenli tercih at-most-once'dır.
+ */
+let dailySummaryInFlight = false;
+
+async function sendDailyTradingSummaryIfDue(now = new Date()) {
+  if (
+    dailySummaryInFlight ||
+    !dailySummary.isDailySummaryDue(now) ||
+    !TELEGRAM_BOT_TOKEN ||
+    !TELEGRAM_CHAT_ID
+  ) {
+    return false;
+  }
+
+  dailySummaryInFlight = true;
+
+  try {
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const expectedSessionKey = lastClosedBistSessionKey(now);
+    const snapshotSessionKey = state.scannerSnapshot?.sessionKey;
+
+    // Otomatik scanner çalıştırmıyoruz. Sonuç gerçekten bugünün
+    // kapanmış günlük mumuna ait değilse yanıltıcı "yeni ilk 5" mesajı yok.
+    if (snapshotSessionKey !== expectedSessionKey) {
+      return false;
+    }
+
+    if (state.dailySummary?.sessionKey === snapshotSessionKey) {
+      return false;
+    }
+
+    const message = dailySummary.buildDailySummaryMessage(
+      state,
+      snapshotSessionKey
+    );
+
+    state.dailySummary = {
+      sessionKey: snapshotSessionKey,
+      reservedAt: new Date().toISOString(),
+      snapshotCreatedAt: state.scannerSnapshot?.createdAt || null,
+    };
+
+    // Önce kalıcı rezervasyon, ardından dış Telegram çağrısı: restart
+    // veya timer çakışması aynı seans özetini iki kez gönderemez.
+    await saveTradingState(
+      state,
+      stateResult.sha,
+      stateResult.container
+    );
+
+    const delivered = await sendTelegramNotification(message);
+
+    if (delivered) {
+      console.log("TELEGRAM DAILY SUMMARY SENT");
+    } else {
+      console.error("TELEGRAM DAILY SUMMARY DELIVERY FAILED");
+    }
+
+    return delivered;
+  } catch (error) {
+    console.error("TELEGRAM DAILY SUMMARY ERROR:", error.message);
+    return false;
+  } finally {
+    dailySummaryInFlight = false;
+  }
 }
 
 function telegramApprovalButtonsReady() {
@@ -3610,6 +3684,14 @@ function createDefaultTradingState() {
 
     history: [],
 
+    // Son günlük Telegram özetinin kalıcı idempotency kaydı.
+    // Session anahtarı, scanner'ın kullandığı tamamlanmış günlük mumdur.
+    dailySummary: {
+      sessionKey: null,
+      reservedAt: null,
+      snapshotCreatedAt: null,
+    },
+
     activity: [
       {
         timestamp: new Date().toISOString(),
@@ -3685,6 +3767,11 @@ function normalizeTradingState(
       )
         ? value.history
         : [],
+
+    dailySummary: {
+      ...fallback.dailySummary,
+      ...((value || {}).dailySummary || {}),
+    },
 
     activity:
       Array.isArray(
@@ -6987,6 +7074,23 @@ server.listen(
           );
       },
       5 * 60 * 1000
+    );
+
+    // Seans kapanışından sonra güncel scanner kaydı varsa tek günlük
+    // Telegram özetini yollar. Bir dakika aralık, Render'ın geç uyanması
+    // veya taramanın 18:15'ten hemen sonra bitmesi durumunda da yeterlidir.
+    setTimeout(
+      () => {
+        sendDailyTradingSummaryIfDue();
+      },
+      30000
+    );
+
+    setInterval(
+      () => {
+        sendDailyTradingSummaryIfDue();
+      },
+      60 * 1000
     );
 
     sendTelegramNotification(
