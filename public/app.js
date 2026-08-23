@@ -42,6 +42,7 @@ let chartHistory = [];
 /* AI Decision kartından açılan, grafik üzerinde geçici işlem planı katmanı. */
 let activeDecisionOverlay = null;
 let decisionOverlayPriceLines = [];
+let decisionOverlayRaySeries = [];
 let decisionOverlayMarkers = null;
 let decisionOverlayUsesSeriesMarkers = false;
 let decisionOverlayRequestId = 0;
@@ -2718,6 +2719,20 @@ function updateChartData(
     `BORSACI: ${uniqueCandles.length} candle çizildi.`
   );
 
+  /* Yeni mum geldiğinde A/B/C ışınları son grafik mumuna kadar uzatılır. */
+  if (
+    activeDecisionOverlay &&
+    normalizeSymbol(
+      activeDecisionOverlay.symbol
+    ) === selectedSymbol
+  ) {
+
+    renderDecisionChartOverlay(
+      activeDecisionOverlay
+    );
+
+  }
+
 }
 
 /* ======================================================
@@ -2904,6 +2919,31 @@ function clearDecisionChartOverlay() {
   decisionOverlayPriceLines = [];
 
   if (
+    marketChart &&
+    Array.isArray(
+      decisionOverlayRaySeries
+    )
+  ) {
+
+    decisionOverlayRaySeries.forEach(
+      series => {
+
+        try {
+
+          marketChart.removeSeries(
+            series
+          );
+
+        } catch {}
+
+      }
+    );
+
+  }
+
+  decisionOverlayRaySeries = [];
+
+  if (
     decisionOverlayMarkers &&
     typeof decisionOverlayMarkers.setMarkers ===
       "function"
@@ -2984,6 +3024,168 @@ function addDecisionPriceLine(
 
     console.warn(
       "BORSACI: işlem planı çizgisi eklenemedi.",
+      error
+    );
+
+  }
+
+}
+
+
+function chartTimeOrder(
+  value
+) {
+
+  if (
+    typeof value === "number" &&
+    Number.isFinite(value)
+  ) {
+
+    return value;
+
+  }
+
+  const parsed =
+    Date.parse(
+      String(value || "")
+    );
+
+  return Number.isFinite(parsed)
+    ? Math.floor(parsed / 1000)
+    : null;
+
+}
+
+
+function latestDecisionChartTime() {
+
+  let latest =
+    null;
+
+  (chartHistory || []).forEach(
+    item => {
+
+      const time =
+        normalizeChartTime(
+          getHistoryValue(
+            item,
+            [
+              "time",
+              "date",
+              "timestamp",
+              "datetime",
+              "t"
+            ]
+          )
+        );
+
+      if (
+        time === null ||
+        chartTimeOrder(time) === null ||
+        (
+          latest !== null &&
+          chartTimeOrder(time) <=
+            chartTimeOrder(latest)
+        )
+      ) {
+
+        return;
+
+      }
+
+      latest =
+        time;
+
+    }
+  );
+
+  return latest;
+
+}
+
+
+function addDecisionPivotRay(
+  point,
+  label,
+  color,
+  lineStyle
+) {
+
+  if (
+    !marketChart ||
+    typeof LightweightCharts ===
+      "undefined" ||
+    !LightweightCharts.LineSeries
+  ) {
+
+    return;
+
+  }
+
+  const price =
+    decisionPrice(
+      point?.price
+    );
+
+  const startTime =
+    decisionMarkerTime(
+      point?.date
+    );
+
+  const endTime =
+    latestDecisionChartTime();
+
+  if (
+    price === null ||
+    startTime === null ||
+    endTime === null ||
+    chartTimeOrder(startTime) === null ||
+    chartTimeOrder(endTime) === null ||
+    chartTimeOrder(startTime) >=
+      chartTimeOrder(endTime)
+  ) {
+
+    return;
+
+  }
+
+  try {
+
+    const series =
+      marketChart.addSeries(
+        LightweightCharts.LineSeries,
+        {
+          color,
+          lineWidth: 1,
+          lineStyle,
+          lastValueVisible: false,
+          priceLineVisible: false,
+          crosshairMarkerVisible: false,
+          title: `${label} RAY`
+        }
+      );
+
+    series.setData(
+      [
+        {
+          time: startTime,
+          value: price
+        },
+        {
+          time: endTime,
+          value: price
+        }
+      ]
+    );
+
+    decisionOverlayRaySeries.push(
+      series
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "BORSACI: A/B/C yatay ışını eklenemedi.",
       error
     );
 
@@ -3150,7 +3352,7 @@ function renderDecisionChartOverlay(
     }
   );
 
-  const markers =
+  const pivotOverlays =
     [
       {
         point:
@@ -3162,7 +3364,9 @@ function renderDecisionChartOverlay(
         shape:
           "arrowUp",
         color:
-          "#f5c15d"
+          "#f5c15d",
+        lineStyle:
+          dotted
       },
       {
         point:
@@ -3174,7 +3378,9 @@ function renderDecisionChartOverlay(
         shape:
           "arrowDown",
         color:
-          "#78e58b"
+          "#78e58b",
+        lineStyle:
+          dashed
       },
       {
         point:
@@ -3186,9 +3392,24 @@ function renderDecisionChartOverlay(
         shape:
           "arrowUp",
         color:
-          "#76a9ff"
+          "#76a9ff",
+        lineStyle:
+          solid
       }
-    ]
+    ];
+
+  pivotOverlays.forEach(
+    pivot =>
+      addDecisionPivotRay(
+        pivot.point,
+        pivot.label,
+        pivot.color,
+        pivot.lineStyle
+      )
+  );
+
+  const markers =
+    pivotOverlays
       .map(
         marker => {
 
@@ -5618,7 +5839,7 @@ function renderAiDecisionDetail(item) {
   const tp2=fib.tp2??item.target2;
   const tp3=fib.tp3??item.target3;
   const chartStatus=fibAvailable
-    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ile tetik, giriş, SL ve hedefler MARKET CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
+    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ve sağa uzanan seviyeleri ile tetik, giriş, SL ve hedefler DECISION CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
     :`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>Geçerli A/B/C noktası olmadığı için grafiğe Fibonacci çizgisi eklenmedi.</span></div>`;
   element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL"?`<button type="button" class="trading-button" data-paper-action="approve" data-decision-id="${escapeHtml(item.id)}">APPROVE PAPER POSITION</button><button type="button" class="trading-button" style="margin-left:8px;border-color:#c44;color:#ff8a8a" data-paper-action="reject" data-decision-id="${escapeHtml(item.id)}">REJECT</button>`:""}`;
 }
