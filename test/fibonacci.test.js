@@ -34,6 +34,19 @@ test("ABC selection prefers the latest local low-high-higher-low structure",()=>
   assert.equal(abc.C.index,211);
   assert.ok(abc.C.price>abc.A.price);
 });
+test("ABC selection uses the highest confirmed peak between A and C",()=>{
+  const start=Date.UTC(2025,0,1);
+  const history=Array.from({length:230},(_,i)=>{const base=21+i*.01;return {time:(start+i*86400000)/1000,open:base,high:base+.5,low:base-.5,close:base,volume:1000000};});
+  const set=(index,low,high)=>Object.assign(history[index],{open:(low+high)/2,close:(low+high)/2,low,high});
+  set(190,19.01,20); set(195,21,22.02); set(200,20.5,21.5); set(205,24,25.3);
+  set(206,23,24); set(207,22,23); set(208,21,22); set(209,20.8,21.8); set(210,20.5,21.5); set(211,20.06,21);
+  for(let index=212;index<history.length;index+=1)set(index,21+(index-212)*.1,22+(index-212)*.1);
+  const abc=fib.findAbc(history);
+  assert.equal(abc.A.price,19.01);
+  assert.equal(abc.B.price,25.3);
+  assert.equal(abc.C.price,20.06);
+  assert.ok(abc.retracement>.786&&abc.retracement<.886);
+});
 test("daily Fibonacci entry is rejected once price is more than 5% above the trigger",()=>{
   assert.ok(fib.entryDistanceAboveTrigger(106.3,100)>.05);
   assert.ok(fib.entryDistanceAboveTrigger(104.99,100)<=.05);
