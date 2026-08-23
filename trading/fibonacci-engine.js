@@ -408,7 +408,7 @@ function score(history, fib) {
   const positiveTotal=trend.score+momentum.score+volumeLiquidity.score+entryQuality.score;
   const rawTotal=positiveTotal+penalties.score;
   const value=Math.max(0,Math.min(100,Math.round(rawTotal)));
-  const grade=value>=80?"A+ / GÜÇLÜ ADAY":value>=70?"A / AL ADAYI":value>=60?"B / İZLE":value>=50?"NÖTR":"ZAYIF";
+  const grade=value>=80?"A+ / GÜÇLÜ ADAY":value>=65?"A / AL ADAYI":value>=60?"B / İZLE":value>=50?"NÖTR":"ZAYIF";
   const scoreBreakdown={
     trend,
     momentum,
