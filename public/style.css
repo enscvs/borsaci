@@ -261,7 +261,7 @@ body::before {
 
   grid-template-areas:
 
-    "watchlist chart news"
+    "watchlist news news"
 
     "technical ai newsimpact"
 
@@ -976,9 +976,7 @@ textarea::placeholder {
 
     grid-template-areas:
 
-      "watchlist chart"
-
-      "news news"
+      "watchlist news"
 
       "technical ai"
 
@@ -1030,8 +1028,6 @@ textarea::placeholder {
     grid-template-areas:
 
       "watchlist"
-
-      "chart"
 
       "news"
 
@@ -1846,6 +1842,12 @@ textarea::placeholder {
 
 .trading-panel .panel-title {
   min-height: 40px;
+}
+
+/* Decision chart artık terminal grid'inde değil, AI Trading akışında tam genişliktedir. */
+.trading-tab > .chart {
+  grid-area: auto;
+  width: 100%;
 }
 
 

@@ -190,114 +190,6 @@
 
     </section>
 
-
-    <!-- ==================================================
-         MARKET CHART
-    ================================================== -->
-
-    <section class="panel chart">
-
-      <div class="panel-title">
-
-        <span>
-          MARKET CHART
-        </span>
-
-        <span
-          class="panel-status"
-          id="chartSymbol"
-        >
-          XU100
-        </span>
-
-      </div>
-
-
-      <div
-        class="chart-area"
-        id="chartArea"
-      >
-
-        <!-- BorsaCI'nin seçilen sembol ve işlem planı katmanlarını çizdiği grafik. -->
-        <div
-          id="market_chart"
-          class="market-chart"
-          aria-label="BorsaCI piyasa grafiği"
-        ></div>
-
-        <div
-          id="chartEmpty"
-          class="chart-empty"
-          aria-live="polite"
-        ></div>
-
-        <!-- BorsaCI grafiği kullanılamazsa görünür kalan TradingView yedeği. -->
-
-        <div
-          id="tradingviewChartFallback"
-          class="tradingview-widget-container"
-          style="height:100%;width:100%"
-        >
-
-          <div
-            class="tradingview-widget-container__widget"
-            style="height:calc(100% - 32px);width:100%"
-          ></div>
-
-          <div class="tradingview-widget-copyright">
-
-            <a
-              href="https://tr.tradingview.com/symbols/USDTRY/?exchange=FX"
-              rel="noopener nofollow"
-              target="_blank"
-            >
-
-              <span class="blue-text">
-                Track all markets on TradingView
-              </span>
-
-            </a>
-
-          </div>
-
-          <script
-            type="text/javascript"
-            src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
-            async
-          >
-          {
-            "allow_symbol_change": true,
-            "calendar": false,
-            "details": false,
-            "hide_side_toolbar": true,
-            "hide_top_toolbar": false,
-            "hide_legend": false,
-            "hide_volume": false,
-            "hotlist": false,
-            "interval": "240",
-            "locale": "tr",
-            "save_image": true,
-            "style": "1",
-            "symbol": "FX:USDTRY",
-            "theme": "dark",
-            "timezone": "Europe/Istanbul",
-            "backgroundColor": "#0F0F0F",
-            "gridColor": "rgba(242, 242, 242, 0.2)",
-            "watchlist": [],
-            "withdateranges": false,
-            "compareSymbols": [],
-            "studies": [],
-            "autosize": true
-          }
-          </script>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
     <!-- ==================================================
          NEWS
     ================================================== -->
@@ -957,6 +849,112 @@ Waiting for input...
 
       <div id="aiDecisionDetail" class="decision-detail-panel">
         Bir karar kartına tıklayarak detayları ve paper işlem seçeneklerini aç.
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         DECISION CHART
+    ================================================== -->
+
+    <section class="panel chart trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          DECISION CHART
+        </span>
+
+        <span
+          class="panel-status"
+          id="chartSymbol"
+        >
+          NO SYMBOL
+        </span>
+
+      </div>
+
+
+      <div
+        class="chart-area"
+        id="chartArea"
+      >
+
+        <!-- Karar seçildiğinde A/B/C ve işlem seviyeleri bu grafikte çizilir. -->
+        <div
+          id="market_chart"
+          class="market-chart"
+          aria-label="BorsaCI karar grafiği"
+        ></div>
+
+        <div
+          id="chartEmpty"
+          class="chart-empty"
+          aria-live="polite"
+        ></div>
+
+        <!-- BorsaCI grafiği kullanılamazsa görünür kalan TradingView yedeği. -->
+        <div
+          id="tradingviewChartFallback"
+          class="tradingview-widget-container"
+          style="height:100%;width:100%"
+        >
+
+          <div
+            class="tradingview-widget-container__widget"
+            style="height:calc(100% - 32px);width:100%"
+          ></div>
+
+          <div class="tradingview-widget-copyright">
+
+            <a
+              href="https://tr.tradingview.com/symbols/USDTRY/?exchange=FX"
+              rel="noopener nofollow"
+              target="_blank"
+            >
+
+              <span class="blue-text">
+                Track all markets on TradingView
+              </span>
+
+            </a>
+
+          </div>
+
+          <script
+            type="text/javascript"
+            src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+            async
+          >
+          {
+            "allow_symbol_change": true,
+            "calendar": false,
+            "details": false,
+            "hide_side_toolbar": true,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "hide_volume": false,
+            "hotlist": false,
+            "interval": "240",
+            "locale": "tr",
+            "save_image": true,
+            "style": "1",
+            "symbol": "FX:USDTRY",
+            "theme": "dark",
+            "timezone": "Europe/Istanbul",
+            "backgroundColor": "#0F0F0F",
+            "gridColor": "rgba(242, 242, 242, 0.2)",
+            "watchlist": [],
+            "withdateranges": false,
+            "compareSymbols": [],
+            "studies": [],
+            "autosize": true
+          }
+          </script>
+
+        </div>
+
       </div>
 
     </section>
