@@ -1130,7 +1130,7 @@
         "rank": 4,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 20.69,
@@ -1226,13 +1226,16 @@
           "summary": "Bu şirket için doğrulanmış haber bulunamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-23T00:01:38.759Z",
-          "expiresAt": "2026-08-24T00:01:38.759Z"
+          "expiresAt": "2026-08-24T00:01:38.759Z",
+          "rejectedAt": "2026-08-23T00:18:49.666Z",
+          "rejectedBy": "SITE"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T00:01:38.759Z"
+        "timestamp": "2026-08-23T00:01:38.759Z",
+        "outcome": "USER_REJECTED"
       },
       {
         "id": "1787441986014-ALARK",
@@ -6333,6 +6336,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-23T00:18:49.666Z",
+        "type": "PAPER_REJECTED",
+        "message": "DOHOL paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
         "timestamp": "2026-08-23T00:01:39.222Z",
         "type": "SCAN",
         "message": "5 active AI decision(s) refreshed or generated."
@@ -6824,11 +6832,6 @@
       },
       {
         "timestamp": "2026-08-22T09:28:58.335Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-22T08:53:33.931Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) retained or generated."
       }
