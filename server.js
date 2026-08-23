@@ -3866,7 +3866,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   // Trend direnci olmadan giriş üst limiti yoktur; bu durumda onaya
   // düşebilecek bir BUY SETUP üretmeyiz.
   const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed && hasEntryUpper);
-  const action=active&&item.score>=70?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
+  const action=active&&item.score>=65?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
   const status=action==="BUY SETUP"?"PENDING_APPROVAL":action==="NO TRADE"?"REJECTED":"PENDING";
   const now=new Date().toISOString();
   return {
