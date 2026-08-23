@@ -2373,7 +2373,8 @@ YAHOO CHART
 async function fetchYahooChart(
   symbol,
   range = "1y",
-  interval = "1d"
+  interval = "1d",
+  timeoutMs = 12000
 ) {
 
   const yahooSymbol =
@@ -2413,7 +2414,7 @@ async function fetchYahooChart(
   const timeout =
     setTimeout(
       () => controller.abort(),
-      12000
+      Math.max(1000, Number(timeoutMs) || 12000)
     );
 
   let response;
@@ -4411,7 +4412,8 @@ async function monitorPaperPositions() {
 
 
 async function recordAiDecisions(
-  decisions
+  decisions,
+  scannerSnapshot = null
 ) {
 
   const stateResult =
@@ -4547,6 +4549,10 @@ async function recordAiDecisions(
     ...state.decisions,
     ...retainedOpenDecisions,
   ];
+
+  if (scannerSnapshot) {
+    state.scannerSnapshot = scannerSnapshot;
+  }
 
   // Paper işlem scanner tarafından otomatik açılmaz. Yeni BUY SETUP'lar
   // Telegram veya sitedeki tek kullanımlık onaydan sonra açılabilir.
@@ -4992,6 +4998,89 @@ const BIST100_SYMBOLS = [
   "TUKAS","TUPRS","ULKER","VAKBN","VESBE","YKBNK","YEOTK",
   "ZOREN"
 ];
+
+const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v1";
+
+function istanbulClock(now = new Date()) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Istanbul",
+      weekday: "short",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(now).filter(item => item.type !== "literal").map(item => [item.type, item.value])
+  );
+  return {
+    day: parts.weekday,
+    hour: Number(parts.hour),
+    key: `${parts.year}-${parts.month}-${parts.day}`,
+  };
+}
+
+function previousBistWeekday(dateKey) {
+  const date = new Date(`${dateKey}T12:00:00.000Z`);
+  do {
+    date.setUTCDate(date.getUTCDate() - 1);
+  } while (date.getUTCDay() === 0 || date.getUTCDay() === 6);
+  return date.toISOString().slice(0, 10);
+}
+
+function lastClosedBistSessionKey(now = new Date()) {
+  const clock = istanbulClock(now);
+  if (clock.day === "Sat" || clock.day === "Sun" || clock.hour < 18) {
+    return previousBistWeekday(clock.key);
+  }
+  return clock.key;
+}
+
+function isBistOutsideTradingHours(now = new Date()) {
+  const clock = istanbulClock(now);
+  return clock.day === "Sat" || clock.day === "Sun" || clock.hour < 10 || clock.hour >= 18;
+}
+
+function normalizedScannerRisk(settings = {}) {
+  return {
+    capital: Math.max(1000, Number(settings.capital) || 100000),
+    maxPositionPercent: Math.min(31, Math.max(1, Number(settings.maxPositionPercent) || 31)),
+    maxPositions: Math.min(3, Math.max(1, Math.floor(Number(settings.maxPositions) || 3))),
+  };
+}
+
+function scannerRiskKey(settings = {}) {
+  const risk = normalizedScannerRisk(settings);
+  return `${risk.capital}|${risk.maxPositionPercent}|${risk.maxPositions}`;
+}
+
+function scannerSnapshotResult(item) {
+  const {history, ...result} = item || {};
+  return result;
+}
+
+function createScannerSnapshot(results, riskSettings, scanned, successful) {
+  return {
+    version: SCANNER_SNAPSHOT_VERSION,
+    sessionKey: lastClosedBistSessionKey(),
+    riskKey: scannerRiskKey(riskSettings),
+    createdAt: new Date().toISOString(),
+    scanned,
+    successful,
+    results: (Array.isArray(results) ? results : []).map(scannerSnapshotResult),
+  };
+}
+
+function canReuseScannerSnapshot(snapshot, riskSettings) {
+  return Boolean(
+    isBistOutsideTradingHours() &&
+    snapshot?.version === SCANNER_SNAPSHOT_VERSION &&
+    snapshot?.sessionKey === lastClosedBistSessionKey() &&
+    snapshot?.riskKey === scannerRiskKey(riskSettings) &&
+    Array.isArray(snapshot?.results) &&
+    snapshot.results.length === 5
+  );
+}
 
 
 /*
@@ -6017,7 +6106,9 @@ async function refreshScannerPriceFromHourly(
 
 async function scanSymbol(symbol) {
   try {
-    const yahoo = await fetchYahooChart(symbol, "2y", "1d");
+    // Taramanın her satırı aynı kısa süre içinde ya sonuçlanır ya da
+    // fail-closed olur. Bir tek sembol tüm 106 hisseyi kilitlemez.
+    const yahoo = await fetchYahooChart(symbol, "2y", "1d", 6000);
     const history = [...yahoo.history];
     /*
      * Gün içi taramada Yahoo'nun açık günlük mumunu indikatörlere
@@ -6056,26 +6147,39 @@ async function handleTradingScanner(req,res) {
     const riskSettings={capital:url.searchParams.get("capital"),maxPositionPercent:url.searchParams.get("maxPositionPercent"),maxPositions:url.searchParams.get("maxPositions")};
     jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
     updateScannerJob(jobId,2,"Teknik tarama başlatıldı");
+    const existingStateResult=await getTradingState();
+    const existingState=existingStateResult.content;
+    if(canReuseScannerSnapshot(existingState.scannerSnapshot,riskSettings)){
+      const snapshot=existingState.scannerSnapshot;
+      updateScannerJob(jobId,100,"Piyasa kapalı: son tamamlanmış günlük tarama aynen kullanıldı","COMPLETE");
+      return sendJSON(res,200,{success:true,cached:true,timestamp:new Date().toISOString(),scanned:snapshot.scanned,successful:snapshot.successful,complete:true,xu100:{status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."},results:snapshot.results,decisions:existingState.decisions,paper:existingState.paper,activity:existingState.activity,history:existingState.history,risk:existingState.risk});
+    }
     /*
      * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
      * Günlük veriyle A-B-C ve kırılım teyidi hesaplanır.
      */
-    const within=(promise,ms,fallback)=>Promise.race([
-      promise,
-      new Promise(resolve=>setTimeout(()=>resolve(fallback),ms))
-    ]);
-    // Render bağlantısının açık kalması için bütün taramanın mutlak
-    // süresi sınırlandırılır. Yavaş Yahoo çağrıları bir sonraki isteği
-    // kilitlemez; eksik semboller sonraki taramada tekrar denenir.
-    const started=Date.now(),dailyBudget=15000,batchSize=12,results=[];let scanned=0;
+    const within=(promise,ms,fallback)=>new Promise(resolve=>{
+      const timeout=setTimeout(()=>resolve(fallback),ms);
+      Promise.resolve(promise).then(
+        value=>{ clearTimeout(timeout); resolve(value); },
+        ()=>{ clearTimeout(timeout); resolve(fallback); }
+      );
+    });
+    // Her sembol ayrı zaman aşımına sahiptir. Bir yavaş Yahoo yanıtı
+    // tüm batch'i boşaltmaz; 106 sembol daima aynı sabit sırayla taranır.
+    const batchSize=12,results=[];let scanned=0;
     const xu100Promise=within(
-      fetchYahooChart("XU100","2y","1d").then(value=>fibonacciEngine.xu100Info(value.history)),
+      fetchYahooChart("XU100","2y","1d",3000).then(value=>fibonacciEngine.xu100Info(value.history)),
       3000,
       null
     ).catch(()=>null);
-    for(let i=0;i<BIST100_SYMBOLS.length&&Date.now()-started<dailyBudget;i+=batchSize){
+    for(let i=0;i<BIST100_SYMBOLS.length;i+=batchSize){
       const batch=BIST100_SYMBOLS.slice(i,i+batchSize);
-      const rows=await within(Promise.all(batch.map(scanSymbol)),4000,[]);
+      const rows=await Promise.all(batch.map(symbol=>within(
+        scanSymbol(symbol),
+        7000,
+        {symbol,history:null,validation:{ok:false,code:"FETCH_TIMEOUT"},dataStatus:"VERİ YETERSİZ"}
+      )));
       scanned+=batch.length;results.push(...rows);
       updateScannerJob(jobId,5+Math.round(50*scanned/BIST100_SYMBOLS.length),`${scanned}/${BIST100_SYMBOLS.length} hisse için günlük veri kontrol edildi`);
     }
@@ -6085,7 +6189,7 @@ async function handleTradingScanner(req,res) {
     // İlk seçim yalnızca mevcut teknik kalite kurallarıyla yapılır.
     // Fibonacci bu sıralamayı değiştirmez; yalnızca ilk beş adayın
     // giriş/stop/hedef planını doğrular.
-    const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>b.score-a.score);
+    const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>Number(b.score||0)-Number(a.score||0)||String(a.symbol).localeCompare(String(b.symbol),"en"));
     const technicalTopFive=valid.slice(0,5);
     updateScannerJob(jobId,60,`Teknik puanla ilk ${technicalTopFive.length} aday seçildi`);
     updateScannerJob(jobId,70,"Seçilen 5 aday için günlük Fibonacci A-B-C hesaplanıyor");
@@ -6093,8 +6197,9 @@ async function handleTradingScanner(req,res) {
     const enriched=technicalTopFive.map(item=>{
       const fib=fibonacciEngine.fibonacciPlan(item.history);
       const analysis=fibonacciEngine.score(item.history,fib);
-      const decision=analysis.score>=80?"A+ / GÜÇLÜ ADAY":analysis.score>=70?"A / AL ADAYI":analysis.score>=60?"B / İZLE":analysis.score>=50?"NÖTR":"ZAYIF";
-      return {...item,...analysis,fibonacci:fib,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
+      const technicalScore=Number(item.score||0);
+      const decision=technicalScore>=80?"A+ / GÜÇLÜ ADAY":technicalScore>=70?"A / AL ADAYI":technicalScore>=60?"B / İZLE":technicalScore>=50?"NÖTR":"ZAYIF";
+      return {...item,...analysis,score:technicalScore,grade:item.grade,scoreBreakdown:item.scoreBreakdown,fibonacci:fib,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
     });
     updateScannerJob(jobId,88,"Haber başlıkları için AI özeti hazırlanıyor");
     const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}]));
@@ -6105,7 +6210,8 @@ async function handleTradingScanner(req,res) {
     const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
     updateScannerJob(jobId,96,"Uygun Fibonacci kurulumları kaydediliyor");
-    const state=await recordAiDecisions(decisions);
+    const snapshot=createScannerSnapshot(ranked,riskSettings,scanned,valid.length);
+    const state=await recordAiDecisions(decisions,snapshot);
     updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:state.paper,activity:state.activity,history:state.history,risk:state.risk});
   } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }

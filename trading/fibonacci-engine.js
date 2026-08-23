@@ -1,7 +1,24 @@
 "use strict";
 
 const CONFIG = Object.freeze({
-  pivot: { left: 3, right: 3, minImpulseAtr: 3, retracementMin: 0.236, retracementMax: 0.886 },
+  pivot: {
+    left: 3,
+    right: 3,
+    minImpulseAtr: 3,
+    // Küçük 2–3 TL'lik zigzag'ların ana A-B-C yapısını ezmesini önler.
+    minImpulsePercent: 0.15,
+    // A-B, tek ve anlamlı bir ana hareket olmalı; aylarca sürmüş
+    // ilgisiz bir dip-tepe aralığını tek impuls gibi birleştirme.
+    maxImpulseBars: 45,
+    // B yeni bir ana tepe olmalı. Yakın geçmişte daha yüksek bir tepe
+    // varsa, onun altındaki sonraki dalga yeni A-B-C başlatmaz.
+    breakoutLookbackBars: 65,
+    maxCorrectionBars: 70,
+    // Eski, tamamlanmış yapılar yeni planın yerine geçmesin.
+    maxStructureAgeBars: 130,
+    retracementMin: 0.236,
+    retracementMax: 0.886,
+  },
   fibonacci: { entryTriggerRatio: 0.027, maxEntryDistanceAboveTrigger: 0.05, tp1Ratio: 0.618, tp2Ratio: 0.786, tp3Ratio: 1, stopLossPercentBelowC: 2 },
   scoring: {
     volumeLookback: 20, volumeStrongRatio: 1.2, volumeNeutralMin: 0.8,
@@ -75,24 +92,69 @@ function aggregateFourHour(hourly, now=Date.now()) {
 function findAbc(history) {
   const pivots=pivotPoints(history); let best=null;
   const lows=pivots.filter(point=>point.type==="LOW");
+  const highs=pivots.filter(point=>point.type==="HIGH");
   /*
-   * A ve C teyitli diplerdir. B ise bu iki dip arasındaki ilk küçük tepe
-   * değil, aralıktaki en yüksek teyitli tepedir. Böylece aynı yükseliş
-   * içinde daha yüksek bir tepe oluştuğunda uzatma o gerçek ana harekete
-   * göre çizilir.
+   * Trend-temelli Fibonacci uzatmasının üç noktası sırasıyla başlangıç
+   * (A), ana hareketin sonu (B) ve düzeltmenin sonudur (C). Bu nedenle
+   * B, A ile C arasındaki GÜNLÜK en yüksek high'dır; ilk küçük pivot
+   * high'ı değildir. A/B/C dışındaki günler B'yi değiştiremez.
    */
-  for(let c=1;c<lows.length;c+=1)for(let a=0;a<c;a+=1){
-    const A=lows[a],C=lows[c];
-    if(!(C.price>A.price))continue;
-    const highs=pivots.filter(point=>point.type==="HIGH"&&point.index>A.index&&point.index<C.index);
-    if(!highs.length)continue;
-    const B=highs.reduce((highest,point)=>point.price>highest.price?point:highest);
-    if(!(A.price<B.price&&B.price>C.price))continue;
-    const range=B.price-A.price, atr=features(history.slice(0,C.index+1)).atr, retracement=(B.price-C.price)/range;
-    if(!finite(atr)||range<atr*CONFIG.pivot.minImpulseAtr||retracement<CONFIG.pivot.retracementMin||retracement>CONFIG.pivot.retracementMax)continue;
-    const isNewer=!best||C.index>best.C.index||(C.index===best.C.index&&A.index>best.A.index);
-    if(isNewer)best={A,B,C,range,retracement};
-  } return best;
+  for(const pivotHigh of highs) {
+    const B={...pivotHigh};
+    const precedingHighs=history.slice(
+      Math.max(0,B.index-CONFIG.pivot.breakoutLookbackBars),
+      B.index
+    );
+    if(precedingHighs.some(bar=>bar.high>B.price)) continue;
+    const candidateAs=lows.filter(point=>
+      point.index<B.index &&
+      point.index>=B.index-CONFIG.pivot.maxImpulseBars
+    );
+    if(!candidateAs.length) continue;
+    // A, ana tepe öncesi hareketin gerçek başlangıç dibi olmalı.
+    const A=candidateAs.reduce((lowest,point)=>
+      point.price<lowest.price ? point : lowest
+    );
+    const candidateCs=lows.filter(point=>
+      point.index>B.index &&
+      point.index<=B.index+CONFIG.pivot.maxCorrectionBars &&
+      point.index>=history.length-1-CONFIG.pivot.maxStructureAgeBars &&
+      point.price>A.price
+    );
+    if(!candidateCs.length) continue;
+    // C, B'den sonraki teyitli en düşük diptir. Daha sonraki, daha
+    // yüksek küçük dipler yeni C olamaz; bununla mevcut ana yapı korunur.
+    const C=candidateCs.reduce((lowest,point)=>
+      point.price<lowest.price ? point : lowest
+    );
+    if(!(A.price<B.price&&B.price>C.price)) continue;
+    // B mutlaka A-C arasındaki gerçek ana tepe olmalı. B'den sonra daha
+    // yüksek bir high oluşmuşsa, bu B ile Fibonacci uzatması çizilmez.
+    if(history.slice(A.index+1,C.index).some(bar=>bar.high>B.price)) continue;
+    const range=B.price-A.price;
+    const atr=features(history.slice(0,C.index+1)).atr;
+    const retracement=(B.price-C.price)/range;
+    const impulsePercent=range/A.price;
+    if(
+      !finite(atr) ||
+      range<atr*CONFIG.pivot.minImpulseAtr ||
+      impulsePercent<CONFIG.pivot.minImpulsePercent ||
+      retracement<CONFIG.pivot.retracementMin ||
+      retracement>CONFIG.pivot.retracementMax
+    ) continue;
+    const candidate={A,B,C,range,retracement,impulsePercent};
+    // En yeni gerçek ana tepe seçilir. Mikro dalga, kendinden önceki
+    // daha yüksek tepeyi geçemediği için bu seçimi ele geçiremez.
+    if(
+      !best ||
+      candidate.B.index>best.B.index ||
+      (
+        candidate.B.index===best.B.index &&
+        candidate.impulsePercent>best.impulsePercent
+      )
+    ) best=candidate;
+  }
+  return best;
 }
 function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*(1-CONFIG.fibonacci.stopLossPercentBelowC/100),tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
 function entryDistanceAboveTrigger(lastClose, trigger) { return finite(lastClose)&&finite(trigger)&&Number(trigger)>0 ? (Number(lastClose)-Number(trigger))/Number(trigger) : null; }
