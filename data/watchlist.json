@@ -1126,11 +1126,289 @@
     },
     "decisions": [
       {
+        "id": "1787446926693-BIMAS",
+        "rank": 3,
+        "symbol": "BIMAS",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 355.91,
+          "high": 385.62,
+          "reference": 416.5
+        },
+        "stop": 346.19,
+        "target1": 414.12,
+        "target2": 430.67,
+        "target3": 451.75,
+        "riskReward": {
+          "tp1": null,
+          "tp2": null,
+          "tp3": null
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 37,
+          "positionValue": 15410.5,
+          "actualRisk": 2601.47,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 70,
+          "rsi": 64.63,
+          "atr": 12.61,
+          "macd": 6.68
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ENTRY_TOO_FAR",
+          "pointA": {
+            "type": "LOW",
+            "index": 399,
+            "price": 326.5,
+            "date": "2026-03-23T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 437,
+            "price": 425,
+            "date": "2026-05-14T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 471,
+            "price": 353.25,
+            "date": "2026-07-02T06:30:00.000Z"
+          },
+          "range": 98.5,
+          "retracementRatio": 0.7284,
+          "entryTriggerPrice": 355.91,
+          "entryZoneLow": 355.91,
+          "entryZoneHigh": 385.62,
+          "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+          "descendingResistance": {
+            "valid": true,
+            "available": true,
+            "source": "POST_B_LAST_TWO_LOWER_HIGHS",
+            "reason": null,
+            "anchor1": {
+              "type": "HIGH",
+              "index": 483,
+              "price": 408.25,
+              "date": "2026-07-21T06:30:00.000Z"
+            },
+            "anchor2": {
+              "type": "HIGH",
+              "index": 492,
+              "price": 395,
+              "date": "2026-08-03T06:30:00.000Z"
+            },
+            "slopePerBar": -1.472222,
+            "lastCompletedCandleTime": "2026-08-21T06:30:00.000Z",
+            "projectedPoint": {
+              "index": 506,
+              "date": "2026-08-21T06:30:00.000Z",
+              "price": 374.3889
+            },
+            "breakoutPrice": 374.3889,
+            "breakoutPriceAtLast": 374.3889,
+            "entryUpperRaw": 385.6205555555556,
+            "entryUpperPrice": 385.62
+          },
+          "stopLoss": 346.19,
+          "tp1": 414.12,
+          "tp2": 430.67,
+          "tp3": 451.75,
+          "volumeConfirmation": "WEAK",
+          "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-07-03T06:30:00.000Z",
+          "confirmationCandleClose": 357,
+          "entryPrice": 416.5
+        },
+        "grade": "A / AL ADAYI",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-23T15:31:29.323Z",
+          "expiresAt": "2026-08-24T15:31:29.323Z"
+        },
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "invalidation": "C seviyesinin %2 altındaki stop (346.19) planı geçersiz kılar.",
+        "timestamp": "2026-08-23T15:31:29.323Z"
+      },
+      {
+        "id": "1787446926693-DOHOL",
+        "rank": 4,
+        "symbol": "DOHOL",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 20.23,
+          "high": 22.15,
+          "reference": 21.6
+        },
+        "stop": 19.66,
+        "target1": 23.91,
+        "target2": 24.96,
+        "target3": 26.29,
+        "riskReward": {
+          "tp1": 1.19,
+          "tp2": 1.73,
+          "tp3": 2.42
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 717,
+          "positionValue": 15487.2,
+          "actualRisk": 1390.98,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 67,
+          "rsi": 56.35,
+          "atr": 0.62,
+          "macd": 0.01
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ACTIVE",
+          "pointA": {
+            "type": "LOW",
+            "index": 410,
+            "price": 19.010000228881836,
+            "date": "2026-04-07T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 434,
+            "price": 25.239999771118164,
+            "date": "2026-05-13T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 467,
+            "price": 20.059999465942383,
+            "date": "2026-06-30T06:30:00.000Z"
+          },
+          "range": 6.23,
+          "retracementRatio": 0.8315,
+          "entryTriggerPrice": 20.23,
+          "entryZoneLow": 20.23,
+          "entryZoneHigh": 22.15,
+          "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+          "descendingResistance": {
+            "valid": true,
+            "available": true,
+            "source": "POST_B_LAST_TWO_LOWER_HIGHS",
+            "reason": null,
+            "anchor1": {
+              "type": "HIGH",
+              "index": 488,
+              "price": 22.18000030517578,
+              "date": "2026-07-30T06:30:00.000Z"
+            },
+            "anchor2": {
+              "type": "HIGH",
+              "index": 498,
+              "price": 21.760000228881836,
+              "date": "2026-08-13T06:30:00.000Z"
+            },
+            "slopePerBar": -0.042,
+            "lastCompletedCandleTime": "2026-08-21T06:30:00.000Z",
+            "projectedPoint": {
+              "index": 504,
+              "date": "2026-08-21T06:30:00.000Z",
+              "price": 21.508
+            },
+            "breakoutPrice": 21.508,
+            "breakoutPriceAtLast": 21.508,
+            "entryUpperRaw": 22.153240188598634,
+            "entryUpperPrice": 22.15
+          },
+          "stopLoss": 19.66,
+          "tp1": 23.91,
+          "tp2": 24.96,
+          "tp3": 26.29,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": null,
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-07-01T06:30:00.000Z",
+          "confirmationCandleClose": 20.38,
+          "entryPrice": 21.6,
+          "riskRewardTp1": 1.19,
+          "riskRewardTp2": 1.73,
+          "riskRewardTp3": 2.42
+        },
+        "grade": "B / İZLE",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-23T15:31:29.323Z",
+          "expiresAt": "2026-08-24T15:31:29.323Z"
+        },
+        "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
+        "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
+        "timestamp": "2026-08-23T15:31:29.323Z"
+      }
+    ],
+    "history": [
+      {
         "id": "1787446926693-ALARK",
         "rank": 1,
         "symbol": "ALARK",
         "action": "WATCH",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": null,
         "entry": {
           "low": 97.79,
@@ -1224,229 +1502,16 @@
           "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-23T01:02:06.693Z",
-          "expiresAt": "2026-08-24T01:02:06.693Z"
+          "expiresAt": "2026-08-24T01:02:06.693Z",
+          "closedAt": "2026-08-23T15:31:29.989Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (95.21) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T01:02:06.693Z"
+        "timestamp": "2026-08-23T01:02:06.693Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
       },
-      {
-        "id": "1787446926693-BIMAS",
-        "rank": 3,
-        "symbol": "BIMAS",
-        "action": "WATCH",
-        "status": "PENDING",
-        "confidence": null,
-        "entry": {
-          "low": 355.91,
-          "high": 373.7,
-          "reference": 416.5
-        },
-        "stop": 346.19,
-        "target1": 414.12,
-        "target2": 430.67,
-        "target3": 451.75,
-        "riskReward": {
-          "tp1": null,
-          "tp2": null,
-          "tp3": null
-        },
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "quantity": 37,
-          "positionValue": 15410.5,
-          "actualRisk": 2601.47,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "indicators": {
-          "score": 70,
-          "rsi": 64.63,
-          "atr": 12.61,
-          "macd": 6.68
-        },
-        "filters": {
-          "trend": false,
-          "momentum": false,
-          "volume": false,
-          "rsi": true
-        },
-        "planMethod": "FIBONACCI_A_B_C_DAILY",
-        "fibonacci": {
-          "valid": true,
-          "status": "ENTRY_TOO_FAR",
-          "pointA": {
-            "type": "LOW",
-            "index": 399,
-            "price": 326.5,
-            "date": "2026-03-23T06:30:00.000Z"
-          },
-          "pointB": {
-            "type": "HIGH",
-            "index": 437,
-            "price": 425,
-            "date": "2026-05-14T06:30:00.000Z"
-          },
-          "pointC": {
-            "type": "LOW",
-            "index": 471,
-            "price": 353.25,
-            "date": "2026-07-02T06:30:00.000Z"
-          },
-          "range": 98.5,
-          "retracementRatio": 0.7284,
-          "entryTriggerPrice": 355.91,
-          "entryZoneLow": 355.91,
-          "entryZoneHigh": 373.7,
-          "stopLoss": 346.19,
-          "tp1": 414.12,
-          "tp2": 430.67,
-          "tp3": 451.75,
-          "volumeConfirmation": "WEAK",
-          "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
-          "confirmationPassed": true,
-          "confirmationCandleTime": "2026-07-03T06:30:00.000Z",
-          "confirmationCandleClose": 357,
-          "entryPrice": 416.5
-        },
-        "grade": "A / AL ADAYI",
-        "reasons": [
-          "Fiyat EMA20 üzerinde",
-          "EMA20 EMA50 üzerinde",
-          "Fiyat EMA200 üzerinde",
-          "EMA20 son 5 günde yükseliyor"
-        ],
-        "risks": [],
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": null,
-          "verdict": "INFO",
-          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-          "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
-        },
-        "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-23T01:02:06.693Z",
-          "expiresAt": "2026-08-24T01:02:06.693Z"
-        },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
-        "invalidation": "C seviyesinin %2 altındaki stop (346.19) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T01:02:06.693Z"
-      },
-      {
-        "id": "1787446926693-DOHOL",
-        "rank": 4,
-        "symbol": "DOHOL",
-        "action": "WATCH",
-        "status": "PENDING",
-        "confidence": null,
-        "entry": {
-          "low": 20.23,
-          "high": 21.24,
-          "reference": 21.6
-        },
-        "stop": 19.66,
-        "target1": 23.91,
-        "target2": 24.96,
-        "target3": 26.29,
-        "riskReward": {
-          "tp1": null,
-          "tp2": null,
-          "tp3": null
-        },
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "quantity": 717,
-          "positionValue": 15487.2,
-          "actualRisk": 1390.98,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "indicators": {
-          "score": 67,
-          "rsi": 56.35,
-          "atr": 0.62,
-          "macd": 0.01
-        },
-        "filters": {
-          "trend": false,
-          "momentum": false,
-          "volume": false,
-          "rsi": true
-        },
-        "planMethod": "FIBONACCI_A_B_C_DAILY",
-        "fibonacci": {
-          "valid": true,
-          "status": "ENTRY_TOO_FAR",
-          "pointA": {
-            "type": "LOW",
-            "index": 410,
-            "price": 19.010000228881836,
-            "date": "2026-04-07T06:30:00.000Z"
-          },
-          "pointB": {
-            "type": "HIGH",
-            "index": 434,
-            "price": 25.239999771118164,
-            "date": "2026-05-13T06:30:00.000Z"
-          },
-          "pointC": {
-            "type": "LOW",
-            "index": 467,
-            "price": 20.059999465942383,
-            "date": "2026-06-30T06:30:00.000Z"
-          },
-          "range": 6.23,
-          "retracementRatio": 0.8315,
-          "entryTriggerPrice": 20.23,
-          "entryZoneLow": 20.23,
-          "entryZoneHigh": 21.24,
-          "stopLoss": 19.66,
-          "tp1": 23.91,
-          "tp2": 24.96,
-          "tp3": 26.29,
-          "volumeConfirmation": "STRONG",
-          "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
-          "confirmationPassed": true,
-          "confirmationCandleTime": "2026-07-01T06:30:00.000Z",
-          "confirmationCandleClose": 20.38,
-          "entryPrice": 21.6
-        },
-        "grade": "B / İZLE",
-        "reasons": [
-          "Fiyat EMA20 üzerinde",
-          "Fiyat EMA200 üzerinde",
-          "EMA20 son 5 günde yükseliyor"
-        ],
-        "risks": [],
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": null,
-          "verdict": "INFO",
-          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-          "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
-        },
-        "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-23T01:02:06.693Z",
-          "expiresAt": "2026-08-24T01:02:06.693Z"
-        },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
-        "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T01:02:06.693Z"
-      }
-    ],
-    "history": [
       {
         "id": "1787445377437-ALARK",
         "rank": 1,
@@ -7749,7 +7814,17 @@
         "realizedPnL": 0
       }
     ],
+    "dailySummary": {
+      "sessionKey": null,
+      "reservedAt": null,
+      "snapshotCreatedAt": null
+    },
     "activity": [
+      {
+        "timestamp": "2026-08-23T15:31:29.989Z",
+        "type": "SCAN",
+        "message": "2 active AI decision(s) refreshed or generated."
+      },
       {
         "timestamp": "2026-08-23T01:02:07.383Z",
         "type": "SCAN",
@@ -8244,18 +8319,13 @@
         "timestamp": "2026-08-22T09:48:04.186Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-22T09:46:48.401Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
       }
     ],
     "scannerSnapshot": {
-      "version": "daily-top-five-v1",
+      "version": "daily-top-five-v3",
       "sessionKey": "2026-08-21",
       "riskKey": "50000|31|3",
-      "createdAt": "2026-08-23T01:02:06.694Z",
+      "createdAt": "2026-08-23T15:31:29.323Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -8295,7 +8365,7 @@
           "risks": [],
           "fibonacci": {
             "valid": true,
-            "status": "ENTRY_TOO_FAR",
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
             "pointA": {
               "type": "LOW",
               "index": 440,
@@ -8318,19 +8388,31 @@
             "retracementRatio": 0.6139,
             "entryTriggerPrice": 97.79,
             "entryZoneLow": 97.79,
-            "entryZoneHigh": 102.68,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-21T06:30:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
             "stopLoss": 95.21,
             "tp1": 111.8,
             "tp2": 115.78,
             "tp3": 120.85,
             "volumeConfirmation": "STRONG",
-            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
-            "confirmationPassed": true,
-            "confirmationCandleTime": "2026-07-10T06:30:00.000Z",
-            "confirmationCandleClose": 100.3,
-            "entryPrice": 106.3
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-23T01:01:59.654Z",
+          "timestamp": "2026-08-23T15:31:21.256Z",
           "decision": "A / AL ADAYI",
           "price": 106.30000305175781,
           "ema20": 104.9385114890177,
@@ -8347,8 +8429,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-            "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -8389,8 +8471,9 @@
             "valid": false,
             "status": "NO_VALID_STRUCTURE",
             "entryTriggerRatio": 0.027,
-            "maxEntryDistanceAboveTrigger": 0.05,
+            "entryUpperTrendlineBuffer": 0.03,
             "confirmationTimeframe": "1d",
+            "completedDailyCandleTime": "2026-08-21T06:30:00.000Z",
             "stopLossPercentBelowC": 2,
             "pointA": null,
             "pointB": null,
@@ -8404,6 +8487,8 @@
             "entryPrice": null,
             "entryZoneLow": null,
             "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": null,
             "stopLoss": null,
             "tp1": null,
             "tp2": null,
@@ -8413,7 +8498,7 @@
             "riskRewardTp3": null,
             "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
           },
-          "timestamp": "2026-08-23T01:02:03.156Z",
+          "timestamp": "2026-08-23T15:31:24.954Z",
           "decision": "A / AL ADAYI",
           "price": 1.0700000524520874,
           "ema20": 1.0194636255858538,
@@ -8430,8 +8515,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-            "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -8493,19 +8578,49 @@
             "retracementRatio": 0.7284,
             "entryTriggerPrice": 355.91,
             "entryZoneLow": 355.91,
-            "entryZoneHigh": 373.7,
+            "entryZoneHigh": 385.62,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "POST_B_LAST_TWO_LOWER_HIGHS",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 483,
+                "price": 408.25,
+                "date": "2026-07-21T06:30:00.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 492,
+                "price": 395,
+                "date": "2026-08-03T06:30:00.000Z"
+              },
+              "slopePerBar": -1.472222,
+              "lastCompletedCandleTime": "2026-08-21T06:30:00.000Z",
+              "projectedPoint": {
+                "index": 506,
+                "date": "2026-08-21T06:30:00.000Z",
+                "price": 374.3889
+              },
+              "breakoutPrice": 374.3889,
+              "breakoutPriceAtLast": 374.3889,
+              "entryUpperRaw": 385.6205555555556,
+              "entryUpperPrice": 385.62
+            },
             "stopLoss": 346.19,
             "tp1": 414.12,
             "tp2": 430.67,
             "tp3": 451.75,
             "volumeConfirmation": "WEAK",
-            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
             "confirmationPassed": true,
             "confirmationCandleTime": "2026-07-03T06:30:00.000Z",
             "confirmationCandleClose": 357,
             "entryPrice": 416.5
           },
-          "timestamp": "2026-08-23T01:02:00.056Z",
+          "timestamp": "2026-08-23T15:31:21.757Z",
           "decision": "A / AL ADAYI",
           "price": 416.5,
           "ema20": 392.0626207586984,
@@ -8522,8 +8637,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-            "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -8561,7 +8676,7 @@
           "risks": [],
           "fibonacci": {
             "valid": true,
-            "status": "ENTRY_TOO_FAR",
+            "status": "ACTIVE",
             "pointA": {
               "type": "LOW",
               "index": 410,
@@ -8584,19 +8699,52 @@
             "retracementRatio": 0.8315,
             "entryTriggerPrice": 20.23,
             "entryZoneLow": 20.23,
-            "entryZoneHigh": 21.24,
+            "entryZoneHigh": 22.15,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "POST_B_LAST_TWO_LOWER_HIGHS",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 488,
+                "price": 22.18000030517578,
+                "date": "2026-07-30T06:30:00.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 498,
+                "price": 21.760000228881836,
+                "date": "2026-08-13T06:30:00.000Z"
+              },
+              "slopePerBar": -0.042,
+              "lastCompletedCandleTime": "2026-08-21T06:30:00.000Z",
+              "projectedPoint": {
+                "index": 504,
+                "date": "2026-08-21T06:30:00.000Z",
+                "price": 21.508
+              },
+              "breakoutPrice": 21.508,
+              "breakoutPriceAtLast": 21.508,
+              "entryUpperRaw": 22.153240188598634,
+              "entryUpperPrice": 22.15
+            },
             "stopLoss": 19.66,
             "tp1": 23.91,
             "tp2": 24.96,
             "tp3": 26.29,
             "volumeConfirmation": "STRONG",
-            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+            "invalidReason": null,
             "confirmationPassed": true,
             "confirmationCandleTime": "2026-07-01T06:30:00.000Z",
             "confirmationCandleClose": 20.38,
-            "entryPrice": 21.6
+            "entryPrice": 21.6,
+            "riskRewardTp1": 1.19,
+            "riskRewardTp2": 1.73,
+            "riskRewardTp3": 2.42
           },
-          "timestamp": "2026-08-23T01:02:00.751Z",
+          "timestamp": "2026-08-23T15:31:22.554Z",
           "decision": "B / İZLE",
           "price": 21.600000381469727,
           "ema20": 21.079840464669715,
@@ -8613,8 +8761,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-            "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -8655,8 +8803,9 @@
             "valid": false,
             "status": "NO_VALID_STRUCTURE",
             "entryTriggerRatio": 0.027,
-            "maxEntryDistanceAboveTrigger": 0.05,
+            "entryUpperTrendlineBuffer": 0.03,
             "confirmationTimeframe": "1d",
+            "completedDailyCandleTime": "2026-08-21T06:30:00.000Z",
             "stopLossPercentBelowC": 2,
             "pointA": null,
             "pointB": null,
@@ -8670,6 +8819,8 @@
             "entryPrice": null,
             "entryZoneLow": null,
             "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": null,
             "stopLoss": null,
             "tp1": null,
             "tp2": null,
@@ -8679,7 +8830,7 @@
             "riskRewardTp3": null,
             "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
           },
-          "timestamp": "2026-08-23T01:02:00.052Z",
+          "timestamp": "2026-08-23T15:31:21.660Z",
           "decision": "B / İZLE",
           "price": 184.5,
           "ema20": 179.48389489986232,
@@ -8696,8 +8847,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Bu sembol için mevcut haber bulunmamaktadır, dikkatli izlenmesi önerilir.",
-            "summary": "Şu anda doğrulanmış bir haber kaynağı mevcut değil."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         }
       ]
