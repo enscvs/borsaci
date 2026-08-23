@@ -74,20 +74,13 @@ function aggregateFourHour(hourly, now=Date.now()) {
 }
 function findAbc(history) {
   const pivots=pivotPoints(history); let best=null;
-  for(let a=0;a<pivots.length;a+=1)for(let b=a+1;b<pivots.length;b+=1)for(let c=b+1;c<pivots.length;c+=1){
-    const A=pivots[a],B=pivots[b],C=pivots[c]; if(A.type!=="LOW"||B.type!=="HIGH"||C.type!=="LOW"||!(A.price<B.price&&C.price>A.price))continue;
+  /* A, B ve C atlanmış eski pivotlar değil, aynı ZigZag içindeki üç
+     ardışık dönüş olmalıdır: dip → tepe → daha yüksek dip. */
+  for(let c=2;c<pivots.length;c+=1){
+    const A=pivots[c-2],B=pivots[c-1],C=pivots[c]; if(A.type!=="LOW"||B.type!=="HIGH"||C.type!=="LOW"||!(A.price<B.price&&C.price>A.price))continue;
     const range=B.price-A.price, atr=features(history.slice(0,C.index+1)).atr, retracement=(B.price-C.price)/range;
     if(!finite(atr)||range<atr*CONFIG.pivot.minImpulseAtr||retracement<CONFIG.pivot.retracementMin||retracement>CONFIG.pivot.retracementMax)continue;
-    /*
-     * Aynı C dibi için eski, çok uzun bir hareket yerine C'ye en yakın
-     * onaylı LOW → HIGH → higher-LOW yapısını seç. Böylece uzatma,
-     * grafikteki son dip-tepe-daha yüksek dip yapısından çizilir.
-     */
-    const newerStructure=!best||
-      C.index>best.C.index||
-      (C.index===best.C.index&&B.index>best.B.index)||
-      (C.index===best.C.index&&B.index===best.B.index&&A.index>best.A.index);
-    if(newerStructure)best={A,B,C,range,retracement};
+    if(!best||C.index>best.C.index)best={A,B,C,range,retracement};
   } return best;
 }
 function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*(1-CONFIG.fibonacci.stopLossPercentBelowC/100),tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
