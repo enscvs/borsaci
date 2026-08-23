@@ -2380,8 +2380,149 @@ textarea::placeholder {
 .decision-chart-key.stop { color: #ff7f7f; }
 .decision-chart-key.target { color: #84f298; }
 
+.decision-score-panel {
+  border-color: rgba(91, 169, 255, .3);
+}
+
+.decision-score-content {
+  padding: 12px;
+  color: #b8d9c0;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.decision-score-empty {
+  color: #a8c5ae;
+}
+
+.decision-score-empty strong {
+  color: #b7dcff;
+}
+
+.decision-score-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(96, 176, 255, .26);
+  background: rgba(32, 77, 114, .12);
+}
+
+.decision-score-summary strong {
+  color: #b9dcff;
+  letter-spacing: .04em;
+}
+
+.decision-score-summary span {
+  color: #f1d486;
+}
+
+.decision-score-summary small {
+  flex-basis: 100%;
+  color: #9ebaa5;
+  font-size: 10px;
+}
+
+.decision-score-table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(72, 255, 104, .16);
+}
+
+.decision-score-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.decision-score-table th,
+.decision-score-table td {
+  padding: 8px 9px;
+  vertical-align: top;
+  border-bottom: 1px solid rgba(72, 255, 104, .12);
+  text-align: left;
+}
+
+.decision-score-table thead th {
+  color: #7f9a86;
+  background: rgba(9, 27, 11, .88);
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.decision-score-table tbody th {
+  min-width: 116px;
+  color: #d2f5d8;
+  font-size: 11px;
+}
+
+.decision-score-table td:nth-child(2) {
+  width: 70px;
+  color: #d9edc9;
+  white-space: nowrap;
+}
+
+.decision-score-table tfoot th,
+.decision-score-table tfoot td {
+  border-bottom: 0;
+  color: #b9dcff;
+  background: rgba(32, 77, 114, .12);
+}
+
+.decision-score-penalty-row th,
+.decision-score-penalty-row td {
+  color: #f0abab;
+}
+
+.score-factor {
+  display: inline-block;
+  margin: 1px 3px 3px 0;
+  padding: 2px 5px;
+  border: 1px solid transparent;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.score-factor-pass {
+  border-color: rgba(115, 232, 137, .3);
+  background: rgba(73, 169, 89, .1);
+  color: #a9efb5;
+}
+
+.score-factor-miss {
+  border-color: rgba(198, 197, 151, .26);
+  background: rgba(127, 121, 54, .09);
+  color: #d1cc9d;
+}
+
+.score-factor-info {
+  border-color: rgba(102, 170, 255, .35);
+  background: rgba(47, 106, 177, .11);
+  color: #a9ceff;
+}
+
+.score-factor-penalty {
+  border-color: rgba(255, 118, 118, .38);
+  background: rgba(164, 47, 47, .11);
+  color: #ffaaaa;
+}
+
+.score-factor-muted {
+  color: #87908a;
+}
+
 @media (max-width: 600px) {
   .decision-chart-status {
     line-height: 1.55;
+  }
+
+  .decision-score-content {
+    padding: 10px 8px;
+  }
+
+  .decision-score-summary {
+    padding: 8px;
   }
 }
