@@ -3876,7 +3876,13 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     riskReward:{tp1:plan.riskRewardTp1??null,tp2:plan.riskRewardTp2??null,tp3:plan.riskRewardTp3??null},
     riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.min(3,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.min(3,Math.max(1,Number(riskSettings.maxPositions)||3))},
     indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
-    filters:{trend:item.scoreBreakdown?.trend>0,momentum:item.scoreBreakdown?.momentum>0,volume:item.scoreBreakdown?.volume>0,rsi:item.features.rsi>=45&&item.features.rsi<=70},
+    /*
+     * Bu tablo ilk teknik eleme skorunun açıklamasıdır. Fibonacci daha
+     * sonra işlem planı kapısı olarak değerlendirilir; geçmişe dönük
+     * puan eklenmediği için karttaki skorla bire bir tutarlı kalır.
+     */
+    scoreBreakdown:item.scoreBreakdown?{...item.scoreBreakdown,calculationStage:"INITIAL_TECHNICAL_SCREEN"}:null,
+    filters:{trend:item.scoreBreakdown?.trend?.score>0,momentum:item.scoreBreakdown?.momentum?.score>0,volume:item.scoreBreakdown?.volumeLiquidity?.score>0,rsi:item.features.rsi>=45&&item.features.rsi<=70},
     planMethod:"FIBONACCI_A_B_C_DAILY",fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
     aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
     lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
@@ -5089,7 +5095,8 @@ const BIST100_SYMBOLS = [
   "ZOREN"
 ];
 
-const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v3";
+/* v4: kararlarla birlikte teknik puan kalemlerini de saklar. */
+const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v4";
 
 function istanbulClock(now = new Date()) {
   const parts = Object.fromEntries(

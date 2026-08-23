@@ -123,5 +123,23 @@ test("technical score is capped and not a probability",()=>{
   const history=Array.from({length:230},(_,i)=>({time:Date.UTC(2025,0,1+i)/1000,open:100+i*.1,high:101+i*.1,low:99+i*.1,close:100+i*.1,volume:5000000}));
   const result=fib.score(history,{valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"});
   assert.ok(result.score>=0&&result.score<=100);
+  assert.equal(result.score,Math.min(result.scoreBreakdown.maximum,Math.max(0,Math.round(result.scoreBreakdown.rawTotal))));
+  assert.ok(result.scoreBreakdown.positiveTotal<=result.scoreBreakdown.maximum);
   assert.match(result.grade,/A\+|A \/|B \/|NÖTR|ZAYIF/);
+});
+
+test("technical score breakdown reconciles exact category points and penalties",()=>{
+  const history=Array.from({length:230},(_,i)=>({time:Date.UTC(2025,0,1+i)/1000,open:100+i*.1,high:101+i*.1,low:99+i*.1,close:100+i*.1,volume:5000000}));
+  const result=fib.score(history,{valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"});
+  const breakdown=result.scoreBreakdown;
+  assert.deepEqual(
+    [breakdown.trend.score,breakdown.momentum.score,breakdown.volumeLiquidity.score,breakdown.entryQuality.score],
+    [30,15,15,5]
+  );
+  assert.equal(breakdown.positiveTotal,65);
+  assert.equal(breakdown.penalties.score,-10);
+  assert.equal(breakdown.penalties.items.find(item=>item.id==="rsi_overbought").applied,true);
+  assert.equal(breakdown.rawTotal,55);
+  assert.equal(breakdown.total,result.score);
+  assert.equal(result.score,55);
 });

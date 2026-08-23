@@ -328,18 +328,100 @@ function fallbackPlan(history, f) {
   return { method:"ATR_SUPPORT_RESISTANCE",entryPrice:round(entry),stopLoss:round(stop),tp1:round(entry+risk*2),tp2:round(entry+risk*3),tp3:round(Math.max(resistance,entry+risk*3)),riskRewardTp1:round(2),riskRewardTp2:round(3),riskRewardTp3:round((Math.max(resistance,entry+risk*3)-entry)/risk,2),message:"Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı." };
 }
 function score(history, fib) {
-  const f=features(history), c=CONFIG.scoring; let value=0;const reasons=[],risks=[];
-  if(f.price>f.ema20){value+=8;reasons.push("Fiyat EMA20 üzerinde");}if(f.ema20>f.ema50){value+=8;reasons.push("EMA20 EMA50 üzerinde");}if(f.price>f.ema200){value+=7;reasons.push("Fiyat EMA200 üzerinde");}if(f.ema20>f.ema20FiveDaysAgo){value+=7;reasons.push("EMA20 son 5 günde yükseliyor");}
-  if(f.rsi>=52&&f.rsi<=65)value+=10;else if((f.rsi>=45&&f.rsi<52)||(f.rsi>65&&f.rsi<=70))value+=5;
-  if(f.macd>f.macdSignal)value+=8;if(f.macdHistogram>0&&f.macdHistogram>f.previousHistogram)value+=7;
-  if(f.volumeRatio>=c.volumeStrongRatio)value+=10;else if(f.volumeRatio>=c.volumeNeutralMin&&f.volumeRatio<c.volumeStrongRatio)value+=5;
-  if(f.turnover>=c.turnoverStrong)value+=10;else if(f.turnover>=c.turnoverMedium)value+=5;
-  if(Math.abs(f.price-f.ema20)<=f.atr*c.emaDistanceAtr)value+=5;
-  if(fib.valid)value+=5;if(fib.confirmationPassed)value+=5;if(fib.volumeConfirmation==="STRONG")value+=3;
-  const bestR=Math.max(fib.riskRewardTp2||0,fib.riskRewardTp3||0);if(bestR>=2)value+=7;
-  if(f.rsi>c.overboughtRsi){value-=10;risks.push("RSI aşırı yüksek");}if(f.price-f.ema20>f.atr*c.extendedEmaAtr){value-=10;risks.push("Fiyat EMA20'den aşırı uzak");}if(f.fiveDayReturn>c.fiveDayRunupPercent){value-=5;risks.push("Son 5 günde aşırı yükseliş");}if(f.volumeRatio<.5){value-=10;risks.push("Hacim çok düşük");}if(f.macdHistogram<f.previousHistogram&&f.previousHistogram<f.histogramThreeBack){value-=5;risks.push("MACD histogramı zayıflıyor");}
-  value=Math.max(0,Math.min(100,Math.round(value)));const grade=value>=80?"A+ / GÜÇLÜ ADAY":value>=70?"A / AL ADAYI":value>=60?"B / İZLE":value>=50?"NÖTR":"ZAYIF";
-  return {score:value,grade,features:f,reasons,risks};
+  const f=features(history), c=CONFIG.scoring;
+  const reasons=[],risks=[];
+  const trend={score:0,max:30,items:[]};
+  const momentum={score:0,max:25,items:[]};
+  const volumeLiquidity={score:0,max:20,items:[]};
+  const entryQuality={score:0,max:25,items:[]};
+  const penalties={score:0,items:[]};
+
+  /*
+   * Karar puanını daha okunur hale getirirken aynı hesaplamayı koruyoruz.
+   * Her satır, hem backend kararının izini hem de arayüzdeki "neden"i
+   * taşır; bu alanlar hiçbir koşulu veya eşiği değiştirmez.
+   */
+  const add=(bucket,id,label,points,passed,detail="")=>{
+    const awarded=passed?points:0;
+    bucket.score+=awarded;
+    bucket.items.push({id,label,points:awarded,maxPoints:points,passed:Boolean(passed),detail});
+  };
+  const addVariable=(bucket,id,label,points,maxPoints,detail="")=>{
+    bucket.score+=points;
+    bucket.items.push({id,label,points,maxPoints,passed:points>0,partial:points>0&&points<maxPoints,detail});
+  };
+  const addPenalty=(id,label,points,applied,detail="")=>{
+    const deducted=applied?-Math.abs(points):0;
+    penalties.score+=deducted;
+    penalties.items.push({id,label,points:deducted,maxPoints:-Math.abs(points),applied:Boolean(applied),detail});
+  };
+
+  const priceAboveEma20=f.price>f.ema20;
+  const ema20AboveEma50=f.ema20>f.ema50;
+  const priceAboveEma200=f.price>f.ema200;
+  const ema20Rising=f.ema20>f.ema20FiveDaysAgo;
+  add(trend,"price_above_ema20","Fiyat EMA20 üzerinde",8,priceAboveEma20);
+  if(priceAboveEma20) reasons.push("Fiyat EMA20 üzerinde");
+  add(trend,"ema20_above_ema50","EMA20 EMA50 üzerinde",8,ema20AboveEma50);
+  if(ema20AboveEma50) reasons.push("EMA20 EMA50 üzerinde");
+  add(trend,"price_above_ema200","Fiyat EMA200 üzerinde",7,priceAboveEma200);
+  if(priceAboveEma200) reasons.push("Fiyat EMA200 üzerinde");
+  add(trend,"ema20_rising_5d","EMA20 son 5 günde yükseliyor",7,ema20Rising);
+  if(ema20Rising) reasons.push("EMA20 son 5 günde yükseliyor");
+
+  const rsiPoints=f.rsi>=52&&f.rsi<=65?10:((f.rsi>=45&&f.rsi<52)||(f.rsi>65&&f.rsi<=70)?5:0);
+  const rsiDetail=rsiPoints===10?"RSI 52–65 aralığında":rsiPoints===5?"RSI kabul edilebilir aralıkta":"RSI puan aralığında değil";
+  addVariable(momentum,"rsi14","RSI14",rsiPoints,10,rsiDetail);
+  add(momentum,"macd_above_signal","MACD sinyal çizgisinin üzerinde",8,f.macd>f.macdSignal);
+  add(momentum,"macd_histogram_strengthening","MACD histogramı pozitif ve güçleniyor",7,f.macdHistogram>0&&f.macdHistogram>f.previousHistogram);
+
+  const volumePoints=f.volumeRatio>=c.volumeStrongRatio?10:(f.volumeRatio>=c.volumeNeutralMin&&f.volumeRatio<c.volumeStrongRatio?5:0);
+  const volumeDetail=volumePoints===10?"Hacim 20 günlük ortalamanın en az 1,20 katı":volumePoints===5?"Hacim 20 günlük ortalamaya yakın":"Hacim 20 günlük ortalamanın altında";
+  addVariable(volumeLiquidity,"volume_ratio","Hacim oranı",volumePoints,10,volumeDetail);
+  const turnoverPoints=f.turnover>=c.turnoverStrong?10:(f.turnover>=c.turnoverMedium?5:0);
+  const turnoverDetail=turnoverPoints===10?"Günlük işlem tutarı 500 milyon TL ve üzeri":turnoverPoints===5?"Günlük işlem tutarı 200–500 milyon TL":"Günlük işlem tutarı 200 milyon TL altında";
+  addVariable(volumeLiquidity,"turnover","Likidite / işlem tutarı",turnoverPoints,10,turnoverDetail);
+
+  add(entryQuality,"near_ema20","Fiyat EMA20'ye en fazla 1 ATR uzaklıkta",5,Math.abs(f.price-f.ema20)<=f.atr*c.emaDistanceAtr);
+  add(entryQuality,"valid_fibonacci","Geçerli Fibonacci A–B–C yapısı",5,Boolean(fib?.valid));
+  add(entryQuality,"fibonacci_confirmation","Fibonacci dönüş teyidi",5,Boolean(fib?.confirmationPassed));
+  add(entryQuality,"volume_confirmation","Dönüş hacmi güçlü",3,fib?.volumeConfirmation==="STRONG");
+  const bestR=Math.max(fib?.riskRewardTp2||0,fib?.riskRewardTp3||0);
+  add(entryQuality,"risk_reward","TP2 veya TP3 için en az 1:2 risk/getiri",7,bestR>=2);
+
+  const rsiOverbought=f.rsi>c.overboughtRsi;
+  addPenalty("rsi_overbought","RSI aşırı yüksek",10,rsiOverbought);
+  if(rsiOverbought) risks.push("RSI aşırı yüksek");
+  const extendedAboveEma=f.price-f.ema20>f.atr*c.extendedEmaAtr;
+  addPenalty("extended_above_ema20","Fiyat EMA20'den aşırı uzak",10,extendedAboveEma);
+  if(extendedAboveEma) risks.push("Fiyat EMA20'den aşırı uzak");
+  const excessiveRunup=f.fiveDayReturn>c.fiveDayRunupPercent;
+  addPenalty("five_day_runup","Son 5 günde aşırı yükseliş",5,excessiveRunup);
+  if(excessiveRunup) risks.push("Son 5 günde aşırı yükseliş");
+  const lowVolume=f.volumeRatio<.5;
+  addPenalty("low_volume","Hacim çok düşük",10,lowVolume);
+  if(lowVolume) risks.push("Hacim çok düşük");
+  const weakeningHistogram=f.macdHistogram<f.previousHistogram&&f.previousHistogram<f.histogramThreeBack;
+  addPenalty("weakening_macd_histogram","MACD histogramı zayıflıyor",5,weakeningHistogram);
+  if(weakeningHistogram) risks.push("MACD histogramı zayıflıyor");
+
+  const positiveTotal=trend.score+momentum.score+volumeLiquidity.score+entryQuality.score;
+  const rawTotal=positiveTotal+penalties.score;
+  const value=Math.max(0,Math.min(100,Math.round(rawTotal)));
+  const grade=value>=80?"A+ / GÜÇLÜ ADAY":value>=70?"A / AL ADAYI":value>=60?"B / İZLE":value>=50?"NÖTR":"ZAYIF";
+  const scoreBreakdown={
+    trend,
+    momentum,
+    volumeLiquidity,
+    entryQuality,
+    penalties,
+    positiveTotal,
+    rawTotal,
+    total:value,
+    maximum:100,
+    capped:rawTotal!==value
+  };
+  return {score:value,grade,features:f,reasons,risks,scoreBreakdown};
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
 module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};

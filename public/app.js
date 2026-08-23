@@ -5990,8 +5990,151 @@ function formatCurrency(
 let renderedDecisionRecords = [];
 
 
+function scoreValue(value, fallback = 0) {
+  return Number.isFinite(Number(value))
+    ? Number(value)
+    : fallback;
+}
+
+
+function renderScoreFactors(bucket, type, decision) {
+  const items = Array.isArray(bucket?.items)
+    ? bucket.items
+    : [];
+
+  if (!items.length) {
+    return '<span class="score-factor score-factor-muted">Kalem verisi yok</span>';
+  }
+
+  const isInitialTechnicalScreen =
+    decision?.scoreBreakdown?.calculationStage ===
+    "INITIAL_TECHNICAL_SCREEN";
+
+  return items.map(item => {
+    const points = scoreValue(item?.points);
+    const maxPoints = Math.abs(scoreValue(item?.maxPoints));
+    const fibonacciAddedLater =
+      isInitialTechnicalScreen &&
+      decision?.fibonacci?.valid &&
+      [
+        "valid_fibonacci",
+        "fibonacci_confirmation",
+        "volume_confirmation",
+        "risk_reward",
+      ].includes(item?.id);
+
+    if (type === "penalty") {
+      if (!item?.applied) {
+        return '';
+      }
+
+      return `<span class="score-factor score-factor-penalty">${escapeHtml(`−${Math.abs(points)} ${item.label}`)}</span>`;
+    }
+
+    const stateClass = item?.passed
+      ? "score-factor-pass"
+      : fibonacciAddedLater
+        ? "score-factor-info"
+        : "score-factor-miss";
+
+    const prefix = item?.passed
+      ? `+${points}${item?.partial ? `/${maxPoints}` : ""}`
+      : fibonacciAddedLater
+        ? "PLAN"
+        : `+0/${maxPoints}`;
+
+    const message = fibonacciAddedLater
+      ? `${item.label}: Fibonacci planında ayrı doğrulandı`
+      : `${prefix} ${item.label}${item?.detail ? ` — ${item.detail}` : ""}`;
+
+    return `<span class="score-factor ${stateClass}">${escapeHtml(message)}</span>`;
+  }).join("");
+}
+
+
+function renderDecisionScoreBreakdown(item) {
+  const content = document.getElementById("decisionScoreContent");
+  const symbol = document.getElementById("decisionScoreSymbol");
+
+  if (!content || !symbol) return;
+
+  if (!item) {
+    symbol.textContent = "NO DECISION";
+    content.innerHTML = "Bir AI kararına tıklayarak puanın nedenlerini burada gör.";
+    return;
+  }
+
+  symbol.textContent = item.symbol || "NO SYMBOL";
+
+  const breakdown = item.scoreBreakdown;
+  const validBreakdown =
+    breakdown &&
+    typeof breakdown === "object" &&
+    ["trend", "momentum", "volumeLiquidity", "entryQuality"]
+      .every(key => breakdown[key] && Array.isArray(breakdown[key].items));
+
+  if (!validBreakdown) {
+    content.innerHTML = `<div class="decision-score-empty"><strong>${escapeHtml(item.symbol || "BU KARAR")}</strong> için puan kalemleri eski tarama formatında kayıtlı. Scanner'ı yeniden çalıştırdığında Trend, Momentum, Hacim/Likidite, Giriş Kalitesi ve cezalar burada ayrı ayrı görünür.</div>`;
+    return;
+  }
+
+  const total = scoreValue(
+    item.indicators?.score,
+    scoreValue(breakdown.total)
+  );
+  const grade = item.grade || item.action || "KARAR";
+  const missingForBuy = Math.max(0, 70 - total);
+  const fib = item.fibonacci || {};
+  const rows = [
+    ["Trend", breakdown.trend],
+    ["Momentum", breakdown.momentum],
+    ["Hacim & likidite", breakdown.volumeLiquidity],
+    ["Giriş kalitesi", breakdown.entryQuality],
+  ];
+
+  const rowMarkup = rows.map(([label, bucket]) => {
+    const points = scoreValue(bucket?.score);
+    const maximum = scoreValue(bucket?.max);
+    return `<tr><th scope="row">${escapeHtml(label)}</th><td><strong>${points}/${maximum}</strong></td><td>${renderScoreFactors(bucket, "positive", item)}</td></tr>`;
+  }).join("");
+
+  const penaltyPoints = scoreValue(breakdown.penalties?.score);
+  const penaltyFactors = renderScoreFactors(
+    breakdown.penalties,
+    "penalty",
+    item
+  ) || '<span class="score-factor score-factor-pass">Ceza yok</span>';
+  const fibStatus = fib.status || "FIBONACCI YOK";
+  const fibNote = fib.valid
+    ? `Fibonacci ${fibStatus}: işlem planı kapısı ayrı izlenir; ilk teknik puana geriye dönük eklenmez.`
+    : `Fibonacci ${fibStatus}: teknik puan tablosundan ayrı değerlendirilir.`;
+  const threshold = total >= 70
+    ? "AL eşiği (70) teknik olarak geçildi."
+    : `AL eşiğine ${missingForBuy} puan kaldı.`;
+
+  content.innerHTML = `
+    <div class="decision-score-summary">
+      <strong>TEKNİK ${total}/100 · ${escapeHtml(grade)}</strong>
+      <span>${escapeHtml(threshold)}</span>
+      <small>${escapeHtml(fibNote)}</small>
+    </div>
+    <div class="decision-score-table-wrap">
+      <table class="decision-score-table">
+        <thead><tr><th>BAŞLIK</th><th>PUAN</th><th>GEÇEN / EKSİK KANITLAR</th></tr></thead>
+        <tbody>
+          ${rowMarkup}
+          <tr class="decision-score-penalty-row"><th scope="row">Cezalar</th><td><strong>${penaltyPoints}</strong></td><td>${penaltyFactors}</td></tr>
+        </tbody>
+        <tfoot><tr><th>Toplam teknik kalite</th><td><strong>${total}/100</strong></td><td>${escapeHtml(grade)} · başarı olasılığı değildir.</td></tr></tfoot>
+      </table>
+    </div>
+  `;
+}
+
+
 function renderAiDecisionDetail(item) {
   const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
+  renderDecisionScoreBreakdown(item);
   const position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
   const fib=item.fibonacci||{};
   const fibAvailable=Boolean(fib.pointA&&fib.pointB&&fib.pointC);
@@ -6008,6 +6151,7 @@ function renderAiDecisionDetail(item) {
 
 function renderAiDecisions(decisions) {
   if (!aiDecisionFeed) return;
+  renderDecisionScoreBreakdown(null);
   const records=uniqueDecisions(decisions); renderedDecisionRecords=records;
   if (!records.length) { aiDecisionFeed.innerHTML='<div class="trading-empty">Detaylı teknik aday bulunamadı.</div>';return; }
   const approvals=records.filter(item=>item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL");
