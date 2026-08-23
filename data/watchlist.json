@@ -4,11 +4,28 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 38352.8847627926,
+      "cash": 22854.8847627926,
       "equity": 53840.0847627926,
       "pnl": 3840.093136816018,
       "pnlPercent": 7.680186273632036,
       "positions": [
+        {
+          "id": "paper-2026-08-23T00:00:25.121Z-BINBN",
+          "decisionId": "1787443096851-BINBN",
+          "symbol": "BINBN",
+          "quantity": 84,
+          "originalQuantity": 84,
+          "entry": 184.5,
+          "current": 184.5,
+          "stop": 165.12,
+          "target1": 277.4,
+          "target2": 306.05,
+          "status": "OPEN",
+          "openedAt": "2026-08-23T00:00:25.121Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-23T00:00:21.425Z-DOHOL",
           "decisionId": "1787443096851-DOHOL",
@@ -1436,7 +1453,7 @@
         "rank": 5,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 176.6,
@@ -1533,9 +1550,10 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-22T23:59:56.121Z",
-          "expiresAt": "2026-08-23T23:59:56.121Z"
+          "expiresAt": "2026-08-23T23:59:56.121Z",
+          "openedAt": "2026-08-23T00:00:25.121Z"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (165.12) planı geçersiz kılar.",
@@ -6086,6 +6104,16 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-23T00:00:25.121Z",
+        "type": "PAPER_APPROVED",
+        "message": "BINBN paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-23T00:00:25.121Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15498.00."
+      },
+      {
         "timestamp": "2026-08-23T00:00:21.425Z",
         "type": "PAPER_APPROVED",
         "message": "DOHOL paper işlemi SITE üzerinden onaylandı."
@@ -6574,16 +6602,6 @@
         "timestamp": "2026-08-21T23:58:57.384Z",
         "type": "RISK",
         "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
-      },
-      {
-        "timestamp": "2026-08-21T23:53:58.108Z",
-        "type": "CLOSED",
-        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-21T23:53:55.535Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ]
   }
