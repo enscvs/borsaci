@@ -39,6 +39,14 @@ let chartRange = "1y";
 let chartInterval = "1d";
 let chartHistory = [];
 
+/* AI Decision kartından açılan, grafik üzerinde geçici işlem planı katmanı. */
+let activeDecisionOverlay = null;
+let decisionOverlayPriceLines = [];
+let decisionOverlayMarkers = null;
+let decisionOverlayUsesSeriesMarkers = false;
+let decisionOverlayRequestId = 0;
+let symbolSelectionRequestId = 0;
+
 let analysisRunning = false;
 
 let performanceState = null;
@@ -872,7 +880,10 @@ function addSymbol() {
 ====================================================== */
 
 async function selectSymbol(
-  symbol
+  symbol,
+  {
+    persistInWatchlist = true
+  } = {}
 ) {
 
   const clean =
@@ -881,6 +892,9 @@ async function selectSymbol(
     );
 
   if (!clean) return;
+
+  const requestId =
+    ++symbolSelectionRequestId;
 
   selectedSymbol =
     clean;
@@ -893,6 +907,7 @@ async function selectSymbol(
   }
 
   if (
+    persistInWatchlist &&
     !symbols.includes(
       clean
     )
@@ -904,20 +919,37 @@ async function selectSymbol(
 
   }
 
-  saveWatchlist();
+  if (persistInWatchlist) {
+
+    saveWatchlist();
+
+  }
 
   renderWatchlist();
 
   clearChartOnly();
 
   await loadMarketData(
-    clean
+    clean,
+    requestId,
+    persistInWatchlist
   );
+
+  if (
+    requestId !==
+      symbolSelectionRequestId ||
+    selectedSymbol !== clean
+  ) {
+
+    return;
+
+  }
 
   await loadChartData(
     clean,
     chartRange,
-    chartInterval
+    chartInterval,
+    requestId
   );
 
 }
@@ -926,8 +958,27 @@ async function selectSymbol(
    MARKET DATA
 ====================================================== */
 
+function isCurrentSymbolRequest(
+  symbol,
+  requestId
+) {
+
+  return (
+    requestId === null ||
+    requestId === undefined ||
+    (
+      requestId ===
+        symbolSelectionRequestId &&
+      selectedSymbol === symbol
+    )
+  );
+
+}
+
 async function loadMarketData(
-  symbol
+  symbol,
+  requestId = null,
+  persistInWatchlist = true
 ) {
 
   const clean =
@@ -974,9 +1025,21 @@ async function loadMarketData(
         age < 20000
       ) {
 
+        if (
+          !isCurrentSymbolRequest(
+            clean,
+            requestId
+          )
+        ) {
+
+          return;
+
+        }
+
         updateDashboard(
           cached,
-          false
+          false,
+          persistInWatchlist
         );
 
         if (dataStatus) {
@@ -1070,9 +1133,21 @@ async function loadMarketData(
       clean
     ] = data;
 
+    if (
+      !isCurrentSymbolRequest(
+        clean,
+        requestId
+      )
+    ) {
+
+      return;
+
+    }
+
     updateDashboard(
       data,
-      false
+      false,
+      persistInWatchlist
     );
 
     if (dataStatus) {
@@ -1083,6 +1158,17 @@ async function loadMarketData(
     }
 
   } catch (error) {
+
+    if (
+      !isCurrentSymbolRequest(
+        clean,
+        requestId
+      )
+    ) {
+
+      return;
+
+    }
 
     console.error(
       "BORSACI MARKET ERROR:",
@@ -1102,7 +1188,13 @@ async function loadMarketData(
 
   } finally {
 
-    if (dataStatus) {
+    if (
+      dataStatus &&
+      isCurrentSymbolRequest(
+        clean,
+        requestId
+      )
+    ) {
 
       dataStatus.classList.remove(
         "loading"
@@ -1120,7 +1212,8 @@ async function loadMarketData(
 
 function updateDashboard(
   data,
-  updateChart = false
+  updateChart = false,
+  persistInWatchlist = true
 ) {
 
   if (!data) return;
@@ -1145,6 +1238,7 @@ function updateDashboard(
     }
 
     if (
+      persistInWatchlist &&
       !symbols.includes(
         backendSymbol
       )
@@ -1449,6 +1543,8 @@ function initMarketChart() {
 
     try {
 
+      clearDecisionChartOverlay();
+
       marketChart.remove();
 
     } catch {}
@@ -1538,6 +1634,11 @@ function initMarketChart() {
             true
         }
       }
+    );
+
+  chartContainer.parentElement
+    ?.classList.add(
+      "has-borsaci-chart"
     );
 
   candleSeries =
@@ -1934,7 +2035,8 @@ function extractChartHistory(
 async function loadChartData(
   symbol,
   range = chartRange,
-  interval = chartInterval
+  interval = chartInterval,
+  requestId = null
 ) {
 
   const clean =
@@ -1969,6 +2071,17 @@ async function loadChartData(
       cached.history.length > 0
     ) {
 
+      if (
+        !isCurrentSymbolRequest(
+          clean,
+          requestId
+        )
+      ) {
+
+        return;
+
+      }
+
       updateChartData(
         cached.history
       );
@@ -1979,10 +2092,19 @@ async function loadChartData(
 
   }
 
-  showEmptyChart(
-    "LOADING CHART",
-    `${range.toUpperCase()} / ${interval.toUpperCase()}`
-  );
+  if (
+    isCurrentSymbolRequest(
+      clean,
+      requestId
+    )
+  ) {
+
+    showEmptyChart(
+      "LOADING CHART",
+      `${range.toUpperCase()} / ${interval.toUpperCase()}`
+    );
+
+  }
 
   try {
 
@@ -2075,6 +2197,17 @@ async function loadChartData(
       history
     };
 
+    if (
+      !isCurrentSymbolRequest(
+        clean,
+        requestId
+      )
+    ) {
+
+      return;
+
+    }
+
     chartHistory =
       history;
 
@@ -2083,6 +2216,17 @@ async function loadChartData(
     );
 
   } catch (error) {
+
+    if (
+      !isCurrentSymbolRequest(
+        clean,
+        requestId
+      )
+    ) {
+
+      return;
+
+    }
 
     console.error(
       "BORSACI CHART ERROR:",
@@ -2580,7 +2724,619 @@ function updateChartData(
    CLEAR CHART
 ====================================================== */
 
+function decisionPrice(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === "" ||
+    !Number.isFinite(
+      Number(value)
+    )
+  ) {
+
+    return null;
+
+  }
+
+  const price =
+    Number(value);
+
+  return price > 0
+    ? price
+    : null;
+
+}
+
+
+function chartDateKey(
+  value
+) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+
+    return null;
+
+  }
+
+  if (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}/.test(
+      value
+    )
+  ) {
+
+    return value.slice(
+      0,
+      10
+    );
+
+  }
+
+  let timestamp =
+    Number(value);
+
+  if (
+    !Number.isFinite(
+      timestamp
+    )
+  ) {
+
+    timestamp =
+      new Date(value)
+        .getTime();
+
+  } else if (
+    timestamp < 10_000_000_000
+  ) {
+
+    timestamp *= 1000;
+
+  }
+
+  if (
+    !Number.isFinite(
+      timestamp
+    )
+  ) {
+
+    return null;
+
+  }
+
+  return new Date(
+    timestamp
+  )
+    .toISOString()
+    .slice(
+      0,
+      10
+    );
+
+}
+
+
+function decisionMarkerTime(
+  value
+) {
+
+  const wantedDate =
+    chartDateKey(
+      value
+    );
+
+  if (!wantedDate) {
+
+    return null;
+
+  }
+
+  const candle =
+    chartHistory.find(
+      item =>
+        chartDateKey(
+          getHistoryValue(
+            item,
+            [
+              "time",
+              "date",
+              "timestamp",
+              "datetime",
+              "t"
+            ]
+          )
+        ) === wantedDate
+    );
+
+  if (!candle) {
+
+    return null;
+
+  }
+
+  return normalizeChartTime(
+    getHistoryValue(
+      candle,
+      [
+        "time",
+        "date",
+        "timestamp",
+        "datetime",
+        "t"
+      ]
+    )
+  );
+
+}
+
+
+function clearDecisionChartOverlay() {
+
+  if (
+    candleSeries &&
+    Array.isArray(
+      decisionOverlayPriceLines
+    )
+  ) {
+
+    decisionOverlayPriceLines.forEach(
+      line => {
+
+        try {
+
+          candleSeries.removePriceLine(
+            line
+          );
+
+        } catch {}
+
+      }
+    );
+
+  }
+
+  decisionOverlayPriceLines = [];
+
+  if (
+    decisionOverlayMarkers &&
+    typeof decisionOverlayMarkers.setMarkers ===
+      "function"
+  ) {
+
+    try {
+
+      decisionOverlayMarkers.setMarkers(
+        []
+      );
+
+    } catch {}
+
+  } else if (
+    decisionOverlayUsesSeriesMarkers &&
+    candleSeries &&
+    typeof candleSeries.setMarkers ===
+      "function"
+  ) {
+
+    try {
+
+      candleSeries.setMarkers(
+        []
+      );
+
+    } catch {}
+
+  }
+
+  decisionOverlayMarkers = null;
+  decisionOverlayUsesSeriesMarkers = false;
+  activeDecisionOverlay = null;
+
+}
+
+
+function addDecisionPriceLine(
+  price,
+  title,
+  color,
+  lineStyle
+) {
+
+  const safePrice =
+    decisionPrice(
+      price
+    );
+
+  if (
+    !candleSeries ||
+    safePrice === null
+  ) {
+
+    return;
+
+  }
+
+  try {
+
+    const line =
+      candleSeries.createPriceLine(
+        {
+          price: safePrice,
+          color,
+          lineWidth: 1,
+          lineStyle,
+          axisLabelVisible: true,
+          title
+        }
+      );
+
+    decisionOverlayPriceLines.push(
+      line
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "BORSACI: işlem planı çizgisi eklenemedi.",
+      error
+    );
+
+  }
+
+}
+
+
+function renderDecisionChartOverlay(
+  decision
+) {
+
+  clearDecisionChartOverlay();
+
+  if (
+    !decision ||
+    !candleSeries ||
+    !marketChart
+  ) {
+
+    return;
+
+  }
+
+  const fib =
+    decision.fibonacci ||
+    {};
+
+  const lineStyle =
+    typeof LightweightCharts !==
+      "undefined"
+      ? (
+          LightweightCharts.LineStyle ||
+          {}
+        )
+      : {};
+
+  const dotted =
+    lineStyle.Dotted ??
+    1;
+
+  const dashed =
+    lineStyle.Dashed ??
+    2;
+
+  const solid =
+    lineStyle.Solid ??
+    0;
+
+  const levels =
+    [
+      {
+        price:
+          fib.entryTriggerPrice,
+        title:
+          "FIB TETİK",
+        color:
+          "#76a9ff",
+        style:
+          dashed
+      },
+      {
+        price:
+          decision.entry?.low ??
+          fib.entryZoneLow ??
+          fib.entryPrice,
+        title:
+          "GİRİŞ ALT",
+        color:
+          "#72dddd",
+        style:
+          dotted
+      },
+      {
+        price:
+          decision.entry?.high ??
+          fib.entryZoneHigh,
+        title:
+          "GİRİŞ ÜST",
+        color:
+          "#72dddd",
+        style:
+          dotted
+      },
+      {
+        price:
+          fib.stopLoss ??
+          decision.stop,
+        title:
+          "SL",
+        color:
+          "#ff6b6b",
+        style:
+          solid
+      },
+      {
+        price:
+          fib.tp1 ??
+          decision.target1,
+        title:
+          "TP1",
+        color:
+          "#78e58b",
+        style:
+          solid
+      },
+      {
+        price:
+          fib.tp2 ??
+          decision.target2,
+        title:
+          "TP2",
+        color:
+          "#78e58b",
+        style:
+          solid
+      },
+      {
+        price:
+          fib.tp3 ??
+          decision.target3,
+        title:
+          "TP3",
+        color:
+          "#78e58b",
+        style:
+          solid
+      }
+    ];
+
+  const drawnPrices =
+    new Set();
+
+  levels.forEach(
+    level => {
+
+      const price =
+        decisionPrice(
+          level.price
+        );
+
+      if (
+        price === null ||
+        drawnPrices.has(
+          price.toFixed(6)
+        )
+      ) {
+
+        return;
+
+      }
+
+      drawnPrices.add(
+        price.toFixed(6)
+      );
+
+      addDecisionPriceLine(
+        price,
+        level.title,
+        level.color,
+        level.style
+      );
+
+    }
+  );
+
+  const markers =
+    [
+      {
+        point:
+          fib.pointA,
+        label:
+          "A",
+        position:
+          "belowBar",
+        shape:
+          "arrowUp",
+        color:
+          "#f5c15d"
+      },
+      {
+        point:
+          fib.pointB,
+        label:
+          "B",
+        position:
+          "aboveBar",
+        shape:
+          "arrowDown",
+        color:
+          "#78e58b"
+      },
+      {
+        point:
+          fib.pointC,
+        label:
+          "C",
+        position:
+          "belowBar",
+        shape:
+          "arrowUp",
+        color:
+          "#76a9ff"
+      }
+    ]
+      .map(
+        marker => {
+
+          const time =
+            decisionMarkerTime(
+              marker.point?.date
+            );
+
+          const price =
+            decisionPrice(
+              marker.point?.price
+            );
+
+          if (
+            time === null ||
+            price === null
+          ) {
+
+            return null;
+
+          }
+
+          return {
+            time,
+            position:
+              marker.position,
+            color:
+              marker.color,
+            shape:
+              marker.shape,
+            text:
+              `${marker.label} ₺${formatPrice(price)}`
+          };
+
+        }
+      )
+      .filter(Boolean);
+
+  if (
+    markers.length > 0
+  ) {
+
+    try {
+
+      if (
+        typeof LightweightCharts !==
+          "undefined" &&
+        typeof LightweightCharts.createSeriesMarkers ===
+          "function"
+      ) {
+
+        decisionOverlayMarkers =
+          LightweightCharts.createSeriesMarkers(
+            candleSeries,
+            markers
+          );
+
+      } else if (
+        typeof candleSeries.setMarkers ===
+          "function"
+      ) {
+
+        candleSeries.setMarkers(
+          markers
+        );
+
+        decisionOverlayUsesSeriesMarkers =
+          true;
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "BORSACI: A/B/C grafikte işaretlenemedi.",
+        error
+      );
+
+    }
+
+  }
+
+  activeDecisionOverlay =
+    decision;
+
+}
+
+
+async function focusDecisionOnChart(
+  decision
+) {
+
+  const symbol =
+    normalizeSymbol(
+      decision?.symbol
+    );
+
+  if (!symbol) {
+
+    return;
+
+  }
+
+  const requestId =
+    ++decisionOverlayRequestId;
+
+  /* Fibonacci noktaları günlük olduğundan aynı zaman diliminde çizilir. */
+  chartRange = "1y";
+  chartInterval = "1d";
+
+  try {
+
+    await selectSymbol(
+      symbol,
+      {
+        /* Karar grafiğini açmak watchlist'i veya GitHub'daki listeyi değiştirmez. */
+        persistInWatchlist: false
+      }
+    );
+
+    if (
+      requestId !==
+        decisionOverlayRequestId ||
+      selectedSymbol !== symbol
+    ) {
+
+      return;
+
+    }
+
+    renderDecisionChartOverlay(
+      decision
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "BORSACI: işlem planı grafiği yüklenemedi.",
+      error
+    );
+
+  }
+
+}
+
 function clearChartOnly() {
+
+  clearDecisionChartOverlay();
 
   if (candleSeries) {
 
@@ -4856,7 +5612,15 @@ function renderAiDecisionDetail(item) {
   const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
   const position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
   const fib=item.fibonacci||{};
-  element.innerHTML=`<strong>${item.symbol} · ${item.grade||item.action} · ${fib.status||"FIBONACCI YOK"}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · B: ${formatCurrency(fib.pointB?.price)} · C: ${formatCurrency(fib.pointC?.price)}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)} · Stop: ${formatCurrency(item.stop)}</span><span>TP1: ${formatCurrency(item.target1)} · R/R ${item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(item.target2)} · R/R ${item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(item.target3)} · R/R ${item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK"}</span></div>${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${item.reason||""}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${position.id}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL"?`<button type="button" class="trading-button" data-paper-action="approve" data-decision-id="${item.id}">APPROVE PAPER POSITION</button><button type="button" class="trading-button" style="margin-left:8px;border-color:#c44;color:#ff8a8a" data-paper-action="reject" data-decision-id="${item.id}">REJECT</button>`:""}`;
+  const fibAvailable=Boolean(fib.pointA&&fib.pointB&&fib.pointC);
+  const stop=fib.stopLoss??item.stop;
+  const tp1=fib.tp1??item.target1;
+  const tp2=fib.tp2??item.target2;
+  const tp3=fib.tp3??item.target3;
+  const chartStatus=fibAvailable
+    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ile tetik, giriş, SL ve hedefler MARKET CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
+    :`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>Geçerli A/B/C noktası olmadığı için grafiğe Fibonacci çizgisi eklenmedi.</span></div>`;
+  element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL"?`<button type="button" class="trading-button" data-paper-action="approve" data-decision-id="${escapeHtml(item.id)}">APPROVE PAPER POSITION</button><button type="button" class="trading-button" style="margin-left:8px;border-color:#c44;color:#ff8a8a" data-paper-action="reject" data-decision-id="${escapeHtml(item.id)}">REJECT</button>`:""}`;
 }
 
 
@@ -5255,6 +6019,7 @@ function bindDecisionBoard() {
 
       if (item) {
         renderAiDecisionDetail(item);
+        void focusDecisionOnChart(item);
       }
 
     }
