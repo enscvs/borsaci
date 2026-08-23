@@ -6108,7 +6108,7 @@ function renderDecisionScoreBreakdown(item) {
   const fibNote = fib.valid
     ? `Fibonacci ${fibStatus}: işlem planı kapısı ayrı izlenir; ilk teknik puana geriye dönük eklenmez.`
     : `Fibonacci ${fibStatus}: teknik puan tablosundan ayrı değerlendirilir.`;
-  const threshold = total >= 70
+  const threshold = total >= 60
     ? "AL eşiği (70) teknik olarak geçildi."
     : `AL eşiğine ${missingForBuy} puan kaldı.`;
 
