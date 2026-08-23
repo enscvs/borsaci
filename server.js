@@ -3784,7 +3784,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
     lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
     reason:active?"A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.":(fib.invalidReason||"C'den dönüş için günlük teyit bekleniyor."),
-    invalidation:`C seviyesinin %4 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`,
+    invalidation:`C seviyesinin %2 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`,
     timestamp:now,
   };
 }

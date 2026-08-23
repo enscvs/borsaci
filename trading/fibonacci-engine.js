@@ -2,7 +2,7 @@
 
 const CONFIG = Object.freeze({
   pivot: { left: 3, right: 3, minImpulseAtr: 3, retracementMin: 0.236, retracementMax: 0.786 },
-  fibonacci: { entryTriggerRatio: 0.027, maxEntryDistanceAboveTrigger: 0.05, tp1Ratio: 0.618, tp2Ratio: 0.786, tp3Ratio: 1, stopLossPercentBelowC: 4 },
+  fibonacci: { entryTriggerRatio: 0.027, maxEntryDistanceAboveTrigger: 0.05, tp1Ratio: 0.618, tp2Ratio: 0.786, tp3Ratio: 1, stopLossPercentBelowC: 2 },
   scoring: {
     volumeLookback: 20, volumeStrongRatio: 1.2, volumeNeutralMin: 0.8,
     turnoverStrong: 500000000, turnoverMedium: 200000000, emaDistanceAtr: 1,
@@ -51,11 +51,21 @@ function features(history) {
   return { price, ema20:e20[i],ema50:e50[i],ema200:e200[i],ema20FiveDaysAgo:e20[i-5],rsi:rsi[i],atr:atr[i],macd:m.line[i],macdSignal:m.signal[i],macdHistogram:m.hist[i],previousHistogram:m.hist[i-1],histogramThreeBack:m.hist[i-3],volume:volumes[i],averageVolume:vavg,volumeRatio:finite(vavg)&&vavg>0?volumes[i]/vavg:null,turnover:turn,fiveDayReturn:i>=5?(price/closes[i-5]-1)*100:null };
 }
 function pivotPoints(history) {
-  const {left,right}=CONFIG.pivot, pivots=[];
+  const {left,right}=CONFIG.pivot, raw=[];
   for(let i=left;i<history.length-right;i+=1){const window=history.slice(i-left,i+right+1), low=history[i].low,high=history[i].high;
-    if(window.every(b=>low<=b.low))pivots.push({type:"LOW",index:i,price:low,date:iso(history[i])});
-    if(window.every(b=>high>=b.high))pivots.push({type:"HIGH",index:i,price:high,date:iso(history[i])});
-  } return pivots;
+    if(window.every(b=>low<=b.low))raw.push({type:"LOW",index:i,price:low,date:iso(history[i])});
+    if(window.every(b=>high>=b.high))raw.push({type:"HIGH",index:i,price:high,date:iso(history[i])});
+  }
+  // Ardışık aynı türdeki küçük/flat pivotları tek bir ZigZag dönüşüne indir.
+  // LOW grubunda en düşük, HIGH grubunda en yüksek nokta tutulur.
+  const pivots=[];
+  for(const point of raw){
+    const previous=pivots.at(-1);
+    if(!previous||previous.type!==point.type){pivots.push(point);continue;}
+    const isMoreExtreme=point.type==="LOW"?point.price<previous.price:point.price>previous.price;
+    if(isMoreExtreme)pivots[pivots.length-1]=point;
+  }
+  return pivots;
 }
 function aggregateFourHour(hourly, now=Date.now()) {
   const fmt=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"}),groups=new Map();
@@ -68,10 +78,19 @@ function findAbc(history) {
     const A=pivots[a],B=pivots[b],C=pivots[c]; if(A.type!=="LOW"||B.type!=="HIGH"||C.type!=="LOW"||!(A.price<B.price&&C.price>A.price))continue;
     const range=B.price-A.price, atr=features(history.slice(0,C.index+1)).atr, retracement=(B.price-C.price)/range;
     if(!finite(atr)||range<atr*CONFIG.pivot.minImpulseAtr||retracement<CONFIG.pivot.retracementMin||retracement>CONFIG.pivot.retracementMax)continue;
-    if(!best||C.index>best.C.index)best={A,B,C,range,retracement};
+    /*
+     * Aynı C dibi için eski, çok uzun bir hareket yerine C'ye en yakın
+     * onaylı LOW → HIGH → higher-LOW yapısını seç. Böylece uzatma,
+     * grafikteki son dip-tepe-daha yüksek dip yapısından çizilir.
+     */
+    const newerStructure=!best||
+      C.index>best.C.index||
+      (C.index===best.C.index&&B.index>best.B.index)||
+      (C.index===best.C.index&&B.index===best.B.index&&A.index>best.A.index);
+    if(newerStructure)best={A,B,C,range,retracement};
   } return best;
 }
-function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*.96,tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
+function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*(1-CONFIG.fibonacci.stopLossPercentBelowC/100),tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
 function entryDistanceAboveTrigger(lastClose, trigger) { return finite(lastClose)&&finite(trigger)&&Number(trigger)>0 ? (Number(lastClose)-Number(trigger))/Number(trigger) : null; }
 function fibonacciPlan(daily) {
   const abc=findAbc(daily);
