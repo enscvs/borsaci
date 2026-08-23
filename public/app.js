@@ -3194,6 +3194,162 @@ function addDecisionPivotRay(
 }
 
 
+function addDecisionDescendingResistanceTrendline(
+  resistance,
+  lineStyle
+) {
+
+  if (
+    !marketChart ||
+    typeof LightweightCharts ===
+      "undefined" ||
+    !LightweightCharts.LineSeries ||
+    !(
+      resistance?.valid ??
+      resistance?.available
+    )
+  ) {
+
+    return;
+
+  }
+
+  const anchor1 =
+    resistance.anchor1;
+
+  const anchor2 =
+    resistance.anchor2;
+
+  const projectedPoint =
+    resistance.projectedPoint;
+
+  const startTime =
+    decisionMarkerTime(
+      anchor1?.date
+    );
+
+  const anchor2Time =
+    decisionMarkerTime(
+      anchor2?.date
+    );
+
+  const endTime =
+    decisionMarkerTime(
+      projectedPoint?.date ??
+      resistance.lastCompletedCandleTime
+    );
+
+  const startPrice =
+    decisionPrice(
+      anchor1?.price
+    );
+
+  const anchor2Price =
+    decisionPrice(
+      anchor2?.price
+    );
+
+  const endPrice =
+    decisionPrice(
+      projectedPoint?.price ??
+      resistance.breakoutPrice ??
+      resistance.breakoutPriceAtLast
+    );
+
+  if (
+    startTime === null ||
+    anchor2Time === null ||
+    endTime === null ||
+    startPrice === null ||
+    anchor2Price === null ||
+    endPrice === null ||
+    chartTimeOrder(startTime) === null ||
+    chartTimeOrder(anchor2Time) === null ||
+    chartTimeOrder(endTime) === null ||
+    chartTimeOrder(startTime) >=
+      chartTimeOrder(anchor2Time) ||
+    chartTimeOrder(anchor2Time) >
+      chartTimeOrder(endTime)
+  ) {
+
+    return;
+
+  }
+
+  try {
+
+    const series =
+      marketChart.addSeries(
+        LightweightCharts.LineSeries,
+        {
+          color:
+            "#ff5d5d",
+          lineWidth:
+            2,
+          lineStyle,
+          lastValueVisible:
+            false,
+          priceLineVisible:
+            false,
+          crosshairMarkerVisible:
+            false,
+          title:
+            "ALÇALAN TEPE TRENDİ"
+        }
+      );
+
+    const data =
+      [
+        {
+          time:
+            startTime,
+          value:
+            startPrice
+        },
+        {
+          time:
+            anchor2Time,
+          value:
+            anchor2Price
+        }
+      ];
+
+    if (
+      chartTimeOrder(anchor2Time) <
+      chartTimeOrder(endTime)
+    ) {
+
+      data.push(
+        {
+          time:
+            endTime,
+          value:
+            endPrice
+        }
+      );
+
+    }
+
+    series.setData(
+      data
+    );
+
+    decisionOverlayRaySeries.push(
+      series
+    );
+
+  } catch (error) {
+
+    console.warn(
+      "BORSACI: alçalan tepe trend çizgisi eklenemedi.",
+      error
+    );
+
+  }
+
+}
+
+
 function renderDecisionChartOverlay(
   decision
 ) {
@@ -3350,6 +3506,11 @@ function renderDecisionChartOverlay(
       );
 
     }
+  );
+
+  addDecisionDescendingResistanceTrendline(
+    fib.descendingResistance,
+    solid
   );
 
   const pivotOverlays =
@@ -5839,7 +6000,7 @@ function renderAiDecisionDetail(item) {
   const tp2=fib.tp2??item.target2;
   const tp3=fib.tp3??item.target3;
   const chartStatus=fibAvailable
-    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ve sağa uzanan seviyeleri ile tetik, giriş, SL ve hedefler DECISION CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
+    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ve sağa uzanan seviyeleri ile tetik, giriş, SL, hedefler ve varsa alçalan tepe trendi DECISION CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key resistance">DİRENÇ TRENDİ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
     :`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>Geçerli A/B/C noktası olmadığı için grafiğe Fibonacci çizgisi eklenmedi.</span></div>`;
   element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL"?`<button type="button" class="trading-button" data-paper-action="approve" data-decision-id="${escapeHtml(item.id)}">APPROVE PAPER POSITION</button><button type="button" class="trading-button" style="margin-left:8px;border-color:#c44;color:#ff8a8a" data-paper-action="reject" data-decision-id="${escapeHtml(item.id)}">REJECT</button>`:""}`;
 }
