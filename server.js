@@ -265,10 +265,16 @@ function buildPaperApprovalNotification(decision) {
 
 function paperApprovalKeyboard(decision) {
   return {
-    inline_keyboard: [[{
-      text: `✅ ${decision.symbol} PAPER İŞLEMİNİ ONAYLA`,
-      callback_data: `paper_approve:${decision.id}`,
-    }]],
+    inline_keyboard: [[
+      {
+        text: `✅ ${decision.symbol} ONAYLA`,
+        callback_data: `paper_approve:${decision.id}`,
+      },
+      {
+        text: "✖ REDDET",
+        callback_data: `paper_reject:${decision.id}`,
+      },
+    ]],
   };
 }
 
@@ -4508,6 +4514,8 @@ async function recordAiDecisions(
           status:
             hasOpenPosition
               ? "OPEN"
+              : previous.status === "REJECTED_BY_USER"
+                ? "REJECTED_BY_USER"
               : decision.status,
           lifecycle:
             hasOpenPosition
@@ -4519,7 +4527,9 @@ async function recordAiDecisions(
                     previous.timestamp ||
                     now,
                 }
-              : decision.lifecycle,
+              : previous.status === "REJECTED_BY_USER"
+                ? previous.lifecycle
+                : decision.lifecycle,
         };
       }
     );
@@ -4808,6 +4818,32 @@ async function approvePaperDecision(decisionId, source) {
   return state;
 }
 
+async function rejectPaperDecision(decisionId, source) {
+  const stateResult = await getTradingState();
+  const state = stateResult.content;
+  const decision = (state.decisions || []).find(item => item.id === decisionId);
+  if (!decision || decision.status !== "PENDING_APPROVAL") {
+    throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
+  }
+  const timestamp = new Date().toISOString();
+  decision.status = "REJECTED_BY_USER";
+  decision.lifecycle = {
+    ...(decision.lifecycle || {}),
+    stage: "REJECTED_BY_USER",
+    rejectedAt: timestamp,
+    rejectedBy: source,
+  };
+  decision.outcome = "USER_REJECTED";
+  addTradingActivity(
+    state,
+    "PAPER_REJECTED",
+    `${decision.symbol} paper işlem planı ${source} üzerinden reddedildi.`,
+    timestamp
+  );
+  await saveTradingState(state, stateResult.sha, stateResult.container);
+  return state;
+}
+
 async function handlePaperApproval(req, res) {
   try {
     const input = await readTradingRequest(req);
@@ -4816,6 +4852,18 @@ async function handlePaperApproval(req, res) {
     return sendJSON(res, 200, await approvePaperDecision(decisionId, "SITE"));
   } catch (error) {
     console.error("PAPER APPROVAL ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
+async function handlePaperRejection(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const decisionId = String(input.decisionId || "").trim();
+    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+    return sendJSON(res, 200, await rejectPaperDecision(decisionId, "SITE"));
+  } catch (error) {
+    console.error("PAPER REJECTION ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
   }
 }
@@ -4839,11 +4887,16 @@ async function handleTelegramWebhook(req, res) {
   if (!callback?.id || String(callback?.message?.chat?.id || "") !== String(TELEGRAM_CHAT_ID || "")) {
     return sendJSON(res, 200, {ok: true});
   }
-  const match = /^paper_approve:([A-Za-z0-9_-]{1,80})$/.exec(String(callback.data || ""));
+  const match = /^paper_(approve|reject):([A-Za-z0-9_-]{1,80})$/.exec(String(callback.data || ""));
   if (!match) return sendJSON(res, 200, {ok: true});
   try {
-    await approvePaperDecision(match[1], "TELEGRAM");
-    void answerTelegramCallback(callback.id, "Paper işlem açıldı.");
+    if (match[1] === "approve") {
+      await approvePaperDecision(match[2], "TELEGRAM");
+      void answerTelegramCallback(callback.id, "Paper işlem açıldı.");
+    } else {
+      await rejectPaperDecision(match[2], "TELEGRAM");
+      void answerTelegramCallback(callback.id, "Paper işlem reddedildi.");
+    }
   } catch (error) {
     void answerTelegramCallback(callback.id, "Onay işlenemedi: işlem artık geçerli olmayabilir.");
     console.error("TELEGRAM PAPER APPROVAL ERROR:", error.message);
@@ -6258,6 +6311,13 @@ if (
   )
 ) {
   return handlePaperApproval(req, res);
+}
+
+if (
+  req.method === "POST" &&
+  pathname === "/api/trading/paper/reject"
+) {
+  return handlePaperRejection(req, res);
 }
 
 if (
