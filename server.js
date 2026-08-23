@@ -3862,13 +3862,16 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   if (!plan || !Number.isFinite(Number(plan.entryPrice)) || !Number.isFinite(Number(plan.stopLoss))) return null;
   const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.min(31,Math.max(1,Number(riskSettings.maxPositionPercent)||31));
   const entry=Number(plan.entryPrice), stop=Number(plan.stopLoss), quantity=Math.floor(capital*allocation/100/entry);
-  const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed);
+  const hasEntryUpper=Number.isFinite(Number(fib.entryZoneHigh))&&Number(fib.entryZoneHigh)>Number(fib.entryZoneLow);
+  // Trend direnci olmadan giriş üst limiti yoktur; bu durumda onaya
+  // düşebilecek bir BUY SETUP üretmeyiz.
+  const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed && hasEntryUpper);
   const action=active&&item.score>=70?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
   const status=action==="BUY SETUP"?"PENDING_APPROVAL":action==="NO TRADE"?"REJECTED":"PENDING";
   const now=new Date().toISOString();
   return {
     id:`${Date.now()}-${item.symbol}`,rank,symbol:item.symbol,action,status,confidence:null,
-    entry:{low:roundTradingValue(fib.entryZoneLow),high:roundTradingValue(fib.entryZoneHigh),reference:roundTradingValue(entry)},
+    entry:{low:roundTradingValue(fib.entryZoneLow),high:hasEntryUpper?roundTradingValue(fib.entryZoneHigh):null,reference:roundTradingValue(entry)},
     stop:roundTradingValue(stop),target1:roundTradingValue(plan.tp1),target2:roundTradingValue(plan.tp2),target3:roundTradingValue(plan.tp3),
     riskReward:{tp1:plan.riskRewardTp1??null,tp2:plan.riskRewardTp2??null,tp3:plan.riskRewardTp3??null},
     riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.min(3,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.min(3,Math.max(1,Number(riskSettings.maxPositions)||3))},
@@ -5086,7 +5089,7 @@ const BIST100_SYMBOLS = [
   "ZOREN"
 ];
 
-const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v1";
+const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v3";
 
 function istanbulClock(now = new Date()) {
   const parts = Object.fromEntries(
@@ -5097,12 +5100,14 @@ function istanbulClock(now = new Date()) {
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
+      minute: "2-digit",
       hourCycle: "h23",
     }).formatToParts(now).filter(item => item.type !== "literal").map(item => [item.type, item.value])
   );
   return {
     day: parts.weekday,
     hour: Number(parts.hour),
+    minute: Number(parts.minute),
     key: `${parts.year}-${parts.month}-${parts.day}`,
   };
 }
@@ -5117,7 +5122,12 @@ function previousBistWeekday(dateKey) {
 
 function lastClosedBistSessionKey(now = new Date()) {
   const clock = istanbulClock(now);
-  if (clock.day === "Sat" || clock.day === "Sun" || clock.hour < 18) {
+  if (
+    clock.day === "Sat" ||
+    clock.day === "Sun" ||
+    clock.hour < 18 ||
+    (clock.hour === 18 && clock.minute < 15)
+  ) {
     return previousBistWeekday(clock.key);
   }
   return clock.key;
@@ -6204,10 +6214,11 @@ async function scanSymbol(symbol) {
     const latestDaily = history.at(-1);
     if (latestDaily) {
       const latestDate = new Date(Number(latestDaily.time) * 1000);
-      const formatter = new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Istanbul", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", hourCycle:"h23" });
+      const formatter = new Intl.DateTimeFormat("en-CA", { timeZone:"Europe/Istanbul", year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit", hourCycle:"h23" });
       const latestParts = Object.fromEntries(formatter.formatToParts(latestDate).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
       const nowParts = Object.fromEntries(formatter.formatToParts(new Date()).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));
-      if (latestParts.year + latestParts.month + latestParts.day === nowParts.year + nowParts.month + nowParts.day && Number(nowParts.hour) < 18) history.pop();
+      const beforeDailyClose = Number(nowParts.hour) < 18 || (Number(nowParts.hour) === 18 && Number(nowParts.minute) < 15);
+      if (latestParts.year + latestParts.month + latestParts.day === nowParts.year + nowParts.month + nowParts.day && beforeDailyClose) history.pop();
     }
     const validation = fibonacciEngine.validateDaily(history);
     if (!validation.ok) return { symbol, history, validation, dataStatus: validation.message };
@@ -6280,7 +6291,7 @@ async function handleTradingScanner(req,res) {
     const technicalTopFive=valid.slice(0,5);
     updateScannerJob(jobId,60,`Teknik puanla ilk ${technicalTopFive.length} aday seçildi`);
     updateScannerJob(jobId,70,"Seçilen 5 aday için günlük Fibonacci A-B-C hesaplanıyor");
-    updateScannerJob(jobId,82,"Günlük kırılım ve %5 giriş mesafesi doğrulanıyor");
+    updateScannerJob(jobId,82,"Günlük alçalan tepe kırılımı ve %3 giriş üst seviyesi doğrulanıyor");
     const enriched=technicalTopFive.map(item=>{
       const fib=fibonacciEngine.fibonacciPlan(item.history);
       const analysis=fibonacciEngine.score(item.history,fib);

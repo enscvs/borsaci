@@ -19,7 +19,16 @@ const CONFIG = Object.freeze({
     retracementMin: 0.236,
     retracementMax: 0.886,
   },
-  fibonacci: { entryTriggerRatio: 0.027, maxEntryDistanceAboveTrigger: 0.05, tp1Ratio: 0.618, tp2Ratio: 0.786, tp3Ratio: 1, stopLossPercentBelowC: 2 },
+  fibonacci: {
+    entryTriggerRatio: 0.027,
+    // Giriş üst limiti, son teyitli alçalan-tepe trend çizgisinin
+    // en son tamamlanmış günlük mumdaki seviyesinin %3 üzeridir.
+    entryUpperTrendlineBuffer: 0.03,
+    tp1Ratio: 0.618,
+    tp2Ratio: 0.786,
+    tp3Ratio: 1,
+    stopLossPercentBelowC: 2
+  },
   scoring: {
     volumeLookback: 20, volumeStrongRatio: 1.2, volumeNeutralMin: 0.8,
     turnoverStrong: 500000000, turnoverMedium: 200000000, emaDistanceAtr: 1,
@@ -31,8 +40,58 @@ const CONFIG = Object.freeze({
 const finite = value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
 const round = (value, decimals = 2) => finite(value) ? Number(Number(value).toFixed(decimals)) : null;
 const timeMs = bar => { const raw = bar?.time ?? bar?.timestamp ?? bar?.date; if (typeof raw === "number") return raw < 1e11 ? raw * 1000 : raw; const t = new Date(raw || 0).getTime(); return Number.isFinite(t) ? t : NaN; };
-const iso = bar => finite(timeMs(bar)) ? new Date(timeMs(bar)).toISOString() : null;
+const iso = bar => bar !== null && bar !== undefined && finite(timeMs(bar)) ? new Date(timeMs(bar)).toISOString() : null;
 const average = values => values.length ? values.reduce((a,b) => a+b,0)/values.length : null;
+
+function istanbulDateParts(value) {
+  const timestamp = value instanceof Date ? value.getTime() : (typeof value === "object" ? timeMs(value) : Number(value));
+  if (!Number.isFinite(timestamp)) return null;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone:"Europe/Istanbul",
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit",
+    hour:"2-digit",
+    minute:"2-digit",
+    hourCycle:"h23"
+  }).formatToParts(new Date(timestamp));
+  return Object.fromEntries(parts.filter(part=>part.type!=="literal").map(part=>[part.type,part.value]));
+}
+
+function completedDailyHistory(history, now=Date.now()) {
+  const completed = Array.isArray(history) ? history.slice() : [];
+  const nowParts = istanbulDateParts(now);
+  if (!nowParts) return completed;
+  const today = `${nowParts.year}${nowParts.month}${nowParts.day}`;
+  /*
+   * Yahoo günlük mumunu seans içinde de döndürebilir. Hesap motoru
+   * savunmacı biçimde bu açık mumu (ve olası ileri tarihli mumu) atar;
+   * böylece pivot ve trend çizgisi yalnız kapanmış günlerden oluşur.
+   * Kapanışın veri kaynağına yerleşmesi için 18:15'e kadar bugünün
+   * mumu tamamlanmış kabul edilmez.
+   */
+  while (completed.length) {
+    const last = completed.at(-1);
+    const lastParts = istanbulDateParts(last);
+    if (!lastParts) {
+      completed.pop();
+      continue;
+    }
+    const date = `${lastParts.year}${lastParts.month}${lastParts.day}`;
+    const beforeDailyClose =
+      Number(nowParts.hour) < 18 ||
+      (
+        Number(nowParts.hour) === 18 &&
+        Number(nowParts.minute) < 15
+      );
+    if (date > today || (date === today && beforeDailyClose)) {
+      completed.pop();
+      continue;
+    }
+    break;
+  }
+  return completed;
+}
 
 function sma(values, period) { return values.length >= period ? average(values.slice(-period)) : null; }
 function emaSeries(values, period) {
@@ -83,6 +142,86 @@ function pivotPoints(history) {
     if(isMoreExtreme)pivots[pivots.length-1]=point;
   }
   return pivots;
+}
+
+function unavailableDescendingTrendline(reason, last) {
+  return {
+    valid:false,
+    available:false,
+    source:"NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+    reason,
+    anchor1:null,
+    anchor2:null,
+    slopePerBar:null,
+    lastCompletedCandleTime:iso(last),
+    projectedPoint:null,
+    breakoutPrice:null,
+    breakoutPriceAtLast:null,
+    entryUpperRaw:null,
+    entryUpperPrice:null
+  };
+}
+
+/*
+ * Kullanıcının istediği direnç, B'den sonraki teyitli günlük HIGH
+ * pivotlarından türetilir. En yeni iki post-B tepe alçalıyorsa onları
+ * bağlarız. Tek post-B tepe varsa B yalnızca ilk anchor olarak kullanılır.
+ * Daha yeni iki tepe alçalmıyorsa eski bir çizgiyi seçmeyiz: güncel düşüş
+ * trendi geçersiz sayılır ve plan fail-closed kalır.
+ */
+function findDescendingHighTrendline(history, pointB, now=Date.now()) {
+  const daily = completedDailyHistory(history,now);
+  const lastIndex = daily.length-1;
+  const last = daily[lastIndex];
+  if (!pointB || !Number.isInteger(pointB.index) || !last || lastIndex <= pointB.index) {
+    return unavailableDescendingTrendline("B sonrası tamamlanmış günlük mum bulunamadı.",last);
+  }
+
+  const postBHighs = pivotPoints(daily)
+    .filter(point=>point.type==="HIGH" && point.index>pointB.index);
+  if (!postBHighs.length) {
+    return unavailableDescendingTrendline("B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",last);
+  }
+
+  let anchor1;
+  let anchor2;
+  let source;
+  if (postBHighs.length >= 2) {
+    anchor1 = postBHighs.at(-2);
+    anchor2 = postBHighs.at(-1);
+    source = "POST_B_LAST_TWO_LOWER_HIGHS";
+  } else {
+    anchor1 = {...pointB};
+    anchor2 = postBHighs[0];
+    source = "B_TO_FIRST_POST_B_LOWER_HIGH";
+  }
+
+  if (!(anchor2.index>anchor1.index) || !(anchor2.price<anchor1.price)) {
+    return unavailableDescendingTrendline("En güncel günlük tepe çifti alçalan trend oluşturmuyor.",last);
+  }
+
+  const slope = (anchor2.price-anchor1.price)/(anchor2.index-anchor1.index);
+  const breakoutPrice = anchor2.price+slope*(lastIndex-anchor2.index);
+  if (!finite(slope) || !finite(breakoutPrice) || breakoutPrice<=0) {
+    return unavailableDescendingTrendline("Alçalan tepe trendi son tamamlanmış mumda geçerli bir kırılım seviyesi vermiyor.",last);
+  }
+
+  const entryUpperRaw = breakoutPrice*(1+CONFIG.fibonacci.entryUpperTrendlineBuffer);
+  return {
+    valid:true,
+    available:true,
+    source,
+    reason:null,
+    anchor1:{...anchor1},
+    anchor2:{...anchor2},
+    slopePerBar:round(slope,6),
+    lastCompletedCandleTime:iso(last),
+    projectedPoint:{index:lastIndex,date:iso(last),price:round(breakoutPrice,4)},
+    breakoutPrice:round(breakoutPrice,4),
+    breakoutPriceAtLast:round(breakoutPrice,4),
+    entryUpperRaw,
+    entryUpperPrice:round(entryUpperRaw)
+  };
 }
 function aggregateFourHour(hourly, now=Date.now()) {
   const fmt=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"}),groups=new Map();
@@ -157,10 +296,10 @@ function findAbc(history) {
   return best;
 }
 function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*(1-CONFIG.fibonacci.stopLossPercentBelowC/100),tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
-function entryDistanceAboveTrigger(lastClose, trigger) { return finite(lastClose)&&finite(trigger)&&Number(trigger)>0 ? (Number(lastClose)-Number(trigger))/Number(trigger) : null; }
-function fibonacciPlan(daily) {
+function fibonacciPlan(rawDaily, now=Date.now()) {
+  const daily=completedDailyHistory(rawDaily,now);
   const abc=findAbc(daily);
-  const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,maxEntryDistanceAboveTrigger:CONFIG.fibonacci.maxEntryDistanceAboveTrigger,confirmationTimeframe:"1d",stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
+  const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,entryUpperTrendlineBuffer:CONFIG.fibonacci.entryUpperTrendlineBuffer,confirmationTimeframe:"1d",completedDailyCandleTime:iso(daily.at(-1)),stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,entryUpperSource:"NO_DESCENDING_DAILY_HIGH_TRENDLINE",descendingResistance:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
   if(!abc)return base;
   let {A,B,C,range,retracement}=abc; let afterC=daily.slice(C.index+1);
   /* Teyit gelmeden yeni düşük dip varsa C dinamik olarak güncellenir. */
@@ -171,11 +310,14 @@ function fibonacciPlan(daily) {
   const candlesAfterC=daily.slice(C.index+1); const confirm=candlesAfterC.find(x=>x.close>trigger);
   const last=daily.at(-1), volumeStrong=finite(features(daily).volumeRatio)&&features(daily).volumeRatio>=1;
   const levels=fibonacciLevels(C.price,range);
-  const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(levels.entryTriggerPrice),entryZoneLow:round(trigger),entryZoneHigh:round(trigger*(1+CONFIG.fibonacci.maxEntryDistanceAboveTrigger)),stopLoss:round(levels.stopLoss),tp1:round(levels.tp1),tp2:round(levels.tp2),tp3:round(levels.tp3),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
+  const descendingResistance=findDescendingHighTrendline(daily,B,now);
+  const entryZoneHigh=descendingResistance.valid ? descendingResistance.entryUpperPrice : null;
+  const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(levels.entryTriggerPrice),entryZoneLow:round(trigger),entryZoneHigh,entryUpperSource:descendingResistance.valid?"DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT":"NO_DESCENDING_DAILY_HIGH_TRENDLINE",descendingResistance,stopLoss:round(levels.stopLoss),tp1:round(levels.tp1),tp2:round(levels.tp2),tp3:round(levels.tp3),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
+  if(!descendingResistance.valid)return {...fields,status:"ENTRY_RESISTANCE_UNAVAILABLE",invalidReason:`Giriş üst seviyesi oluşturulmadı: ${descendingResistance.reason}`};
+  if(!(Number(descendingResistance.entryUpperRaw)>Number(fields.entryZoneLow)))return {...fields,status:"ENTRY_ZONE_INVALID",invalidReason:"Alçalan tepe trend çizgisi + %3 giriş üst seviyesi, Fibonacci giriş alt seviyesinin üzerinde değil."};
   if(!confirm)return fields;
   if(!(last.close>trigger))return {...fields,status:"WAITING_CONFIRMATION",invalidReason:"Günlük kapanış Fibonacci tetik seviyesinin üzerinde değil."};
-  const distance=entryDistanceAboveTrigger(last.close,trigger);
-  if(distance>CONFIG.fibonacci.maxEntryDistanceAboveTrigger)return {...fields,status:"ENTRY_TOO_FAR",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(last.close),invalidReason:"GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir."};
+  if(last.close>descendingResistance.entryUpperRaw)return {...fields,status:"ENTRY_TOO_FAR",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(last.close),invalidReason:"GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir."};
   const entry=last.close, risk=entry-fields.stopLoss;
   const targetReached=last.high>=fields.tp1;
   if(targetReached)return {...fields,status:"TARGET_REACHED",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(entry),riskRewardTp1:round((fields.tp1-entry)/risk,2),riskRewardTp2:round((fields.tp2-entry)/risk,2),riskRewardTp3:round((fields.tp3-entry)/risk,2),invalidReason:"TP1'e ulaşmış eski yapıdan yeni giriş önerilmez."};
@@ -200,4 +342,4 @@ function score(history, fib) {
   return {score:value,grade,features:f,reasons,risks};
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
-module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,fibonacciLevels,fibonacciPlan,entryDistanceAboveTrigger,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
+module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};

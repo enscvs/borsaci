@@ -52,9 +52,72 @@ test("ABC selection uses the highest confirmed peak between A and C",()=>{
   assert.equal(abc.C.price,20.06);
   assert.ok(abc.retracement>.786&&abc.retracement<.886);
 });
-test("daily Fibonacci entry is rejected once price is more than 5% above the trigger",()=>{
-  assert.ok(fib.entryDistanceAboveTrigger(106.3,100)>.05);
-  assert.ok(fib.entryDistanceAboveTrigger(104.99,100)<=.05);
+function descendingResistanceFixture({secondHigh=25}={}) {
+  const start=Date.UTC(2025,0,1);
+  const history=Array.from({length:60},(_,i)=>{
+    const close=20+i*.01;
+    return {time:(start+i*86400000)/1000,open:close,high:close+.5,low:close-.5,close,volume:1000000};
+  });
+  const set=(index,low,high,close=(low+high)/2)=>Object.assign(history[index],{open:close,high,low,close});
+  // A=10, B=30, C=18; B'den sonra iki teyitli lower-high vardır.
+  set(15,10,12,11);
+  set(25,29,30,29.5);
+  set(35,18,19,18.5);
+  set(42,23,27,25);
+  // İki high pivotunun bağımsız salınımlar olması için arada teyitli dip.
+  set(45,18.5,20,19.25);
+  if(secondHigh!==null)set(49,23,secondHigh,(23+secondHigh)/2);
+  return history;
+}
+test("entry upper is the last completed daily descending-resistance level plus 3%",()=>{
+  const history=descendingResistanceFixture();
+  const plan=fib.fibonacciPlan(history);
+  const resistance=plan.descendingResistance;
+  const expectedBreakout=25+((25-27)/(49-42))*(59-49);
+  assert.equal(plan.status,"ACTIVE");
+  assert.equal(resistance.valid,true);
+  assert.equal(resistance.source,"POST_B_LAST_TWO_LOWER_HIGHS");
+  assert.equal(resistance.anchor1.index,42);
+  assert.equal(resistance.anchor2.index,49);
+  assert.equal(resistance.breakoutPriceAtLast,Number(expectedBreakout.toFixed(4)));
+  assert.ok(Math.abs(resistance.entryUpperRaw-(expectedBreakout*1.03))<1e-10);
+  assert.equal(plan.entryZoneHigh,Number((expectedBreakout*1.03).toFixed(2)));
+  assert.equal(resistance.entryUpperPrice,plan.entryZoneHigh);
+});
+test("B anchors the descending resistance only when there is one post-B lower high",()=>{
+  const history=descendingResistanceFixture({secondHigh:null});
+  const line=fib.findDescendingHighTrendline(history,{type:"HIGH",index:25,price:30,date:new Date(history[25].time*1000).toISOString()});
+  assert.equal(line.valid,true);
+  assert.equal(line.source,"B_TO_FIRST_POST_B_LOWER_HIGH");
+  assert.equal(line.anchor1.index,25);
+  assert.equal(line.anchor2.index,42);
+});
+test("an ascending latest high pair does not invent an entry upper limit",()=>{
+  const plan=fib.fibonacciPlan(descendingResistanceFixture({secondHigh:28}));
+  assert.equal(plan.status,"ENTRY_RESISTANCE_UNAVAILABLE");
+  assert.equal(plan.entryZoneHigh,null);
+  assert.equal(plan.descendingResistance.valid,false);
+  assert.match(plan.invalidReason,/Giriş üst seviyesi oluşturulmadı/);
+});
+test("the descending-resistance upper limit is the actual too-far boundary",()=>{
+  const history=descendingResistanceFixture();
+  Object.assign(history.at(-1),{open:23,high:23.5,low:22.5,close:23});
+  const plan=fib.fibonacciPlan(history);
+  assert.equal(plan.status,"ENTRY_TOO_FAR");
+  assert.ok(plan.entryPrice>plan.entryZoneHigh);
+  assert.match(plan.invalidReason,/%3/);
+});
+test("the current open daily candle is excluded from the resistance input",()=>{
+  const day=Date.UTC(2026,7,22);
+  const history=[0,1].map(offset=>({time:(day+offset*86400000)/1000,open:20,high:21,low:19,close:20,volume:100}));
+  const beforeBistClose=fib.completedDailyHistory(history,Date.UTC(2026,7,23,12)); // 15:00 Istanbul
+  const justAfterClose=fib.completedDailyHistory(history,Date.UTC(2026,7,23,15,5)); // 18:05 Istanbul
+  const afterBistClose=fib.completedDailyHistory(history,Date.UTC(2026,7,23,15,15)); // 18:15 Istanbul
+  const planBeforeBistClose=fib.fibonacciPlan(history,Date.UTC(2026,7,23,12));
+  assert.equal(beforeBistClose.length,1);
+  assert.equal(justAfterClose.length,1);
+  assert.equal(afterBistClose.length,2);
+  assert.equal(planBeforeBistClose.completedDailyCandleTime,new Date(history[0].time*1000).toISOString());
 });
 test("technical score is capped and not a probability",()=>{
   const history=Array.from({length:230},(_,i)=>({time:Date.UTC(2025,0,1+i)/1000,open:100+i*.1,high:101+i*.1,low:99+i*.1,close:100+i*.1,volume:5000000}));
