@@ -1459,7 +1459,7 @@
         "rank": 5,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 176.6,
@@ -1556,13 +1556,16 @@
           "summary": "Bu şirket için doğrulanmış haber bulunamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-23T00:01:38.759Z",
-          "expiresAt": "2026-08-24T00:01:38.759Z"
+          "expiresAt": "2026-08-24T00:01:38.759Z",
+          "rejectedAt": "2026-08-23T00:18:53.358Z",
+          "rejectedBy": "SITE"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %4 altındaki stop (165.12) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T00:01:38.759Z"
+        "timestamp": "2026-08-23T00:01:38.759Z",
+        "outcome": "USER_REJECTED"
       },
       {
         "id": "1787441986014-BIMAS",
@@ -6336,6 +6339,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-23T00:18:53.358Z",
+        "type": "PAPER_REJECTED",
+        "message": "BINBN paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
         "timestamp": "2026-08-23T00:18:49.666Z",
         "type": "PAPER_REJECTED",
         "message": "DOHOL paper işlem planı SITE üzerinden reddedildi."
@@ -6827,11 +6835,6 @@
       },
       {
         "timestamp": "2026-08-22T09:42:11.312Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) retained or generated."
-      },
-      {
-        "timestamp": "2026-08-22T09:28:58.335Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) retained or generated."
       }
