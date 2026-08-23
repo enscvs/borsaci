@@ -3,10 +3,10 @@ const test=require("node:test");
 const assert=require("node:assert/strict");
 const fib=require("../trading/fibonacci-engine");
 
-test("ENJSA reference formulas use 2.70% trigger, 4% stop and extension targets",()=>{
+test("ENJSA reference formulas use 2.70% trigger, 2% stop and extension targets",()=>{
   const levels=fib.fibonacciLevels(99.55,76.25);
   assert.ok(Math.abs(levels.entryTriggerPrice-101.61)<.02);
-  assert.ok(Math.abs(levels.stopLoss-95.568)<.002);
+  assert.ok(Math.abs(levels.stopLoss-97.559)<.002);
   assert.ok(Math.abs(levels.tp1-146.67)<.1);
   assert.ok(Math.abs(levels.tp2-159.48)<.1);
   assert.ok(Math.abs(levels.tp3-175.8)<.1);
@@ -20,6 +20,19 @@ test("four-hour confirmation requires close above trigger, not merely a wick",()
   const trigger=101;
   const wick={close:100.9,high:102};
   assert.equal(wick.close>trigger,false);
+});
+test("ABC selection prefers the latest local low-high-higher-low structure",()=>{
+  const start=Date.UTC(2025,0,1);
+  const history=Array.from({length:230},(_,i)=>{const base=16+i*.01;return {time:(start+i*86400000)/1000,open:base,high:base+.5,low:base-.5,close:base,volume:1000000};});
+  const set=(index,low,high)=>Object.assign(history[index],{open:(low+high)/2,close:(low+high)/2,low,high});
+  set(206,20,22); set(207,19,21); set(208,18,20); set(209,18,19.5); set(210,18,19);
+  for(let index=212;index<history.length;index+=1)set(index,18+(index-212)*.1,20+(index-212)*.1);
+  set(190,10,12); set(195,18,20); set(200,14,16); set(205,22,24); set(211,17,19);
+  const abc=fib.findAbc(history);
+  assert.equal(abc.A.index,200);
+  assert.equal(abc.B.index,205);
+  assert.equal(abc.C.index,211);
+  assert.ok(abc.C.price>abc.A.price);
 });
 test("daily Fibonacci entry is rejected once price is more than 5% above the trigger",()=>{
   assert.ok(fib.entryDistanceAboveTrigger(106.3,100)>.05);
