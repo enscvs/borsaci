@@ -1126,6 +1126,223 @@
     },
     "decisions": [
       {
+        "id": "1787445377437-ALARK",
+        "rank": 1,
+        "symbol": "ALARK",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 101.27,
+          "high": 106.34,
+          "reference": 106.3
+        },
+        "stop": 98.88,
+        "target1": 109.46,
+        "target2": 111.79,
+        "target3": 114.75,
+        "riskReward": {
+          "tp1": 0.43,
+          "tp2": 0.74,
+          "tp3": 1.14
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 145,
+          "positionValue": 15413.5,
+          "actualRisk": 1075.9,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 86,
+          "rsi": 52.96,
+          "atr": 4.71,
+          "macd": 1.12
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "TARGET_REACHED",
+          "pointA": {
+            "type": "LOW",
+            "index": 474,
+            "price": 97.1500015258789,
+            "date": "2026-07-09T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 480,
+            "price": 111,
+            "date": "2026-07-20T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 498,
+            "price": 100.9000015258789,
+            "date": "2026-08-13T06:30:00.000Z"
+          },
+          "range": 13.85,
+          "retracementRatio": 0.7292,
+          "entryTriggerPrice": 101.27,
+          "entryZoneLow": 101.27,
+          "entryZoneHigh": 106.34,
+          "stopLoss": 98.88,
+          "tp1": 109.46,
+          "tp2": 111.79,
+          "tp3": 114.75,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-14T06:30:00.000Z",
+          "confirmationCandleClose": 103.4,
+          "entryPrice": 106.3,
+          "riskRewardTp1": 0.43,
+          "riskRewardTp2": 0.74,
+          "riskRewardTp3": 1.14
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
+          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-23T00:36:17.437Z",
+          "expiresAt": "2026-08-24T00:36:17.437Z"
+        },
+        "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+        "invalidation": "C seviyesinin %2 altındaki stop (98.88) planı geçersiz kılar.",
+        "timestamp": "2026-08-23T00:36:17.437Z"
+      },
+      {
+        "id": "1787445377437-TSPOR",
+        "rank": 2,
+        "symbol": "TSPOR",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 0.92,
+          "high": 0.97,
+          "reference": 1.07
+        },
+        "stop": 0.88,
+        "target1": 1.44,
+        "target2": 1.58,
+        "target3": 1.77,
+        "riskReward": {
+          "tp1": null,
+          "tp2": null,
+          "tp3": null
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 14485,
+          "positionValue": 15498.95,
+          "actualRisk": 2752.15,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 86,
+          "rsi": 61.65,
+          "atr": 0.05,
+          "macd": 0.04
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ENTRY_TOO_FAR",
+          "pointA": {
+            "type": "LOW",
+            "index": 205,
+            "price": 0.7300000190734863,
+            "date": "2025-06-18T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 206,
+            "price": 1.600000023841858,
+            "date": "2025-06-19T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 489,
+            "price": 0.8999999761581421,
+            "date": "2026-07-31T06:30:00.000Z"
+          },
+          "range": 0.87,
+          "retracementRatio": 0.8046,
+          "entryTriggerPrice": 0.92,
+          "entryZoneLow": 0.92,
+          "entryZoneHigh": 0.97,
+          "stopLoss": 0.88,
+          "tp1": 1.44,
+          "tp2": 1.58,
+          "tp3": 1.77,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-04T06:30:00.000Z",
+          "confirmationCandleClose": 0.98,
+          "entryPrice": 1.07
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
+          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-23T00:36:17.437Z",
+          "expiresAt": "2026-08-24T00:36:17.437Z"
+        },
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+        "invalidation": "C seviyesinin %2 altındaki stop (0.88) planı geçersiz kılar.",
+        "timestamp": "2026-08-23T00:36:17.437Z"
+      },
+      {
         "id": "1787444801169-BIMAS",
         "rank": 3,
         "symbol": "BIMAS",
@@ -1220,24 +1437,239 @@
           "score": null,
           "verdict": "INFO",
           "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Mevcut haberler bu hisseye dair doğrudan bilgi sunmamaktadır.",
-          "summary": "Bu hisse için doğrulanmış bir haber bulunmamaktadır."
+          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
+          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-23T00:26:41.169Z",
-          "expiresAt": "2026-08-24T00:26:41.169Z"
+          "createdAt": "2026-08-23T00:36:17.437Z",
+          "expiresAt": "2026-08-24T00:36:17.437Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (362.84) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T00:26:41.169Z"
+        "timestamp": "2026-08-23T00:36:17.437Z"
       },
+      {
+        "id": "1787445377437-DOHOL",
+        "rank": 4,
+        "symbol": "DOHOL",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 20.54,
+          "high": 21.56,
+          "reference": 21.6
+        },
+        "stop": 20.07,
+        "target1": 21.79,
+        "target2": 22.15,
+        "target3": 22.6,
+        "riskReward": {
+          "tp1": null,
+          "tp2": null,
+          "tp3": null
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 717,
+          "positionValue": 15487.2,
+          "actualRisk": 1097.01,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 80,
+          "rsi": 56.35,
+          "atr": 0.62,
+          "macd": 0.01
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ENTRY_TOO_FAR",
+          "pointA": {
+            "type": "LOW",
+            "index": 474,
+            "price": 20.059999465942383,
+            "date": "2026-07-09T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 488,
+            "price": 22.18000030517578,
+            "date": "2026-07-30T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 501,
+            "price": 20.479999542236328,
+            "date": "2026-08-18T06:30:00.000Z"
+          },
+          "range": 2.12,
+          "retracementRatio": 0.8019,
+          "entryTriggerPrice": 20.54,
+          "entryZoneLow": 20.54,
+          "entryZoneHigh": 21.56,
+          "stopLoss": 20.07,
+          "tp1": 21.79,
+          "tp2": 22.15,
+          "tp3": 22.6,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-19T06:30:00.000Z",
+          "confirmationCandleClose": 21.16,
+          "entryPrice": 21.6
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
+          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-23T00:36:17.437Z",
+          "expiresAt": "2026-08-24T00:36:17.437Z"
+        },
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+        "invalidation": "C seviyesinin %2 altındaki stop (20.07) planı geçersiz kılar.",
+        "timestamp": "2026-08-23T00:36:17.437Z"
+      },
+      {
+        "id": "1787445377437-BINBN",
+        "rank": 5,
+        "symbol": "BINBN",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 172.82,
+          "high": 181.46,
+          "reference": 184.5
+        },
+        "stop": 168.56,
+        "target1": 190.66,
+        "target2": 195.74,
+        "target3": 202.2,
+        "riskReward": {
+          "tp1": null,
+          "tp2": null,
+          "tp3": null
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": 15500,
+          "reservePercent": 7,
+          "quantity": 84,
+          "positionValue": 15498,
+          "actualRisk": 1338.96,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 75,
+          "rsi": 55.94,
+          "atr": 7.91,
+          "macd": 1.51
+        },
+        "filters": {
+          "trend": false,
+          "momentum": false,
+          "volume": false,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ENTRY_TOO_FAR",
+          "pointA": {
+            "type": "LOW",
+            "index": 429,
+            "price": 165.8000030517578,
+            "date": "2026-06-26T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 437,
+            "price": 196,
+            "date": "2026-07-08T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 461,
+            "price": 172,
+            "date": "2026-08-12T06:30:00.000Z"
+          },
+          "range": 30.2,
+          "retracementRatio": 0.7947,
+          "entryTriggerPrice": 172.82,
+          "entryZoneLow": 172.82,
+          "entryZoneHigh": 181.46,
+          "stopLoss": 168.56,
+          "tp1": 190.66,
+          "tp2": 195.74,
+          "tp3": 202.2,
+          "volumeConfirmation": "WEAK",
+          "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+          "confirmationPassed": true,
+          "confirmationCandleTime": "2026-08-13T06:30:00.000Z",
+          "confirmationCandleClose": 177.8,
+          "entryPrice": 184.5
+        },
+        "grade": "A / AL ADAYI",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
+          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-23T00:36:17.437Z",
+          "expiresAt": "2026-08-24T00:36:17.437Z"
+        },
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
+        "invalidation": "C seviyesinin %2 altındaki stop (168.56) planı geçersiz kılar.",
+        "timestamp": "2026-08-23T00:36:17.437Z"
+      }
+    ],
+    "history": [
       {
         "id": "1787444801169-DOHOL",
         "rank": 4,
         "symbol": "DOHOL",
         "action": "WATCH",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": null,
         "entry": {
           "low": 20.14,
@@ -1330,20 +1762,22 @@
           "summary": "Bu hisse için doğrulanmış bir haber bulunmamaktadır."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-23T00:26:41.169Z",
-          "expiresAt": "2026-08-24T00:26:41.169Z"
+          "expiresAt": "2026-08-24T00:26:41.169Z",
+          "closedAt": "2026-08-23T00:36:18.010Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T00:26:41.169Z"
+        "timestamp": "2026-08-23T00:26:41.169Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
       },
       {
         "id": "1787444801169-BINBN",
         "rank": 5,
         "symbol": "BINBN",
         "action": "WATCH",
-        "status": "PENDING",
+        "status": "EXPIRED",
         "confidence": null,
         "entry": {
           "low": 155.79,
@@ -1437,16 +1871,16 @@
           "summary": "Bu hisse için doğrulanmış bir haber bulunmamaktadır."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "EXPIRED",
           "createdAt": "2026-08-23T00:26:41.169Z",
-          "expiresAt": "2026-08-24T00:26:41.169Z"
+          "expiresAt": "2026-08-24T00:26:41.169Z",
+          "closedAt": "2026-08-23T00:36:18.010Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat kırılım seviyesinin %5 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (151.9) planı geçersiz kılar.",
-        "timestamp": "2026-08-23T00:26:41.169Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-23T00:26:41.169Z",
+        "outcome": "SUPERSEDED_BY_NEW_SCAN"
+      },
       {
         "id": "1787444362840-ALARK",
         "rank": 1,
@@ -6987,6 +7421,11 @@
     ],
     "activity": [
       {
+        "timestamp": "2026-08-23T00:36:18.010Z",
+        "type": "SCAN",
+        "message": "5 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-23T00:26:41.691Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -7480,11 +7919,6 @@
         "timestamp": "2026-08-22T09:46:35.879Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-200.20."
-      },
-      {
-        "timestamp": "2026-08-22T09:46:33.513Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺117.60."
       }
     ]
   }
