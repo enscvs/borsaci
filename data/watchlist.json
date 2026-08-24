@@ -4,11 +4,28 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 53840.0847627926,
+      "cash": 38352.8847627926,
       "equity": 53840.0847627926,
       "pnl": 3840.093136816018,
       "pnlPercent": 7.680186273632036,
       "positions": [
+        {
+          "id": "paper-2026-08-24T07:02:50.821Z-DOHOL",
+          "decisionId": "1787554934863-DOHOL",
+          "symbol": "DOHOL",
+          "quantity": 717,
+          "originalQuantity": 717,
+          "entry": 21.6,
+          "current": 21.6,
+          "stop": 19.66,
+          "target1": 23.91,
+          "target2": 24.96,
+          "status": "OPEN",
+          "openedAt": "2026-08-24T07:02:50.821Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-23T00:00:25.121Z-BINBN",
           "decisionId": "1787443096851-BINBN",
@@ -1459,7 +1476,7 @@
         "rank": 4,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 20.23,
@@ -1777,9 +1794,10 @@
           "summary": "Bu hisse için doğrulanmış haber bulunmamaktadır."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-24T07:02:14.863Z",
-          "expiresAt": "2026-08-25T07:02:14.863Z"
+          "expiresAt": "2026-08-25T07:02:14.863Z",
+          "openedAt": "2026-08-24T07:02:50.821Z"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
@@ -8538,6 +8556,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-24T07:02:50.821Z",
+        "type": "PAPER_APPROVED",
+        "message": "DOHOL paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-24T07:02:50.821Z",
+        "type": "PAPER_OPEN",
+        "message": "DOHOL paper pozisyonu açıldı: 717 lot · ₺15487.20."
+      },
+      {
         "timestamp": "2026-08-24T07:02:15.595Z",
         "type": "SCAN",
         "message": "2 active AI decision(s) refreshed or generated."
@@ -9026,16 +9054,6 @@
         "timestamp": "2026-08-22T09:53:57.185Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-22T09:53:57.185Z",
-        "type": "PAPER_OPEN",
-        "message": "GESAN paper pozisyonu açıldı: 178 lot · ₺15441.50."
-      },
-      {
-        "timestamp": "2026-08-22T09:53:57.185Z",
-        "type": "PAPER_OPEN",
-        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15380.40."
       }
     ],
     "scannerSnapshot": {
