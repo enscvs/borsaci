@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Borsacı",
+    "slug": "borsaci-ios",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.enscvs.borsaci.personal",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Borsacı uygulamasını yalnızca sizin açabilmeniz için Face ID kullanılır."
+      }
+    },
+    "plugins": [
+      "expo-local-authentication",
+      "expo-secure-store"
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    }
+  }
+}
+
