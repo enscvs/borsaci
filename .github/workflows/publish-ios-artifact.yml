@@ -1,0 +1,25 @@
+name: Publish personal iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios-personal-app]
+    paths:
+      - ".github/workflows/publish-ios-artifact.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download successful IPA artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 32880251933 --repo enscvs/borsaci --name Borsaci-unsigned-ipa --dir release
+      - name: Publish temporary downloadable IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create ios-personal-1 release/Borsaci-unsigned.ipa --repo enscvs/borsaci --target ios-personal-app --title "Borsaci iOS Personal 1.0.0" --notes "Temporary unsigned personal iOS build." --latest=false
