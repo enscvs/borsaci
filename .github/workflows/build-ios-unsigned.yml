@@ -1,0 +1,48 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios-personal-app]
+    paths:
+      - "ios-app/**"
+      - ".github/workflows/build-ios-unsigned.yml"
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npx expo prebuild --platform ios --clean --no-install
+      - run: pod install --project-directory=ios
+      - name: Build without signing
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace ios/Borsaci.xcworkspace \
+            -scheme Borsaci \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/Borsaci.app Payload/
+          zip -qry Borsaci-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Borsaci-unsigned-ipa
+          path: ios-app/Borsaci-unsigned.ipa
+          if-no-files-found: error
+
