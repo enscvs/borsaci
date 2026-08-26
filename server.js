@@ -5015,10 +5015,12 @@ async function handleDecisionPendingOverride(req, res) {
   try {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || "").trim();
-    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+    const symbol = String(input.symbol || "").trim().toUpperCase();
+    if (!decisionId && !symbol) throw new Error("Karar kimliği gerekli.");
     const stateResult = await getTradingState();
     const state = stateResult.content;
-    const decision = (state.decisions || []).find(item => item.id === decisionId);
+    const decision = (state.decisions || []).find(item => item.id === decisionId) ||
+      (state.decisions || []).find(item => item.symbol === symbol && item.status !== "OPEN" && !isManualPaperDecision(item));
     if (!decision || decision.status === "OPEN") {
       throw new Error("Bu AI kararı bekleyen emre dönüştürülemez.");
     }
@@ -5030,15 +5032,16 @@ async function handleDecisionPendingOverride(req, res) {
     const capital = Number(state.risk?.capital || state.paper?.initialCapital || 0);
     const allocation = Number(state.risk?.targetPositionPercent || 31) / 100;
     const quantity = Math.max(1, Math.floor(Number(decision.riskPlan?.quantity) || (capital * allocation / entryPrice)));
+    const optionalLevel = value => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
     const order = paperOrders.normalizePaperOrder({
       symbol: decision.symbol,
       quantity,
       entryPrice,
       orderType: "LIMIT",
-      stop: decision.stop,
-      target1: decision.target1,
-      target2: decision.target2,
-      target3: decision.target3,
+      stop: optionalLevel(decision.stop),
+      target1: optionalLevel(decision.target1),
+      target2: optionalLevel(decision.target2),
+      target3: optionalLevel(decision.target3),
     }, {requireSymbol: true, requireOrderType: true});
     decision.action = "BUY SETUP";
     decision.status = "PENDING_APPROVAL";
@@ -5646,14 +5649,15 @@ async function handlePaperClose(req, res) {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || "").trim();
     const positionId = String(input.positionId || "").trim();
-    if (!decisionId && !positionId) throw new Error("Pozisyon kimliği gerekli.");
+    const symbol = String(input.symbol || "").trim().toUpperCase();
+    if (!decisionId && !positionId && !symbol) throw new Error("Pozisyon kimliği gerekli.");
 
     const stateResult = await getTradingState();
     const state = stateResult.content;
     const position = (state.paper.positions || []).find(
       item =>
         item.status === "OPEN" &&
-        (item.id === positionId || item.decisionId === decisionId)
+        (item.id === positionId || item.decisionId === decisionId || item.symbol === symbol)
     );
     if (!position) throw new Error("Açık paper pozisyon bulunamadı.");
 
