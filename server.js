@@ -7473,7 +7473,34 @@ async function fetchCryptoPaperMarketPrice(symbol) {
   const quote = await fetchBinancePublicJson(`/api/v3/ticker/price?symbol=${encodeURIComponent(symbol)}`);
   const price = Number(quote?.price);
   if (!Number.isFinite(price) || price <= 0) throw new Error(`${symbol} için doğrulanmış kripto piyasa fiyatı alınamadı.`);
-  return roundTradingValue(price);
+  return roundCryptoValue(price);
+}
+
+function roundCryptoValue(value) {
+  return Number(Number(value).toFixed(8));
+}
+
+function normalizeCryptoPaperOrder(input = {}, {existing = null} = {}) {
+  const symbol = String(input.symbol ?? existing?.symbol ?? "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{2,20}$/.test(symbol) || !symbol.endsWith("USDT")) throw new Error("Geçerli bir USDT spot paritesi gerekli.");
+  const orderType = String(input.orderType ?? existing?.orderType ?? "MARKET").trim().toUpperCase();
+  if (!["MARKET", "LIMIT"].includes(orderType)) throw new Error("Emir türü PİYASA veya LİMİT olmalı.");
+  const positive = (value, label, required = false) => {
+    if (value === undefined || value === null || value === "") { if (required) throw new Error(`${label} gerekli.`); return null; }
+    const number = Number(value); if (!Number.isFinite(number) || number <= 0 || number > 1e12) throw new Error(`${label} geçerli ve pozitif olmalı.`);
+    return roundCryptoValue(number);
+  };
+  const quantity = positive(input.quantity ?? existing?.quantity, "Miktar", true);
+  const entryPrice = orderType === "MARKET" ? null : positive(input.entryPrice ?? input.price ?? existing?.entryPrice, "Limit fiyatı", true);
+  const stop = positive(input.stop ?? existing?.stop, "Stop");
+  const target1 = positive(input.target1 ?? existing?.target1, "TP1");
+  const target2 = positive(input.target2 ?? existing?.target2, "TP2");
+  const target3 = positive(input.target3 ?? existing?.target3, "TP3");
+  if (entryPrice !== null && stop !== null && stop >= entryPrice) throw new Error("Uzun kripto işlemde stop giriş fiyatının altında olmalı.");
+  for (const [label, target] of [["TP1", target1], ["TP2", target2], ["TP3", target3]]) if (entryPrice !== null && target !== null && target <= entryPrice) throw new Error(`${label} giriş fiyatının üzerinde olmalı.`);
+  if (target1 !== null && target2 !== null && target2 <= target1) throw new Error("TP2, TP1'in üzerinde olmalı.");
+  if (target2 !== null && target3 !== null && target3 <= target2) throw new Error("TP3, TP2'nin üzerinde olmalı.");
+  return {symbol, quantity, entryPrice, orderType, stop, target1, target2, target3, positionValue: entryPrice === null ? null : roundTradingValue(quantity * entryPrice), actualRisk: entryPrice === null || stop === null ? null : roundTradingValue((entryPrice - stop) * quantity), paperOnly: true};
 }
 
 function recalculateCryptoPaper(paper) {
@@ -7507,7 +7534,7 @@ async function handleCryptoQuotes(req, res) {
 }
 
 function cryptoPaperDecisionFromInput(input, paper, timestamp) {
-  const order = paperOrders.normalizePaperOrder({
+  const order = normalizeCryptoPaperOrder({
     symbol: input.symbol,
     quantity: input.quantity,
     entryPrice: input.entryPrice,
@@ -7516,7 +7543,7 @@ function cryptoPaperDecisionFromInput(input, paper, timestamp) {
     target1: input.target1,
     target2: input.target2,
     target3: input.target3,
-  }, {requireSymbol: true, requireOrderType: true});
+  });
   return {
     id: `crypto-${Date.now()}-${order.symbol}-${crypto.randomBytes(4).toString("hex")}`,
     symbol: order.symbol, market: "CRYPTO", action: "BUY SETUP", status: "PENDING_APPROVAL",
@@ -7568,7 +7595,7 @@ async function handleCryptoPaperUpdate(req, res) {
     const input = await readTradingRequest(req); const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
     const decision = paper.decisions.find(value => value.id === String(input.decisionId || "") && value.status === "PENDING_APPROVAL");
     if (!decision) throw new Error("Bu kripto emri artık düzenlenemez.");
-    const order = paperOrders.normalizePaperOrder({...input, symbol: decision.symbol}, {existing: decision.pendingOrder});
+    const order = normalizeCryptoPaperOrder({...input, symbol: decision.symbol}, {existing: decision.pendingOrder});
     decision.pendingOrder = {...decision.pendingOrder, ...order, updatedAt: new Date().toISOString(), editedAt: new Date().toISOString()};
     decision.entry = {low: order.entryPrice, high: order.entryPrice, reference: order.entryPrice}; decision.stop = order.stop; decision.target1 = order.target1; decision.target2 = order.target2; decision.target3 = order.target3;
     paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_ORDER_EDITED", message: `${decision.symbol} bekleyen kripto emri düzenlendi.`}, ...(paper.activity || [])].slice(0, 100);
@@ -7592,7 +7619,7 @@ async function handleCryptoPaperApprove(req, res) {
     let position = paper.positions.find(value => value.status === "OPEN" && value.symbol === order.symbol);
     if (position) {
       const combined = Number(position.quantity) + Number(order.quantity);
-      position.entry = roundTradingValue((Number(position.entry) * Number(position.quantity) + entry * Number(order.quantity)) / combined);
+      position.entry = roundCryptoValue((Number(position.entry) * Number(position.quantity) + entry * Number(order.quantity)) / combined);
       position.quantity = combined; position.current = marketPrice;
     } else {
       const max = Math.max(1, Number(paper.risk?.maxPositions) || 5);
@@ -7633,7 +7660,7 @@ async function handleCryptoPaperClose(req, res) {
     if (orderType === "LIMIT" && marketPrice < limitPrice) throw new Error(`${position.symbol} limit satış bekliyor: son fiyat $${marketPrice}, limit $${limitPrice}.`);
     const price = orderType === "LIMIT" ? Math.max(marketPrice, limitPrice) : marketPrice;
     const proceeds = roundTradingValue(price * quantity); paper.cash = roundTradingValue(Number(paper.cash) + proceeds);
-    position.quantity = roundTradingValue(Number(position.quantity) - quantity); position.current = price;
+    position.quantity = roundCryptoValue(Number(position.quantity) - quantity); position.current = price;
     const realizedPnl = roundTradingValue((price - Number(position.entry)) * quantity);
     if (position.quantity <= 0) { position.status = "CLOSED"; position.closedAt = new Date().toISOString(); position.realizedPnl = realizedPnl; paper.history = [{...position}, ...paper.history].slice(0, 100); }
     paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_CLOSE", message: `${position.symbol} kripto paper pozisyonu ${orderType} ile kapatıldı.`}, ...paper.activity].slice(0, 100);
