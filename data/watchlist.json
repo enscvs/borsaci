@@ -1362,7 +1362,7 @@
         "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
         "pendingOrder": {
           "symbol": "ASELS",
-          "quantity": 100,
+          "quantity": 10,
           "entryPrice": null,
           "orderType": "MARKET",
           "stop": null,
@@ -1374,8 +1374,8 @@
           "paperOnly": true,
           "source": "MANUAL",
           "createdAt": "2026-08-26T09:35:55.929Z",
-          "updatedAt": "2026-08-26T09:40:04.431Z",
-          "editedAt": "2026-08-26T09:40:04.431Z"
+          "updatedAt": "2026-08-26T09:40:14.929Z",
+          "editedAt": "2026-08-26T09:40:14.929Z"
         },
         "timestamp": "2026-08-26T09:35:55.929Z"
       },
@@ -10788,6 +10788,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T09:40:14.929Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "ASELS bekleyen paper emri düzenlendi: 10 lot · ₺0,00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T09:40:04.431Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 100 lot · ₺0,00 · MARKET."
@@ -11281,11 +11286,6 @@
         "timestamp": "2026-08-22T19:51:50.985Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-22T19:51:47.904Z",
-        "type": "CLOSED",
-        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ],
     "scannerSnapshot": {
