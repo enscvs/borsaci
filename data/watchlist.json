@@ -2117,19 +2117,19 @@
         "pendingOrder": {
           "symbol": "AHGAZ",
           "quantity": 440,
-          "entryPrice": 35.9,
+          "entryPrice": 35.4,
           "orderType": "LIMIT",
           "stop": 30.91,
           "target1": 40.08,
           "target2": 42.4,
           "target3": 45.36,
-          "positionValue": 15796,
-          "actualRisk": 2195.6,
+          "positionValue": 15576,
+          "actualRisk": 1975.6,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:09:01.426Z",
-          "updatedAt": "2026-08-26T11:09:01.426Z",
-          "editedAt": null
+          "updatedAt": "2026-08-26T11:09:10.560Z",
+          "editedAt": "2026-08-26T11:09:10.560Z"
         },
         "outcome": "USER_REJECTED"
       },
@@ -12916,6 +12916,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:09:10.560Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,40 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-26T11:09:01.426Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -13407,11 +13412,6 @@
       },
       {
         "timestamp": "2026-08-25T11:53:37.661Z",
-        "type": "SCAN",
-        "message": "2 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-25T11:45:44.768Z",
         "type": "SCAN",
         "message": "2 active AI decision(s) refreshed or generated."
       }
