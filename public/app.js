@@ -6351,7 +6351,8 @@ function buildPendingPaperOrder(
 
 
 function pendingPaperOrdersFromState(
-  state
+  state,
+  sourceFilter = "ALL"
 ) {
   const source = state && typeof state === "object"
     ? state
@@ -6399,15 +6400,16 @@ function pendingPaperOrdersFromState(
     .filter(item => item?.status === "PENDING_APPROVAL")
     .forEach(item => append(item, item));
 
-  return orders;
+  return orders.filter(order => sourceFilter === "ALL" || order.source === sourceFilter);
 }
 
 
 function renderPendingPaperOrders(
-  state
+  state,
+  options = {}
 ) {
-  const container = document.getElementById("pendingPaperOrders");
-  const status = document.getElementById("pendingPaperOrderStatus");
+  const container = document.getElementById(options.containerId || "pendingPaperOrders");
+  const status = document.getElementById(options.statusId || "pendingPaperOrderStatus");
   const source = state && typeof state === "object"
     ? state
     : (latestPaperOrderState || loadLocalTradingState() || {});
@@ -6416,7 +6418,7 @@ function renderPendingPaperOrders(
     latestPaperOrderState = state;
   }
 
-  const orders = pendingPaperOrdersFromState(source);
+  const orders = pendingPaperOrdersFromState(source, options.sourceFilter || "AI PLAN");
 
   if (status) {
     status.textContent = `${orders.length} ${orders.length === 1 ? "ORDER" : "ORDERS"}`;
@@ -6425,7 +6427,7 @@ function renderPendingPaperOrders(
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = '<div class="trading-empty">Bekleyen emir yok. Manuel emir oluşturduğunda veya uygun bir AI planı onay beklediğinde burada görünür.</div>';
+    container.innerHTML = `<div class="trading-empty">${escapeHtml(options.emptyMessage || "Bekleyen AI emri yok.")}</div>`;
     return;
   }
 
@@ -6552,6 +6554,15 @@ function readPaperOrderForm(
   return payload;
 }
 
+function renderManualPendingOrders(state) {
+  renderPendingPaperOrders(state, {
+    containerId: "manualPendingOrders",
+    statusId: "manualOrderStatus",
+    sourceFilter: "MANUAL",
+    emptyMessage: "Onay bekleyen manuel emir yok. Aşağıdaki formdan emir oluşturabilirsin.",
+  });
+}
+
 function syncOrderPriceField(form) {
   const orderType = normalizePaperOrderType(form.elements.namedItem("orderType")?.value);
   const price = form.elements.namedItem("entryPrice");
@@ -6603,6 +6614,7 @@ function renderPaperOrderState(
   renderSignalHistory(state.history || []);
   renderPerformance(state);
   renderPendingPaperOrders(state);
+  renderManualPendingOrders(state);
 
   if (state.risk) {
     renderRiskSettings(state.risk);
@@ -6729,6 +6741,7 @@ function focusPendingPaperOrder(
 
 function bindPaperOrderControls() {
   const pendingContainer = document.getElementById("pendingPaperOrders");
+  const manualPendingContainer = document.getElementById("manualPendingOrders");
   const manualForm = document.getElementById("manualPaperOrderForm");
   const manualMount = document.getElementById("manualOrderMount");
   const manualWrap = document.querySelector(".manual-paper-order-wrap");
@@ -6739,10 +6752,11 @@ function bindPaperOrderControls() {
     manualMount.appendChild(manualWrap);
   }
 
-  if (pendingContainer && pendingContainer.dataset.paperOrdersBound !== "true") {
-    pendingContainer.dataset.paperOrdersBound = "true";
+  [pendingContainer, manualPendingContainer].filter(Boolean).forEach(orderContainer => {
+    if (orderContainer.dataset.paperOrdersBound === "true") return;
+    orderContainer.dataset.paperOrdersBound = "true";
 
-    pendingContainer.addEventListener("submit", async event => {
+    orderContainer.addEventListener("submit", async event => {
       const form = event.target.closest("[data-pending-paper-order-form]");
       if (!form) return;
       event.preventDefault();
@@ -6756,7 +6770,7 @@ function bindPaperOrderControls() {
       }
     });
 
-    pendingContainer.addEventListener("click", async event => {
+    orderContainer.addEventListener("click", async event => {
       const button = event.target.closest("[data-paper-order-action]");
       if (!button) return;
       const form = button.closest("[data-pending-paper-order-form]");
@@ -6778,12 +6792,12 @@ function bindPaperOrderControls() {
         setPaperOrderFormBusy(form, false);
       }
     });
-    pendingContainer.addEventListener("change", event => {
+    orderContainer.addEventListener("change", event => {
       if (event.target.matches('select[name="orderType"]')) {
         syncOrderPriceField(event.target.closest("form"));
       }
     });
-  }
+  });
 
   if (manualForm && manualForm.dataset.paperOrdersBound !== "true") {
     manualForm.dataset.paperOrdersBound = "true";
