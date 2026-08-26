@@ -1815,19 +1815,19 @@
         "pendingOrder": {
           "symbol": "GESAN",
           "quantity": 173,
-          "entryPrice": 90.15,
-          "orderType": "LIMIT",
+          "entryPrice": null,
+          "orderType": "MARKET",
           "stop": 63.21,
           "target1": 94.03,
           "target2": 102.06,
           "target3": 112.28,
-          "positionValue": 15595.95,
-          "actualRisk": 4660.62,
+          "positionValue": null,
+          "actualRisk": null,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:25:38.579Z",
-          "updatedAt": "2026-08-26T11:25:38.579Z",
-          "editedAt": null
+          "updatedAt": "2026-08-26T11:25:48.037Z",
+          "editedAt": "2026-08-26T11:25:48.037Z"
         }
       },
       {
@@ -13588,6 +13588,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:25:48.037Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "GESAN bekleyen paper emri düzenlendi: 173 lot · ₺0,00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T11:25:38.579Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -14081,11 +14086,6 @@
         "timestamp": "2026-08-26T09:40:23.108Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 100 lot · ₺0,00 · MARKET."
-      },
-      {
-        "timestamp": "2026-08-26T09:40:17.637Z",
-        "type": "PAPER_APPROVED",
-        "message": "ASELS paper işlemi SITE üzerinden onaylandı."
       }
     ],
     "scannerSnapshot": {
