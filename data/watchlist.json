@@ -1867,8 +1867,8 @@
         "id": "1787743521670-AHGAZ",
         "rank": 5,
         "symbol": "AHGAZ",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2184,13 +2184,32 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T11:41:44.074Z",
-          "expiresAt": "2026-08-27T11:41:44.074Z"
+          "expiresAt": "2026-08-27T11:41:44.074Z",
+          "overrideAt": "2026-08-26T11:43:11.674Z"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
-        "timestamp": "2026-08-26T11:41:44.074Z"
+        "timestamp": "2026-08-26T11:41:44.074Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "AHGAZ",
+          "quantity": 440,
+          "entryPrice": 36,
+          "orderType": "LIMIT",
+          "stop": 30.91,
+          "target1": 40.08,
+          "target2": 42.4,
+          "target3": 45.36,
+          "positionValue": 15840,
+          "actualRisk": 2239.6,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-26T11:43:11.674Z",
+          "updatedAt": "2026-08-26T11:43:11.674Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787743521670-GESAN",
@@ -14010,6 +14029,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:43:11.674Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T11:42:59.296Z",
         "type": "CLOSED",
         "message": "ASELS paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-13.05."
@@ -14503,11 +14527,6 @@
         "timestamp": "2026-08-26T09:53:28.772Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için manuel paper emir onayı bekliyor: 20 lot · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T09:53:12.974Z",
-        "type": "PAPER_APPROVED",
-        "message": "ASELS paper işlemi SITE üzerinden onaylandı."
       }
     ],
     "scannerSnapshot": {
