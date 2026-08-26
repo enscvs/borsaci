@@ -6189,10 +6189,6 @@ function currentPaperState() {
   const paper =
     local.paper || {};
 
-  const orderType = normalizePaperOrderType(
-    order.orderType ?? order.type ?? pendingOrder.orderType ?? decision.orderType
-  );
-
   return {
     initialCapital:
       Number(paper.initialCapital) || 100000,
@@ -6293,6 +6289,9 @@ function buildPendingPaperOrder(
   const entry = decision.entry || {};
   const riskPlan = decision.riskPlan || {};
   const pendingOrder = order.pendingOrder || decision.pendingOrder || {};
+  const orderType = normalizePaperOrderType(
+    order.orderType ?? order.type ?? pendingOrder.orderType ?? decision.orderType
+  );
 
   return {
     orderId,
