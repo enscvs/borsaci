@@ -8933,6 +8933,9 @@ function renderCryptoPaperState(payload) {
   setText("cryptoPaperPnl", formatCryptoUsd(paper.pnl));
   setText("cryptoRiskMax", Number(paper.risk?.maxPositions || 5));
   setText("cryptoRiskAllocation", `${Number(paper.risk?.maxPositionPercent || 20)}%`);
+  const riskCapital = document.getElementById("cryptoRiskCapital"); if (riskCapital) riskCapital.value = Number(paper.initialCapital || 10000);
+  const riskAllocation = document.getElementById("cryptoRiskAllocationInput"); if (riskAllocation) riskAllocation.value = Number(paper.risk?.maxPositionPercent || 20);
+  const riskMax = document.getElementById("cryptoRiskMaxInput"); if (riskMax) riskMax.value = Number(paper.risk?.maxPositions || 5);
   const pending = (paper.decisions || []).filter(item => item.status === "PENDING_APPROVAL");
   const pendingMount = document.getElementById("cryptoPendingOrders");
   setText("cryptoPendingStatus", `${pending.length} EMİR`);
@@ -8944,7 +8947,31 @@ function renderCryptoPaperState(payload) {
   const tbody = document.getElementById("cryptoOpenPositions");
   setText("cryptoOpenStatus", `${positions.length} POZİSYON`);
   if (tbody) tbody.innerHTML = positions.length ? positions.map(item => `<tr><td>${escapeHtml(item.symbol)}</td><td>${formatCryptoUsd(item.entry)}</td><td>${formatCryptoUsd(item.current)}</td><td>${Number(item.quantity)}</td><td>${formatCryptoUsd(item.stop)}</td><td>${formatCryptoUsd(item.target1)} / ${formatCryptoUsd(item.target2)}</td><td>AÇIK</td><td><button type="button" class="trading-button danger" data-crypto-paper-action="close" data-crypto-position-id="${escapeHtml(item.id)}">KAPAT</button></td></tr>`).join("") : '<tr><td colspan="8" class="table-empty">Açık kripto pozisyon yok</td></tr>';
+  renderCryptoPersistentSignals(paper);
+  const activity = document.getElementById("cryptoTradingActivity");
+  if (activity) activity.innerHTML = (paper.activity || []).length ? paper.activity.slice(0, 30).map(item => `<div class="log-line"><span class="log-time">${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</span><span>${escapeHtml(item.message || item.type || "İşlem kaydı")}</span></div>`).join("") : '<div class="trading-empty">İşlem hareketi yok.</div>';
+  const journal = document.getElementById("cryptoTradeJournal");
+  if (journal) journal.innerHTML = (paper.history || []).length ? paper.history.slice(0, 30).map(item => `<article class="trade-journal-item"><strong>${escapeHtml(item.symbol || "KRİPTO")} · ${escapeHtml(item.status || "KAPATILDI")}</strong><span>Giriş: ${formatCryptoUsd(item.entry)} · Çıkış: ${formatCryptoUsd(item.current)}</span><small>${escapeHtml(item.closedAt ? new Date(item.closedAt).toLocaleString("tr-TR") : "")}</small></article>`).join("") : '<div class="trading-empty">Henüz sonuçlanmış kripto işlemi yok.</div>';
   bindCryptoPaperActions();
+}
+
+function cryptoRangeStart() {
+  const range = document.getElementById("cryptoPerformanceRange")?.value || "ALL";
+  const custom = document.getElementById("cryptoPerformanceStart")?.value;
+  if (range === "CUSTOM") return custom ? new Date(`${custom}T00:00:00`).getTime() : null;
+  const months = {"1M": 1, "3M": 3, "6M": 6}[range]; if (!months) return null;
+  const date = new Date(); date.setMonth(date.getMonth() - months); return date.getTime();
+}
+
+function renderCryptoPersistentSignals(paper) {
+  const start = cryptoRangeStart(); const endText = document.getElementById("cryptoPerformanceEnd")?.value; const end = endText ? new Date(`${endText}T23:59:59`).getTime() : null;
+  const signals = (paper.signals || []).filter(item => { const time = new Date(item.timestamp || 0).getTime(); return (!start || time >= start) && (!end || time <= end); });
+  const history = document.getElementById("cryptoSignalHistory"); const status = document.getElementById("cryptoHistoryStatus");
+  const best = signals.reduce((maximum, item) => Math.max(maximum, Number(item.score || 0)), 0);
+  const selected = document.getElementById("cryptoPerformanceSelected"); if (selected) selected.textContent = signals.length;
+  const bestMount = document.getElementById("cryptoPerformanceBest"); if (bestMount) bestMount.textContent = signals.length ? `${best}/100` : "—";
+  if (status) status.textContent = `${signals.length} KAYIT`;
+  if (history) history.innerHTML = signals.length ? signals.slice(0, 50).map(item => `<div class="signal-history-item"><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.status || "NO_VALID_STRUCTURE"))} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</small></div>`).join("") : '<div class="trading-empty">Bu tarih aralığında kayıtlı kripto sinyali yok.</div>';
 }
 
 async function loadCryptoPaperState() {
@@ -8979,6 +9006,14 @@ function bindCryptoPaperActions() {
       try { const response = await fetch(endpoint, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "İşlem yapılamadı."); renderCryptoPaperState(payload); } catch (error) { window.alert(error.message); }
     });
   });
+}
+
+function bindCryptoWorkspaceControls() {
+  const riskForm = document.getElementById("cryptoRiskSettingsForm");
+  if (riskForm && riskForm.dataset.cryptoBound !== "true") { riskForm.dataset.cryptoBound = "true"; riskForm.addEventListener("submit", async event => { event.preventDefault(); try { const response = await fetch("/api/crypto/risk-settings", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({capital: document.getElementById("cryptoRiskCapital")?.value, maxPositionPercent: document.getElementById("cryptoRiskAllocationInput")?.value, maxPositions: document.getElementById("cryptoRiskMaxInput")?.value})}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Risk ayarı kaydedilemedi."); renderCryptoPaperState(payload); } catch (error) { window.alert(error.message); } }); }
+  const manualForm = document.getElementById("cryptoManualOrderForm");
+  if (manualForm && manualForm.dataset.cryptoBound !== "true") { manualForm.dataset.cryptoBound = "true"; manualForm.addEventListener("submit", async event => { event.preventDefault(); const data = Object.fromEntries(new FormData(manualForm)); try { const response = await fetch("/api/crypto/paper/queue", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({...data, source: "MANUAL", grade: "MANUEL"})}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Manuel emir oluşturulamadı."); renderCryptoPaperState(payload); manualForm.reset(); } catch (error) { window.alert(error.message); } }); }
+  ["cryptoPerformanceRange", "cryptoPerformanceStart", "cryptoPerformanceEnd"].forEach(id => { const element = document.getElementById(id); if (element && element.dataset.cryptoBound !== "true") { element.dataset.cryptoBound = "true"; element.addEventListener("change", () => renderCryptoPersistentSignals(latestCryptoPaperState || {})); } });
 }
 
 function renderCryptoDecisionChart(item) {
@@ -9076,7 +9111,7 @@ function renderCryptoScanSummary(data, records) {
   setText("cryptoPerformanceBest", records.length ? `${Number(records[0].score || 0)}/100` : "—");
   setText("cryptoPerformanceSelected", records.length);
   if (status) status.textContent = `${records.length} KAYIT`;
-  if (history) history.innerHTML = records.length ? records.map((item, index) => `<button type="button" class="signal-history-item" data-crypto-history-index="${index}"><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.fibonacci?.status || "NO_VALID_STRUCTURE"))} · ${new Date(data.timestamp).toLocaleString("tr-TR")}</small></button>`).join("") : '<div class="trading-empty">Kaydedilecek kripto adayı bulunamadı.</div>';
+  if (history && !latestCryptoPaperState) history.innerHTML = records.length ? records.map((item, index) => `<button type="button" class="signal-history-item" data-crypto-history-index="${index}"><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.fibonacci?.status || "NO_VALID_STRUCTURE"))} · ${new Date(data.timestamp).toLocaleString("tr-TR")}</small></button>`).join("") : '<div class="trading-empty">Kaydedilecek kripto adayı bulunamadı.</div>';
 }
 
 function bindCryptoDecisionInteractions() {
@@ -9122,6 +9157,7 @@ async function runCryptoScanner() {
     if (results) results.innerHTML = `<div class="trading-empty">${data.scanned} Binance USDT paritesi tarandı · ${data.successful} geçerli günlük veri</div>`;
     if (feed) feed.innerHTML = cards;
     renderCryptoScanSummary(data, cryptoRenderedRecords);
+    if (data.cryptoPaper) renderCryptoPaperState({cryptoPaper: data.cryptoPaper});
     renderCryptoDecisionDetail(cryptoRenderedRecords[0]);
     bindCryptoDecisionInteractions();
     bindCryptoPaperActions();
@@ -9191,6 +9227,7 @@ function bindTradingScannerControls() {
 
   bindKillSwitch();
   bindCryptoScannerControls();
+  bindCryptoWorkspaceControls();
   void loadCryptoPaperState();
 
   if (
