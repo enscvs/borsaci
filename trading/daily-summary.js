@@ -142,13 +142,13 @@ function openPositionLines(state) {
   return rows.length ? rows : ["Açık paper pozisyon yok."];
 }
 
-function buildDailySummaryMessage(state, sessionKey) {
+function buildDailySummaryMessage(state, snapshotSessionKey, sessionLabel = snapshotSessionKey) {
   return [
     "📊 BORSACI · GÜNLÜK ÖZET",
-    `Seans: ${sessionKey}`,
+    `Seans: ${sessionLabel}`,
     "",
     "İLK 5 · BUGÜNÜN TARAMASI",
-    ...currentTopFiveLines(state?.scannerSnapshot, sessionKey),
+    ...currentTopFiveLines(state?.scannerSnapshot, snapshotSessionKey),
     "",
     "AKTİF FIBONACCI YAPILARI",
     ...activeFibonacciLines(state),
