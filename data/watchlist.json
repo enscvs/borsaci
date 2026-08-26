@@ -1607,11 +1607,27 @@
     },
     "cryptoPaper": {
       "initialCapital": 10000,
-      "cash": 10000,
+      "cash": 8052.01,
       "equity": 10000,
       "pnl": 0,
       "pnlPercent": 0,
       "positions": [
+        {
+          "id": "crypto-pos-1787763238975-TRXUSDT",
+          "decisionId": "crypto-1787763210346-TRXUSDT-0cefe8a5",
+          "symbol": "TRXUSDT",
+          "market": "CRYPTO",
+          "status": "OPEN",
+          "quantity": 5903,
+          "entry": 0.33,
+          "current": 0.33,
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "openedAt": "2026-08-26T16:53:58.975Z",
+          "paperOnly": true
+        },
         {
           "id": "crypto-pos-1787762113076-XNOUSDT",
           "decisionId": "crypto-1787760038379-XNOUSDT-9a18bcb5",
@@ -1654,7 +1670,7 @@
           "symbol": "TRXUSDT",
           "market": "CRYPTO",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "OPEN",
           "grade": "B / İZLE",
           "paperOnly": true,
           "timestamp": "2026-08-26T16:53:30.346Z",
@@ -2331,6 +2347,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-26T16:53:58.975Z",
+          "type": "CRYPTO_OPEN",
+          "message": "TRXUSDT kripto paper pozisyonu açıldı."
+        },
         {
           "timestamp": "2026-08-26T16:53:30.346Z",
           "type": "CRYPTO_PENDING",
