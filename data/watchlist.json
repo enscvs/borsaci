@@ -1810,7 +1810,7 @@
           "symbol": "BTCUSDT",
           "market": "CRYPTO",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "REJECTED_BY_USER",
           "grade": "MANUEL",
           "paperOnly": true,
           "timestamp": "2026-08-26T16:35:50.865Z",
@@ -2056,6 +2056,46 @@
         }
       ],
       "history": [
+        {
+          "id": "crypto-1787762150865-BTCUSDT-15b5b0df",
+          "symbol": "BTCUSDT",
+          "market": "CRYPTO",
+          "action": "BUY SETUP",
+          "status": "REJECTED_BY_USER",
+          "grade": "MANUEL",
+          "paperOnly": true,
+          "timestamp": "2026-08-26T16:35:50.865Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "fibonacci": null,
+          "indicators": {
+            "score": null
+          },
+          "pendingOrder": {
+            "symbol": "BTCUSDT",
+            "quantity": 1,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": null,
+            "target1": null,
+            "target2": null,
+            "target3": null,
+            "positionValue": null,
+            "actualRisk": null,
+            "paperOnly": true,
+            "source": "MANUAL",
+            "createdAt": "2026-08-26T16:55:44.172Z",
+            "updatedAt": "2026-08-26T16:55:44.172Z"
+          },
+          "closedAt": "2026-08-26T19:54:20.475Z"
+        },
         {
           "id": "crypto-1787763196305-ASTERUSDT-e1b6ed99",
           "symbol": "ASTERUSDT",
@@ -2437,6 +2477,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-26T19:54:20.476Z",
+          "type": "CRYPTO_REJECT",
+          "message": "BTCUSDT kripto emri reddedildi."
+        },
         {
           "timestamp": "2026-08-26T18:54:20.232Z",
           "type": "CRYPTO_SCAN",
