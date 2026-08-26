@@ -6141,7 +6141,10 @@ function renderDecisionScoreBreakdown(item) {
 function renderAiDecisionDetail(item) {
   const element=document.getElementById("aiDecisionDetail"); if(!element||!item)return;
   renderDecisionScoreBreakdown(item);
-  const position=currentPaperState().positions.find(value=>value.decisionId===item.id&&value.status==="OPEN");
+  const position=currentPaperState().positions.find(value =>
+    value.status === "OPEN" &&
+    (value.decisionId === item.id || (value.decisionIds || []).includes(item.id) || value.symbol === item.symbol)
+  );
   const fib=item.fibonacci||{};
   const fibAvailable=Boolean(fib.pointA&&fib.pointB&&fib.pointC);
   const stop=fib.stopLoss??item.stop;
@@ -7045,9 +7048,26 @@ async function closePaperPosition(payload) {
   }
 }
 
-function openCloseOrderDialog(positionId) {
-  const position = currentPaperState().positions.find(item => item.id === positionId && item.status === "OPEN");
-  if (!position) return alert("Açık pozisyon bulunamadı.");
+async function refreshTradingState() {
+  const response = await fetch("/api/trading/state");
+  const state = await readPaperOrderResponse(response, "Güncel işlem durumu alınamadı.");
+  renderPaperOrderState(state);
+  return state;
+}
+
+async function openCloseOrderDialog(positionId) {
+  const hintedSymbol = currentPaperState().positions.find(item => item.id === positionId)?.symbol;
+  let state;
+  try {
+    state = await refreshTradingState();
+  } catch (error) {
+    alert(`Güncel açık pozisyon alınamadı: ${error.message}`);
+    return;
+  }
+  const position = (state.paper?.positions || []).find(item =>
+    item.status === "OPEN" && (item.id === positionId || item.symbol === hintedSymbol)
+  );
+  if (!position) return alert("Bu pozisyon artık açık değil. Ekran güncel sunucu durumuyla yenilendi.");
   document.getElementById("paperCloseDialog")?.remove();
   const dialog = document.createElement("div");
   dialog.id = "paperCloseDialog";
