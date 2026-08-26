@@ -19,6 +19,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Prepare app icon from website favicon
+        run: |
+          base64 --decode favicon.b64 > favicon-source.png
+          sips -z 1024 1024 favicon-source.png --out icon.png
       - run: npm install
       - run: npx expo prebuild --platform ios --clean --no-install
       - run: pod install --project-directory=ios
@@ -45,4 +49,3 @@ jobs:
           name: Borsaci-unsigned-ipa
           path: ios-app/Borsaci-unsigned.ipa
           if-no-files-found: error
-
