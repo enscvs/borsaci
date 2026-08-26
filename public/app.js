@@ -7075,7 +7075,7 @@ function openCloseOrderDialog(positionId) {
     const form = event.currentTarget;
     const orderType = form.elements.orderType.value;
     try {
-      await closePaperPosition({positionId, quantity: Number(form.elements.quantity.value), orderType, limitPrice: orderType === "LIMIT" ? Number(form.elements.limitPrice.value) : null});
+      await closePaperPosition({positionId, symbol: position.symbol, quantity: Number(form.elements.quantity.value), orderType, limitPrice: orderType === "LIMIT" ? Number(form.elements.limitPrice.value) : null});
       dialog.remove();
     } catch { /* closePaperPosition already reports the error */ }
   });
@@ -7084,7 +7084,7 @@ function openCloseOrderDialog(positionId) {
 
 async function queueAiDecision(decision) {
   try {
-    const response = await fetch("/api/trading/paper/decision/pending", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({decisionId: decision.id})});
+    const response = await fetch("/api/trading/paper/decision/pending", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({decisionId: decision.id, symbol: decision.symbol})});
     const state = await readPaperOrderResponse(response, "AI kararı bekleyen emre eklenemedi.");
     renderPaperOrderState(state, decision.id);
     focusPendingPaperOrder(decision.id);
