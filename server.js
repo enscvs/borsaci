@@ -170,10 +170,12 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
     const state = stateResult.content;
     const expectedSessionKey = lastClosedBistSessionKey(now);
     const snapshotSessionKey = state.scannerSnapshot?.sessionKey;
+    const snapshotCreatedToday = state.scannerSnapshot?.createdAt &&
+      istanbulClock(new Date(state.scannerSnapshot.createdAt)).key === expectedSessionKey;
 
     // Otomatik scanner çalıştırmıyoruz. Sonuç gerçekten bugünün
     // kapanmış günlük mumuna ait değilse yanıltıcı "yeni ilk 5" mesajı yok.
-    if (snapshotSessionKey !== expectedSessionKey) {
+    if (snapshotSessionKey !== expectedSessionKey && !snapshotCreatedToday) {
       return false;
     }
 
@@ -183,7 +185,8 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
 
     const message = dailySummary.buildDailySummaryMessage(
       state,
-      snapshotSessionKey
+      snapshotSessionKey,
+      expectedSessionKey
     );
 
     state.dailySummary = {
@@ -5025,7 +5028,9 @@ async function handleDecisionPendingOverride(req, res) {
       throw new Error("Bu AI kararı bekleyen emre dönüştürülemez.");
     }
     const timestamp = new Date().toISOString();
-    const entryPrice = Number(decision.entry?.reference || decision.entry?.high || decision.entry?.low);
+    // Kriter dışı karar dahi Pending Orders'a alınırken eski teknik giriş
+    // değil, Yahoo'dan doğrulanan en son piyasa fiyatı ile başlatılır.
+    const entryPrice = await fetchPaperMarketPrice(decision.symbol);
     if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
       throw new Error("Bu karar için doğrulanmış giriş fiyatı yok.");
     }
@@ -5629,18 +5634,22 @@ async function handleTelegramWebhook(req, res) {
   }
   const match = /^paper_(approve|reject):([A-Za-z0-9_-]{1,80})$/.exec(String(callback.data || ""));
   if (!match) return sendJSON(res, 200, {ok: true});
-  try {
-    if (match[1] === "approve") {
-      await approvePaperDecision(match[2], "TELEGRAM");
-      void answerTelegramCallback(callback.id, "Paper işlem açıldı.");
-    } else {
-      await rejectPaperDecision(match[2], "TELEGRAM");
-      void answerTelegramCallback(callback.id, "Paper işlem reddedildi.");
+  // Telegram callback sorgusu çok kısa sürede cevaplanmalı. Piyasa fiyatı,
+  // GitHub state'i ve Telegram bildirimi daha uzun sürebileceğinden önce
+  // butonun alındığını onaylıyor, işlemi arka planda tamamlıyoruz.
+  await answerTelegramCallback(callback.id, "İşlem alındı, doğrulanıyor.");
+  void (async () => {
+    try {
+      if (match[1] === "approve") {
+        await approvePaperDecision(match[2], "TELEGRAM");
+      } else {
+        await rejectPaperDecision(match[2], "TELEGRAM");
+      }
+    } catch (error) {
+      console.error("TELEGRAM PAPER APPROVAL ERROR:", error.message);
+      void sendTelegramNotification(`BORSACI PAPER ONAY HATASI\nİşlem tamamlanamadı: ${String(error.message || "bilinmeyen hata").slice(0, 250)}`);
     }
-  } catch (error) {
-    void answerTelegramCallback(callback.id, "Onay işlenemedi: işlem artık geçerli olmayabilir.");
-    console.error("TELEGRAM PAPER APPROVAL ERROR:", error.message);
-  }
+  })();
   return sendJSON(res, 200, {ok: true});
 }
 
@@ -7829,6 +7838,13 @@ server.listen(
     );
 
     void configureTelegramWebhook();
+
+    // Render yeniden başlatması veya geçici Telegram hatası webhook'u
+    // bozarsa onay butonları kendiliğinden tekrar bağlansın.
+    setInterval(
+      () => { void configureTelegramWebhook(); },
+      30 * 60 * 1000
+    );
 
   }
 );
