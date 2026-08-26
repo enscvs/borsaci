@@ -1271,7 +1271,7 @@
           "capital": 50000,
           "targetPositionValue": null,
           "reservePercent": null,
-          "quantity": 100,
+          "quantity": 50,
           "positionValue": null,
           "actualRisk": null,
           "maxPositionPercent": null,
@@ -1307,7 +1307,7 @@
         "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
         "pendingOrder": {
           "symbol": "ASELS",
-          "quantity": 100,
+          "quantity": 50,
           "entryPrice": null,
           "orderType": "MARKET",
           "stop": null,
@@ -1319,8 +1319,8 @@
           "paperOnly": true,
           "source": "MANUAL",
           "createdAt": "2026-08-26T09:35:29.476Z",
-          "updatedAt": "2026-08-26T09:40:23.108Z",
-          "editedAt": "2026-08-26T09:40:23.108Z"
+          "updatedAt": "2026-08-26T09:53:03.376Z",
+          "editedAt": "2026-08-26T09:53:03.376Z"
         },
         "timestamp": "2026-08-26T09:35:29.476Z"
       },
@@ -11003,6 +11003,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T09:53:03.376Z",
+        "type": "PAPER_MANUAL_PENDING",
+        "message": "ASELS için manuel paper emir güncellendi: 50 lot · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T09:52:55.671Z",
         "type": "CLOSED",
         "message": "ASELS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺35.00."
@@ -11496,11 +11501,6 @@
         "timestamp": "2026-08-22T22:19:36.424Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-22T22:17:43.225Z",
-        "type": "CLOSED",
-        "message": "TSPOR paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ],
     "scannerSnapshot": {
