@@ -10,9 +10,6 @@ const CONFIG = Object.freeze({
     // A-B, tek ve anlamlı bir ana hareket olmalı; aylarca sürmüş
     // ilgisiz bir dip-tepe aralığını tek impuls gibi birleştirme.
     maxImpulseBars: 45,
-    // B yeni bir ana tepe olmalı. Yakın geçmişte daha yüksek bir tepe
-    // varsa, onun altındaki sonraki dalga yeni A-B-C başlatmaz.
-    breakoutLookbackBars: 65,
     maxCorrectionBars: 70,
     // Eski, tamamlanmış yapılar yeni planın yerine geçmesin.
     maxStructureAgeBars: 130,
@@ -234,17 +231,13 @@ function findAbc(history) {
   const highs=pivots.filter(point=>point.type==="HIGH");
   /*
    * Trend-temelli Fibonacci uzatmasının üç noktası sırasıyla başlangıç
-   * (A), ana hareketin sonu (B) ve düzeltmenin sonudur (C). Bu nedenle
-   * B, A ile C arasındaki GÜNLÜK en yüksek high'dır; ilk küçük pivot
-   * high'ı değildir. A/B/C dışındaki günler B'yi değiştiremez.
+   * (A), ana hareketin sonu (B) ve düzeltmenin sonudur (C). B yalnızca
+   * A ile C arasındaki en yüksek teyitli tepedir. Daha eski bir yüksek
+   * tepenin varlığı, sonradan oluşmuş bağımsız A-B-C dalgasını geçersiz
+   * kılmaz; aksi halde birçok sembolde güncel yapı hiç çizilemez.
    */
   for(const pivotHigh of highs) {
     const B={...pivotHigh};
-    const precedingHighs=history.slice(
-      Math.max(0,B.index-CONFIG.pivot.breakoutLookbackBars),
-      B.index
-    );
-    if(precedingHighs.some(bar=>bar.high>B.price)) continue;
     const candidateAs=lows.filter(point=>
       point.index<B.index &&
       point.index>=B.index-CONFIG.pivot.maxImpulseBars
@@ -281,15 +274,22 @@ function findAbc(history) {
       retracement<CONFIG.pivot.retracementMin ||
       retracement>CONFIG.pivot.retracementMax
     ) continue;
-    const candidate={A,B,C,range,retracement,impulsePercent};
-    // En yeni gerçek ana tepe seçilir. Mikro dalga, kendinden önceki
-    // daha yüksek tepeyi geçemediği için bu seçimi ele geçiremez.
+    /*
+     * Birden fazla geçerli dalga varsa, en yeni küçük zigzag yerine
+     * göreceli olarak en güçlü ana impuls seçilir. Bu, örneğin büyük
+     * bir A-B hareketinden sonra oluşan küçük B-C salınımının gerçek
+     * tepeyi değiştirmesini önler; sembol veya sabit fiyat istisnası
+     * içermez.
+     */
+    const atrMultiple=range/atr;
+    const structuralStrength=impulsePercent*1000+Math.min(atrMultiple,20);
+    const candidate={A,B,C,range,retracement,impulsePercent,atrMultiple,structuralStrength};
     if(
       !best ||
-      candidate.B.index>best.B.index ||
+      candidate.structuralStrength>best.structuralStrength ||
       (
-        candidate.B.index===best.B.index &&
-        candidate.impulsePercent>best.impulsePercent
+        candidate.structuralStrength===best.structuralStrength &&
+        candidate.B.index>best.B.index
       )
     ) best=candidate;
   }
