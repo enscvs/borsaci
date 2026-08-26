@@ -52,6 +52,19 @@ test("ABC selection uses the highest confirmed peak between A and C",()=>{
   assert.equal(abc.C.price,20.06);
   assert.ok(abc.retracement>.786&&abc.retracement<.886);
 });
+test("a previous higher peak does not invalidate a later independent A-B-C structure",()=>{
+  const start=Date.UTC(2025,0,1);
+  const history=Array.from({length:230},(_,i)=>{const base=270+i*.01;return {time:(start+i*86400000)/1000,open:base,high:base+2,low:base-2,close:base,volume:1000000};});
+  const set=(index,low,high)=>Object.assign(history[index],{open:(low+high)/2,close:(low+high)/2,low,high});
+  // Önceki 360 tepesinden sonra bağımsız 240 → 310 → 254 yapısı.
+  set(170,330,360); set(185,240,245); set(202,305,310); set(220,254,258);
+  for(let i=221;i<history.length;i+=1)set(i,260+(i-221)*.2,266+(i-221)*.2);
+  const abc=fib.findAbc(history);
+  assert.equal(abc.A.index,185);
+  assert.equal(abc.B.index,202);
+  assert.equal(abc.C.index,220);
+  assert.ok(abc.B.price>abc.A.price&&abc.C.price>abc.A.price);
+});
 function descendingResistanceFixture({secondHigh=25}={}) {
   const start=Date.UTC(2025,0,1);
   const history=Array.from({length:60},(_,i)=>{
