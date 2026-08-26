@@ -6189,6 +6189,10 @@ function currentPaperState() {
   const paper =
     local.paper || {};
 
+  const orderType = normalizePaperOrderType(
+    order.orderType ?? order.type ?? pendingOrder.orderType ?? decision.orderType
+  );
+
   return {
     initialCapital:
       Number(paper.initialCapital) || 100000,
@@ -6306,7 +6310,7 @@ function buildPendingPaperOrder(
       riskPlan.quantity,
       decision.quantity
     ),
-    entryPrice: firstPaperOrderNumber(
+    entryPrice: orderType === "MARKET" ? null : firstPaperOrderNumber(
       order.entryPrice,
       order.limitPrice,
       order.entry,
@@ -6316,12 +6320,7 @@ function buildPendingPaperOrder(
       entry.reference,
       entry.low
     ),
-    orderType: normalizePaperOrderType(
-      order.orderType ??
-      order.type ??
-      pendingOrder.orderType ??
-      decision.orderType
-    ),
+    orderType,
     stop: firstPaperOrderNumber(order.stop, pendingOrder.stop, decision.stop),
     target1: firstPaperOrderNumber(
       order.target1,
@@ -6427,7 +6426,7 @@ function renderPendingPaperOrders(
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = '<div class="trading-empty">Bekleyen paper emir yok. Manuel emir oluşturduğunda veya uygun bir AI planı onay beklediğinde burada görünür.</div>';
+    container.innerHTML = '<div class="trading-empty">Bekleyen emir yok. Manuel emir oluşturduğunda veya uygun bir AI planı onay beklediğinde burada görünür.</div>';
     return;
   }
 
@@ -6461,8 +6460,8 @@ function renderPendingPaperOrders(
           <label>LOT
             <input name="quantity" type="number" min="1" step="1" inputmode="numeric" value="${paperOrderInputValue(order.quantity, 0)}" required>
           </label>
-          <label>ENTRY PRICE (₺)
-            <input name="entryPrice" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.entryPrice)}" required>
+          <label data-order-price-label>ENTRY PRICE (₺)
+            <input data-order-price-field name="entryPrice" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.entryPrice)}"${order.orderType === "MARKET" ? " disabled" : " required"}>
           </label>
           <label>ORDER TYPE
             <select name="orderType">
@@ -6492,6 +6491,7 @@ function renderPendingPaperOrders(
       </article>
     `;
   }).join("");
+  container.querySelectorAll("[data-pending-paper-order-form]").forEach(syncOrderPriceField);
 }
 
 
@@ -6532,7 +6532,7 @@ function readPaperOrderForm(
   const payload = {
     symbol,
     quantity,
-    entryPrice: readNumber("entryPrice", "Giriş fiyatı", true),
+    entryPrice: orderType === "MARKET" ? null : readNumber("entryPrice", "Giriş fiyatı", true),
     orderType,
     stop: readNumber("stop", "Stop", false),
     target1: readNumber("target1", "TP1", false),
@@ -6551,6 +6551,24 @@ function readPaperOrderForm(
   }
 
   return payload;
+}
+
+function syncOrderPriceField(form) {
+  const orderType = normalizePaperOrderType(form.elements.namedItem("orderType")?.value);
+  const price = form.elements.namedItem("entryPrice");
+  const label = form.querySelector("[data-order-price-label]") || price?.closest("label");
+  if (!price) return;
+  const market = orderType === "MARKET";
+  price.disabled = market;
+  price.required = !market;
+  if (market) {
+    price.value = "";
+    price.placeholder = "MARKET EXECUTION PRICE";
+    if (label) label.firstChild.textContent = "MARKET PRICE (SERVER) ";
+  } else {
+    price.placeholder = "0.00";
+    if (label) label.firstChild.textContent = "ENTRY PRICE (₺) ";
+  }
 }
 
 
@@ -6713,6 +6731,14 @@ function focusPendingPaperOrder(
 function bindPaperOrderControls() {
   const pendingContainer = document.getElementById("pendingPaperOrders");
   const manualForm = document.getElementById("manualPaperOrderForm");
+  const manualMount = document.getElementById("manualOrderMount");
+  const manualWrap = document.querySelector(".manual-paper-order-wrap");
+
+  // Manuel emir oluşturma alanı, bekleyen onay kuyruğundan ayrıdır ve
+  // açık pozisyonların hemen altında kendi panelinde gösterilir.
+  if (manualMount && manualWrap && manualWrap.parentElement !== manualMount) {
+    manualMount.appendChild(manualWrap);
+  }
 
   if (pendingContainer && pendingContainer.dataset.paperOrdersBound !== "true") {
     pendingContainer.dataset.paperOrdersBound = "true";
@@ -6753,6 +6779,11 @@ function bindPaperOrderControls() {
         setPaperOrderFormBusy(form, false);
       }
     });
+    pendingContainer.addEventListener("change", event => {
+      if (event.target.matches('select[name="orderType"]')) {
+        syncOrderPriceField(event.target.closest("form"));
+      }
+    });
   }
 
   if (manualForm && manualForm.dataset.paperOrdersBound !== "true") {
@@ -6768,6 +6799,12 @@ function bindPaperOrderControls() {
         setPaperOrderFormBusy(manualForm, false);
       }
     });
+    manualForm.addEventListener("change", event => {
+      if (event.target.matches('select[name="orderType"]')) {
+        syncOrderPriceField(manualForm);
+      }
+    });
+    syncOrderPriceField(manualForm);
   }
 
   if (document.body.dataset.paperOrderFocusBound !== "true") {

@@ -126,23 +126,25 @@ function normalizePaperOrder(input = {}, {
     : existing?.quantity;
   const quantity = requiredQuantity(rawQuantity);
 
-  const entryPrice = requiredPositiveNumber(
-    resolveEntryInput(input, existing),
-    "Giriş fiyatı"
-  );
   const orderType = resolveOrderType(input, existing, requireOrderType);
+  const rawEntryPrice = resolveEntryInput(input, existing);
+  // MARKET emir fiyatı istemez: gerçekleştirme anında sunucu tarafında
+  // doğrulanmış son piyasa fiyatı kullanılır. LIMIT emirde fiyat zorunludur.
+  const entryPrice = orderType === "MARKET"
+    ? null
+    : requiredPositiveNumber(rawEntryPrice, "Giriş fiyatı");
 
   const stop = optionalValue(input, existing, "stop", "Stop fiyatı");
   const target1 = optionalValue(input, existing, "target1", "TP1 fiyatı");
   const target2 = optionalValue(input, existing, "target2", "TP2 fiyatı");
   const target3 = optionalValue(input, existing, "target3", "TP3 fiyatı");
 
-  if (stop !== null && stop >= entryPrice) {
+  if (entryPrice !== null && stop !== null && stop >= entryPrice) {
     throw new Error("Uzun paper işlemde stop giriş fiyatının altında olmalı.");
   }
 
   for (const [label, value] of [["TP1", target1], ["TP2", target2], ["TP3", target3]]) {
-    if (value !== null && value <= entryPrice) {
+    if (entryPrice !== null && value !== null && value <= entryPrice) {
       throw new Error(`${label} giriş fiyatının üzerinde olmalı.`);
     }
   }
@@ -155,8 +157,8 @@ function normalizePaperOrder(input = {}, {
     throw new Error("TP3, TP2'nin üzerinde olmalı.");
   }
 
-  const positionValue = roundMoney(quantity * entryPrice);
-  const actualRisk = stop === null
+  const positionValue = entryPrice === null ? null : roundMoney(quantity * entryPrice);
+  const actualRisk = entryPrice === null || stop === null
     ? null
     : roundMoney((entryPrice - stop) * quantity);
 

@@ -4066,7 +4066,16 @@ function archivePaperDecision(
 }
 
 
-function openPaperPositionForDecision(
+async function fetchPaperMarketPrice(symbol) {
+  const yahoo = await fetchYahooChart(symbol, "1mo", "1h", 12000);
+  const price = Number(yahoo.history.at(-1)?.close);
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error(`${symbol} için doğrulanmış son piyasa fiyatı alınamadı.`);
+  }
+  return roundTradingValue(price);
+}
+
+async function openPaperPositionForDecision(
   state,
   decision,
   timestamp
@@ -4085,12 +4094,18 @@ function openPaperPositionForDecision(
     throw new Error("Bu karar paper işlem açmak için uygun değil.");
   }
 
-  if (paper.positions.some(item => item.decisionId === decision.id && item.status === "OPEN")) {
+  if (paper.positions.some(item =>
+    item.status === "OPEN" &&
+    (item.decisionId === decision.id || (item.decisionIds || []).includes(decision.id))
+  )) {
     throw new Error("Bu karar için zaten açık bir paper pozisyon var.");
   }
 
+  const existingSymbolPosition = paper.positions.find(item =>
+    item.status === "OPEN" && item.symbol === decision.symbol
+  );
   const maxPositions = Math.max(1, Math.floor(Number(state.risk?.maxPositions) || 3));
-  if (paper.positions.filter(item => item.status === "OPEN").length >= maxPositions) {
+  if (!existingSymbolPosition && paper.positions.filter(item => item.status === "OPEN").length >= maxPositions) {
     throw new Error(`Aynı anda en fazla ${maxPositions} açık pozisyon olabilir.`);
   }
 
@@ -4105,8 +4120,25 @@ function openPaperPositionForDecision(
   }
 
   const quantity = Number(order.quantity);
-  const entry = Number(order.entryPrice);
+  const marketPrice = await fetchPaperMarketPrice(order.symbol);
+  // MARKET her zaman sunucunun aldığı son fiyatla açılır. LIMIT ise yalnızca
+  // son fiyat limitin altında/eşitse doldurulur; aksi halde sahte dolum yok.
+  if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
+    throw new Error(`${order.symbol} LIMIT emri henüz gerçekleşmedi: son fiyat ${formatTelegramCurrency(marketPrice)}, limit ${formatTelegramCurrency(order.entryPrice)}.`);
+  }
+  const entry = order.orderType === "MARKET"
+    ? marketPrice
+    : Math.min(marketPrice, Number(order.entryPrice));
   const positionValue = quantity * entry;
+
+  if (order.stop !== null && Number(order.stop) >= entry) {
+    throw new Error("Doğrulanmış fiyatla MARKET emrin stopu girişin altında olmalı.");
+  }
+  for (const [label, target] of [["TP1", order.target1], ["TP2", order.target2], ["TP3", order.target3]]) {
+    if (target !== null && Number(target) <= entry) {
+      throw new Error(`Doğrulanmış fiyatla MARKET emrin ${label} seviyesi girişin üzerinde olmalı.`);
+    }
+  }
 
   if (quantity <= 0 || positionValue <= 0) {
     throw new Error("Kararın lot veya giriş fiyatı geçersiz.");
@@ -4115,9 +4147,31 @@ function openPaperPositionForDecision(
     throw new Error("Paper bakiyesi bu pozisyon için yeterli değil.");
   }
 
+  if (existingSymbolPosition) {
+    const previousQuantity = Number(existingSymbolPosition.quantity);
+    const combinedQuantity = previousQuantity + quantity;
+    const averageEntry = roundTradingValue(
+      ((Number(existingSymbolPosition.entry) * previousQuantity) + positionValue) / combinedQuantity
+    );
+    existingSymbolPosition.quantity = combinedQuantity;
+    existingSymbolPosition.originalQuantity = Number(existingSymbolPosition.originalQuantity || previousQuantity) + quantity;
+    existingSymbolPosition.entry = averageEntry;
+    existingSymbolPosition.current = marketPrice;
+    existingSymbolPosition.pnl = roundTradingValue((marketPrice - averageEntry) * combinedQuantity);
+    existingSymbolPosition.decisionIds = [...new Set([...(existingSymbolPosition.decisionIds || [existingSymbolPosition.decisionId]), decision.id])];
+    paper.cash = roundTradingValue(Number(paper.cash) - positionValue);
+    decision.status = "OPEN";
+    decision.lifecycle = {...(decision.lifecycle || {}), stage: "OPEN", openedAt: timestamp};
+    decision.pendingOrder = {...order, entryPrice: entry, positionValue, actualRisk: order.stop === null ? null : roundTradingValue((entry - Number(order.stop)) * quantity), status: "APPROVED", updatedAt: timestamp, approvedAt: timestamp};
+    addTradingActivity(state, "PAPER_OPEN", `${existingSymbolPosition.symbol} mevcut paper pozisyonuna eklendi: ${quantity} lot · ortalama giriş ${formatTelegramCurrency(averageEntry)}.`, timestamp);
+    recalculatePaper(paper);
+    return existingSymbolPosition;
+  }
+
   const position = {
     id: `paper-${timestamp}-${order.symbol}-${crypto.randomBytes(4).toString("hex")}`,
     decisionId: decision.id,
+    decisionIds: [decision.id],
     symbol: order.symbol,
     source: order.source,
     paperOnly: true,
@@ -4143,6 +4197,9 @@ function openPaperPositionForDecision(
   decision.lifecycle = {...(decision.lifecycle || {}), stage: "OPEN", openedAt: timestamp};
   decision.pendingOrder = {
     ...order,
+    entryPrice: entry,
+    positionValue: roundTradingValue(positionValue),
+    actualRisk: order.stop === null ? null : roundTradingValue((entry - Number(order.stop)) * quantity),
     status: "APPROVED",
     updatedAt: timestamp,
     approvedAt: timestamp,
@@ -4158,7 +4215,7 @@ function openPaperPositionForDecision(
   return position;
 }
 
-function openEligiblePaperPositions(
+async function openEligiblePaperPositions(
   state,
   timestamp
 ) {
@@ -4169,7 +4226,7 @@ function openEligiblePaperPositions(
     .slice(0, 3);
   for (const decision of eligible) {
     try {
-      opened.push(openPaperPositionForDecision(state, decision, timestamp));
+      opened.push(await openPaperPositionForDecision(state, decision, timestamp));
     } catch (error) {
       console.warn("PAPER AUTO OPEN SKIPPED:", error.message);
     }
@@ -4314,14 +4371,9 @@ function closeMonitoredPaperPosition(
           : item
     );
 
-  archivePaperDecision(
-    state,
-    position.decisionId,
-    status,
-    reason,
-    timestamp,
-    totalPnl
-  );
+  for (const decisionId of new Set(position.decisionIds || [position.decisionId])) {
+    archivePaperDecision(state, decisionId, status, reason, timestamp, totalPnl);
+  }
 
   addTradingActivity(
     state,
@@ -4788,7 +4840,7 @@ async function readTradingRequest(req) {
 }
 
 
-function createManualPaperDecision(input, state, timestamp) {
+async function createManualPaperDecision(input, state, timestamp) {
   if (state.killSwitch?.active) {
     throw new Error("Kill Switch aktif: yeni paper işlem taslağı oluşturulamaz.");
   }
@@ -4797,6 +4849,13 @@ function createManualPaperDecision(input, state, timestamp) {
     requireSymbol: true,
     requireOrderType: true,
   });
+  if (order.orderType === "LIMIT") {
+    const marketPrice = await fetchPaperMarketPrice(order.symbol);
+    const deviation = Math.abs(order.entryPrice - marketPrice) / marketPrice;
+    if (deviation > 0.25) {
+      throw new Error(`${order.symbol} LIMIT fiyatı son doğrulanmış fiyattan %${Math.round(deviation * 100)} uzakta. Son fiyat: ${formatTelegramCurrency(marketPrice)}.`);
+    }
+  }
   const id = [
     "manual",
     Date.now(),
@@ -4884,7 +4943,7 @@ async function handleManualPaperOrder(req, res) {
     const stateResult = await getTradingState();
     const state = stateResult.content;
     const timestamp = new Date().toISOString();
-    const decision = createManualPaperDecision(input, state, timestamp);
+    const decision = await createManualPaperDecision(input, state, timestamp);
 
     state.decisions = [
       decision,
@@ -5208,7 +5267,7 @@ async function approvePaperDecision(decisionId, source) {
     throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
   }
   const timestamp = new Date().toISOString();
-  const position = openPaperPositionForDecision(state, decision, timestamp);
+  const position = await openPaperPositionForDecision(state, decision, timestamp);
   addTradingActivity(
     state,
     "PAPER_APPROVED",
