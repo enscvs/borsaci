@@ -3738,6 +3738,7 @@ function createDefaultTradingState() {
       positions: [],
       decisions: [],
       history: [],
+      signals: [],
       activity: [],
       risk: {maxPositionPercent: 20, maxPositions: 5},
     },
@@ -3814,6 +3815,7 @@ function normalizeTradingState(
       positions: Array.isArray((value || {}).cryptoPaper?.positions) ? (value || {}).cryptoPaper.positions : [],
       decisions: Array.isArray((value || {}).cryptoPaper?.decisions) ? (value || {}).cryptoPaper.decisions : [],
       history: Array.isArray((value || {}).cryptoPaper?.history) ? (value || {}).cryptoPaper.history : [],
+      signals: Array.isArray((value || {}).cryptoPaper?.signals) ? (value || {}).cryptoPaper.signals : [],
       activity: Array.isArray((value || {}).cryptoPaper?.activity) ? (value || {}).cryptoPaper.activity : [],
       risk: {...fallback.cryptoPaper.risk, ...((value || {}).cryptoPaper?.risk || {})},
     },
@@ -7361,6 +7363,7 @@ if (
 }
 
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
+if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/approve") return handleCryptoPaperApprove(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/reject") return handleCryptoPaperReject(req, res);
@@ -7534,6 +7537,22 @@ async function handleCryptoPaperQueue(req, res) {
   } catch (error) { return sendJSON(res, 400, {error: error.message}); }
 }
 
+async function handleCryptoRiskSettings(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
+    const capital = Math.max(100, Number(input.capital) || Number(paper.initialCapital) || 10000);
+    const allocation = Math.max(1, Number(input.maxPositionPercent) || Number(paper.risk?.maxPositionPercent) || 20);
+    const maxPositions = Math.max(1, Math.floor(Number(input.maxPositions) || Number(paper.risk?.maxPositions) || 5));
+    const delta = capital - Number(paper.initialCapital || 0);
+    paper.initialCapital = capital; paper.cash = roundTradingValue(Number(paper.cash || 0) + delta);
+    paper.risk = {maxPositionPercent: allocation, maxPositions}; recalculateCryptoPaper(paper);
+    paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_RISK", message: "Kripto risk ayarları güncellendi."}, ...(paper.activity || [])].slice(0, 100);
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+    return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
+  } catch (error) { return sendJSON(res, 400, {error: error.message}); }
+}
+
 async function handleCryptoPaperApprove(req, res) {
   try {
     const input = await readTradingRequest(req);
@@ -7659,8 +7678,24 @@ async function handleCryptoScanner(req, res) {
       const analysis = fibonacciEngine.score(item.history, fibonacci);
       return {...item, ...analysis, fibonacci, price:analysis.features.price, ema20:analysis.features.ema20, ema50:analysis.features.ema50, ema200:analysis.features.ema200, rsi:analysis.features.rsi, atr:analysis.features.atr, volumeRatio:analysis.features.volumeRatio};
     });
+    // Kripto sinyal geçmişi tarama sonrası kalıcı yazılır; tarayıcı
+    // yenilense dahi adayların hangi günde oluştuğu kaybolmaz.
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const signalTime = new Date().toISOString();
+    const existingSignals = Array.isArray(state.cryptoPaper?.signals) ? state.cryptoPaper.signals : [];
+    const newSignals = ranked.map(item => ({
+      id: `crypto-signal-${signalTime}-${item.symbol}`,
+      symbol: item.symbol, timestamp: signalTime, score: Number(item.score || 0), grade: item.grade || "KARAR",
+      status: item.fibonacci?.status || "NO_VALID_STRUCTURE", price: item.price,
+      fibonacci: item.fibonacci || null,
+    }));
+    const existingKeys = new Set(existingSignals.map(item => `${item.symbol}:${String(item.timestamp || "").slice(0, 10)}`));
+    state.cryptoPaper.signals = [...newSignals.filter(item => !existingKeys.has(`${item.symbol}:${signalTime.slice(0, 10)}`)), ...existingSignals].slice(0, 200);
+    state.cryptoPaper.activity = [{timestamp: signalTime, type: "CRYPTO_SCAN", message: `${cryptoSymbols.length} USDT paritesi tarandı; ${ranked.length} aday kaydedildi.`}, ...(state.cryptoPaper.activity || [])].slice(0, 100);
+    await saveTradingState(state, stateResult.sha, stateResult.container);
     updateScannerJob(jobId, 100, "Kripto taraması tamamlandı", "COMPLETE");
-    return sendJSON(res, 200, {success:true, timestamp:new Date().toISOString(), scanned:cryptoSymbols.length, successful:valid.length, results:ranked, source:"BINANCE_PUBLIC", diagnostics:results.map(item=>({symbol:item.symbol, bars:item.history?.length||0, code:item.validation?.code||"OK"}))});
+    return sendJSON(res, 200, {success:true, timestamp:signalTime, scanned:cryptoSymbols.length, successful:valid.length, results:ranked, cryptoPaper:cryptoPaperStateForClient(state), source:"BINANCE_PUBLIC", diagnostics:results.map(item=>({symbol:item.symbol, bars:item.history?.length||0, code:item.validation?.code||"OK"}))});
   } catch (error) {
     updateScannerJob(jobId, 100, `Kripto tarama hatası: ${error.message}`, "ERROR");
     return sendJSON(res, 500, {success:false, error:error.message});

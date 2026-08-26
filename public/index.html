@@ -1671,6 +1671,7 @@ Waiting for input...
           <div><span>SEÇİLEN ADAY</span><strong id="cryptoPerformanceSelected">0</strong></div>
         </div>
         <p class="trading-empty">Bu alan tarama kalitesini gösterir; teknik puan başarı garantisi veya fiyat tahmini değildir.</p>
+        <div class="performance-filter"><label>DÖNEM<select id="cryptoPerformanceRange"><option value="ALL">Tüm zamanlar</option><option value="1M">Son 1 ay</option><option value="3M">Son 3 ay</option><option value="6M">Son 6 ay</option><option value="CUSTOM">Özel tarih aralığı</option></select></label><label>BAŞLANGIÇ<input id="cryptoPerformanceStart" type="date"></label><label>BİTİŞ<input id="cryptoPerformanceEnd" type="date"></label></div>
       </section>
     </div>
     <div class="trading-two-column">
@@ -1680,7 +1681,7 @@ Waiting for input...
       </section>
       <section class="panel trading-panel">
         <div class="panel-title"><span>KRİPTO RİSK MOTORU</span><span class="panel-status">KÂĞIT</span></div>
-        <div class="risk-grid"><div><span>AZAMİ POZİSYON</span><strong id="cryptoRiskMax">5</strong></div><div><span>HEDEF POZİSYON</span><strong id="cryptoRiskAllocation">20%</strong></div><div><span>FİYAT KAYNAĞI</span><strong>BINANCE</strong></div><div><span>EMİR DURUMU</span><strong>MANUEL ONAY</strong></div></div>
+        <div class="risk-grid"><div><span>AZAMİ POZİSYON</span><strong id="cryptoRiskMax">5</strong></div><div><span>HEDEF POZİSYON</span><strong id="cryptoRiskAllocation">20%</strong></div><div><span>FİYAT KAYNAĞI</span><strong>BINANCE</strong></div><div><span>EMİR DURUMU</span><strong>MANUEL ONAY</strong></div></div><form id="cryptoRiskSettingsForm" class="risk-settings"><label>SERMAYE ($)<input id="cryptoRiskCapital" type="number" min="100" step="100" value="10000"></label><label>HEDEF POZİSYON (%)<input id="cryptoRiskAllocationInput" type="number" min="1" step="1" value="20"></label><label>AZAMİ İŞLEM SAYISI<input id="cryptoRiskMaxInput" type="number" min="1" step="1" value="5"></label><button type="submit" class="trading-button">KRİPTO RİSK AYARINI UYGULA</button></form>
       </section>
     </div>
     <section class="panel trading-panel">
@@ -1691,6 +1692,12 @@ Waiting for input...
       <div class="panel-title"><span>KRİPTO AÇIK POZİSYONLAR</span><span id="cryptoOpenStatus" class="panel-status">0 POZİSYON</span></div>
       <div class="position-table-wrapper"><table class="position-table"><thead><tr><th>PARİTE</th><th>GİRİŞ</th><th>GÜNCEL</th><th>MİKTAR</th><th>STOP</th><th>TP1 / TP2</th><th>DURUM</th><th>İŞLEM</th></tr></thead><tbody id="cryptoOpenPositions"><tr><td colspan="8" class="table-empty">Açık kripto pozisyon yok</td></tr></tbody></table></div>
     </section>
+    <section class="panel trading-panel">
+      <div class="panel-title"><span>KRİPTO MANUEL EMİR</span><span class="panel-status">KÂĞIT</span></div>
+      <form id="cryptoManualOrderForm" class="paper-order-form" novalidate><label>PARİTE<input name="symbol" required placeholder="ÖRN. BTCUSDT"></label><label>MİKTAR<input name="quantity" type="number" min="1" step="1" required value="1"></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label><label>LİMİT FİYAT ($)<input name="entryPrice" type="number" min="0.000001" step="any"></label><label>STOP<input name="stop" type="number" min="0.000001" step="any"></label><label>TP1<input name="target1" type="number" min="0.000001" step="any"></label><label>TP2<input name="target2" type="number" min="0.000001" step="any"></label><label>TP3<input name="target3" type="number" min="0.000001" step="any"></label><div class="paper-order-form-actions"><button type="submit" class="trading-button">MANUEL KRİPTO EMRİ OLUŞTUR</button><small>Emir, onaylanmadan önce bekleyen emir kutusuna gider.</small></div></form>
+    </section>
+    <section class="panel trading-panel"><div class="panel-title"><span>KRİPTO İŞLEM HAREKETLERİ</span><span class="panel-status">KAYIT</span></div><div id="cryptoTradingActivity" class="trading-log"><div class="trading-empty">İşlem hareketi yok.</div></div></section>
+    <section class="panel trading-panel trade-journal-panel"><div class="panel-title"><span>KRİPTO İŞLEM GÜNLÜĞÜ</span><span class="panel-status">DETAYLI</span></div><div id="cryptoTradeJournal" class="trade-journal"><div class="trading-empty">İşlem günlüğü bekleniyor.</div></div></section>
   </section>
 
 
@@ -1968,7 +1975,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260826-crypto-paper"
+  src="/app.js?v=20260826-crypto-workspace"
   defer
 ></script>
 
