@@ -2738,6 +2738,39 @@ textarea::placeholder {
   color: #87908a;
 }
 
+.paper-order-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, .72);
+}
+
+.paper-order-dialog {
+  width: min(760px, 100%);
+  border: 1px solid rgba(255, 176, 0, .6);
+  background: #071007;
+  box-shadow: 0 0 35px rgba(0, 0, 0, .7);
+}
+
+.paper-order-dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 176, 0, .28);
+  color: #fff0bd;
+}
+
+.paper-order-dialog > p {
+  margin: 10px;
+  color: #a7b7a8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 @media (max-width: 600px) {
   .decision-chart-status {
     line-height: 1.55;

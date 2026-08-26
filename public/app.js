@@ -6153,7 +6153,9 @@ function renderAiDecisionDetail(item) {
     :`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>Geçerli A/B/C noktası olmadığı için grafiğe Fibonacci çizgisi eklenmedi.</span></div>`;
   const pendingOrderButton=item.status==="PENDING_APPROVAL"
     ?`<button type="button" class="trading-button" data-paper-order-focus="${escapeHtml(item.id)}">OPEN PENDING PAPER ORDER</button>`
-    :"";
+    :(!position && !isManualPaperOrder(null,item)
+      ?`<button type="button" class="trading-button" data-paper-action="queue" data-decision-id="${escapeHtml(item.id)}">OPEN PENDING ORDER</button>`
+      :"");
   element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:pendingOrderButton}`;
 }
 
@@ -7016,15 +7018,14 @@ function takePaperProfit1(
 
 }
 
-async function closePaperPosition(
-  positionId
-) {
+async function closePaperPosition(payload) {
+  const positionId = typeof payload === "string" ? payload : payload?.positionId;
   if (!positionId) return;
   try {
     const response = await fetch("/api/trading/paper/close", {
       method: "POST",
       headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({positionId}),
+      body: JSON.stringify(typeof payload === "string" ? {positionId} : payload),
     });
     const state = await response.json();
     if (!response.ok) throw new Error(state.error || "Paper pozisyon kapatılamadı.");
@@ -7038,6 +7039,57 @@ async function closePaperPosition(
     renderPerformance(state.history || []);
   } catch (error) {
     alert(`Paper pozisyon kapatılamadı: ${error.message}`);
+    throw error;
+  }
+}
+
+function openCloseOrderDialog(positionId) {
+  const position = currentPaperState().positions.find(item => item.id === positionId && item.status === "OPEN");
+  if (!position) return alert("Açık pozisyon bulunamadı.");
+  document.getElementById("paperCloseDialog")?.remove();
+  const dialog = document.createElement("div");
+  dialog.id = "paperCloseDialog";
+  dialog.className = "paper-order-dialog-backdrop";
+  dialog.innerHTML = `<section class="paper-order-dialog" role="dialog" aria-modal="true" aria-label="Pozisyon kapatma emri">
+    <header><strong>${escapeHtml(position.symbol)} · SELL ORDER</strong><button type="button" class="trading-button danger" data-close-dialog>×</button></header>
+    <p>Varsayılan değerler açık pozisyondan gelir. MARKET, sunucunun doğruladığı son fiyatla; LIMIT ise fiyat limitine ulaştığında gerçekleşir.</p>
+    <form class="paper-order-form" data-close-order-form>
+      <label>OPEN LOT<input name="openQuantity" value="${Number(position.quantity)}" disabled></label>
+      <label>SELL LOT<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" step="1" value="${Number(position.quantity)}" required></label>
+      <label>CURRENT PRICE<input name="currentPrice" value="${paperOrderInputValue(position.current || position.entry)}" disabled></label>
+      <label>ORDER TYPE<select name="orderType"><option value="MARKET">MARKET</option><option value="LIMIT">LIMIT</option></select></label>
+      <label data-close-limit-label>LIMIT PRICE (₺)<input name="limitPrice" type="number" min="0.01" step="0.01" value="${paperOrderInputValue(position.current || position.entry)}" disabled></label>
+      <div class="paper-order-form-actions"><button type="submit" class="trading-button danger">SELL PAPER POSITION</button><button type="button" class="trading-button" data-close-dialog>CANCEL</button></div>
+    </form>
+  </section>`;
+  const sync = () => {
+    const type = dialog.querySelector('[name="orderType"]').value;
+    const limit = dialog.querySelector('[name="limitPrice"]');
+    limit.disabled = type !== "LIMIT";
+    limit.required = type === "LIMIT";
+  };
+  dialog.querySelector('[name="orderType"]').addEventListener("change", sync);
+  dialog.addEventListener("click", event => { if (event.target.closest("[data-close-dialog]") || event.target === dialog) dialog.remove(); });
+  dialog.querySelector("form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const orderType = form.elements.orderType.value;
+    try {
+      await closePaperPosition({positionId, quantity: Number(form.elements.quantity.value), orderType, limitPrice: orderType === "LIMIT" ? Number(form.elements.limitPrice.value) : null});
+      dialog.remove();
+    } catch { /* closePaperPosition already reports the error */ }
+  });
+  document.body.appendChild(dialog);
+}
+
+async function queueAiDecision(decision) {
+  try {
+    const response = await fetch("/api/trading/paper/decision/pending", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({decisionId: decision.id})});
+    const state = await readPaperOrderResponse(response, "AI kararı bekleyen emre eklenemedi.");
+    renderPaperOrderState(state, decision.id);
+    focusPendingPaperOrder(decision.id);
+  } catch (error) {
+    alert(`AI kararı bekleyen emre eklenemedi: ${error.message}`);
   }
 }
 
@@ -7218,7 +7270,7 @@ function bindDecisionBoard() {
       if (action) {
 
         if (action.dataset.paperAction === "close") {
-          closePaperPosition(action.dataset.positionId);
+          openCloseOrderDialog(action.dataset.positionId);
           return;
         }
 
@@ -7239,6 +7291,10 @@ function bindDecisionBoard() {
           rejectPaperPosition(decision);
         }
 
+        if (action.dataset.paperAction === "queue") {
+          queueAiDecision(decision);
+        }
+
         return;
 
       }
@@ -7249,10 +7305,7 @@ function bindDecisionBoard() {
         );
 
       if (closeButton) {
-        closePaperPosition(
-          closeButton.dataset.positionClose,
-          "MANUAL_CLOSE"
-        );
+        openCloseOrderDialog(closeButton.dataset.positionClose);
       }
 
     }
