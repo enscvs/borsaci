@@ -2309,6 +2309,24 @@ textarea::placeholder {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.manual-order-create-panel {
+  margin: 12px;
+  border: 1px solid rgba(255, 176, 0, .28);
+}
+
+.manual-order-create-panel summary {
+  cursor: pointer;
+  padding: 9px 10px;
+  color: #fff0bd;
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+
+.manual-order-create-panel .manual-paper-order-wrap {
+  margin: 0;
+  border-width: 1px 0 0;
+}
+
 
 /* =========================================================
    POSITION TABLE
