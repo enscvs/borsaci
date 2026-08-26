@@ -1985,19 +1985,19 @@
         "pendingOrder": {
           "symbol": "AHGAZ",
           "quantity": 440,
-          "entryPrice": 35.18,
-          "orderType": "LIMIT",
+          "entryPrice": null,
+          "orderType": "MARKET",
           "stop": 30.91,
           "target1": 40.08,
           "target2": 42.4,
           "target3": 45.36,
-          "positionValue": 15479.2,
-          "actualRisk": 1878.8,
+          "positionValue": null,
+          "actualRisk": null,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T10:29:02.240Z",
-          "updatedAt": "2026-08-26T10:29:11.440Z",
-          "editedAt": "2026-08-26T10:29:11.440Z"
+          "updatedAt": "2026-08-26T10:29:34.147Z",
+          "editedAt": "2026-08-26T10:29:34.147Z"
         }
       },
       {
@@ -12149,6 +12149,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:29:34.147Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺0,00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T10:29:11.440Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,18 · LIMIT."
@@ -12642,11 +12647,6 @@
         "timestamp": "2026-08-22T23:58:18.248Z",
         "type": "PAPER_APPROVAL_REQUESTED",
         "message": "DOHOL için paper işlem onayı bekleniyor."
-      },
-      {
-        "timestamp": "2026-08-22T23:57:18.945Z",
-        "type": "CLOSED",
-        "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ],
     "scannerSnapshot": {
