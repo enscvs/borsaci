@@ -2109,7 +2109,7 @@
           "overrideAt": "2026-08-26T11:09:01.426Z",
           "rejectedAt": "2026-08-26T10:48:09.685Z",
           "rejectedBy": "SITE",
-          "lastCheckedAt": "2026-08-26T11:09:13.528Z",
+          "lastCheckedAt": "2026-08-26T11:09:23.530Z",
           "lastMarketPrice": 35.9
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -2130,8 +2130,10 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:09:01.426Z",
-          "updatedAt": "2026-08-26T11:09:20.212Z",
-          "editedAt": "2026-08-26T11:09:20.212Z"
+          "updatedAt": "2026-08-26T11:09:23.530Z",
+          "editedAt": "2026-08-26T11:09:20.212Z",
+          "status": "PENDING_LIMIT",
+          "lastMarketPrice": 35.9
         },
         "outcome": "USER_REJECTED"
       },
@@ -12918,6 +12920,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:09:23.530Z",
+        "type": "PAPER_LIMIT_PENDING",
+        "message": "AHGAZ LIMIT emir bekliyor: son ₺35,90 · limit ₺35,40."
+      },
+      {
         "timestamp": "2026-08-26T11:09:20.212Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,40 · LIMIT."
@@ -13411,11 +13418,6 @@
         "timestamp": "2026-08-26T09:22:36.807Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 100 lot · MARKET."
-      },
-      {
-        "timestamp": "2026-08-26T08:18:11.571Z",
-        "type": "SCAN",
-        "message": "2 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
