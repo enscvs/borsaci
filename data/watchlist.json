@@ -1380,7 +1380,7 @@
         "rank": 3,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1696,10 +1696,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-26T10:37:43.285Z",
           "expiresAt": "2026-08-27T10:37:43.286Z",
-          "overrideAt": "2026-08-26T10:46:20.704Z"
+          "overrideAt": "2026-08-26T10:46:20.704Z",
+          "rejectedAt": "2026-08-26T10:47:17.841Z",
+          "rejectedBy": "SITE"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
@@ -1721,7 +1723,8 @@
           "createdAt": "2026-08-26T10:46:20.704Z",
           "updatedAt": "2026-08-26T10:46:20.704Z",
           "editedAt": null
-        }
+        },
+        "outcome": "USER_REJECTED"
       },
       {
         "id": "1787740663287-AHGAZ",
@@ -12823,6 +12826,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:47:17.841Z",
+        "type": "PAPER_REJECTED",
+        "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
         "timestamp": "2026-08-26T10:47:10.631Z",
         "type": "PAPER_REJECTED",
         "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
@@ -13316,11 +13324,6 @@
         "timestamp": "2026-08-23T00:18:53.358Z",
         "type": "PAPER_REJECTED",
         "message": "BINBN paper işlem planı SITE üzerinden reddedildi."
-      },
-      {
-        "timestamp": "2026-08-23T00:18:49.666Z",
-        "type": "PAPER_REJECTED",
-        "message": "DOHOL paper işlem planı SITE üzerinden reddedildi."
       }
     ],
     "scannerSnapshot": {
