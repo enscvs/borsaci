@@ -4,11 +4,35 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 77640.38,
+      "cash": 57552.88,
       "equity": 93041.53967178345,
       "pnl": 43127.29313681601,
       "pnlPercent": 86.25458627363203,
       "positions": [
+        {
+          "id": "paper-2026-08-26T09:47:16.583Z-ASELS-8ff83521",
+          "decisionId": "manual-1787737615856-ASELS-49cec2d2",
+          "decisionIds": [
+            "manual-1787737615856-ASELS-49cec2d2"
+          ],
+          "symbol": "ASELS",
+          "source": "MANUAL",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 50,
+          "originalQuantity": 50,
+          "entry": 401.75,
+          "current": 401.75,
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T09:47:16.583Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-26T09:39:52.818Z-ASELS-ee4c90ce",
           "decisionId": "manual-1787736998492-ASELS-0efedaf9",
@@ -1220,7 +1244,7 @@
         "rank": null,
         "symbol": "ASELS",
         "action": "MANUAL PAPER",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "source": "MANUAL",
         "manualOrder": true,
         "paperOnly": true,
@@ -1272,28 +1296,31 @@
           "summary": "Manuel paper emir; AI/scanner kriteri uygulanmadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T09:46:55.856Z",
-          "expiresAt": null
+          "expiresAt": null,
+          "openedAt": "2026-08-26T09:47:16.583Z"
         },
         "reason": "Manuel paper emir; scanner kriterlerinden bağımsız olarak kullanıcı onayı bekliyor.",
         "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
         "pendingOrder": {
           "symbol": "ASELS",
           "quantity": 50,
-          "entryPrice": null,
+          "entryPrice": 401.75,
           "orderType": "MARKET",
           "stop": null,
           "target1": null,
           "target2": null,
           "target3": null,
-          "positionValue": null,
+          "positionValue": 20087.5,
           "actualRisk": null,
           "paperOnly": true,
           "source": "MANUAL",
           "createdAt": "2026-08-26T09:46:55.856Z",
-          "updatedAt": "2026-08-26T09:47:13.718Z",
-          "editedAt": "2026-08-26T09:47:13.718Z"
+          "updatedAt": "2026-08-26T09:47:16.583Z",
+          "editedAt": "2026-08-26T09:47:13.718Z",
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T09:47:16.583Z"
         },
         "timestamp": "2026-08-26T09:46:55.856Z"
       },
@@ -10882,6 +10909,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T09:47:16.583Z",
+        "type": "PAPER_APPROVED",
+        "message": "ASELS paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T09:47:16.583Z",
+        "type": "PAPER_OPEN",
+        "message": "ASELS manuel paper pozisyonu açıldı: 50 lot · ₺20087.50 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T09:47:13.718Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 50 lot · ₺0,00 · MARKET."
@@ -11368,16 +11405,6 @@
       },
       {
         "timestamp": "2026-08-22T21:27:44.917Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-22T21:24:49.536Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-22T21:19:52.335Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
       }
