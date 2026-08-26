@@ -1741,7 +1741,7 @@
           "symbol": "ASTERUSDT",
           "market": "CRYPTO",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "REJECTED_BY_USER",
           "grade": "A / AL ADAYI",
           "paperOnly": true,
           "timestamp": "2026-08-26T16:53:16.305Z",
@@ -2057,6 +2057,76 @@
       ],
       "history": [
         {
+          "id": "crypto-1787763196305-ASTERUSDT-e1b6ed99",
+          "symbol": "ASTERUSDT",
+          "market": "CRYPTO",
+          "action": "BUY SETUP",
+          "status": "REJECTED_BY_USER",
+          "grade": "A / AL ADAYI",
+          "paperOnly": true,
+          "timestamp": "2026-08-26T16:53:16.305Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "fibonacci": {
+            "valid": false,
+            "status": "NO_VALID_STRUCTURE",
+            "entryTriggerRatio": 0.027,
+            "entryUpperTrendlineBuffer": 0.03,
+            "confirmationTimeframe": "1d",
+            "completedDailyCandleTime": "2026-08-25T23:59:59.000Z",
+            "stopLossPercentBelowC": 2,
+            "pointA": null,
+            "pointB": null,
+            "pointC": null,
+            "range": null,
+            "retracementRatio": null,
+            "entryTriggerPrice": null,
+            "confirmationPassed": false,
+            "confirmationCandleTime": null,
+            "confirmationCandleClose": null,
+            "entryPrice": null,
+            "entryZoneLow": null,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": null,
+            "stopLoss": null,
+            "tp1": null,
+            "tp2": null,
+            "tp3": null,
+            "riskRewardTp1": null,
+            "riskRewardTp2": null,
+            "riskRewardTp3": null,
+            "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
+          },
+          "indicators": {
+            "score": 70
+          },
+          "pendingOrder": {
+            "symbol": "ASTERUSDT",
+            "quantity": 2856,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": null,
+            "target1": null,
+            "target2": null,
+            "target3": null,
+            "positionValue": null,
+            "actualRisk": null,
+            "paperOnly": true,
+            "source": "CRYPTO AI",
+            "createdAt": "2026-08-26T16:55:24.724Z",
+            "updatedAt": "2026-08-26T16:55:24.724Z"
+          },
+          "closedAt": "2026-08-26T16:55:55.591Z"
+        },
+        {
           "id": "crypto-pos-1787763238975-TRXUSDT",
           "decisionId": "crypto-1787763210346-TRXUSDT-0cefe8a5",
           "symbol": "TRXUSDT",
@@ -2367,6 +2437,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-26T16:55:55.591Z",
+          "type": "CRYPTO_REJECT",
+          "message": "ASTERUSDT kripto emri reddedildi."
+        },
         {
           "timestamp": "2026-08-26T16:55:44.172Z",
           "type": "CRYPTO_PENDING",
