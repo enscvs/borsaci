@@ -1673,6 +1673,24 @@ Waiting for input...
         <p class="trading-empty">Bu alan tarama kalitesini gösterir; teknik puan başarı garantisi veya fiyat tahmini değildir.</p>
       </section>
     </div>
+    <div class="trading-two-column">
+      <section class="panel trading-panel">
+        <div class="panel-title"><span>KRİPTO KÂĞIT PORTFÖY</span><span class="panel-status">AYRI HESAP</span></div>
+        <div class="portfolio-grid"><div><span>BAŞLANGIÇ</span><strong id="cryptoPaperInitial">$10,000</strong></div><div><span>NAKİT</span><strong id="cryptoPaperCash">$10,000</strong></div><div><span>PORTFÖY</span><strong id="cryptoPaperEquity">$10,000</strong></div><div><span>K/Z</span><strong id="cryptoPaperPnl">$0</strong></div></div>
+      </section>
+      <section class="panel trading-panel">
+        <div class="panel-title"><span>KRİPTO RİSK MOTORU</span><span class="panel-status">KÂĞIT</span></div>
+        <div class="risk-grid"><div><span>AZAMİ POZİSYON</span><strong id="cryptoRiskMax">5</strong></div><div><span>HEDEF POZİSYON</span><strong id="cryptoRiskAllocation">20%</strong></div><div><span>FİYAT KAYNAĞI</span><strong>BINANCE</strong></div><div><span>EMİR DURUMU</span><strong>MANUEL ONAY</strong></div></div>
+      </section>
+    </div>
+    <section class="panel trading-panel">
+      <div class="panel-title"><span>KRİPTO BEKLEYEN EMİRLER</span><span id="cryptoPendingStatus" class="panel-status">0 EMİR</span></div>
+      <div id="cryptoPendingOrders" class="pending-paper-orders"><div class="trading-empty">Bekleyen kripto emri yok.</div></div>
+    </section>
+    <section class="panel trading-panel">
+      <div class="panel-title"><span>KRİPTO AÇIK POZİSYONLAR</span><span id="cryptoOpenStatus" class="panel-status">0 POZİSYON</span></div>
+      <div class="position-table-wrapper"><table class="position-table"><thead><tr><th>PARİTE</th><th>GİRİŞ</th><th>GÜNCEL</th><th>MİKTAR</th><th>STOP</th><th>TP1 / TP2</th><th>DURUM</th><th>İŞLEM</th></tr></thead><tbody id="cryptoOpenPositions"><tr><td colspan="8" class="table-empty">Açık kripto pozisyon yok</td></tr></tbody></table></div>
+    </section>
   </section>
 
 
@@ -1950,7 +1968,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260826-crypto-chart"
+  src="/app.js?v=20260826-crypto-paper"
   defer
 ></script>
 

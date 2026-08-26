@@ -8911,6 +8911,7 @@ let cryptoRenderedRecords = [];
 let cryptoMarketChart = null;
 let cryptoCandleSeries = null;
 let cryptoChartMarkers = null;
+let latestCryptoPaperState = null;
 
 function formatCryptoUsd(value) {
   const number = Number(value);
@@ -8920,6 +8921,64 @@ function formatCryptoUsd(value) {
     currency: "USD",
     maximumFractionDigits: number < 1 ? 6 : number < 100 ? 4 : 2,
   }).format(number);
+}
+
+function renderCryptoPaperState(payload) {
+  const paper = payload?.cryptoPaper || payload || {};
+  latestCryptoPaperState = paper;
+  const setText = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
+  setText("cryptoPaperInitial", formatCryptoUsd(paper.initialCapital));
+  setText("cryptoPaperCash", formatCryptoUsd(paper.cash));
+  setText("cryptoPaperEquity", formatCryptoUsd(paper.equity));
+  setText("cryptoPaperPnl", formatCryptoUsd(paper.pnl));
+  setText("cryptoRiskMax", Number(paper.risk?.maxPositions || 5));
+  setText("cryptoRiskAllocation", `${Number(paper.risk?.maxPositionPercent || 20)}%`);
+  const pending = (paper.decisions || []).filter(item => item.status === "PENDING_APPROVAL");
+  const pendingMount = document.getElementById("cryptoPendingOrders");
+  setText("cryptoPendingStatus", `${pending.length} EMİR`);
+  if (pendingMount) pendingMount.innerHTML = pending.length ? pending.map(item => {
+    const order = item.pendingOrder || {};
+    return `<article class="pending-paper-order"><header><strong>${escapeHtml(item.symbol)}</strong><span>ONAY BEKLİYOR</span></header><div class="decision-price-grid"><span><small>MİKTAR</small>${Number(order.quantity || 0)}</span><span><small>EMİR</small>${escapeHtml(order.orderType || "MARKET")}</span><span><small>GİRİŞ</small>${formatCryptoUsd(order.entryPrice)}</span></div><div class="decision-summary">SL: ${formatCryptoUsd(order.stop)} · TP1/2/3: ${formatCryptoUsd(order.target1)} / ${formatCryptoUsd(order.target2)} / ${formatCryptoUsd(order.target3)}</div><div class="paper-order-form-actions"><button type="button" class="trading-button" data-crypto-paper-action="approve" data-crypto-decision-id="${escapeHtml(item.id)}">KÂĞIT EMRİ ONAYLA</button><button type="button" class="trading-button danger" data-crypto-paper-action="reject" data-crypto-decision-id="${escapeHtml(item.id)}">REDDET</button></div></article>`;
+  }).join("") : '<div class="trading-empty">Bekleyen kripto emri yok.</div>';
+  const positions = (paper.positions || []).filter(item => item.status === "OPEN");
+  const tbody = document.getElementById("cryptoOpenPositions");
+  setText("cryptoOpenStatus", `${positions.length} POZİSYON`);
+  if (tbody) tbody.innerHTML = positions.length ? positions.map(item => `<tr><td>${escapeHtml(item.symbol)}</td><td>${formatCryptoUsd(item.entry)}</td><td>${formatCryptoUsd(item.current)}</td><td>${Number(item.quantity)}</td><td>${formatCryptoUsd(item.stop)}</td><td>${formatCryptoUsd(item.target1)} / ${formatCryptoUsd(item.target2)}</td><td>AÇIK</td><td><button type="button" class="trading-button danger" data-crypto-paper-action="close" data-crypto-position-id="${escapeHtml(item.id)}">KAPAT</button></td></tr>`).join("") : '<tr><td colspan="8" class="table-empty">Açık kripto pozisyon yok</td></tr>';
+  bindCryptoPaperActions();
+}
+
+async function loadCryptoPaperState() {
+  try {
+    const response = await fetch("/api/crypto/state", {cache: "no-store"});
+    if (!response.ok) return;
+    renderCryptoPaperState(await response.json());
+  } catch {}
+}
+
+async function queueCryptoPaperDecision(item) {
+  const price = Number(item?.fibonacci?.entryPrice || item?.price);
+  if (!item || !Number.isFinite(price) || price <= 0) return window.alert("Bu aday için doğrulanmış giriş fiyatı yok.");
+  const quantity = Math.max(1, Math.floor((Number(latestCryptoPaperState?.initialCapital || 10000) * Number(latestCryptoPaperState?.risk?.maxPositionPercent || 20) / 100) / price));
+  try {
+    const response = await fetch("/api/crypto/paper/queue", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({symbol: item.symbol, quantity, entryPrice: price, orderType: "MARKET", stop: item.fibonacci?.stopLoss, target1: item.fibonacci?.tp1, target2: item.fibonacci?.tp2, target3: item.fibonacci?.tp3, score: item.score, grade: item.grade, fibonacci: item.fibonacci})});
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error || "Kripto emri oluşturulamadı.");
+    renderCryptoPaperState(payload);
+  } catch (error) { window.alert(error.message); }
+}
+
+function bindCryptoPaperActions() {
+  document.querySelectorAll("[data-crypto-paper-action]").forEach(button => {
+    if (button.dataset.cryptoPaperBound === "true") return;
+    button.dataset.cryptoPaperBound = "true";
+    button.addEventListener("click", async () => {
+      const action = button.dataset.cryptoPaperAction;
+      if (action === "queue") { const item = cryptoRenderedRecords[Number(button.dataset.cryptoDecisionIndex)]; if (item) await queueCryptoPaperDecision(item); return; }
+      const endpoint = action === "approve" ? "/api/crypto/paper/approve" : action === "reject" ? "/api/crypto/paper/reject" : "/api/crypto/paper/close";
+      const body = action === "close" ? {positionId: button.dataset.cryptoPositionId} : {decisionId: button.dataset.cryptoDecisionId};
+      try { const response = await fetch(endpoint, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "İşlem yapılamadı."); renderCryptoPaperState(payload); } catch (error) { window.alert(error.message); }
+    });
+  });
 }
 
 function renderCryptoDecisionChart(item) {
@@ -8955,6 +9014,13 @@ function renderCryptoDecisionChart(item) {
     ].forEach(([price, title, color, lineStyleValue]) => {
       if (Number.isFinite(Number(price)) && Number(price) > 0) cryptoCandleSeries.createPriceLine({price: Number(price), title, color, lineWidth: 1, lineStyle: lineStyleValue, axisLabelVisible: true});
     });
+    const resistance = fib.descendingResistance;
+    if (resistance?.valid && resistance?.anchor1 && resistance?.anchor2 && resistance?.projectedPoint && LightweightCharts.LineSeries) {
+      const trendLine = cryptoMarketChart.addSeries(LightweightCharts.LineSeries, {color: "#ff7979", lineWidth: 2, lineStyle: lineStyle.Dashed ?? 2, lastValueVisible: false, priceLineVisible: false});
+      trendLine.setData([resistance.anchor1, resistance.anchor2, resistance.projectedPoint].map(point => ({
+        time: Math.floor(new Date(point.date).getTime() / 1000), value: Number(point.price),
+      })).filter(point => Number.isFinite(point.time) && Number.isFinite(point.value)));
+    }
     const points = [[fib.pointA, "A", "belowBar", "#f8c35a"], [fib.pointB, "B", "aboveBar", "#76a9ff"], [fib.pointC, "C", "belowBar", "#ff7a7a"]]
       .filter(([point]) => Number.isFinite(Number(point?.price)) && point?.date)
       .map(([point, text, position, color]) => ({time: Math.floor(new Date(point.date).getTime() / 1000), position, color, shape: "circle", text}));
@@ -8996,7 +9062,9 @@ function renderCryptoDecisionDetail(item) {
   if (chartSymbol) chartSymbol.textContent = item.symbol || "SEMBOL YOK";
   if (chart) renderCryptoDecisionChart(item);
   renderCryptoScoreBreakdown(item);
-  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)}</span><span>Stop: ${formatCryptoUsd(fib.stopLoss)}</span><span>TP1: ${formatCryptoUsd(fib.tp1)} · R/R ${fib.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(fib.tp2)} · R/R ${fib.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(fib.tp3)} · R/R ${fib.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı; teknik kalite puanı yine gösterilir."))}</small>`;
+  const index = cryptoRenderedRecords.indexOf(item);
+  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)}</span><span>Stop: ${formatCryptoUsd(fib.stopLoss)}</span><span>TP1: ${formatCryptoUsd(fib.tp1)} · R/R ${fib.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(fib.tp2)} · R/R ${fib.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(fib.tp3)} · R/R ${fib.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı; teknik kalite puanı yine gösterilir."))}</small><br><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">BEKLEYEN KRİPTO EMRİ OLUŞTUR</button>`;
+  bindCryptoPaperActions();
 }
 
 function renderCryptoScanSummary(data, records) {
@@ -9049,13 +9117,14 @@ async function runCryptoScanner() {
     cryptoRenderedRecords = Array.isArray(data.results) ? data.results : [];
     const cards = cryptoRenderedRecords.map((item, index) => {
       const fib = item.fibonacci || {};
-      return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)} · SL: ${formatCryptoUsd(fib.stopLoss)} · TP1/2/3: ${formatCryptoUsd(fib.tp1)} / ${formatCryptoUsd(fib.tp2)} / ${formatCryptoUsd(fib.tp3)}</div></article>`;
+      return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)} · SL: ${formatCryptoUsd(fib.stopLoss)} · TP1/2/3: ${formatCryptoUsd(fib.tp1)} / ${formatCryptoUsd(fib.tp2)} / ${formatCryptoUsd(fib.tp3)}</div><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">EMİR OLUŞTUR</button></article>`;
     }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
     if (results) results.innerHTML = `<div class="trading-empty">${data.scanned} Binance USDT paritesi tarandı · ${data.successful} geçerli günlük veri</div>`;
     if (feed) feed.innerHTML = cards;
     renderCryptoScanSummary(data, cryptoRenderedRecords);
     renderCryptoDecisionDetail(cryptoRenderedRecords[0]);
     bindCryptoDecisionInteractions();
+    bindCryptoPaperActions();
     if (status) status.textContent = "TAMAMLANDI";
     if (engine) engine.textContent = "HAZIR";
     const time = document.getElementById("cryptoLastScanTime");
@@ -9122,6 +9191,7 @@ function bindTradingScannerControls() {
 
   bindKillSwitch();
   bindCryptoScannerControls();
+  void loadCryptoPaperState();
 
   if (
     scannerStopButton &&
