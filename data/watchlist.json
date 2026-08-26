@@ -1580,6 +1580,133 @@
         }
       ]
     },
+    "cryptoPaper": {
+      "initialCapital": 10000,
+      "cash": 10000,
+      "equity": 10000,
+      "pnl": 0,
+      "pnlPercent": 0,
+      "positions": [],
+      "decisions": [
+        {
+          "id": "crypto-1787759537799-XNOUSDT-8d179173",
+          "symbol": "XNOUSDT",
+          "market": "CRYPTO",
+          "action": "BUY SETUP",
+          "status": "PENDING_APPROVAL",
+          "grade": "A / AL ADAYI",
+          "paperOnly": true,
+          "timestamp": "2026-08-26T15:52:17.703Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": 0.32,
+          "target1": 0.53,
+          "target2": 0.58,
+          "target3": 0.65,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_TOO_FAR",
+            "pointA": {
+              "type": "LOW",
+              "index": 505,
+              "price": 0.275,
+              "date": "2026-07-13T23:59:59.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 513,
+              "price": 0.593,
+              "date": "2026-07-21T23:59:59.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 540,
+              "price": 0.33,
+              "date": "2026-08-17T23:59:59.000Z"
+            },
+            "range": 0.32,
+            "retracementRatio": 0.827,
+            "entryTriggerPrice": 0.34,
+            "entryZoneLow": 0.34,
+            "entryZoneHigh": 0.38,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "POST_B_LAST_TWO_LOWER_HIGHS",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 520,
+                "price": 0.458,
+                "date": "2026-07-28T23:59:59.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 531,
+                "price": 0.424,
+                "date": "2026-08-08T23:59:59.000Z"
+              },
+              "slopePerBar": -0.003091,
+              "lastCompletedCandleTime": "2026-08-25T23:59:59.000Z",
+              "projectedPoint": {
+                "index": 548,
+                "date": "2026-08-25T23:59:59.000Z",
+                "price": 0.3715
+              },
+              "breakoutPrice": 0.3715,
+              "breakoutPriceAtLast": 0.3715,
+              "entryUpperRaw": 0.3825981818181817,
+              "entryUpperPrice": 0.38
+            },
+            "stopLoss": 0.32,
+            "tp1": 0.53,
+            "tp2": 0.58,
+            "tp3": 0.65,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-18T23:59:59.000Z",
+            "confirmationCandleClose": 0.38,
+            "entryPrice": 0.41
+          },
+          "indicators": {
+            "score": 76
+          },
+          "pendingOrder": {
+            "symbol": "XNOUSDT",
+            "quantity": 4878,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": 0.32,
+            "target1": 0.53,
+            "target2": 0.58,
+            "target3": 0.65,
+            "positionValue": null,
+            "actualRisk": null,
+            "paperOnly": true,
+            "source": "CRYPTO AI",
+            "createdAt": "2026-08-26T15:52:17.703Z",
+            "updatedAt": "2026-08-26T15:52:17.703Z"
+          }
+        }
+      ],
+      "history": [],
+      "activity": [
+        {
+          "timestamp": "2026-08-26T15:52:17.703Z",
+          "type": "CRYPTO_PENDING",
+          "message": "XNOUSDT kripto paper emri onay bekliyor."
+        }
+      ],
+      "risk": {
+        "maxPositionPercent": 20,
+        "maxPositions": 5
+      }
+    },
     "risk": {
       "maxPositionPercent": 31,
       "maxPositions": 3,
