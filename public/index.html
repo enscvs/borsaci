@@ -1690,7 +1690,6 @@ Waiting for input...
       <div class="panel-title"><span>KRİPTO BEKLEYEN EMİRLER</span><span id="cryptoPendingStatus" class="panel-status">0 EMİR</span></div>
       <div id="cryptoPendingOrders" class="pending-paper-orders"><div class="trading-empty">Bekleyen kripto emri yok.</div></div>
     </section>
-    <section id="cryptoCloseOrderPanel" class="panel trading-panel" hidden><div class="panel-title"><span>KRİPTO SATIŞ EMRİ</span><span id="cryptoCloseOrderSymbol" class="panel-status">—</span></div><form id="cryptoCloseOrderForm" class="paper-order-form"><input type="hidden" name="positionId"><label>MİKTAR<input name="quantity" type="number" min="1" step="1" required></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label><label>LIMIT FİYAT ($)<input name="limitPrice" type="number" min="0.000001" step="any"></label><div class="paper-order-form-actions"><button type="submit" class="trading-button danger">SATIŞ EMRİNİ GÖNDER</button><button type="button" id="cryptoCloseOrderCancel" class="trading-button">İPTAL</button><small>Varsayılanlar seçilen açık pozisyondan gelir; satıştan önce değiştirilebilir.</small></div></form></section>
     <section class="panel trading-panel">
       <div class="panel-title"><span>KRİPTO AÇIK POZİSYONLAR</span><span id="cryptoOpenStatus" class="panel-status">0 POZİSYON</span></div>
       <div class="position-table-wrapper"><table class="position-table"><thead><tr><th>PARİTE</th><th>GİRİŞ</th><th>GÜNCEL</th><th>MİKTAR</th><th>STOP</th><th>TP1 / TP2</th><th>DURUM</th><th>İŞLEM</th></tr></thead><tbody id="cryptoOpenPositions"><tr><td colspan="8" class="table-empty">Açık kripto pozisyon yok</td></tr></tbody></table></div>
@@ -1978,7 +1977,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260826-crypto-order-controls"
+  src="/app.js?v=20260826-crypto-ai-parity"
   defer
 ></script>
 

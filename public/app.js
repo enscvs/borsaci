@@ -8912,6 +8912,8 @@ let cryptoMarketChart = null;
 let cryptoCandleSeries = null;
 let cryptoChartMarkers = null;
 let latestCryptoPaperState = null;
+let cryptoVisibleSignals = [];
+let cryptoQuoteRefreshTimer = null;
 
 function formatCryptoUsd(value) {
   const number = Number(value);
@@ -8942,7 +8944,7 @@ function renderCryptoPaperState(payload) {
   setText("cryptoPendingStatus", `${pending.length} EMİR`);
   if (pendingMount) pendingMount.innerHTML = pending.length ? pending.map(item => {
     const order = item.pendingOrder || {};
-    return `<article class="pending-paper-order" data-crypto-pending-card data-crypto-decision-id="${escapeHtml(item.id)}"><header><strong>${escapeHtml(item.symbol)}</strong><span>ONAY BEKLİYOR</span></header><form class="paper-order-form" data-crypto-pending-form><label>MİKTAR<input name="quantity" type="number" min="1" step="1" value="${Number(order.quantity || 1)}" required></label><label data-crypto-price-label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.000001" step="any" value="${order.entryPrice ?? ""}"${order.orderType === "MARKET" ? " disabled" : " required"}></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>PİYASA</option><option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.000001" step="any" value="${order.stop ?? ""}"></label><label>TP1<input name="target1" type="number" min="0.000001" step="any" value="${order.target1 ?? ""}"></label><label>TP2<input name="target2" type="number" min="0.000001" step="any" value="${order.target2 ?? ""}"></label><label>TP3<input name="target3" type="number" min="0.000001" step="any" value="${order.target3 ?? ""}"></label><div class="paper-order-form-actions"><button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button" data-crypto-paper-action="approve" data-crypto-decision-id="${escapeHtml(item.id)}">KÂĞIT EMRİ ONAYLA</button><button type="button" class="trading-button danger" data-crypto-paper-action="reject" data-crypto-decision-id="${escapeHtml(item.id)}">REDDET</button><small>Fiyat, miktar, emir türü, SL ve hedefler onaydan önce düzenlenebilir.</small></div></form></article>`;
+    return `<article class="pending-paper-order" data-crypto-pending-card data-crypto-decision-id="${escapeHtml(item.id)}"><header><strong>${escapeHtml(item.symbol)}</strong><span>ONAY BEKLİYOR</span></header><div class="paper-order-live-price" data-crypto-market-price data-crypto-symbol="${escapeHtml(item.symbol)}">CANLI PİYASA FİYATI: YÜKLENİYOR…</div><form class="paper-order-form" data-crypto-pending-form><label>MİKTAR<input name="quantity" type="number" min="1" step="1" value="${Number(order.quantity || 1)}" required></label><label data-crypto-price-label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.000001" step="any" value="${order.entryPrice ?? ""}"${order.orderType === "MARKET" ? " disabled" : " required"}></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>PİYASA</option><option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.000001" step="any" value="${order.stop ?? ""}"></label><label>TP1<input name="target1" type="number" min="0.000001" step="any" value="${order.target1 ?? ""}"></label><label>TP2<input name="target2" type="number" min="0.000001" step="any" value="${order.target2 ?? ""}"></label><label>TP3<input name="target3" type="number" min="0.000001" step="any" value="${order.target3 ?? ""}"></label><div class="paper-order-form-actions"><button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button" data-crypto-paper-action="approve" data-crypto-decision-id="${escapeHtml(item.id)}">KÂĞIT EMRİ ONAYLA</button><button type="button" class="trading-button danger" data-crypto-paper-action="reject" data-crypto-decision-id="${escapeHtml(item.id)}">REDDET</button><small>Fiyat, miktar, emir türü, SL ve hedefler onaydan önce düzenlenebilir.</small></div></form></article>`;
   }).join("") : '<div class="trading-empty">Bekleyen kripto emri yok.</div>';
   const positions = (paper.positions || []).filter(item => item.status === "OPEN");
   const tbody = document.getElementById("cryptoOpenPositions");
@@ -8950,10 +8952,11 @@ function renderCryptoPaperState(payload) {
   if (tbody) tbody.innerHTML = positions.length ? positions.map(item => `<tr><td>${escapeHtml(item.symbol)}</td><td>${formatCryptoUsd(item.entry)}</td><td>${formatCryptoUsd(item.current)}</td><td>${Number(item.quantity)}</td><td>${formatCryptoUsd(item.stop)}</td><td>${formatCryptoUsd(item.target1)} / ${formatCryptoUsd(item.target2)}</td><td>AÇIK</td><td><button type="button" class="trading-button danger" data-crypto-paper-action="close" data-crypto-position-id="${escapeHtml(item.id)}">KAPAT</button></td></tr>`).join("") : '<tr><td colspan="8" class="table-empty">Açık kripto pozisyon yok</td></tr>';
   renderCryptoPersistentSignals(paper);
   const activity = document.getElementById("cryptoTradingActivity");
-  if (activity) activity.innerHTML = (paper.activity || []).length ? paper.activity.slice(0, 30).map(item => `<div class="log-line"><span class="log-time">${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</span><span>${escapeHtml(item.message || item.type || "İşlem kaydı")}</span></div>`).join("") : '<div class="trading-empty">İşlem hareketi yok.</div>';
+  if (activity) activity.innerHTML = (paper.activity || []).length ? paper.activity.slice(0, 8).map(item => `<div class="log-line"><span class="log-time">${escapeHtml(new Date(item.timestamp).toLocaleTimeString("tr-TR"))}</span><span>${escapeHtml(item.message || item.type || "İşlem kaydı")}</span></div>`).join("") : '<div class="trading-empty">İşlem hareketi yok.</div>';
   const journal = document.getElementById("cryptoTradeJournal");
-  if (journal) journal.innerHTML = (paper.history || []).length ? paper.history.slice(0, 30).map(item => `<article class="trade-journal-item"><strong>${escapeHtml(item.symbol || "KRİPTO")} · ${escapeHtml(item.status || "KAPATILDI")}</strong><span>Giriş: ${formatCryptoUsd(item.entry)} · Çıkış: ${formatCryptoUsd(item.current)}</span><small>${escapeHtml(item.closedAt ? new Date(item.closedAt).toLocaleString("tr-TR") : "")}</small></article>`).join("") : '<div class="trading-empty">Henüz sonuçlanmış kripto işlemi yok.</div>';
+  if (journal) journal.innerHTML = (paper.activity || []).length ? paper.activity.slice(0, 100).map(item => `<details><summary>${escapeHtml(item.type || "EVENT")} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</summary><p>${escapeHtml(item.message || "")}</p></details>`).join("") : '<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
   bindCryptoPaperActions();
+  void refreshCryptoQuotes();
 }
 
 function cryptoRangeStart() {
@@ -8965,8 +8968,10 @@ function cryptoRangeStart() {
 }
 
 function renderCryptoPersistentSignals(paper) {
-  const start = cryptoRangeStart(); const endText = document.getElementById("cryptoPerformanceEnd")?.value; const end = endText ? new Date(`${endText}T23:59:59`).getTime() : null;
+  const range = document.getElementById("cryptoPerformanceRange")?.value || "ALL";
+  const start = cryptoRangeStart(); const endText = document.getElementById("cryptoPerformanceEnd")?.value; const end = range === "CUSTOM" && endText ? new Date(`${endText}T23:59:59`).getTime() : null;
   const signals = (paper.signals || []).filter(item => { const time = new Date(item.timestamp || 0).getTime(); return (!start || time >= start) && (!end || time <= end); });
+  cryptoVisibleSignals = signals;
   const history = document.getElementById("cryptoSignalHistory"); const status = document.getElementById("cryptoHistoryStatus");
   const average = signals.length ? signals.reduce((sum, item) => sum + Number(item.score || 0), 0) / signals.length : 0;
   const active = (paper.decisions || []).filter(item => ["PENDING_APPROVAL", "OPEN"].includes(item.status)).length;
@@ -8976,7 +8981,8 @@ function renderCryptoPersistentSignals(paper) {
   const update = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
   update("cryptoPerformanceScanned", signals.length); update("cryptoPerformanceValid", active); update("cryptoPerformanceBest", signals.length ? `${average.toFixed(1)}/100` : "—"); update("cryptoPerformanceSelected", closed.length); update("cryptoPerformanceWinRate", closed.length ? `%${(wins * 100 / closed.length).toFixed(1)}` : "—"); update("cryptoPerformanceRealized", formatCryptoUsd(realized));
   if (status) status.textContent = `${signals.length} KAYIT`;
-  if (history) history.innerHTML = signals.length ? signals.slice(0, 50).map(item => `<div class="signal-history-item"><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.status || "NO_VALID_STRUCTURE"))} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</small></div>`).join("") : '<div class="trading-empty">Bu tarih aralığında kayıtlı kripto sinyali yok.</div>';
+  if (history) history.innerHTML = signals.length ? signals.slice(0, 50).map((item, index) => `<button type="button" class="signal-history-item" data-crypto-signal-index="${index}"><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.status || "NO_VALID_STRUCTURE"))} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</small></button>`).join("") : '<div class="trading-empty">Bu tarih aralığında kayıtlı kripto sinyali yok.</div>';
+  bindCryptoSignalHistoryDetails();
 }
 
 async function loadCryptoPaperState() {
@@ -8997,6 +9003,43 @@ async function queueCryptoPaperDecision(item) {
     if (!response.ok) throw new Error(payload?.error || "Kripto emri oluşturulamadı.");
     renderCryptoPaperState(payload);
   } catch (error) { window.alert(error.message); }
+}
+
+async function refreshCryptoQuotes() {
+  const priceNodes = [...document.querySelectorAll("[data-crypto-market-price]")];
+  const symbols = [...new Set(priceNodes.map(node => node.dataset.cryptoSymbol).filter(Boolean))];
+  if (!symbols.length) return;
+  try {
+    const response = await fetch(`/api/crypto/quotes?symbols=${encodeURIComponent(symbols.join(","))}`, {cache: "no-store"});
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload?.error || "Canlı fiyat alınamadı.");
+    priceNodes.forEach(node => {
+      const quote = payload.quotes?.[node.dataset.cryptoSymbol];
+      node.textContent = quote ? `CANLI PİYASA FİYATI: ${formatCryptoUsd(quote.price)}` : "CANLI PİYASA FİYATI: GEÇİCİ OLARAK ALINAMADI";
+    });
+  } catch {
+    priceNodes.forEach(node => { node.textContent = "CANLI PİYASA FİYATI: GEÇİCİ OLARAK ALINAMADI"; });
+  }
+}
+
+function bindCryptoSignalHistoryDetails() {
+  document.querySelectorAll("#cryptoSignalHistory [data-crypto-signal-index]").forEach(button => {
+    if (button.dataset.cryptoSignalBound === "true") return;
+    button.dataset.cryptoSignalBound = "true";
+    button.addEventListener("click", () => {
+      const signal = cryptoVisibleSignals[Number(button.dataset.cryptoSignalIndex)];
+      if (!signal) return;
+      const liveRecord = cryptoRenderedRecords.find(record => record.symbol === signal.symbol);
+      const record = liveRecord || {
+        ...signal,
+        price: signal.price || signal.fibonacci?.entryPrice || null,
+        indicators: signal.indicators || {},
+        history: signal.history || [],
+      };
+      renderCryptoDecisionDetail(record);
+      document.getElementById("cryptoDecisionDetail")?.scrollIntoView({behavior: "smooth", block: "center"});
+    });
+  });
 }
 
 function bindCryptoPaperActions() {
@@ -9022,12 +9065,42 @@ function bindCryptoPaperActions() {
 }
 
 function openCryptoCloseOrder(positionId) {
-  const position = (latestCryptoPaperState?.positions || []).find(item => item.id === positionId);
-  const panel = document.getElementById("cryptoCloseOrderPanel"); const form = document.getElementById("cryptoCloseOrderForm");
-  if (!position || !panel || !form) return;
-  panel.hidden = false; document.getElementById("cryptoCloseOrderSymbol").textContent = position.symbol;
-  form.elements.namedItem("positionId").value = position.id; form.elements.namedItem("quantity").value = Number(position.quantity); form.elements.namedItem("orderType").value = "MARKET"; form.elements.namedItem("limitPrice").value = Number(position.current || position.entry || "");
-  panel.scrollIntoView({behavior: "smooth", block: "center"});
+  const position = (latestCryptoPaperState?.positions || []).find(item => item.id === positionId && item.status === "OPEN");
+  if (!position) return window.alert("Bu pozisyon artık açık değil. Ekran güncel sunucu durumuyla yenilendi.");
+  document.getElementById("cryptoPaperCloseDialog")?.remove();
+  const dialog = document.createElement("div");
+  dialog.id = "cryptoPaperCloseDialog";
+  dialog.className = "paper-order-dialog-backdrop";
+  dialog.innerHTML = `<section class="paper-order-dialog" role="dialog" aria-modal="true" aria-label="Kripto pozisyon kapatma emri">
+    <header><strong>${escapeHtml(position.symbol)} · SATIŞ EMRİ</strong><button type="button" class="trading-button danger" data-crypto-close-dialog>×</button></header>
+    <p>Varsayılan değerler açık pozisyondan gelir. PİYASA, sunucunun doğruladığı son fiyatla; LİMİT ise fiyat limitine ulaştığında gerçekleşir.</p>
+    <div class="paper-order-live-price" data-crypto-market-price data-crypto-symbol="${escapeHtml(position.symbol)}">CANLI PİYASA FİYATI: YÜKLENİYOR…</div>
+    <form class="paper-order-form" data-crypto-close-order-form>
+      <label>AÇIK MİKTAR<input name="openQuantity" value="${Number(position.quantity)}" disabled></label>
+      <label>SATILACAK MİKTAR<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" step="1" value="${Number(position.quantity)}" required></label>
+      <label>GÜNCEL FİYAT ($)<input name="currentPrice" value="${Number(position.current || position.entry || 0)}" disabled></label>
+      <label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label>
+      <label>LİMİT FİYAT ($)<input name="limitPrice" type="number" min="0.000001" step="any" value="${Number(position.current || position.entry || "")}" disabled></label>
+      <div class="paper-order-form-actions"><button type="submit" class="trading-button danger">KÂĞIT POZİSYONU SAT</button><button type="button" class="trading-button" data-crypto-close-dialog>İPTAL</button></div>
+    </form>
+  </section>`;
+  const sync = () => {
+    const market = dialog.querySelector('[name="orderType"]').value === "MARKET";
+    const limit = dialog.querySelector('[name="limitPrice"]');
+    limit.disabled = market; limit.required = !market;
+  };
+  dialog.querySelector('[name="orderType"]').addEventListener("change", sync);
+  dialog.addEventListener("click", event => { if (event.target === dialog || event.target.closest("[data-crypto-close-dialog]")) dialog.remove(); });
+  dialog.querySelector("form").addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget; const orderType = form.elements.orderType.value;
+    try {
+      const response = await fetch("/api/crypto/paper/close", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({positionId: position.id, quantity: Number(form.elements.quantity.value), orderType, limitPrice: orderType === "LIMIT" ? Number(form.elements.limitPrice.value) : null})});
+      const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Satış emri gerçekleştirilemedi.");
+      renderCryptoPaperState(payload); dialog.remove();
+    } catch (error) { window.alert(error.message); }
+  });
+  document.body.appendChild(dialog); sync(); void refreshCryptoQuotes();
 }
 
 function renderCryptoRiskGauge() {
@@ -9040,13 +9113,42 @@ function bindCryptoWorkspaceControls() {
   const riskForm = document.getElementById("cryptoRiskSettingsForm");
   if (riskForm && riskForm.dataset.cryptoBound !== "true") { riskForm.dataset.cryptoBound = "true"; riskForm.addEventListener("submit", async event => { event.preventDefault(); try { const response = await fetch("/api/crypto/risk-settings", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({capital: document.getElementById("cryptoRiskCapital")?.value, maxPositionPercent: document.getElementById("cryptoRiskAllocationInput")?.value, maxPositions: document.getElementById("cryptoRiskMaxInput")?.value})}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Risk ayarı kaydedilemedi."); renderCryptoPaperState(payload); } catch (error) { window.alert(error.message); } }); }
   const manualForm = document.getElementById("cryptoManualOrderForm");
-  if (manualForm && manualForm.dataset.cryptoBound !== "true") { manualForm.dataset.cryptoBound = "true"; manualForm.addEventListener("submit", async event => { event.preventDefault(); const data = Object.fromEntries(new FormData(manualForm)); try { const response = await fetch("/api/crypto/paper/queue", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({...data, source: "MANUAL", grade: "MANUEL"})}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Manuel emir oluşturulamadı."); renderCryptoPaperState(payload); manualForm.reset(); } catch (error) { window.alert(error.message); } }); }
-  ["cryptoPerformanceRange", "cryptoPerformanceStart", "cryptoPerformanceEnd"].forEach(id => { const element = document.getElementById(id); if (element && element.dataset.cryptoBound !== "true") { element.dataset.cryptoBound = "true"; element.addEventListener("change", () => renderCryptoPersistentSignals(latestCryptoPaperState || {})); } });
+  if (manualForm && manualForm.dataset.cryptoBound !== "true") {
+    manualForm.dataset.cryptoBound = "true";
+    const syncManualOrderType = () => {
+      const market = String(manualForm.elements.orderType?.value || "").toUpperCase() === "MARKET";
+      const price = manualForm.elements.entryPrice;
+      const label = price?.closest("label");
+      if (price) { price.disabled = market; price.required = !market; if (market) price.value = ""; }
+      if (label) label.firstChild.textContent = market ? "PİYASA FİYATI ($)" : "LİMİT FİYAT ($)";
+    };
+    manualForm.elements.orderType?.addEventListener("change", syncManualOrderType);
+    syncManualOrderType();
+    manualForm.addEventListener("submit", async event => {
+      event.preventDefault(); const data = Object.fromEntries(new FormData(manualForm));
+      if (String(data.orderType).toUpperCase() === "MARKET") data.entryPrice = null;
+      try {
+        const response = await fetch("/api/crypto/paper/queue", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({...data, source: "MANUAL", grade: "MANUEL"})});
+        const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Manuel emir oluşturulamadı.");
+        renderCryptoPaperState(payload); manualForm.reset(); syncManualOrderType();
+      } catch (error) { window.alert(error.message); }
+    });
+  }
+  const performanceRange = document.getElementById("cryptoPerformanceRange");
+  if (performanceRange && performanceRange.dataset.cryptoBound !== "true") { performanceRange.dataset.cryptoBound = "true"; performanceRange.addEventListener("change", () => renderCryptoPersistentSignals(latestCryptoPaperState || {})); }
+  ["cryptoPerformanceStart", "cryptoPerformanceEnd"].forEach(id => {
+    const element = document.getElementById(id);
+    if (element && element.dataset.cryptoBound !== "true") {
+      element.dataset.cryptoBound = "true";
+      element.addEventListener("change", () => { if (performanceRange) performanceRange.value = "CUSTOM"; renderCryptoPersistentSignals(latestCryptoPaperState || {}); });
+    }
+  });
   ["cryptoRiskAllocationInput", "cryptoRiskMaxInput"].forEach(id => { const element = document.getElementById(id); if (element && element.dataset.cryptoGaugeBound !== "true") { element.dataset.cryptoGaugeBound = "true"; element.addEventListener("input", renderCryptoRiskGauge); } });
   renderCryptoRiskGauge();
   const closeForm = document.getElementById("cryptoCloseOrderForm");
   if (closeForm && closeForm.dataset.cryptoBound !== "true") { closeForm.dataset.cryptoBound = "true"; closeForm.addEventListener("submit", async event => { event.preventDefault(); const data = Object.fromEntries(new FormData(closeForm)); try { const response = await fetch("/api/crypto/paper/close", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Satış emri gerçekleştirilemedi."); renderCryptoPaperState(payload); document.getElementById("cryptoCloseOrderPanel").hidden = true; } catch (error) { window.alert(error.message); } }); }
   const cancel = document.getElementById("cryptoCloseOrderCancel"); if (cancel && cancel.dataset.cryptoBound !== "true") { cancel.dataset.cryptoBound = "true"; cancel.addEventListener("click", () => { document.getElementById("cryptoCloseOrderPanel").hidden = true; }); }
+  if (!cryptoQuoteRefreshTimer) cryptoQuoteRefreshTimer = window.setInterval(() => { void refreshCryptoQuotes(); }, 15000);
 }
 
 function renderCryptoDecisionChart(item) {
@@ -9131,7 +9233,7 @@ function renderCryptoDecisionDetail(item) {
   if (chart) renderCryptoDecisionChart(item);
   renderCryptoScoreBreakdown(item);
   const index = cryptoRenderedRecords.indexOf(item);
-  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)}</span><span>Stop: ${formatCryptoUsd(fib.stopLoss)}</span><span>TP1: ${formatCryptoUsd(fib.tp1)} · R/R ${fib.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(fib.tp2)} · R/R ${fib.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(fib.tp3)} · R/R ${fib.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı; teknik kalite puanı yine gösterilir."))}</small><br><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">BEKLEYEN KRİPTO EMRİ OLUŞTUR</button>`;
+  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)}</span><span>Stop: ${formatCryptoUsd(fib.stopLoss)}</span><span>TP1: ${formatCryptoUsd(fib.tp1)} · R/R ${fib.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(fib.tp2)} · R/R ${fib.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(fib.tp3)} · R/R ${fib.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı; teknik kalite puanı yine gösterilir."))}</small>${index >= 0 ? `<br><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">BEKLEYEN KRİPTO EMRİ OLUŞTUR</button>` : ""}`;
   bindCryptoPaperActions();
 }
 

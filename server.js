@@ -7363,6 +7363,7 @@ if (
 }
 
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
+if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/update") return handleCryptoPaperUpdate(req, res);
@@ -7495,6 +7496,14 @@ async function handleCryptoState(req, res) {
   } catch (error) {
     return sendJSON(res, 500, {error: error.message});
   }
+}
+
+async function handleCryptoQuotes(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const symbols = [...new Set(String(url.searchParams.get("symbols") || "").split(",").map(value => value.trim().toUpperCase()).filter(value => /^[A-Z0-9]{2,12}$/.test(value)).slice(0, 20))];
+  const quotes = {}; const unavailable = [];
+  await Promise.all(symbols.map(async symbol => { try { quotes[symbol] = {price: await fetchCryptoPaperMarketPrice(symbol), asOf: new Date().toISOString(), source: "BINANCE_LAST_PRICE"}; } catch { unavailable.push(symbol); } }));
+  return sendJSON(res, 200, {quotes, unavailable});
 }
 
 function cryptoPaperDecisionFromInput(input, paper, timestamp) {
