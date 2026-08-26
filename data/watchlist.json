@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 143140.50043762205,
-      "equity": 143140.50043762205,
+      "cash": 112120.39,
+      "equity": 143109.51,
       "pnl": 43226.79357443809,
       "pnlPercent": 43.22679357443809,
       "positions": [
+        {
+          "id": "paper-2026-08-26T16:31:17.053Z-AHGAZ-63e32255",
+          "decisionId": "1787761831810-AHGAZ",
+          "decisionIds": [
+            "1787761831810-AHGAZ"
+          ],
+          "symbol": "AHGAZ",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 857,
+          "originalQuantity": 857,
+          "entry": 36.16,
+          "entryCommission": 30.99,
+          "current": 36.16,
+          "stop": 30.91,
+          "target1": 40.08,
+          "target2": 42.4,
+          "target3": 45.36,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T16:31:17.053Z",
+          "tp1Hit": false,
+          "realizedPnl": -30.99,
+          "pnl": -30.99
+        },
         {
           "id": "paper-2026-08-26T11:45:11.613Z-GESAN-feae92fe",
           "decisionId": "1787744504074-GESAN",
@@ -2475,7 +2500,7 @@
         "rank": 4,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2791,10 +2816,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T16:30:31.810Z",
           "expiresAt": "2026-08-27T16:30:31.810Z",
-          "overrideAt": "2026-08-26T16:31:01.995Z"
+          "overrideAt": "2026-08-26T16:31:01.995Z",
+          "openedAt": "2026-08-26T16:31:17.053Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
@@ -2814,8 +2840,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T16:31:01.995Z",
-          "updatedAt": "2026-08-26T16:31:13.748Z",
-          "editedAt": "2026-08-26T16:31:13.748Z"
+          "updatedAt": "2026-08-26T16:31:17.053Z",
+          "editedAt": "2026-08-26T16:31:13.748Z",
+          "commission": 30.99,
+          "totalCost": 31020.11,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T16:31:17.053Z"
         }
       }
     ],
@@ -15138,6 +15168,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T16:31:17.053Z",
+        "type": "PAPER_APPROVED",
+        "message": "AHGAZ paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T16:31:17.053Z",
+        "type": "PAPER_OPEN",
+        "message": "AHGAZ scanner paper pozisyonu açıldı: 857 lot · ₺30989.12 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-26T16:31:13.748Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "AHGAZ bekleyen paper emri düzenlendi: 857 lot · ₺36,16 · LIMIT."
@@ -15626,16 +15666,6 @@
         "timestamp": "2026-08-26T10:10:40.298Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:10:30.430Z",
-        "type": "PAPER_REJECTED",
-        "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
-      },
-      {
-        "timestamp": "2026-08-26T10:09:34.632Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "GESAN bekleyen paper emri düzenlendi: 174 lot · ₺88,65 · LIMIT."
       }
     ],
     "scannerSnapshot": {
