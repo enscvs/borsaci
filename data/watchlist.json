@@ -1632,19 +1632,19 @@
         "pendingOrder": {
           "symbol": "GESAN",
           "quantity": 174,
-          "entryPrice": 88.65,
+          "entryPrice": 90.45,
           "orderType": "LIMIT",
           "stop": 63.21,
           "target1": 94.03,
           "target2": 102.06,
           "target3": 112.28,
-          "positionValue": 15425.1,
-          "actualRisk": 4426.56,
+          "positionValue": 15738.3,
+          "actualRisk": 4739.76,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T10:10:40.298Z",
-          "updatedAt": "2026-08-26T10:10:59.755Z",
-          "editedAt": "2026-08-26T10:10:59.755Z"
+          "updatedAt": "2026-08-26T10:11:16.904Z",
+          "editedAt": "2026-08-26T10:11:16.904Z"
         },
         "outcome": "USER_REJECTED"
       },
@@ -11441,6 +11441,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:11:16.904Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "GESAN bekleyen paper emri düzenlendi: 174 lot · ₺90,45 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-26T10:10:59.755Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "GESAN bekleyen paper emri düzenlendi: 174 lot · ₺88,65 · LIMIT."
@@ -11934,11 +11939,6 @@
         "timestamp": "2026-08-22T23:41:10.159Z",
         "type": "CLOSED",
         "message": "DOHOL paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-22T23:41:05.045Z",
-        "type": "CLOSED",
-        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ],
     "scannerSnapshot": {
