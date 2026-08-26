@@ -4,11 +4,35 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 77697.88,
+      "cash": 76609.88,
       "equity": 93156.3996170807,
       "pnl": 43184.89313681602,
       "pnlPercent": 86.36978627363204,
       "positions": [
+        {
+          "id": "paper-2026-08-26T10:48:40.103Z-ALARK-448c017d",
+          "decisionId": "manual-1787741307901-ALARK-29fe0d4f",
+          "decisionIds": [
+            "manual-1787741307901-ALARK-29fe0d4f"
+          ],
+          "symbol": "ALARK",
+          "source": "MANUAL",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 10,
+          "originalQuantity": 10,
+          "entry": 108.8,
+          "current": 108.8,
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T10:48:40.103Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-26T10:37:00.438Z-GESAN-adec4ac3",
           "decisionId": "1787740133712-GESAN",
@@ -1380,7 +1404,7 @@
         "rank": null,
         "symbol": "ALARK",
         "action": "MANUAL PAPER",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "source": "MANUAL",
         "manualOrder": true,
         "paperOnly": true,
@@ -1432,28 +1456,31 @@
           "summary": "Manuel paper emir; AI/scanner kriteri uygulanmadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T10:48:27.882Z",
-          "expiresAt": null
+          "expiresAt": null,
+          "openedAt": "2026-08-26T10:48:40.103Z"
         },
         "reason": "Manuel paper emir; scanner kriterlerinden bağımsız olarak kullanıcı onayı bekliyor.",
         "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
         "pendingOrder": {
           "symbol": "ALARK",
           "quantity": 10,
-          "entryPrice": null,
+          "entryPrice": 108.8,
           "orderType": "MARKET",
           "stop": null,
           "target1": null,
           "target2": null,
           "target3": null,
-          "positionValue": null,
+          "positionValue": 1088,
           "actualRisk": null,
           "paperOnly": true,
           "source": "MANUAL",
           "createdAt": "2026-08-26T10:48:27.882Z",
-          "updatedAt": "2026-08-26T10:48:36.801Z",
-          "editedAt": "2026-08-26T10:48:36.801Z"
+          "updatedAt": "2026-08-26T10:48:40.103Z",
+          "editedAt": "2026-08-26T10:48:36.801Z",
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T10:48:40.103Z"
         },
         "timestamp": "2026-08-26T10:48:27.882Z"
       },
@@ -12908,6 +12935,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:48:40.103Z",
+        "type": "PAPER_APPROVED",
+        "message": "ALARK paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T10:48:40.103Z",
+        "type": "PAPER_OPEN",
+        "message": "ALARK manuel paper pozisyonu açıldı: 10 lot · ₺1088.00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T10:48:36.801Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ALARK bekleyen paper emri düzenlendi: 10 lot · ₺0,00 · MARKET."
@@ -13396,16 +13433,6 @@
         "timestamp": "2026-08-23T16:43:51.382Z",
         "type": "SCAN",
         "message": "2 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-23T15:31:29.989Z",
-        "type": "SCAN",
-        "message": "2 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-23T01:02:07.383Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
