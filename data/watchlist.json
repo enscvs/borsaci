@@ -2813,6 +2813,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-26T20:59:44.593Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-26T20:14:56.201Z",
           "type": "CRYPTO_CLOSE",
           "message": "AVNTUSDT kripto paper pozisyonu MARKET ile kapatıldı."
@@ -2979,9 +2984,9 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-26T20:12:36.216Z",
+        "timestamp": "2026-08-26T20:59:44.593Z",
         "scanned": 100,
-        "successful": 94,
+        "successful": 93,
         "results": [
           {
             "symbol": "ASTERUSDT",
@@ -2989,7 +2994,7 @@
               "ok": true
             },
             "dataStatus": "OK",
-            "score": 70,
+            "score": 78,
             "grade": "A / AL ADAYI",
             "features": {
               "price": 0.7002,
@@ -3112,7 +3117,7 @@
                 ]
               },
               "entryQuality": {
-                "score": 5,
+                "score": 13,
                 "max": 25,
                 "items": [
                   {
@@ -3126,9 +3131,9 @@
                   {
                     "id": "valid_fibonacci",
                     "label": "Geçerli Fibonacci A–B–C yapısı",
-                    "points": 0,
+                    "points": 5,
                     "maxPoints": 5,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   },
                   {
@@ -3142,9 +3147,9 @@
                   {
                     "id": "volume_confirmation",
                     "label": "Dönüş hacmi güçlü",
-                    "points": 0,
+                    "points": 3,
                     "maxPoints": 3,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   },
                   {
@@ -3202,44 +3207,62 @@
                   }
                 ]
               },
-              "positiveTotal": 70,
-              "rawTotal": 70,
-              "total": 70,
+              "positiveTotal": 78,
+              "rawTotal": 78,
+              "total": 78,
               "maximum": 100,
               "capped": false
             },
             "fibonacci": {
-              "valid": false,
-              "status": "NO_VALID_STRUCTURE",
-              "entryTriggerRatio": 0.027,
-              "entryUpperTrendlineBuffer": 0.03,
-              "confirmationTimeframe": "1d",
-              "completedDailyCandleTime": "2026-08-25T23:59:59.000Z",
-              "stopLossPercentBelowC": 2,
-              "pointA": null,
-              "pointB": null,
-              "pointC": null,
-              "range": null,
-              "retracementRatio": null,
-              "entryTriggerPrice": null,
-              "confirmationPassed": false,
-              "confirmationCandleTime": null,
-              "confirmationCandleClose": null,
-              "entryPrice": null,
-              "entryZoneLow": null,
+              "valid": true,
+              "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+              "pointA": {
+                "type": "LOW",
+                "index": 113,
+                "price": 0.408,
+                "date": "2026-02-06T23:59:59.000Z"
+              },
+              "pointB": {
+                "type": "HIGH",
+                "index": 152,
+                "price": 0.79,
+                "date": "2026-03-17T23:59:59.000Z"
+              },
+              "pointC": {
+                "type": "LOW",
+                "index": 251,
+                "price": 0.5876,
+                "date": "2026-06-24T23:59:59.000Z"
+              },
+              "range": 0.38,
+              "retracementRatio": 0.5298,
+              "entryTriggerPrice": 0.6,
+              "entryZoneLow": 0.6,
               "entryZoneHigh": null,
               "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-              "descendingResistance": null,
-              "stopLoss": null,
-              "tp1": null,
-              "tp2": null,
-              "tp3": null,
-              "riskRewardTp1": null,
-              "riskRewardTp2": null,
-              "riskRewardTp3": null,
-              "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
+              "descendingResistance": {
+                "valid": false,
+                "available": false,
+                "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+                "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+                "anchor1": null,
+                "anchor2": null,
+                "slopePerBar": null,
+                "lastCompletedCandleTime": "2026-08-25T23:59:59.000Z",
+                "projectedPoint": null,
+                "breakoutPrice": null,
+                "breakoutPriceAtLast": null,
+                "entryUpperRaw": null,
+                "entryUpperPrice": null
+              },
+              "stopLoss": 0.58,
+              "tp1": 0.82,
+              "tp2": 0.89,
+              "tp3": 0.97,
+              "volumeConfirmation": "STRONG",
+              "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-26T20:12:32.624Z",
+            "timestamp": "2026-08-26T20:59:40.577Z",
             "price": 0.7002,
             "ema20": 0.6422459168817842,
             "ema50": 0.6318760896578688,
@@ -3504,7 +3527,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-26T20:12:31.831Z",
+            "timestamp": "2026-08-26T20:59:39.596Z",
             "price": 0.3388,
             "ema20": 0.33596601644325635,
             "ema50": 0.3311622722452306,
@@ -3519,8 +3542,8 @@
               "ok": true
             },
             "dataStatus": "OK",
-            "score": 63,
-            "grade": "B / İZLE",
+            "score": 71,
+            "grade": "A / AL ADAYI",
             "features": {
               "price": 0.1032,
               "ema20": 0.09668838394058869,
@@ -3641,7 +3664,7 @@
                 ]
               },
               "entryQuality": {
-                "score": 5,
+                "score": 13,
                 "max": 25,
                 "items": [
                   {
@@ -3655,9 +3678,9 @@
                   {
                     "id": "valid_fibonacci",
                     "label": "Geçerli Fibonacci A–B–C yapısı",
-                    "points": 0,
+                    "points": 5,
                     "maxPoints": 5,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   },
                   {
@@ -3671,9 +3694,9 @@
                   {
                     "id": "volume_confirmation",
                     "label": "Dönüş hacmi güçlü",
-                    "points": 0,
+                    "points": 3,
                     "maxPoints": 3,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   },
                   {
@@ -3731,44 +3754,62 @@
                   }
                 ]
               },
-              "positiveTotal": 63,
-              "rawTotal": 63,
-              "total": 63,
+              "positiveTotal": 71,
+              "rawTotal": 71,
+              "total": 71,
               "maximum": 100,
               "capped": false
             },
             "fibonacci": {
-              "valid": false,
-              "status": "NO_VALID_STRUCTURE",
-              "entryTriggerRatio": 0.027,
-              "entryUpperTrendlineBuffer": 0.03,
-              "confirmationTimeframe": "1d",
-              "completedDailyCandleTime": "2026-08-25T23:59:59.000Z",
-              "stopLossPercentBelowC": 2,
-              "pointA": null,
-              "pointB": null,
-              "pointC": null,
-              "range": null,
-              "retracementRatio": null,
-              "entryTriggerPrice": null,
-              "confirmationPassed": false,
-              "confirmationCandleTime": null,
-              "confirmationCandleClose": null,
-              "entryPrice": null,
-              "entryZoneLow": null,
+              "valid": true,
+              "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+              "pointA": {
+                "type": "LOW",
+                "index": 283,
+                "price": 0.0794,
+                "date": "2026-08-03T23:59:59.000Z"
+              },
+              "pointB": {
+                "type": "HIGH",
+                "index": 293,
+                "price": 0.1152,
+                "date": "2026-08-13T23:59:59.000Z"
+              },
+              "pointC": {
+                "type": "LOW",
+                "index": 299,
+                "price": 0.0839,
+                "date": "2026-08-19T23:59:59.000Z"
+              },
+              "range": 0.04,
+              "retracementRatio": 0.8743,
+              "entryTriggerPrice": 0.08,
+              "entryZoneLow": 0.08,
               "entryZoneHigh": null,
               "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-              "descendingResistance": null,
-              "stopLoss": null,
-              "tp1": null,
-              "tp2": null,
-              "tp3": null,
-              "riskRewardTp1": null,
-              "riskRewardTp2": null,
-              "riskRewardTp3": null,
-              "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
+              "descendingResistance": {
+                "valid": false,
+                "available": false,
+                "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+                "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+                "anchor1": null,
+                "anchor2": null,
+                "slopePerBar": null,
+                "lastCompletedCandleTime": "2026-08-25T23:59:59.000Z",
+                "projectedPoint": null,
+                "breakoutPrice": null,
+                "breakoutPriceAtLast": null,
+                "entryUpperRaw": null,
+                "entryUpperPrice": null
+              },
+              "stopLoss": 0.08,
+              "tp1": 0.11,
+              "tp2": 0.11,
+              "tp3": 0.12,
+              "volumeConfirmation": "STRONG",
+              "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-26T20:12:32.317Z",
+            "timestamp": "2026-08-26T20:59:39.876Z",
             "price": 0.1032,
             "ema20": 0.09668838394058869,
             "ema50": 0.09659500418893406,
@@ -4068,7 +4109,7 @@
               "confirmationCandleClose": 0.38,
               "entryPrice": 0.41
             },
-            "timestamp": "2026-08-26T20:12:34.017Z",
+            "timestamp": "2026-08-26T20:59:41.989Z",
             "price": 0.412,
             "ema20": 0.39033100126126224,
             "ema50": 0.3839093910795126,
@@ -4353,7 +4394,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-26T20:12:34.326Z",
+            "timestamp": "2026-08-26T20:59:41.500Z",
             "price": 0.5331,
             "ema20": 0.4012342163015522,
             "ema50": 0.3752908741692395,
