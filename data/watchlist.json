@@ -1254,19 +1254,19 @@
         "pendingOrder": {
           "symbol": "ASELS",
           "quantity": 100,
-          "entryPrice": 403.5,
-          "orderType": "LIMIT",
-          "stop": null,
+          "entryPrice": null,
+          "orderType": "MARKET",
+          "stop": 0.01,
           "target1": null,
           "target2": null,
           "target3": null,
-          "positionValue": 40350,
+          "positionValue": null,
           "actualRisk": null,
           "paperOnly": true,
           "source": "MANUAL",
           "createdAt": "2026-08-26T09:36:38.427Z",
-          "updatedAt": "2026-08-26T09:36:38.427Z",
-          "editedAt": null
+          "updatedAt": "2026-08-26T09:39:50.443Z",
+          "editedAt": "2026-08-26T09:39:50.443Z"
         },
         "timestamp": "2026-08-26T09:36:38.427Z"
       },
@@ -10761,6 +10761,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T09:39:50.443Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "ASELS bekleyen paper emri düzenlendi: 100 lot · ₺0,00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T09:36:38.427Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 100 lot · LIMIT."
@@ -11254,11 +11259,6 @@
         "timestamp": "2026-08-22T19:51:00.738Z",
         "type": "PAPER_OPEN",
         "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15498.00."
-      },
-      {
-        "timestamp": "2026-08-22T19:51:00.738Z",
-        "type": "PAPER_OPEN",
-        "message": "ALARK paper pozisyonu açıldı: 145 lot · ₺15413.50."
       }
     ],
     "scannerSnapshot": {
