@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 127482.55,
-      "equity": 143156.17043762206,
-      "pnl": 43056.04313681602,
-      "pnlPercent": 43.05604313681602,
+      "cash": 143140.50043762205,
+      "equity": 143140.50043762205,
+      "pnl": 43226.79357443809,
+      "pnlPercent": 43.22679357443809,
       "positions": [
         {
           "id": "paper-2026-08-26T11:45:11.613Z-GESAN-feae92fe",
@@ -468,11 +468,13 @@
           "stop": 19.66,
           "target1": 23.91,
           "target2": 24.96,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-24T07:02:50.821Z",
           "tp1Hit": false,
           "realizedPnl": 0,
-          "pnl": 186.4204376220693
+          "pnl": 170.7504376220693,
+          "closedAt": "2026-08-26T11:54:43.302Z",
+          "closeReason": "KILL_SWITCH_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-23T00:00:25.121Z-BINBN",
@@ -1586,16 +1588,17 @@
       "capitalSource": "MANUAL"
     },
     "killSwitch": {
-      "active": false,
-      "activatedAt": null
+      "active": true,
+      "activatedAt": "2026-08-26T11:54:43.302Z"
     },
-    "decisions": [
+    "decisions": [],
+    "history": [
       {
         "id": "1787554934863-DOHOL",
         "rank": 4,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 20.23,
@@ -1913,17 +1916,18 @@
           "summary": "Doğrulanmış haber bulunmadığı için özet yok."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-25T11:53:36.785Z",
           "expiresAt": "2026-08-26T11:53:36.785Z",
-          "openedAt": "2026-08-24T07:02:50.821Z"
+          "openedAt": "2026-08-24T07:02:50.821Z",
+          "closedAt": "2026-08-26T11:54:43.302Z"
         },
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-25T11:53:36.785Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-25T11:53:36.785Z",
+        "outcome": "KILL_SWITCH_MARKET_CLOSE",
+        "realizedPnL": 170.7504376220693
+      },
       {
         "id": "1787744504074-GESAN",
         "rank": 3,
@@ -13898,60 +13902,6 @@
         "timestamp": "2026-08-21T22:56:13.195Z",
         "outcome": "MANUAL_CLOSE",
         "realizedPnL": 117.60000000000048
-      },
-      {
-        "id": "1787351309346-ALARK",
-        "rank": 1,
-        "symbol": "ALARK",
-        "action": "BUY SETUP",
-        "status": "CLOSED",
-        "confidence": 94,
-        "entry": {
-          "low": 106.4,
-          "high": 108.57,
-          "reference": 107.7
-        },
-        "stop": 101.19,
-        "target1": 120.72,
-        "target2": 127.23,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 100000,
-          "riskBudget": 3000,
-          "maxPositionValue": 32000,
-          "stopDistance": 6.51,
-          "quantity": 297,
-          "positionValue": 31986.9,
-          "actualRisk": 1933.47,
-          "riskPerTradePercent": 3,
-          "maxPositionPercent": 32,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 55.36,
-          "atr": 4.34,
-          "volatility": 4.03
-        },
-        "lifecycle": {
-          "stage": "CLOSED",
-          "createdAt": "2026-08-21T22:28:29.346Z",
-          "expiresAt": "2026-08-22T22:28:29.346Z",
-          "openedAt": "2026-08-21T22:28:29.796Z",
-          "closedAt": "2026-08-21T22:55:10.103Z"
-        },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
-        "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:28:29.346Z",
-        "outcome": "MANUAL_CLOSE",
-        "realizedPnL": -415.7990936279305
       }
     ],
     "dailySummary": {
@@ -13960,6 +13910,16 @@
       "snapshotCreatedAt": "2026-08-25T16:25:49.744Z"
     },
     "activity": [
+      {
+        "timestamp": "2026-08-26T11:54:43.302Z",
+        "type": "KILL_SWITCH",
+        "message": "KILL SWITCH AKTİF: 1 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
+      },
+      {
+        "timestamp": "2026-08-26T11:54:43.302Z",
+        "type": "CLOSED",
+        "message": "DOHOL paper pozisyonu kapatıldı: KILL_SWITCH_MARKET_CLOSE · ₺170.75."
+      },
       {
         "timestamp": "2026-08-26T11:46:42.350Z",
         "type": "RISK",
@@ -14449,16 +14409,6 @@
         "timestamp": "2026-08-26T10:08:19.053Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için manuel paper emir onayı bekliyor: 50 lot · MARKET."
-      },
-      {
-        "timestamp": "2026-08-26T10:07:19.913Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T09:56:10.068Z",
-        "type": "CLOSED",
-        "message": "ASELS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺17.60."
       }
     ],
     "scannerSnapshot": {
