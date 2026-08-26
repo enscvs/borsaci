@@ -8907,6 +8907,57 @@ function bindKillSwitch() {
 
 }
 
+async function runCryptoScanner() {
+  const button = document.getElementById("startCryptoScannerBtn");
+  const status = document.getElementById("cryptoScannerStatus");
+  const engine = document.getElementById("cryptoEngineStatus");
+  const results = document.getElementById("cryptoScannerResults");
+  const feed = document.getElementById("cryptoDecisionFeed");
+  if (!button || button.disabled) return;
+  const jobId = window.crypto?.randomUUID?.() || `crypto-${Date.now()}`;
+  button.disabled = true;
+  button.textContent = "TARANIYOR…";
+  if (status) status.textContent = "TARANIYOR";
+  if (engine) engine.textContent = "TARANIYOR";
+  const poll = window.setInterval(async () => {
+    try {
+      const response = await fetch(`/api/trading/scanner/status?jobId=${encodeURIComponent(jobId)}`, {cache:"no-store"});
+      const job = await response.json();
+      if (results && job.status !== "COMPLETE") results.innerHTML = `<div class="trading-empty scanner-progress"><strong>KRİPTO TARAMASI ÇALIŞIYOR</strong><br><small>${escapeHtml(String(job.message || "Hazırlanıyor"))}</small><div style="height:8px;border:1px solid #2f6;background:#071008;margin:12px auto;max-width:480px"><div style="height:100%;width:${Math.max(0, Math.min(100, Number(job.progress) || 0))}%;background:#34ff75"></div></div></div>`;
+    } catch {}
+  }, 700);
+  try {
+    const response = await fetch(`/api/crypto/scanner?jobId=${encodeURIComponent(jobId)}`, {cache:"no-store"});
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data?.error || "Kripto taraması başarısız.");
+    const cards = (data.results || []).map(item => {
+      const fib = item.fibonacci || {};
+      return `<article class="decision-item decision-card"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCurrency(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCurrency(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCurrency(fib.entryZoneLow)} – ${formatCurrency(fib.entryZoneHigh)} · SL: ${formatCurrency(fib.stopLoss)} · TP1/2/3: ${formatCurrency(fib.tp1)} / ${formatCurrency(fib.tp2)} / ${formatCurrency(fib.tp3)}</div></article>`;
+    }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
+    if (results) results.innerHTML = `<div class="trading-empty">${data.scanned} Binance USDT paritesi tarandı · ${data.successful} geçerli günlük veri</div>`;
+    if (feed) feed.innerHTML = cards;
+    if (status) status.textContent = "TAMAMLANDI";
+    if (engine) engine.textContent = "HAZIR";
+    const time = document.getElementById("cryptoLastScanTime");
+    if (time) time.textContent = new Date(data.timestamp).toLocaleTimeString("tr-TR", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+  } catch (error) {
+    if (results) results.innerHTML = `<div class="trading-empty">Kripto tarama hatası: ${escapeHtml(error.message)}</div>`;
+    if (status) status.textContent = "HATA";
+    if (engine) engine.textContent = "HATA";
+  } finally {
+    window.clearInterval(poll);
+    button.disabled = false;
+    button.textContent = "KRİPTO TARAMASINI BAŞLAT";
+  }
+}
+
+function bindCryptoScannerControls() {
+  const button = document.getElementById("startCryptoScannerBtn");
+  if (!button || button.dataset.cryptoBound === "true") return;
+  button.dataset.cryptoBound = "true";
+  button.addEventListener("click", runCryptoScanner);
+}
+
 
 function bindTradingScannerControls() {
 
@@ -8950,6 +9001,7 @@ function bindTradingScannerControls() {
   startPaperMonitorUi();
 
   bindKillSwitch();
+  bindCryptoScannerControls();
 
   if (
     scannerStopButton &&

@@ -108,6 +108,14 @@
   <button
     type="button"
     class="main-tab"
+    data-tab="cryptoTab"
+  >
+    KRİPTO AI TRADING
+  </button>
+
+  <button
+    type="button"
+    class="main-tab"
     data-tab="terminalTab"
   >
     TERMINAL
@@ -1621,6 +1629,24 @@ Waiting for input...
 
   </section>
 
+  <section id="cryptoTab" class="trading-tab" style="display:none;">
+    <div class="trading-status-grid">
+      <div class="trading-stat"><span class="trading-stat-label">MOTOR</span><strong class="status-online">● KÂĞIT</strong></div>
+      <div class="trading-stat"><span class="trading-stat-label">PİYASA</span><strong>BINANCE · USDT</strong></div>
+      <div class="trading-stat"><span class="trading-stat-label">DURUM</span><strong id="cryptoEngineStatus">HAZIR</strong></div>
+      <div class="trading-stat"><span class="trading-stat-label">SON TARAMA</span><strong id="cryptoLastScanTime">--</strong></div>
+    </div>
+    <section class="panel trading-panel">
+      <div class="panel-title"><span>KRİPTO PİYASA TARAMASI</span><span id="cryptoScannerStatus" class="panel-status">HAZIR</span></div>
+      <div class="scanner-controls"><button type="button" id="startCryptoScannerBtn" class="trading-button">KRİPTO TARAMASINI BAŞLAT</button></div>
+      <div id="cryptoScannerResults" class="scanner-results"><div class="trading-empty">Binance günlük mum verileriyle tarama henüz başlatılmadı.</div></div>
+    </section>
+    <section class="panel trading-panel">
+      <div class="panel-title"><span>KRİPTO YZ KARARLARI</span><span class="panel-status">BİNANCE VERİSİ</span></div>
+      <div id="cryptoDecisionFeed" class="decision-feed"><div class="trading-empty">Tarama sonrası en güçlü kripto adayları burada görünür.</div></div>
+    </section>
+  </section>
+
 
 </div>
 
@@ -1926,11 +1952,17 @@ Waiting for input...
           "tradingTab"
         );
 
+      const cryptoTab =
+        document.getElementById(
+          "cryptoTab"
+        );
+
 
       if (
         !tabs.length ||
         !terminalTab ||
-        !tradingTab
+        !tradingTab ||
+        !cryptoTab
       ) {
 
         console.error(
@@ -1966,26 +1998,12 @@ Waiting for input...
             );
 
 
-            if (
-              target ===
-              "tradingTab"
-            ) {
-
-              terminalTab.style.display =
-                "none";
-
-              tradingTab.style.display =
-                "block";
-
-            } else {
-
-              tradingTab.style.display =
-                "none";
-
-              terminalTab.style.display =
-                "grid";
-
-            }
+            terminalTab.style.display = "none";
+            tradingTab.style.display = "none";
+            cryptoTab.style.display = "none";
+            if (target === "terminalTab") terminalTab.style.display = "grid";
+            else if (target === "cryptoTab") cryptoTab.style.display = "block";
+            else tradingTab.style.display = "block";
 
           }
         );
