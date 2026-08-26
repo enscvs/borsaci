@@ -53,6 +53,12 @@ let analysisRunning = false;
 let performanceState = null;
 let performanceRange = "ALL";
 
+/* BUY SETUP eşiği backend karar politikasındaki eşikle aynı tutulur. */
+const BUY_SETUP_SCORE_THRESHOLD = 60;
+
+/* Bekleyen emir kartları için son sunucu durumu. */
+let latestPaperOrderState = null;
+
 const WATCHLIST_STORAGE_KEY =
   "borsaci_watchlist_v1";
 
@@ -6083,7 +6089,7 @@ function renderDecisionScoreBreakdown(item) {
     scoreValue(breakdown.total)
   );
   const grade = item.grade || item.action || "KARAR";
-  const missingForBuy = Math.max(0, 70 - total);
+  const missingForBuy = Math.max(0, BUY_SETUP_SCORE_THRESHOLD - total);
   const fib = item.fibonacci || {};
   const rows = [
     ["Trend", breakdown.trend],
@@ -6108,8 +6114,8 @@ function renderDecisionScoreBreakdown(item) {
   const fibNote = fib.valid
     ? `Fibonacci ${fibStatus}: işlem planı kapısı ayrı izlenir; ilk teknik puana geriye dönük eklenmez.`
     : `Fibonacci ${fibStatus}: teknik puan tablosundan ayrı değerlendirilir.`;
-  const threshold = total >= 60
-    ? "AL eşiği (70) teknik olarak geçildi."
+  const threshold = total >= BUY_SETUP_SCORE_THRESHOLD
+    ? `AL eşiği (${BUY_SETUP_SCORE_THRESHOLD}) teknik olarak geçildi.`
     : `AL eşiğine ${missingForBuy} puan kaldı.`;
 
   content.innerHTML = `
@@ -6145,18 +6151,33 @@ function renderAiDecisionDetail(item) {
   const chartStatus=fibAvailable
     ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ve sağa uzanan seviyeleri ile tetik, giriş, SL, hedefler ve varsa alçalan tepe trendi DECISION CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key resistance">DİRENÇ TRENDİ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
     :`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>Geçerli A/B/C noktası olmadığı için grafiğe Fibonacci çizgisi eklenmedi.</span></div>`;
-  element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL"?`<button type="button" class="trading-button" data-paper-action="approve" data-decision-id="${escapeHtml(item.id)}">APPROVE PAPER POSITION</button><button type="button" class="trading-button" style="margin-left:8px;border-color:#c44;color:#ff8a8a" data-paper-action="reject" data-decision-id="${escapeHtml(item.id)}">REJECT</button>`:""}`;
+  const pendingOrderButton=item.status==="PENDING_APPROVAL"
+    ?`<button type="button" class="trading-button" data-paper-order-focus="${escapeHtml(item.id)}">OPEN PENDING PAPER ORDER</button>`
+    :"";
+  element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:pendingOrderButton}`;
 }
 
 
 function renderAiDecisions(decisions) {
   if (!aiDecisionFeed) return;
   renderDecisionScoreBreakdown(null);
-  const records=uniqueDecisions(decisions); renderedDecisionRecords=records;
-  if (!records.length) { aiDecisionFeed.innerHTML='<div class="trading-empty">Detaylı teknik aday bulunamadı.</div>';return; }
-  const approvals=records.filter(item=>item.action==="BUY SETUP"&&item.status==="PENDING_APPROVAL");
-  const approvalBox=approvals.map(item=>`<section style="max-width:720px;margin:16px auto;padding:18px;border:1px solid #ffb000;background:rgba(255,176,0,.06);text-align:center"><strong style="color:#ffb000">${item.symbol} · PAPER TRADE APPROVAL</strong><div style="margin:10px 0;color:#bfffc8">İşlem açılmadan önce onayını bekliyor.</div><button type="button" class="trading-button" style="margin:5px" data-paper-action="approve" data-decision-id="${item.id}">APPROVE ${item.symbol}</button><button type="button" class="trading-button" style="margin:5px;border-color:#c44;color:#ff8a8a" data-paper-action="reject" data-decision-id="${item.id}">REJECT ${item.symbol}</button></section>`).join("");
-  aiDecisionFeed.innerHTML=approvalBox+records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span>${item.status==="PENDING_APPROVAL"?"ONAY BEKLİYOR":item.status}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
+  const allRecords=uniqueDecisions(decisions);
+  // Manuel emirler AI tarafından değerlendirilmiş bir karar değildir.
+  // Onları yalnızca Pending Paper Orders kuyruğunda göster; aksi halde
+  // boş Fibonacci/grafik alanlarıyla AI Decisions ekranını karıştırırlar.
+  const records=allRecords.filter(item=>!isManualPaperOrder(null,item));
+  renderedDecisionRecords=records;
+  const pendingState={
+    ...(loadLocalTradingState()||latestPaperOrderState||{}),
+    decisions:allRecords,
+  };
+  if (!records.length) {
+    aiDecisionFeed.innerHTML='<div class="trading-empty">Detaylı teknik aday bulunamadı.</div>';
+    renderPendingPaperOrders(pendingState);
+    return;
+  }
+  aiDecisionFeed.innerHTML=records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span>${item.status==="PENDING_APPROVAL"?"ONAY BEKLİYOR":item.status}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
+  renderPendingPaperOrders(pendingState);
 }
 
 
@@ -6185,6 +6206,578 @@ function currentPaperState() {
         : [],
   };
 
+}
+
+
+function paperOrderNumber(
+  value,
+  fallback = null
+) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0
+    ? number
+    : fallback;
+}
+
+
+function firstPaperOrderNumber(
+  ...values
+) {
+  for (const value of values) {
+    const number = paperOrderNumber(value);
+    if (number !== null) return number;
+  }
+  return null;
+}
+
+
+function paperOrderInputValue(
+  value,
+  decimals = 2
+) {
+  const number = paperOrderNumber(value);
+  return number === null
+    ? ""
+    : number.toFixed(decimals);
+}
+
+
+function normalizePaperOrderType(
+  value
+) {
+  return String(value || "LIMIT").toUpperCase() === "LIMIT"
+    ? "LIMIT"
+    : "MARKET";
+}
+
+
+function isManualPaperOrder(
+  order,
+  decision
+) {
+  return [
+    order?.source,
+    order?.origin,
+    order?.type,
+    decision?.source,
+    decision?.origin,
+    decision?.action,
+  ].some(
+    value => String(value || "").toUpperCase().includes("MANUAL")
+  );
+}
+
+
+function buildPendingPaperOrder(
+  rawOrder,
+  linkedDecision
+) {
+  const order = rawOrder || {};
+  const decision = linkedDecision || order.decision || {};
+  const decisionId = String(
+    order.decisionId ||
+    decision.id ||
+    ""
+  ).trim();
+  const orderId = String(
+    order.id ||
+    order.orderId ||
+    decision.pendingOrderId ||
+    decisionId ||
+    ""
+  ).trim();
+  const entry = decision.entry || {};
+  const riskPlan = decision.riskPlan || {};
+  const pendingOrder = order.pendingOrder || decision.pendingOrder || {};
+
+  return {
+    orderId,
+    decisionId,
+    symbol: String(
+      order.symbol ||
+      decision.symbol ||
+      ""
+    ).trim().toUpperCase(),
+    quantity: firstPaperOrderNumber(
+      order.quantity,
+      order.lot,
+      pendingOrder.quantity,
+      pendingOrder.lot,
+      riskPlan.quantity,
+      decision.quantity
+    ),
+    entryPrice: firstPaperOrderNumber(
+      order.entryPrice,
+      order.limitPrice,
+      order.entry,
+      pendingOrder.entryPrice,
+      pendingOrder.limitPrice,
+      pendingOrder.entry,
+      entry.reference,
+      entry.low
+    ),
+    orderType: normalizePaperOrderType(
+      order.orderType ??
+      order.type ??
+      pendingOrder.orderType ??
+      decision.orderType
+    ),
+    stop: firstPaperOrderNumber(order.stop, pendingOrder.stop, decision.stop),
+    target1: firstPaperOrderNumber(
+      order.target1,
+      order.tp1,
+      pendingOrder.target1,
+      pendingOrder.tp1,
+      decision.target1
+    ),
+    target2: firstPaperOrderNumber(
+      order.target2,
+      order.tp2,
+      pendingOrder.target2,
+      pendingOrder.tp2,
+      decision.target2
+    ),
+    target3: firstPaperOrderNumber(
+      order.target3,
+      order.tp3,
+      pendingOrder.target3,
+      pendingOrder.tp3,
+      decision.target3
+    ),
+    createdAt: order.createdAt || pendingOrder.createdAt || decision.timestamp || decision.lifecycle?.createdAt || "",
+    source: isManualPaperOrder(order, decision)
+      ? "MANUAL"
+      : "AI PLAN",
+  };
+}
+
+
+function pendingPaperOrdersFromState(
+  state
+) {
+  const source = state && typeof state === "object"
+    ? state
+    : {};
+  const decisions = Array.isArray(source.decisions)
+    ? source.decisions
+    : [];
+  const byDecisionId = new Map(
+    decisions
+      .filter(item => item?.id)
+      .map(item => [String(item.id), item])
+  );
+  const orders = [];
+  const seen = new Set();
+  const append = (rawOrder, linkedDecision) => {
+    const order = buildPendingPaperOrder(rawOrder, linkedDecision);
+    if (!order.symbol) return;
+    const key = order.decisionId
+      ? `decision:${order.decisionId}`
+      : `order:${order.orderId}:${order.symbol}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    orders.push(order);
+  };
+
+  const explicitOrders = [
+    ...(Array.isArray(source.paper?.pendingOrders)
+      ? source.paper.pendingOrders
+      : []),
+    ...(Array.isArray(source.pendingOrders)
+      ? source.pendingOrders
+      : []),
+  ];
+
+  explicitOrders
+    .filter(order => {
+      const status = String(order?.status || "PENDING_APPROVAL").toUpperCase();
+      return status === "PENDING" || status === "PENDING_APPROVAL";
+    })
+    .forEach(order => {
+      append(order, byDecisionId.get(String(order?.decisionId || "")));
+    });
+
+  decisions
+    .filter(item => item?.status === "PENDING_APPROVAL")
+    .forEach(item => append(item, item));
+
+  return orders;
+}
+
+
+function renderPendingPaperOrders(
+  state
+) {
+  const container = document.getElementById("pendingPaperOrders");
+  const status = document.getElementById("pendingPaperOrderStatus");
+  const source = state && typeof state === "object"
+    ? state
+    : (latestPaperOrderState || loadLocalTradingState() || {});
+
+  if (state && typeof state === "object") {
+    latestPaperOrderState = state;
+  }
+
+  const orders = pendingPaperOrdersFromState(source);
+
+  if (status) {
+    status.textContent = `${orders.length} ${orders.length === 1 ? "ORDER" : "ORDERS"}`;
+  }
+
+  if (!container) return;
+
+  if (!orders.length) {
+    container.innerHTML = '<div class="trading-empty">Bekleyen paper emir yok. Manuel emir oluşturduğunda veya uygun bir AI planı onay beklediğinde burada görünür.</div>';
+    return;
+  }
+
+  container.innerHTML = orders.map(order => {
+    const manual = order.source === "MANUAL";
+    const created = order.createdAt
+      ? new Date(order.createdAt).toLocaleString("tr-TR", {
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "ONAY BEKLİYOR";
+    const orderId = escapeHtml(order.orderId);
+    const decisionId = escapeHtml(order.decisionId);
+
+    return `
+      <article
+        class="pending-paper-order-card${manual ? " is-manual" : ""}"
+        data-pending-paper-order-card
+        data-order-id="${orderId}"
+        data-decision-id="${decisionId}"
+        data-symbol="${escapeHtml(order.symbol)}"
+      >
+        <div class="pending-paper-order-head">
+          <strong>${escapeHtml(order.symbol)} · ${manual ? "MANUAL" : "AI PLAN"}</strong>
+          <span class="pending-paper-order-badge">PENDING APPROVAL</span>
+          <small>${escapeHtml(created)}</small>
+        </div>
+        <form class="paper-order-form" data-pending-paper-order-form novalidate>
+          <label>LOT
+            <input name="quantity" type="number" min="1" step="1" inputmode="numeric" value="${paperOrderInputValue(order.quantity, 0)}" required>
+          </label>
+          <label>ENTRY PRICE (₺)
+            <input name="entryPrice" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.entryPrice)}" required>
+          </label>
+          <label>ORDER TYPE
+            <select name="orderType">
+              <option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>MARKET</option>
+              <option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LIMIT</option>
+            </select>
+          </label>
+          <label>STOP (OPTIONAL)
+            <input name="stop" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.stop)}">
+          </label>
+          <label>TP1 (OPTIONAL)
+            <input name="target1" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.target1)}">
+          </label>
+          <label>TP2 (OPTIONAL)
+            <input name="target2" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.target2)}">
+          </label>
+          <label>TP3 (OPTIONAL)
+            <input name="target3" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.target3)}">
+          </label>
+          <div class="paper-order-form-actions">
+            <button type="submit" class="trading-button">SAVE SETTINGS</button>
+            <button type="button" class="trading-button" data-paper-order-action="approve">APPROVE PAPER ORDER</button>
+            <button type="button" class="trading-button danger" data-paper-order-action="reject">REJECT</button>
+            <small>PAPER ONLY · Fiyat, lot ve emir türü onaydan önce düzenlenebilir.</small>
+          </div>
+        </form>
+      </article>
+    `;
+  }).join("");
+}
+
+
+function readPaperOrderForm(
+  form,
+  options = {}
+) {
+  const manual = Boolean(options.manual);
+  const field = name => form.elements.namedItem(name);
+  const readNumber = (name, label, required) => {
+    const raw = String(field(name)?.value || "").trim().replace(",", ".");
+    if (!raw) {
+      if (required) throw new Error(`${label} gerekli.`);
+      return null;
+    }
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error(`${label} geçerli ve sıfırdan büyük olmalı.`);
+    }
+    return value;
+  };
+
+  const card = form.closest("[data-pending-paper-order-card]");
+  const symbol = manual
+    ? String(field("symbol")?.value || "").trim().toUpperCase()
+    : String(card?.dataset.symbol || "").trim().toUpperCase();
+
+  if (!/^[A-Z0-9]{1,12}$/.test(symbol)) {
+    throw new Error("Geçerli bir BIST sembolü girin.");
+  }
+
+  const quantity = readNumber("quantity", "Lot", true);
+  if (!Number.isInteger(quantity)) {
+    throw new Error("Lot tam sayı olmalı.");
+  }
+
+  const orderType = normalizePaperOrderType(field("orderType")?.value);
+  const payload = {
+    symbol,
+    quantity,
+    entryPrice: readNumber("entryPrice", "Giriş fiyatı", true),
+    orderType,
+    stop: readNumber("stop", "Stop", false),
+    target1: readNumber("target1", "TP1", false),
+    target2: readNumber("target2", "TP2", false),
+    target3: readNumber("target3", "TP3", false),
+  };
+
+  if (!manual) {
+    payload.orderId = String(card?.dataset.orderId || "").trim();
+    payload.decisionId = String(card?.dataset.decisionId || "").trim();
+    if (!payload.orderId && !payload.decisionId) {
+      throw new Error("Bekleyen emir kimliği bulunamadı.");
+    }
+  } else {
+    payload.source = "MANUAL";
+  }
+
+  return payload;
+}
+
+
+async function readPaperOrderResponse(
+  response,
+  fallbackMessage
+) {
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body?.error || fallbackMessage);
+  }
+
+  const state = body?.state && typeof body.state === "object"
+    ? body.state
+    : body;
+  if (!state || typeof state !== "object" || !Array.isArray(state.decisions)) {
+    throw new Error("Sunucudan güncel paper işlem durumu alınamadı.");
+  }
+  return state;
+}
+
+
+function renderPaperOrderState(
+  state,
+  selectedDecisionId = ""
+) {
+  latestPaperOrderState = state;
+  saveLocalTradingState(state);
+  renderAiDecisions(state.decisions || []);
+  renderPaperPortfolio(state.paper);
+  renderOpenPositions(state.paper?.positions || []);
+  renderTradingActivity(state.activity || []);
+  renderSignalHistory(state.history || []);
+  renderPerformance(state);
+  renderPendingPaperOrders(state);
+
+  if (state.risk) {
+    renderRiskSettings(state.risk);
+  }
+
+  const selected = (state.decisions || []).find(
+    item => item.id === selectedDecisionId
+  );
+  if (selected) {
+    renderAiDecisionDetail(selected);
+  }
+}
+
+
+function setPaperOrderFormBusy(
+  form,
+  busy
+) {
+  form.querySelectorAll("input, select, button").forEach(element => {
+    element.disabled = busy;
+  });
+}
+
+
+async function savePendingPaperOrder(
+  form
+) {
+  const payload = readPaperOrderForm(form);
+  const response = await fetch("/api/trading/paper/order/update", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload),
+  });
+  const state = await readPaperOrderResponse(
+    response,
+    "Paper emir ayarları kaydedilemedi."
+  );
+  renderPaperOrderState(state, payload.decisionId);
+  return {state, payload};
+}
+
+
+async function approvePendingPaperOrder(
+  form
+) {
+  const payload = readPaperOrderForm(form);
+  const state = await savePendingPaperOrder(form);
+  const decisionId = payload.decisionId || state.payload?.decisionId;
+  if (!decisionId) {
+    throw new Error("Onay için karar kimliği bulunamadı.");
+  }
+
+  const response = await fetch("/api/trading/paper/approve", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({decisionId}),
+  });
+  const nextState = await readPaperOrderResponse(
+    response,
+    "Paper emir onaylanamadı."
+  );
+  renderPaperOrderState(nextState, decisionId);
+}
+
+
+async function rejectPendingPaperOrder(
+  form
+) {
+  const card = form.closest("[data-pending-paper-order-card]");
+  const decisionId = String(card?.dataset.decisionId || "").trim();
+  const orderId = String(card?.dataset.orderId || "").trim();
+  if (!decisionId && !orderId) {
+    throw new Error("Reddedilecek emir kimliği bulunamadı.");
+  }
+
+  const response = await fetch("/api/trading/paper/reject", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({decisionId, orderId}),
+  });
+  const state = await readPaperOrderResponse(
+    response,
+    "Paper emir reddedilemedi."
+  );
+  renderPaperOrderState(state, decisionId);
+}
+
+
+async function createManualPaperOrder(
+  form
+) {
+  const payload = readPaperOrderForm(form, {manual: true});
+  const response = await fetch("/api/trading/paper/order/manual", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload),
+  });
+  const state = await readPaperOrderResponse(
+    response,
+    "Manuel paper emir oluşturulamadı."
+  );
+  renderPaperOrderState(state);
+  form.reset();
+}
+
+
+function focusPendingPaperOrder(
+  decisionId
+) {
+  const container = document.getElementById("pendingPaperOrders");
+  const panel = document.querySelector(".pending-paper-orders-panel");
+  const card = container?.querySelector(
+    `[data-decision-id="${String(decisionId || "").replace(/"/g, "\\\"")}"]`
+  );
+
+  panel?.scrollIntoView({behavior: "smooth", block: "center"});
+  if (!card) return;
+
+  card.classList.add("is-focused");
+  card.querySelector("input")?.focus({preventScroll: true});
+  window.setTimeout(() => card.classList.remove("is-focused"), 1600);
+}
+
+
+function bindPaperOrderControls() {
+  const pendingContainer = document.getElementById("pendingPaperOrders");
+  const manualForm = document.getElementById("manualPaperOrderForm");
+
+  if (pendingContainer && pendingContainer.dataset.paperOrdersBound !== "true") {
+    pendingContainer.dataset.paperOrdersBound = "true";
+
+    pendingContainer.addEventListener("submit", async event => {
+      const form = event.target.closest("[data-pending-paper-order-form]");
+      if (!form) return;
+      event.preventDefault();
+      setPaperOrderFormBusy(form, true);
+      try {
+        await savePendingPaperOrder(form);
+      } catch (error) {
+        alert(`Paper emir ayarları kaydedilemedi: ${error.message}`);
+      } finally {
+        setPaperOrderFormBusy(form, false);
+      }
+    });
+
+    pendingContainer.addEventListener("click", async event => {
+      const button = event.target.closest("[data-paper-order-action]");
+      if (!button) return;
+      const form = button.closest("[data-pending-paper-order-form]");
+      if (!form) return;
+      const action = button.dataset.paperOrderAction;
+      setPaperOrderFormBusy(form, true);
+      try {
+        if (action === "approve") {
+          await approvePendingPaperOrder(form);
+        } else if (action === "reject") {
+          await rejectPendingPaperOrder(form);
+        }
+      } catch (error) {
+        const message = action === "approve"
+          ? "Paper emir onaylanamadı"
+          : "Paper emir reddedilemedi";
+        alert(`${message}: ${error.message}`);
+      } finally {
+        setPaperOrderFormBusy(form, false);
+      }
+    });
+  }
+
+  if (manualForm && manualForm.dataset.paperOrdersBound !== "true") {
+    manualForm.dataset.paperOrdersBound = "true";
+    manualForm.addEventListener("submit", async event => {
+      event.preventDefault();
+      setPaperOrderFormBusy(manualForm, true);
+      try {
+        await createManualPaperOrder(manualForm);
+      } catch (error) {
+        alert(`Manuel paper emir oluşturulamadı: ${error.message}`);
+      } finally {
+        setPaperOrderFormBusy(manualForm, false);
+      }
+    });
+  }
+
+  if (document.body.dataset.paperOrderFocusBound !== "true") {
+    document.body.dataset.paperOrderFocusBound = "true";
+    document.addEventListener("click", event => {
+      const button = event.target.closest("[data-paper-order-focus]");
+      if (!button) return;
+      focusPendingPaperOrder(button.dataset.paperOrderFocus);
+    });
+  }
 }
 
 
@@ -7243,6 +7836,10 @@ async function loadTradingState() {
       localState.killSwitch
     );
 
+    renderPendingPaperOrders(
+      localState
+    );
+
   }
 
   try {
@@ -7307,6 +7904,10 @@ async function loadTradingState() {
       );
 
       saveLocalTradingState(
+        state
+      );
+
+      renderPendingPaperOrders(
         state
       );
 
@@ -7707,6 +8308,10 @@ async function runTradingScanner() {
       nextState.paper?.positions
     );
 
+    renderPendingPaperOrders(
+      nextState
+    );
+
     updatePaperPricesFromScan(
       data.results
     );
@@ -8054,6 +8659,8 @@ function bindTradingScannerControls() {
   bindPerformanceRange();
 
   bindDecisionBoard();
+
+  bindPaperOrderControls();
 
   bindKillSwitch();
 

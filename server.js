@@ -12,6 +12,8 @@ const {
 const OpenAI = require("openai");
 const fibonacciEngine = require("./trading/fibonacci-engine");
 const dailySummary = require("./trading/daily-summary");
+const paperOrders = require("./trading/paper-orders");
+const { scannerAction } = require("./trading/decision-policy");
 
 const precision = require("./precision/engine");
 
@@ -310,6 +312,7 @@ function buildPaperOpenNotification(
     "🟢 BORSACI · PAPER İŞLEM AÇILDI",
     "",
     `${position.symbol} · LONG`,
+    `Emir türü: ${position.orderType || "LIMIT"} · PAPER ONLY`,
     `Giriş: ${formatTelegramCurrency(position.entry)}`,
     `Miktar: ${position.quantity} lot`,
     `Pozisyon: ${formatTelegramCurrency(positionValue)}`,
@@ -323,15 +326,28 @@ function buildPaperOpenNotification(
 }
 
 function buildPaperApprovalNotification(decision) {
+  const order = getEffectivePendingOrder(decision) || {
+    symbol: decision.symbol,
+    orderType: "LIMIT",
+    entryPrice: decision.entry?.reference,
+    quantity: decision.riskPlan?.quantity,
+    positionValue: decision.riskPlan?.positionValue,
+    stop: decision.stop,
+    target1: decision.target1,
+    target2: decision.target2,
+  };
+  const manual = isManualPaperDecision(decision);
+
   return [
     "⏳ BORSACI · PAPER İŞLEM ONAYI",
     "",
-    `${decision.symbol} · ${decision.grade || "BUY SETUP"}`,
-    `Giriş: ${formatTelegramCurrency(decision.entry?.reference)}`,
-    `Miktar: ${decision.riskPlan?.quantity || 0} lot · ${formatTelegramCurrency(decision.riskPlan?.positionValue)}`,
+    `${order.symbol} · ${manual ? "MANUEL PAPER" : (decision.grade || "BUY SETUP")}`,
+    `Emir: ${order.orderType} · PAPER ONLY`,
+    `Giriş: ${formatTelegramCurrency(order.entryPrice)}`,
+    `Miktar: ${order.quantity || 0} lot · ${formatTelegramCurrency(order.positionValue)}`,
     "",
-    `SL: ${formatTelegramCurrency(decision.stop)}`,
-    `TP1: ${formatTelegramCurrency(decision.target1)} · TP2: ${formatTelegramCurrency(decision.target2)}`,
+    `SL: ${formatTelegramCurrency(order.stop)}`,
+    `TP1: ${formatTelegramCurrency(order.target1)} · TP2: ${formatTelegramCurrency(order.target2)}`,
     "",
     "Onay verirsen paper işlem açılır.",
   ].join("\\n");
@@ -3712,6 +3728,19 @@ function normalizeTradingState(
   const fallback =
     createDefaultTradingState();
 
+  const rawDecisions =
+    Array.isArray(value?.decisions)
+      ? value.decisions
+      : [];
+
+  // Eski scanner kayıtları pendingOrder alanı olmadan saklanmış olabilir.
+  // Okurken güvenli varsayılan taslağı ekliyoruz; ilk sonraki state yazımında
+  // bu metadata kalıcı hâle gelir.
+  const decisions =
+    rawDecisions.map(
+      decision => ensurePendingOrder(decision)
+    );
+
   return {
 
     ...fallback,
@@ -3754,12 +3783,7 @@ function normalizeTradingState(
         Boolean((value || {}).killSwitch?.active),
     },
 
-    decisions:
-      Array.isArray(
-        value?.decisions
-      )
-        ? value.decisions
-        : [],
+    decisions,
 
     history:
       Array.isArray(
@@ -3866,10 +3890,10 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   // Trend direnci olmadan giriş üst limiti yoktur; bu durumda onaya
   // düşebilecek bir BUY SETUP üretmeyiz.
   const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed && hasEntryUpper);
-  const action=active&&item.score>=65?"BUY SETUP":item.score>=60?"WATCH":"NO TRADE";
+  const action=scannerAction({active,score:item.score});
   const status=action==="BUY SETUP"?"PENDING_APPROVAL":action==="NO TRADE"?"REJECTED":"PENDING";
   const now=new Date().toISOString();
-  return {
+  const decision = {
     id:`${Date.now()}-${item.symbol}`,rank,symbol:item.symbol,action,status,confidence:null,
     entry:{low:roundTradingValue(fib.entryZoneLow),high:hasEntryUpper?roundTradingValue(fib.entryZoneHigh):null,reference:roundTradingValue(entry)},
     stop:roundTradingValue(stop),target1:roundTradingValue(plan.tp1),target2:roundTradingValue(plan.tp2),target3:roundTradingValue(plan.tp3),
@@ -3890,6 +3914,8 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     invalidation:`C seviyesinin %2 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`,
     timestamp:now,
   };
+
+  return ensurePendingOrder(decision, now);
 }
 
 
@@ -4051,7 +4077,11 @@ function openPaperPositionForDecision(
     throw new Error("Kill Switch aktif: yeni paper işlem açılamaz.");
   }
 
-  if (!decision || decision.action !== "BUY SETUP" || !["PENDING", "PENDING_APPROVAL"].includes(decision.status)) {
+  if (
+    !decision ||
+    !isPaperApprovableDecision(decision) ||
+    !["PENDING", "PENDING_APPROVAL"].includes(decision.status)
+  ) {
     throw new Error("Bu karar paper işlem açmak için uygun değil.");
   }
 
@@ -4064,8 +4094,18 @@ function openPaperPositionForDecision(
     throw new Error(`Aynı anda en fazla ${maxPositions} açık pozisyon olabilir.`);
   }
 
-  const quantity = Math.floor(Number(decision.riskPlan?.quantity) || 0);
-  const entry = Number(decision.entry?.reference) || 0;
+  const order = buildPendingOrderFromDecision(
+    decision,
+    decision.pendingOrder,
+    timestamp
+  );
+
+  if (!order) {
+    throw new Error("Paper emir taslağı geçersiz.");
+  }
+
+  const quantity = Number(order.quantity);
+  const entry = Number(order.entryPrice);
   const positionValue = quantity * entry;
 
   if (quantity <= 0 || positionValue <= 0) {
@@ -4076,16 +4116,20 @@ function openPaperPositionForDecision(
   }
 
   const position = {
-    id: `paper-${timestamp}-${decision.symbol}`,
+    id: `paper-${timestamp}-${order.symbol}-${crypto.randomBytes(4).toString("hex")}`,
     decisionId: decision.id,
-    symbol: decision.symbol,
+    symbol: order.symbol,
+    source: order.source,
+    paperOnly: true,
+    orderType: order.orderType,
     quantity,
     originalQuantity: quantity,
     entry,
     current: entry,
-    stop: Number(decision.stop),
-    target1: Number(decision.target1),
-    target2: Number(decision.target2),
+    stop: order.stop,
+    target1: order.target1,
+    target2: order.target2,
+    target3: order.target3,
     status: "OPEN",
     openedAt: timestamp,
     tp1Hit: false,
@@ -4093,15 +4137,21 @@ function openPaperPositionForDecision(
     pnl: 0,
   };
 
-  paper.cash = Number(paper.cash) - positionValue;
+  paper.cash = roundTradingValue(Number(paper.cash) - positionValue);
   paper.positions = [position, ...paper.positions];
   decision.status = "OPEN";
   decision.lifecycle = {...(decision.lifecycle || {}), stage: "OPEN", openedAt: timestamp};
+  decision.pendingOrder = {
+    ...order,
+    status: "APPROVED",
+    updatedAt: timestamp,
+    approvedAt: timestamp,
+  };
 
   addTradingActivity(
     state,
     "PAPER_OPEN",
-    `${position.symbol} paper pozisyonu açıldı: ${quantity} lot · ₺${positionValue.toFixed(2)}.`,
+    `${position.symbol} ${isManualPaperDecision(decision) ? "manuel" : "scanner"} paper pozisyonu açıldı: ${quantity} lot · ₺${positionValue.toFixed(2)} · ${position.orderType}.`,
     timestamp
   );
   recalculatePaper(paper);
@@ -4379,6 +4429,8 @@ async function monitorPaperPositions() {
 
       if (
         !position.tp1Hit &&
+        Number.isFinite(Number(position.target1)) &&
+        Number(position.target1) > 0 &&
         current >= Number(position.target1)
       ) {
 
@@ -4426,6 +4478,8 @@ async function monitorPaperPositions() {
 
       if (
         position.status === "OPEN" &&
+        Number.isFinite(Number(position.target2)) &&
+        Number(position.target2) > 0 &&
         current >= Number(position.target2)
       ) {
 
@@ -4454,6 +4508,8 @@ async function monitorPaperPositions() {
 
       if (
         fourHour &&
+        Number.isFinite(Number(position.stop)) &&
+        Number(position.stop) > 0 &&
         Number(fourHour.close) <
           Number(position.stop)
       ) {
@@ -4554,6 +4610,7 @@ async function recordAiDecisions(
       .filter(
         decision =>
           ["PENDING", "PENDING_APPROVAL"].includes(decision?.status) &&
+          !isManualPaperDecision(decision) &&
           !incomingKeys.has(
             decisionFingerprint(decision)
           )
@@ -4592,7 +4649,7 @@ async function recordAiDecisions(
           );
 
         if (!previous) {
-          return decision;
+          return ensurePendingOrder(decision, now);
         }
 
         const hasOpenPosition =
@@ -4602,7 +4659,7 @@ async function recordAiDecisions(
               position.status === "OPEN"
           );
 
-        return {
+        const next = {
           ...decision,
           id: previous.id,
           action:
@@ -4621,10 +4678,19 @@ async function recordAiDecisions(
                   openedAt:
                     previous.lifecycle?.openedAt ||
                     previous.timestamp ||
-                    now,
+                  now,
                 }
               : decision.lifecycle,
+          // Aynı teknik plan tekrar tarandığında güncel AI içeriği gelir;
+          // fakat kullanıcı tarafından düzenlenmiş lot/fiyat/emir türü
+          // taslağı özellikle korunur.
+          pendingOrder:
+            previous.status === "PENDING_APPROVAL"
+              ? previous.pendingOrder
+              : previous.pendingOrder || decision.pendingOrder,
         };
+
+        return ensurePendingOrder(next, now);
       }
     );
 
@@ -4634,6 +4700,7 @@ async function recordAiDecisions(
   const retainedOpenDecisions = existing.filter(
     decision =>
       decision?.status === "OPEN" &&
+      !isManualPaperDecision(decision) &&
       state.paper.positions.some(
         position =>
           position.decisionId === decision.id &&
@@ -4641,9 +4708,19 @@ async function recordAiDecisions(
       ) &&
       !state.decisions.some(next => next.id === decision.id)
   );
+  // Manuel paper emirleri scanner kriterine bağlı değildir. Yeni scanner
+  // snapshot'ı bunları expire/replace etmez; kullanıcı onaylayana,
+  // reddedene veya işlem kapanana kadar yaşarlar.
+  const retainedManualDecisions = existing.filter(
+    decision =>
+      isManualPaperDecision(decision) &&
+      ["PENDING_APPROVAL", "OPEN"].includes(decision?.status) &&
+      !state.decisions.some(next => next.id === decision.id)
+  );
   state.decisions = [
     ...state.decisions,
     ...retainedOpenDecisions,
+    ...retainedManualDecisions,
   ];
 
   if (scannerSnapshot) {
@@ -4654,7 +4731,11 @@ async function recordAiDecisions(
   // Telegram veya sitedeki tek kullanımlık onaydan sonra açılabilir.
   const previouslyQueued = new Set(
     existing
-      .filter(item => item?.status === "PENDING_APPROVAL")
+      .filter(
+        item =>
+          item?.status === "PENDING_APPROVAL" &&
+          !isManualPaperDecision(item)
+      )
       .map(item => item.id)
   );
   const approvalRequests = state.decisions
@@ -4703,6 +4784,229 @@ async function readTradingRequest(req) {
     return JSON.parse(body || "{}");
   } catch {
     throw new Error("Geçersiz istek verisi.");
+  }
+}
+
+
+function createManualPaperDecision(input, state, timestamp) {
+  if (state.killSwitch?.active) {
+    throw new Error("Kill Switch aktif: yeni paper işlem taslağı oluşturulamaz.");
+  }
+
+  const order = paperOrders.normalizePaperOrder(input, {
+    requireSymbol: true,
+    requireOrderType: true,
+  });
+  const id = [
+    "manual",
+    Date.now(),
+    order.symbol,
+    crypto.randomBytes(4).toString("hex"),
+  ].join("-");
+
+  return {
+    id,
+    rank: null,
+    symbol: order.symbol,
+    action: "MANUAL PAPER",
+    status: "PENDING_APPROVAL",
+    source: "MANUAL",
+    manualOrder: true,
+    paperOnly: true,
+    confidence: null,
+    grade: "MANUEL",
+    entry: {
+      low: order.entryPrice,
+      high: order.entryPrice,
+      reference: order.entryPrice,
+    },
+    stop: order.stop,
+    target1: order.target1,
+    target2: order.target2,
+    target3: order.target3,
+    riskReward: {
+      tp1: null,
+      tp2: null,
+      tp3: null,
+    },
+    riskPlan: {
+      capital: Number(state.paper?.initialCapital) || null,
+      targetPositionValue: order.positionValue,
+      reservePercent: null,
+      quantity: order.quantity,
+      positionValue: order.positionValue,
+      actualRisk: order.actualRisk,
+      maxPositionPercent: null,
+      maxPositions: Math.max(1, Math.floor(Number(state.risk?.maxPositions) || 3)),
+      manualOverride: true,
+    },
+    indicators: {
+      score: null,
+      rsi: null,
+      atr: null,
+      macd: null,
+    },
+    filters: {
+      manualOverride: true,
+    },
+    planMethod: "MANUAL_PAPER_ORDER",
+    fibonacci: null,
+    reasons: ["Kullanıcı tarafından manuel paper emir taslağı oluşturuldu."],
+    risks: [],
+    aiReview: {
+      available: false,
+      provider: "NOT_USED",
+      summary: "Manuel paper emir; AI/scanner kriteri uygulanmadı.",
+    },
+    lifecycle: {
+      stage: "PENDING_APPROVAL",
+      createdAt: timestamp,
+      expiresAt: null,
+    },
+    reason: "Manuel paper emir; scanner kriterlerinden bağımsız olarak kullanıcı onayı bekliyor.",
+    invalidation: "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
+    pendingOrder: {
+      ...order,
+      source: "MANUAL",
+      paperOnly: true,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      editedAt: null,
+    },
+    timestamp,
+  };
+}
+
+
+async function handleManualPaperOrder(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const timestamp = new Date().toISOString();
+    const decision = createManualPaperDecision(input, state, timestamp);
+
+    state.decisions = [
+      decision,
+      ...(Array.isArray(state.decisions) ? state.decisions : []),
+    ];
+
+    addTradingActivity(
+      state,
+      "PAPER_MANUAL_PENDING",
+      `${decision.symbol} için MANUAL PAPER ONLY emir onayı bekliyor: ${decision.pendingOrder.quantity} lot · ${decision.pendingOrder.orderType}.`,
+      timestamp
+    );
+
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+
+    if (telegramApprovalButtonsReady()) {
+      void sendTelegramNotification(
+        buildPaperApprovalNotification(decision),
+        paperApprovalKeyboard(decision)
+      );
+    }
+
+    return sendJSON(res, 201, tradingStateForClient(state));
+  } catch (error) {
+    console.error("PAPER MANUAL ORDER ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
+
+async function handlePendingPaperOrders(req, res) {
+  try {
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+
+    return sendJSON(res, 200, {
+      paperOnly: true,
+      killSwitchActive: Boolean(state.killSwitch?.active),
+      availableCash: Number(state.paper?.cash || 0),
+      maxOpenPositions: Math.max(1, Math.floor(Number(state.risk?.maxPositions) || 3)),
+      pendingOrders: pendingPaperOrders(state),
+    });
+  } catch (error) {
+    console.error("PAPER PENDING ORDERS ERROR:", error.message);
+    return sendJSON(res, 500, {error: error.message});
+  }
+}
+
+
+async function handlePendingPaperOrderUpdate(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const decisionId = String(input.decisionId || input.orderId || "").trim();
+
+    if (!decisionId) {
+      throw new Error("Bekleyen emir kimliği gerekli.");
+    }
+
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const decision = (state.decisions || []).find(item => item.id === decisionId);
+
+    if (
+      !decision ||
+      decision.status !== "PENDING_APPROVAL" ||
+      !isPaperApprovableDecision(decision)
+    ) {
+      throw new Error("Bu paper emir artık düzenlenemez.");
+    }
+
+    const current = getEffectivePendingOrder(decision);
+    if (!current) {
+      throw new Error("Bekleyen paper emir taslağı geçersiz.");
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, "symbol")) {
+      const requestedSymbol = paperOrders.normalizeSymbol(input.symbol);
+      if (requestedSymbol !== current.symbol) {
+        throw new Error("Bekleyen emrin sembolü değiştirilemez; yeni manuel emir oluşturun.");
+      }
+    }
+
+    const order = paperOrders.normalizePaperOrder(
+      {
+        ...input,
+        symbol: current.symbol,
+      },
+      {
+        existing: current,
+      }
+    );
+    const timestamp = new Date().toISOString();
+
+    decision.pendingOrder = {
+      ...order,
+      source: current.source,
+      paperOnly: true,
+      createdAt: current.createdAt || decision.timestamp || timestamp,
+      updatedAt: timestamp,
+      editedAt: timestamp,
+    };
+
+    addTradingActivity(
+      state,
+      "PAPER_ORDER_EDITED",
+      `${decision.symbol} bekleyen paper emri düzenlendi: ${order.quantity} lot · ${formatTelegramCurrency(order.entryPrice)} · ${order.orderType}.`,
+      timestamp
+    );
+
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+
+    if (telegramApprovalButtonsReady()) {
+      void sendTelegramNotification(
+        buildPaperApprovalNotification(decision),
+        paperApprovalKeyboard(decision)
+      );
+    }
+
+    return sendJSON(res, 200, tradingStateForClient(state));
+  } catch (error) {
+    console.error("PAPER ORDER UPDATE ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
   }
 }
 
@@ -4772,7 +5076,7 @@ async function handleTradingRiskSettings(req, res) {
       stateResult.container
     );
 
-    return sendJSON(res, 200, state);
+    return sendJSON(res, 200, tradingStateForClient(state));
   } catch (error) {
     console.error("RISK SETTINGS ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
@@ -4889,7 +5193,7 @@ async function handleKillSwitch(req, res) {
       (activate ? "🛑" : "🟢") + " BORSACI " + message
     );
 
-    return sendJSON(res, 200, state);
+    return sendJSON(res, 200, tradingStateForClient(state));
   } catch (error) {
     console.error("KILL SWITCH ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
@@ -4914,6 +5218,192 @@ async function approvePaperDecision(decisionId, source) {
   await saveTradingState(state, stateResult.sha, stateResult.container);
   void sendTelegramNotification(buildPaperOpenNotification(position));
   return state;
+}
+
+
+/*
+ * Scanner kararları ve elle oluşturulan emirler aynı PENDING_APPROVAL
+ * yaşam döngüsünü kullanır. `pendingOrder`, kararın değiştirilebilir paper
+ * emir taslağıdır; teknik kararın kendi giriş/SL/TP değerleri ise ham
+ * scanner kaydı olarak korunur. Böylece aynı plan yeniden tarandığında
+ * kullanıcının lot/fiyat/emir türü düzenlemesi kaybolmaz.
+ */
+function isManualPaperDecision(decision) {
+  return Boolean(
+    decision?.manualOrder === true ||
+    decision?.source === "MANUAL" ||
+    decision?.action === "MANUAL PAPER"
+  );
+}
+
+
+function isPaperApprovableDecision(decision) {
+  return Boolean(
+    decision &&
+    ["BUY SETUP", "MANUAL PAPER"].includes(decision.action)
+  );
+}
+
+
+function buildPendingOrderFromDecision(
+  decision,
+  existingOrder = null,
+  timestamp = new Date().toISOString()
+) {
+  if (!isPaperApprovableDecision(decision)) {
+    return null;
+  }
+
+  const fallback = {
+    symbol: decision.symbol,
+    quantity: decision.riskPlan?.quantity,
+    entryPrice: decision.entry?.reference,
+    orderType: "LIMIT",
+    stop: decision.stop,
+    target1: decision.target1,
+    target2: decision.target2,
+    target3: decision.target3,
+  };
+
+  /*
+   * Mevcut taslak varsa onu baz al. Böylece tarayıcıdan gelen yeni teknik
+   * açıklama/AI içeriği yenilenirken kullanıcının order override'ı sabit
+   * kalır. Geçersiz/eski kayıt, onay sırasında açık hata vermek yerine
+   * güvenli scanner varsayılanına döner.
+   */
+  let normalized;
+  try {
+    normalized = paperOrders.normalizePaperOrder(
+      existingOrder
+        ? {
+            ...existingOrder,
+            symbol: decision.symbol,
+          }
+        : fallback,
+      {
+        existing: fallback,
+      }
+    );
+  } catch {
+    try {
+      normalized = paperOrders.normalizePaperOrder(fallback);
+    } catch {
+      return null;
+    }
+  }
+
+  const source = isManualPaperDecision(decision)
+    ? "MANUAL"
+    : "SCANNER";
+
+  return {
+    ...normalized,
+    source,
+    paperOnly: true,
+    createdAt:
+      existingOrder?.createdAt ||
+      decision?.lifecycle?.createdAt ||
+      decision?.timestamp ||
+      timestamp,
+    updatedAt:
+      existingOrder?.updatedAt ||
+      timestamp,
+    editedAt:
+      existingOrder?.editedAt ||
+      null,
+  };
+}
+
+
+function ensurePendingOrder(decision, timestamp) {
+  if (!decision || decision.status !== "PENDING_APPROVAL") {
+    return decision;
+  }
+
+  const pendingOrder = buildPendingOrderFromDecision(
+    decision,
+    decision.pendingOrder,
+    timestamp
+  );
+
+  return pendingOrder
+    ? {
+        ...decision,
+        pendingOrder,
+      }
+    : decision;
+}
+
+
+function getEffectivePendingOrder(decision) {
+  if (!decision || decision.status !== "PENDING_APPROVAL") {
+    return null;
+  }
+
+  return buildPendingOrderFromDecision(
+    decision,
+    decision.pendingOrder,
+    decision?.timestamp || new Date().toISOString()
+  );
+}
+
+
+function pendingPaperOrders(state) {
+  return (Array.isArray(state?.decisions) ? state.decisions : [])
+    .filter(
+      decision =>
+        decision?.status === "PENDING_APPROVAL" &&
+        isPaperApprovableDecision(decision)
+    )
+    .map(decision => {
+      const order = getEffectivePendingOrder(decision);
+
+      if (!order) {
+        return null;
+      }
+
+      return {
+        id: decision.id,
+        decisionId: decision.id,
+        status: "PENDING_APPROVAL",
+        manualOrder: isManualPaperDecision(decision),
+        source: order.source,
+        paperOnly: true,
+        symbol: order.symbol,
+        orderType: order.orderType,
+        quantity: order.quantity,
+        entryPrice: order.entryPrice,
+        stop: order.stop,
+        target1: order.target1,
+        target2: order.target2,
+        target3: order.target3,
+        positionValue: order.positionValue,
+        actualRisk: order.actualRisk,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        editedAt: order.editedAt,
+        action: decision.action,
+        grade: decision.grade || null,
+        reason: decision.reason || null,
+      };
+    })
+    .filter(Boolean);
+}
+
+
+function paperStateForClient(state) {
+  return {
+    ...(state?.paper || {}),
+    pendingOrders: pendingPaperOrders(state),
+  };
+}
+
+
+function tradingStateForClient(state) {
+  return {
+    ...(state || {}),
+    paper: paperStateForClient(state),
+  };
 }
 
 async function rejectPaperDecision(decisionId, source) {
@@ -4945,9 +5435,15 @@ async function rejectPaperDecision(decisionId, source) {
 async function handlePaperApproval(req, res) {
   try {
     const input = await readTradingRequest(req);
-    const decisionId = String(input.decisionId || "").trim();
+    const decisionId = String(input.decisionId || input.orderId || "").trim();
     if (!decisionId) throw new Error("Karar kimliği gerekli.");
-    return sendJSON(res, 200, await approvePaperDecision(decisionId, "SITE"));
+    return sendJSON(
+      res,
+      200,
+      tradingStateForClient(
+        await approvePaperDecision(decisionId, "SITE")
+      )
+    );
   } catch (error) {
     console.error("PAPER APPROVAL ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
@@ -4957,9 +5453,15 @@ async function handlePaperApproval(req, res) {
 async function handlePaperRejection(req, res) {
   try {
     const input = await readTradingRequest(req);
-    const decisionId = String(input.decisionId || "").trim();
+    const decisionId = String(input.decisionId || input.orderId || "").trim();
     if (!decisionId) throw new Error("Karar kimliği gerekli.");
-    return sendJSON(res, 200, await rejectPaperDecision(decisionId, "SITE"));
+    return sendJSON(
+      res,
+      200,
+      tradingStateForClient(
+        await rejectPaperDecision(decisionId, "SITE")
+      )
+    );
   } catch (error) {
     console.error("PAPER REJECTION ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
@@ -5027,7 +5529,7 @@ async function handlePaperClose(req, res) {
 
     await saveTradingState(state, stateResult.sha, stateResult.container);
     void sendTelegramNotification(notification.message);
-    return sendJSON(res, 200, state);
+    return sendJSON(res, 200, tradingStateForClient(state));
   } catch (error) {
     console.error("PAPER CLOSE ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
@@ -5047,7 +5549,9 @@ async function handleTradingState(
     return sendJSON(
       res,
       200,
-      stateResult.content
+      tradingStateForClient(
+        stateResult.content
+      )
     );
 
   } catch (error) {
@@ -5095,8 +5599,8 @@ const BIST100_SYMBOLS = [
   "ZOREN"
 ];
 
-/* v4: kararlarla birlikte teknik puan kalemlerini de saklar. */
-const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v4";
+/* v5: 60 puan BUY SETUP eşiği ve bekleyen paper emir metadatası. */
+const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v5";
 
 function istanbulClock(now = new Date()) {
   const parts = Object.fromEntries(
@@ -6257,7 +6761,7 @@ async function handleTradingScanner(req,res) {
     if(canReuseScannerSnapshot(existingState.scannerSnapshot,riskSettings)){
       const snapshot=existingState.scannerSnapshot;
       updateScannerJob(jobId,100,"Piyasa kapalı: son tamamlanmış günlük tarama aynen kullanıldı","COMPLETE");
-      return sendJSON(res,200,{success:true,cached:true,timestamp:new Date().toISOString(),scanned:snapshot.scanned,successful:snapshot.successful,complete:true,xu100:{status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."},results:snapshot.results,decisions:existingState.decisions,paper:existingState.paper,activity:existingState.activity,history:existingState.history,risk:existingState.risk});
+      return sendJSON(res,200,{success:true,cached:true,timestamp:new Date().toISOString(),scanned:snapshot.scanned,successful:snapshot.successful,complete:true,xu100:{status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."},results:snapshot.results,decisions:existingState.decisions,paper:paperStateForClient(existingState),activity:existingState.activity,history:existingState.history,risk:existingState.risk});
     }
     /*
      * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
@@ -6318,7 +6822,7 @@ async function handleTradingScanner(req,res) {
     const snapshot=createScannerSnapshot(ranked,riskSettings,scanned,valid.length);
     const state=await recordAiDecisions(decisions,snapshot);
     updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
-    return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:state.paper,activity:state.activity,history:state.history,risk:state.risk});
+    return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
   } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
 }
 
@@ -6508,6 +7012,33 @@ if (
   pathname === "/api/trading/kill-switch"
 ) {
   return handleKillSwitch(req, res);
+}
+
+if (
+  req.method === "GET" &&
+  pathname === "/api/trading/paper/pending"
+) {
+  return handlePendingPaperOrders(req, res);
+}
+
+if (
+  req.method === "POST" &&
+  (
+    pathname === "/api/trading/paper/pending/update" ||
+    pathname === "/api/trading/paper/order/update"
+  )
+) {
+  return handlePendingPaperOrderUpdate(req, res);
+}
+
+if (
+  req.method === "POST" &&
+  (
+    pathname === "/api/trading/paper/manual" ||
+    pathname === "/api/trading/paper/order/manual"
+  )
+) {
+  return handleManualPaperOrder(req, res);
 }
 
 if (
