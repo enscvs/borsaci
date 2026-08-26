@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 57949.04,
-      "equity": 93163.95102027894,
-      "pnl": 43112.07313681602,
-      "pnlPercent": 86.22414627363204,
+      "cash": 61965.020000000004,
+      "equity": 93159.93102027893,
+      "pnl": 43103.05313681602,
+      "pnlPercent": 86.20610627363205,
       "positions": [
         {
           "id": "paper-2026-08-26T11:26:40.885Z-ASELS-8c7be202",
@@ -28,11 +28,13 @@
           "target1": null,
           "target2": null,
           "target3": null,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-26T11:26:40.885Z",
           "tp1Hit": false,
           "realizedPnl": -4.03,
-          "pnl": -5
+          "pnl": -13.05,
+          "closedAt": "2026-08-26T11:42:59.296Z",
+          "closeReason": "MANUAL_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-26T11:25:51.332Z-GESAN-7db8e7f1",
@@ -2874,13 +2876,15 @@
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
         "timestamp": "2026-08-25T11:53:36.785Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "manual-1787743587344-ASELS-e0e9f245",
         "rank": null,
         "symbol": "ASELS",
         "action": "MANUAL PAPER",
-        "status": "OPEN",
+        "status": "CLOSED",
         "source": "MANUAL",
         "manualOrder": true,
         "paperOnly": true,
@@ -2932,10 +2936,11 @@
           "summary": "Manuel paper emir; AI/scanner kriteri uygulanmadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-26T11:26:27.344Z",
           "expiresAt": null,
-          "openedAt": "2026-08-26T11:26:40.885Z"
+          "openedAt": "2026-08-26T11:26:40.885Z",
+          "closedAt": "2026-08-26T11:42:59.296Z"
         },
         "reason": "Manuel paper emir; scanner kriterlerinden bağımsız olarak kullanıcı onayı bekliyor.",
         "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
@@ -2960,10 +2965,10 @@
           "status": "APPROVED",
           "approvedAt": "2026-08-26T11:26:40.885Z"
         },
-        "timestamp": "2026-08-26T11:26:27.344Z"
-      }
-    ],
-    "history": [
+        "timestamp": "2026-08-26T11:26:27.344Z",
+        "outcome": "MANUAL_MARKET_CLOSE",
+        "realizedPnL": -13.05
+      },
       {
         "id": "1787740663286-GESAN",
         "rank": 3,
@@ -13996,60 +14001,6 @@
         "timestamp": "2026-08-21T22:17:02.126Z",
         "outcome": "MANUAL_CLOSE",
         "realizedPnL": -214.1995330810551
-      },
-      {
-        "id": "1787351156464-BINBN",
-        "rank": 2,
-        "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "CLOSED",
-        "confidence": 94,
-        "entry": {
-          "low": 180.98,
-          "high": 184.51,
-          "reference": 183.1
-        },
-        "stop": 172.5,
-        "target1": 204.29,
-        "target2": 214.89,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 100000,
-          "riskBudget": 1000,
-          "maxPositionValue": 32000,
-          "stopDistance": 10.6,
-          "quantity": 94,
-          "positionValue": 17211.4,
-          "actualRisk": 996.4,
-          "riskPerTradePercent": 1,
-          "maxPositionPercent": 32,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 54.69,
-          "atr": 7.06,
-          "volatility": 3.86
-        },
-        "lifecycle": {
-          "stage": "CLOSED",
-          "createdAt": "2026-08-21T22:25:56.464Z",
-          "expiresAt": "2026-08-22T22:25:56.464Z",
-          "openedAt": "2026-08-21T22:25:56.975Z",
-          "closedAt": "2026-08-21T22:27:37.870Z"
-        },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
-        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:25:56.464Z",
-        "outcome": "MANUAL_CLOSE",
-        "realizedPnL": 0
       }
     ],
     "dailySummary": {
@@ -14058,6 +14009,11 @@
       "snapshotCreatedAt": "2026-08-25T16:25:49.744Z"
     },
     "activity": [
+      {
+        "timestamp": "2026-08-26T11:42:59.296Z",
+        "type": "CLOSED",
+        "message": "ASELS paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-13.05."
+      },
       {
         "timestamp": "2026-08-26T11:42:30.662Z",
         "type": "RISK",
@@ -14552,11 +14508,6 @@
         "timestamp": "2026-08-26T09:53:12.974Z",
         "type": "PAPER_APPROVED",
         "message": "ASELS paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-26T09:53:12.974Z",
-        "type": "PAPER_OPEN",
-        "message": "ASELS manuel paper pozisyonu açıldı: 50 lot · ₺20112.50 · MARKET."
       }
     ],
     "scannerSnapshot": {
