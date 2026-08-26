@@ -5011,6 +5011,53 @@ async function handlePendingPaperOrders(req, res) {
   }
 }
 
+async function handleDecisionPendingOverride(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const decisionId = String(input.decisionId || "").trim();
+    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const decision = (state.decisions || []).find(item => item.id === decisionId);
+    if (!decision || decision.status === "OPEN") {
+      throw new Error("Bu AI kararı bekleyen emre dönüştürülemez.");
+    }
+    const timestamp = new Date().toISOString();
+    const entryPrice = Number(decision.entry?.reference || decision.entry?.high || decision.entry?.low);
+    if (!Number.isFinite(entryPrice) || entryPrice <= 0) {
+      throw new Error("Bu karar için doğrulanmış giriş fiyatı yok.");
+    }
+    const capital = Number(state.risk?.capital || state.paper?.initialCapital || 0);
+    const allocation = Number(state.risk?.targetPositionPercent || 31) / 100;
+    const quantity = Math.max(1, Math.floor(Number(decision.riskPlan?.quantity) || (capital * allocation / entryPrice)));
+    const order = paperOrders.normalizePaperOrder({
+      symbol: decision.symbol,
+      quantity,
+      entryPrice,
+      orderType: "LIMIT",
+      stop: decision.stop,
+      target1: decision.target1,
+      target2: decision.target2,
+      target3: decision.target3,
+    }, {requireSymbol: true, requireOrderType: true});
+    decision.action = "BUY SETUP";
+    decision.status = "PENDING_APPROVAL";
+    decision.manualOverride = true;
+    decision.lifecycle = {...(decision.lifecycle || {}), stage: "PENDING_APPROVAL", overrideAt: timestamp};
+    decision.pendingOrder = {...order, source: "AI PLAN", paperOnly: true, createdAt: timestamp, updatedAt: timestamp, editedAt: null};
+    decision.reason = `${decision.reason || ""} Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.`.trim();
+    addTradingActivity(state, "AI_DECISION_MANUAL_PENDING", `${decision.symbol} kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi.`, timestamp);
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+    if (telegramApprovalButtonsReady()) {
+      void sendTelegramNotification(buildPaperApprovalNotification(decision), paperApprovalKeyboard(decision));
+    }
+    return sendJSON(res, 200, tradingStateForClient(state));
+  } catch (error) {
+    console.error("AI DECISION PENDING OVERRIDE ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
 
 async function handlePendingPaperOrderUpdate(req, res) {
   try {
@@ -5610,11 +5657,45 @@ async function handlePaperClose(req, res) {
     );
     if (!position) throw new Error("Açık paper pozisyon bulunamadı.");
 
-    const closePrice = Number(position.current) || Number(position.entry);
+    const quantity = input.quantity === undefined
+      ? Number(position.quantity)
+      : Number(input.quantity);
+    if (!Number.isSafeInteger(quantity) || quantity <= 0 || quantity > Number(position.quantity)) {
+      throw new Error("Satılacak lot, açık pozisyon miktarından büyük olamaz.");
+    }
+    const orderType = String(input.orderType || "MARKET").trim().toUpperCase();
+    if (!["MARKET", "LIMIT"].includes(orderType)) {
+      throw new Error("Satış emir türü MARKET veya LIMIT olmalı.");
+    }
+    const marketPrice = await fetchPaperMarketPrice(position.symbol);
+    let closePrice = marketPrice;
+    if (orderType === "LIMIT") {
+      const limitPrice = Number(input.limitPrice);
+      if (!Number.isFinite(limitPrice) || limitPrice <= 0) {
+        throw new Error("LIMIT satış için geçerli limit fiyatı gerekli.");
+      }
+      if (marketPrice < limitPrice) {
+        throw new Error(`${position.symbol} LIMIT satış gerçekleşmedi: son fiyat ${formatTelegramCurrency(marketPrice)}, limit ${formatTelegramCurrency(limitPrice)}.`);
+      }
+      closePrice = Math.max(marketPrice, limitPrice);
+    }
     const timestamp = new Date().toISOString();
-    const notification = closeMonitoredPaperPosition(
-      state, position, closePrice, "CLOSED", "MANUAL_CLOSE", timestamp
-    );
+    let notification;
+    if (quantity === Number(position.quantity)) {
+      notification = closeMonitoredPaperPosition(
+        state, position, closePrice, "CLOSED", `MANUAL_${orderType}_CLOSE`, timestamp
+      );
+    } else {
+      const realizedPnl = roundTradingValue((closePrice - Number(position.entry)) * quantity);
+      position.quantity = Number(position.quantity) - quantity;
+      position.current = closePrice;
+      position.realizedPnl = roundTradingValue(Number(position.realizedPnl || 0) + realizedPnl);
+      position.pnl = roundTradingValue((closePrice - Number(position.entry)) * Number(position.quantity));
+      state.paper.cash = roundTradingValue(Number(state.paper.cash) + closePrice * quantity);
+      state.paper.pnl = roundTradingValue(Number(state.paper.pnl) + realizedPnl);
+      addTradingActivity(state, "PAPER_PARTIAL_CLOSE", `${position.symbol} ${quantity} lot ${orderType} ile kapatıldı. Kalan: ${position.quantity} lot.`, timestamp);
+      notification = {message: `BORSACI PAPER KISMİ SATIŞ\n${position.symbol}\n${quantity} lot · ${orderType} · ${formatTelegramCurrency(closePrice)}\nKalan: ${position.quantity} lot`};
+    }
     recalculatePaper(state.paper);
 
     await saveTradingState(state, stateResult.sha, stateResult.container);
@@ -7109,6 +7190,13 @@ if (
   pathname === "/api/trading/paper/pending"
 ) {
   return handlePendingPaperOrders(req, res);
+}
+
+if (
+  req.method === "POST" &&
+  pathname === "/api/trading/paper/decision/pending"
+) {
+  return handleDecisionPendingOverride(req, res);
 }
 
 if (
