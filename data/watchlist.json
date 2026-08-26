@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 61965.020000000004,
-      "equity": 93159.93102027893,
+      "cash": 46109.18,
+      "equity": 93144.09102027892,
       "pnl": 43103.05313681602,
       "pnlPercent": 86.20610627363205,
       "positions": [
+        {
+          "id": "paper-2026-08-26T11:43:25.593Z-AHGAZ-5094dc68",
+          "decisionId": "1787743521670-AHGAZ",
+          "decisionIds": [
+            "1787743521670-AHGAZ"
+          ],
+          "symbol": "AHGAZ",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 440,
+          "originalQuantity": 440,
+          "entry": 36,
+          "entryCommission": 15.84,
+          "current": 36,
+          "stop": 30.91,
+          "target1": 40.08,
+          "target2": 42.4,
+          "target3": 45.36,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T11:43:25.593Z",
+          "tp1Hit": false,
+          "realizedPnl": -15.84,
+          "pnl": -15.84
+        },
         {
           "id": "paper-2026-08-26T11:26:40.885Z-ASELS-8c7be202",
           "decisionId": "manual-1787743587344-ASELS-e0e9f245",
@@ -1868,7 +1893,7 @@
         "rank": 5,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2184,10 +2209,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T11:41:44.074Z",
           "expiresAt": "2026-08-27T11:41:44.074Z",
-          "overrideAt": "2026-08-26T11:43:11.674Z"
+          "overrideAt": "2026-08-26T11:43:11.674Z",
+          "openedAt": "2026-08-26T11:43:25.593Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
@@ -2196,19 +2222,23 @@
         "pendingOrder": {
           "symbol": "AHGAZ",
           "quantity": 440,
-          "entryPrice": 37,
+          "entryPrice": 36,
           "orderType": "LIMIT",
           "stop": 30.91,
           "target1": 40.08,
           "target2": 42.4,
           "target3": 45.36,
-          "positionValue": 16280,
-          "actualRisk": 2679.6,
+          "positionValue": 15840,
+          "actualRisk": 2239.6,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:43:11.674Z",
-          "updatedAt": "2026-08-26T11:43:22.474Z",
-          "editedAt": "2026-08-26T11:43:22.474Z"
+          "updatedAt": "2026-08-26T11:43:25.593Z",
+          "editedAt": "2026-08-26T11:43:22.474Z",
+          "commission": 15.84,
+          "totalCost": 15855.84,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T11:43:25.593Z"
         }
       },
       {
@@ -14029,6 +14059,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:43:25.593Z",
+        "type": "PAPER_APPROVED",
+        "message": "AHGAZ paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T11:43:25.593Z",
+        "type": "PAPER_OPEN",
+        "message": "AHGAZ scanner paper pozisyonu açıldı: 440 lot · ₺15840.00 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-26T11:43:22.474Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺37,00 · LIMIT."
@@ -14517,16 +14557,6 @@
         "timestamp": "2026-08-26T09:53:36.358Z",
         "type": "PAPER_APPROVED",
         "message": "ASELS paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-26T09:53:36.358Z",
-        "type": "PAPER_OPEN",
-        "message": "ASELS mevcut paper pozisyonuna eklendi: 20 lot · ortalama giriş ₺402,25."
-      },
-      {
-        "timestamp": "2026-08-26T09:53:33.471Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "ASELS bekleyen paper emri düzenlendi: 20 lot · ₺403,00 · LIMIT."
       }
     ],
     "scannerSnapshot": {
