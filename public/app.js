@@ -2107,7 +2107,7 @@ async function loadChartData(
   ) {
 
     showEmptyChart(
-      "LOADING CHART",
+      "GRAFİK YÜKLENİYOR",
       `${range.toUpperCase()} / ${interval.toUpperCase()}`
     );
 
@@ -2267,7 +2267,7 @@ async function loadChartData(
     }
 
     showEmptyChart(
-      "CHART DATA ERROR",
+      "GRAFİK VERİ HATASI",
       error.message
     );
 
@@ -2311,7 +2311,7 @@ function updateChartData(
   ) {
 
     showEmptyChart(
-      "NO CHART DATA",
+      "GRAFİK VERİSİ YOK",
       "Chart provider history döndürmedi."
     );
 
@@ -2530,7 +2530,7 @@ function updateChartData(
   ) {
 
     showEmptyChart(
-      "CHART DATA ERROR",
+      "GRAFİK VERİ HATASI",
       "OHLC verisi okunamadı."
     );
 
@@ -2552,7 +2552,7 @@ function updateChartData(
     );
 
     showEmptyChart(
-      "CHART ERROR",
+      "GRAFİK HATASI",
       error.message
     );
 
@@ -3943,7 +3943,7 @@ function showDashboardError(
 ) {
 
   showEmptyChart(
-    "MARKET DATA ERROR",
+    "PİYASA VERİ HATASI",
     message
   );
 
@@ -3985,7 +3985,7 @@ function clearDashboard() {
   if (chartSymbol) {
 
     chartSymbol.innerText =
-      "NO SYMBOL";
+      "SEMBOL YOK";
 
   }
 
@@ -4010,7 +4010,7 @@ function clearDashboard() {
   );
 
   showEmptyChart(
-    "NO MARKET DATA",
+    "PİYASA VERİSİ YOK",
     "Select a symbol to display the chart."
   );
 
@@ -5775,7 +5775,34 @@ let paperMonitorRefreshInFlight = false;
 function renderScannerProgress(progress, message, status = "RUNNING") {
   if (!scannerResults) return;
   const percent=Math.max(0,Math.min(100,Number(progress)||0));
-  scannerResults.innerHTML=`<div class="trading-empty scanner-progress"><strong>${status === "ERROR" ? "SCANNER ERROR" : status === "COMPLETE" ? "SCANNER COMPLETE" : "SCANNER WORKING"}</strong><br><small>${escapeHtml(String(message||"Hazırlanıyor"))}</small><div style="height:8px;border:1px solid #2f6;background:#071008;margin:12px auto;max-width:480px"><div style="height:100%;width:${percent}%;background:#34ff75;transition:width .3s ease"></div></div><small>${percent}%</small></div>`;
+  scannerResults.innerHTML=`<div class="trading-empty scanner-progress"><strong>${status === "ERROR" ? "TARAMA HATASI" : status === "COMPLETE" ? "TARAMA TAMAMLANDI" : "TARAMA ÇALIŞIYOR"}</strong><br><small>${escapeHtml(String(message||"Hazırlanıyor"))}</small><div style="height:8px;border:1px solid #2f6;background:#071008;margin:12px auto;max-width:480px"><div style="height:100%;width:${percent}%;background:#34ff75;transition:width .3s ease"></div></div><small>${percent}%</small></div>`;
+}
+
+function translateTradingStatus(value) {
+  const labels = {
+    "BUY SETUP": "AL ADAYI",
+    WATCH: "İZLE",
+    NO_TRADE: "İŞLEM YOK",
+    PENDING: "BEKLİYOR",
+    PENDING_APPROVAL: "ONAY BEKLİYOR",
+    PENDING_LIMIT: "LİMİT BEKLİYOR",
+    OPEN: "AÇIK",
+    CLOSED: "KAPALI",
+    STOPPED: "STOPLANDI",
+    REJECTED: "REDDEDİLDİ",
+    EXPIRED: "SÜRESİ DOLDU",
+    ACTIVE: "AKTİF",
+    FIBONACCI_A_B_C_DAILY: "FIBONACCI A-B-C (GÜNLÜK)",
+    ENTRY_TOO_FAR: "GİRİŞ İÇİN UZAK",
+    NO_VALID_STRUCTURE: "GEÇERLİ YAPI YOK",
+    WAITING_CONFIRMATION: "TEYİT BEKLİYOR",
+    INVALID: "GEÇERSİZ",
+    MARKET: "PİYASA",
+    LIMIT: "LİMİT",
+    MANUAL: "MANUEL",
+    "AI PLAN": "YZ PLANI",
+  };
+  return labels[String(value || "").toUpperCase()] || String(value || "--");
 }
 
 function stopScannerProgress() {
@@ -6069,12 +6096,12 @@ function renderDecisionScoreBreakdown(item) {
   if (!content || !symbol) return;
 
   if (!item) {
-    symbol.textContent = "NO DECISION";
+    symbol.textContent = "KARAR YOK";
     content.innerHTML = "Bir AI kararına tıklayarak puanın nedenlerini burada gör.";
     return;
   }
 
-  symbol.textContent = item.symbol || "NO SYMBOL";
+  symbol.textContent = item.symbol || "SEMBOL YOK";
 
   const breakdown = item.scoreBreakdown;
   const validBreakdown =
@@ -6156,14 +6183,14 @@ function renderAiDecisionDetail(item) {
   const tp2=fib.tp2??item.target2;
   const tp3=fib.tp3??item.target3;
   const chartStatus=fibAvailable
-    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ve sağa uzanan seviyeleri ile tetik, giriş, SL, hedefler ve varsa alçalan tepe trendi DECISION CHART üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key resistance">DİRENÇ TRENDİ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
+    ?`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>A/B/C işaretleri ve sağa uzanan seviyeleri ile tetik, giriş, SL, hedefler ve varsa alçalan tepe trendi KARAR GRAFİĞİ üzerinde çizildi.</span><span class="decision-chart-key trigger">TETİK</span><span class="decision-chart-key entry">GİRİŞ</span><span class="decision-chart-key resistance">DİRENÇ TRENDİ</span><span class="decision-chart-key stop">SL</span><span class="decision-chart-key target">TP1–3</span></div>`
     :`<div class="decision-chart-status"><strong>GRAFİK KATMANI</strong><span>Geçerli A/B/C noktası olmadığı için grafiğe Fibonacci çizgisi eklenmedi.</span></div>`;
   const pendingOrderButton=item.status==="PENDING_APPROVAL"
-    ?`<button type="button" class="trading-button" data-paper-order-focus="${escapeHtml(item.id)}">OPEN PENDING PAPER ORDER</button>`
+    ?`<button type="button" class="trading-button" data-paper-order-focus="${escapeHtml(item.id)}">BEKLEYEN KÂĞIT EMRİNİ AÇ</button>`
     :(!position && !isManualPaperOrder(null,item)
-      ?`<button type="button" class="trading-button" data-paper-action="queue" data-decision-id="${escapeHtml(item.id)}">OPEN PENDING ORDER</button>`
+      ?`<button type="button" class="trading-button" data-paper-action="queue" data-decision-id="${escapeHtml(item.id)}">BEKLEYEN EMİR OLUŞTUR</button>`
       :"");
-  element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||item.action||"KARAR")} · ${escapeHtml(fib.status||"FIBONACCI YOK")}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · AI</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">CLOSE PAPER POSITION</button>`:pendingOrderButton}`;
+  element.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade||translateTradingStatus(item.action)||"KARAR")} · ${escapeHtml(translateTradingStatus(fib.status||"FIBONACCI YOK"))}</strong><div class="decision-detail-grid"><span>Giriş: ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</span><span>A: ${formatCurrency(fib.pointA?.price)} · ${chartDateKey(fib.pointA?.date)||"--"}</span><span>B: ${formatCurrency(fib.pointB?.price)} · ${chartDateKey(fib.pointB?.date)||"--"}</span><span>C: ${formatCurrency(fib.pointC?.price)} · ${chartDateKey(fib.pointC?.date)||"--"}</span><span>Tetik: ${formatCurrency(fib.entryTriggerPrice)}</span><span>Stop: ${formatCurrency(stop)}</span><span>TP1: ${formatCurrency(tp1)} · R/R ${fib.riskRewardTp1??item.riskReward?.tp1??"--"}</span><span>TP2: ${formatCurrency(tp2)} · R/R ${fib.riskRewardTp2??item.riskReward?.tp2??"--"}</span><span>TP3: ${formatCurrency(tp3)} · R/R ${fib.riskRewardTp3??item.riskReward?.tp3??"--"}</span><span>Günlük teyit: ${fib.confirmationPassed?"GEÇTİ":"BEKLİYOR"} · ${escapeHtml(fib.confirmationCandleTime||fib.invalidReason||"VERİ YOK")}</span></div>${chartStatus}${item.aiReview?.newsComment?`<div class="ai-review-comment"><strong>HABER YORUMU</strong><br>${escapeHtml(item.aiReview.newsComment)}</div>`:""}${item.aiReview?.expertComment?`<div class="ai-review-comment"><strong>UZMAN YORUMU · YZ</strong><br>${escapeHtml(item.aiReview.expertComment)}</div>`:""}${item.aiReview?.summary?`<div class="ai-review-comment"><strong>ÖZET</strong><br>${escapeHtml(item.aiReview.summary)}</div>`:""}<small>${escapeHtml(item.reason||"")}</small><br>${position?`<button type="button" class="trading-button" data-paper-action="close" data-position-id="${escapeHtml(position.id)}">KÂĞIT POZİSYONU KAPAT</button>`:pendingOrderButton}`;
 }
 
 
@@ -6186,7 +6213,7 @@ function renderAiDecisions(decisions) {
     renderManualPendingOrders(pendingState);
     return;
   }
-  aiDecisionFeed.innerHTML=records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span>${item.status==="PENDING_APPROVAL"?"ONAY BEKLİYOR":item.status}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
+  aiDecisionFeed.innerHTML=records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||translateTradingStatus(item.action)}</span><span>${translateTradingStatus(item.status)}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
   renderPendingPaperOrders(pendingState);
   renderManualPendingOrders(pendingState);
 }
@@ -6210,9 +6237,9 @@ function renderPaperMonitorStatus(monitor = paperMonitorUiState, prices = {}) {
     } else if (monitor.lastError) {
       status.textContent = "GEÇİCİ VERİ HATASI";
     } else if (monitor.nextCheckAt) {
-      status.textContent = `LIVE · ${formatMonitorCountdown(monitor.nextCheckAt)}`;
+      status.textContent = `CANLI · ${formatMonitorCountdown(monitor.nextCheckAt)}`;
     } else {
-      status.textContent = "LIVE · İLK KONTROL HAZIR";
+      status.textContent = "CANLI · İLK KONTROL HAZIR";
     }
   }
 
@@ -6523,7 +6550,7 @@ function renderPendingPaperOrders(
   const orders = pendingPaperOrdersFromState(source, options.sourceFilter || "AI PLAN");
 
   if (status) {
-    status.textContent = `${orders.length} ${orders.length === 1 ? "ORDER" : "ORDERS"}`;
+    status.textContent = `${orders.length} ${orders.length === 1 ? "EMİR" : "EMİR"}`;
   }
 
   if (!container) return;
@@ -6559,8 +6586,8 @@ function renderPendingPaperOrders(
         data-symbol="${escapeHtml(order.symbol)}"
       >
         <div class="pending-paper-order-head">
-          <strong>${escapeHtml(order.symbol)} · ${manual ? "MANUAL" : "AI PLAN"}</strong>
-          <span class="pending-paper-order-badge">${escapeHtml(order.status || "PENDING APPROVAL")}</span>
+          <strong>${escapeHtml(order.symbol)} · ${manual ? "MANUEL" : "YZ PLANI"}</strong>
+          <span class="pending-paper-order-badge">${escapeHtml(translateTradingStatus(order.status || "PENDING APPROVAL"))}</span>
           <small>${escapeHtml(created)}</small>
         </div>
         <div class="paper-order-live-price" data-order-market-price data-symbol="${escapeHtml(order.symbol)}">
@@ -6570,32 +6597,32 @@ function renderPendingPaperOrders(
           <label>LOT
             <input name="quantity" type="number" min="1" step="1" inputmode="numeric" value="${paperOrderInputValue(order.quantity, 0)}" required>
           </label>
-          <label data-order-price-label>ENTRY PRICE (₺)
+          <label data-order-price-label>GİRİŞ FİYATI (₺)
             <input data-order-price-field name="entryPrice" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.entryPrice)}"${order.orderType === "MARKET" ? " disabled" : " required"}>
           </label>
-          <label>ORDER TYPE
+          <label>EMİR TÜRÜ
             <select name="orderType">
-              <option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>MARKET</option>
-              <option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LIMIT</option>
+              <option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>PİYASA</option>
+              <option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LİMİT</option>
             </select>
           </label>
-          <label>STOP (OPTIONAL)
+          <label>STOP (İSTEĞE BAĞLI)
             <input name="stop" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.stop)}">
           </label>
-          <label>TP1 (OPTIONAL)
+          <label>TP1 (İSTEĞE BAĞLI)
             <input name="target1" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.target1)}">
           </label>
-          <label>TP2 (OPTIONAL)
+          <label>TP2 (İSTEĞE BAĞLI)
             <input name="target2" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.target2)}">
           </label>
-          <label>TP3 (OPTIONAL)
+          <label>TP3 (İSTEĞE BAĞLI)
             <input name="target3" type="number" min="0.01" step="0.01" inputmode="decimal" value="${paperOrderInputValue(order.target3)}">
           </label>
           <div class="paper-order-form-actions">
-            <button type="submit" class="trading-button">SAVE SETTINGS</button>
-            <button type="button" class="trading-button" data-paper-order-action="approve">${order.status === "PENDING_LIMIT" ? "CHECK LIMIT ORDER" : "APPROVE PAPER ORDER"}</button>
-            <button type="button" class="trading-button danger" data-paper-order-action="reject">REJECT</button>
-            <small>PAPER ONLY · Fiyat, lot ve emir türü onaydan önce düzenlenebilir.</small>
+            <button type="submit" class="trading-button">AYARLARI KAYDET</button>
+            <button type="button" class="trading-button" data-paper-order-action="approve">${order.status === "PENDING_LIMIT" ? "LİMİT EMRİNİ KONTROL ET" : "KÂĞIT EMRİNİ ONAYLA"}</button>
+            <button type="button" class="trading-button danger" data-paper-order-action="reject">REDDET</button>
+            <small>YALNIZCA KÂĞIT · Fiyat, lot ve emir türü onaydan önce düzenlenebilir.</small>
             <small>KOMİSYON ‰1: ${formatCurrency(commission)} · TAVAN/TABAN: ${formatCurrency(lower)} / ${formatCurrency(upper)}</small>
           </div>
         </form>
@@ -6685,11 +6712,11 @@ function syncOrderPriceField(form) {
   price.required = !market;
   if (market) {
     price.value = "";
-    price.placeholder = "MARKET EXECUTION PRICE";
-    if (label) label.firstChild.textContent = "MARKET PRICE (SERVER) ";
+    price.placeholder = "PİYASA GERÇEKLEŞME FİYATI";
+    if (label) label.firstChild.textContent = "PİYASA FİYATI (SUNUCU) ";
   } else {
     price.placeholder = "0.00";
-    if (label) label.firstChild.textContent = "ENTRY PRICE (₺) ";
+    if (label) label.firstChild.textContent = "GİRİŞ FİYATI (₺) ";
   }
 }
 
@@ -7167,15 +7194,15 @@ async function openCloseOrderDialog(positionId) {
   dialog.id = "paperCloseDialog";
   dialog.className = "paper-order-dialog-backdrop";
   dialog.innerHTML = `<section class="paper-order-dialog" role="dialog" aria-modal="true" aria-label="Pozisyon kapatma emri">
-    <header><strong>${escapeHtml(position.symbol)} · SELL ORDER</strong><button type="button" class="trading-button danger" data-close-dialog>×</button></header>
-    <p>Varsayılan değerler açık pozisyondan gelir. MARKET, sunucunun doğruladığı son fiyatla; LIMIT ise fiyat limitine ulaştığında gerçekleşir.</p>
+    <header><strong>${escapeHtml(position.symbol)} · SATIŞ EMRİ</strong><button type="button" class="trading-button danger" data-close-dialog>×</button></header>
+    <p>Varsayılan değerler açık pozisyondan gelir. PİYASA, sunucunun doğruladığı son fiyatla; LİMİT ise fiyat limitine ulaştığında gerçekleşir.</p>
     <form class="paper-order-form" data-close-order-form>
-      <label>OPEN LOT<input name="openQuantity" value="${Number(position.quantity)}" disabled></label>
-      <label>SELL LOT<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" step="1" value="${Number(position.quantity)}" required></label>
-      <label>CURRENT PRICE<input name="currentPrice" value="${paperOrderInputValue(position.current || position.entry)}" disabled></label>
-      <label>ORDER TYPE<select name="orderType"><option value="MARKET">MARKET</option><option value="LIMIT">LIMIT</option></select></label>
-      <label data-close-limit-label>LIMIT PRICE (₺)<input name="limitPrice" type="number" min="0.01" step="0.01" value="${paperOrderInputValue(position.current || position.entry)}" disabled></label>
-      <div class="paper-order-form-actions"><button type="submit" class="trading-button danger">SELL PAPER POSITION</button><button type="button" class="trading-button" data-close-dialog>CANCEL</button></div>
+      <label>AÇIK LOT<input name="openQuantity" value="${Number(position.quantity)}" disabled></label>
+      <label>SATILACAK LOT<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" step="1" value="${Number(position.quantity)}" required></label>
+      <label>GÜNCEL FİYAT<input name="currentPrice" value="${paperOrderInputValue(position.current || position.entry)}" disabled></label>
+      <label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label>
+      <label data-close-limit-label>LİMİT FİYATI (₺)<input name="limitPrice" type="number" min="0.01" step="0.01" value="${paperOrderInputValue(position.current || position.entry)}" disabled></label>
+      <div class="paper-order-form-actions"><button type="submit" class="trading-button danger">KÂĞIT POZİSYONU SAT</button><button type="button" class="trading-button" data-close-dialog>İPTAL</button></div>
     </form>
   </section>`;
   const sync = () => {
@@ -7233,7 +7260,7 @@ function renderOpenPositions(
 
   if (status) {
     status.textContent =
-      `${open.length} POSITIONS`;
+      `${open.length} POZİSYON`;
   }
 
   if (!element) return;
@@ -7258,7 +7285,7 @@ function renderOpenPositions(
           <td>${formatCurrency(item.target1)}</td>
           <td>${formatCurrency(item.target2)}</td>
           <td>${formatCurrency(item.pnl)}</td>
-          <td>${item.tp1Hit ? "TP1 ✓ · OPEN" : "OPEN"}</td>
+          <td>${item.tp1Hit ? "TP1 ✓ · AÇIK" : "AÇIK"}</td>
           <td>
             <button
               type="button"
@@ -7511,7 +7538,7 @@ function renderSignalHistory(
 
   if (status) {
     status.textContent =
-      `${records.length} RECORDS`;
+      `${records.length} KAYIT`;
   }
 
   if (!element) return;
@@ -7644,7 +7671,7 @@ function performanceRangeBounds() {
       end: customEnd
         ? new Date(`${customEnd}T23:59:59.999`)
         : null,
-      label: "CUSTOM RANGE",
+      label: "ÖZEL TARİH ARALIĞI",
     };
   }
 
@@ -7659,7 +7686,7 @@ function performanceRangeBounds() {
     return {
       start: null,
       end: null,
-      label: "ALL TIME",
+      label: "TÜM ZAMANLAR",
     };
   }
 
@@ -8246,7 +8273,7 @@ function renderRiskSettings(
       `%${risk.maxPositionPercent.toFixed(2)}`,
     cashReserve:
       `%${reservePercent.toFixed(2)}`,
-    stopRule: "AI DECISION",
+    stopRule: "YZ KARARI",
   };
 
   Object.entries(display).forEach(
@@ -8289,7 +8316,7 @@ function renderRiskAllocationGauge(settings) {
   const risk = normalizeRiskSettings(settings);
   const allocation = risk.maxPositionPercent * risk.maxPositions;
   const overAllocated = allocation > 100;
-  gauge.textContent = `${allocation.toFixed(0)}% ALLOCATION`;
+  gauge.textContent = `${allocation.toFixed(0)}% TAHSİS`;
   gauge.classList.toggle("is-over", overAllocated);
   gauge.classList.toggle("is-safe", !overAllocated);
   gauge.title = `${risk.maxPositionPercent}% × ${risk.maxPositions} işlem = toplam ${allocation.toFixed(2)}%`;
@@ -8417,13 +8444,13 @@ async function runTradingScanner() {
 
   if (scannerStatus) {
     scannerStatus.textContent =
-      "SCANNING";
+      "TARANIYOR";
   }
 
 
   if (tradingEngineStatus) {
     tradingEngineStatus.textContent =
-      "SCANNING";
+      "TARANIYOR";
   }
 
 
@@ -8577,13 +8604,13 @@ async function runTradingScanner() {
 
     if (scannerStatus) {
       scannerStatus.textContent =
-        "COMPLETE";
+        "TAMAMLANDI";
     }
 
 
     if (tradingEngineStatus) {
       tradingEngineStatus.textContent =
-        "READY";
+        "HAZIR";
     }
 
 
@@ -8623,13 +8650,13 @@ async function runTradingScanner() {
 
     if (scannerStatus) {
       scannerStatus.textContent =
-        "ERROR";
+        "HATA";
     }
 
 
     if (tradingEngineStatus) {
       tradingEngineStatus.textContent =
-        "ERROR";
+        "HATA";
     }
 
 
@@ -8662,7 +8689,7 @@ async function runTradingScanner() {
         false;
 
       scannerStartButton.textContent =
-        "START SCANNER";
+        "TARAMAYI BAŞLAT";
 
     }
 
@@ -8689,17 +8716,17 @@ function stopTradingScanner() {
 
   if (scannerStatus) {
     scannerStatus.textContent =
-      "IDLE";
+      "HAZIR";
   }
 
   if (tradingEngineStatus) {
     tradingEngineStatus.textContent =
-      "READY";
+      "HAZIR";
   }
 
   if (scannerStartButton) {
     scannerStartButton.disabled = false;
-    scannerStartButton.textContent = "START SCANNER";
+    scannerStartButton.textContent = "TARAMAYI BAŞLAT";
   }
 
   if (scannerResults) {
@@ -8744,8 +8771,8 @@ function renderKillSwitch(
   if (button) {
     button.textContent =
       active
-        ? "DEACTIVATE KILL SWITCH"
-        : "ACTIVATE KILL SWITCH";
+        ? "ACİL DURDURMAYI KAPAT"
+        : "ACİL DURDURMAYI ETKİNLEŞTİR";
 
     button.classList.toggle(
       "is-active",

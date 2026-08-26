@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>BORSACI // AI TRADING TERMINAL</title>
+  <title>BORSACI // YAPAY ZEKA İŞLEM TERMİNALİ</title>
 
   <link
     rel="icon"
@@ -40,12 +40,11 @@
         src="/favicon.ico?v=2"
         alt=""
       >
-      <div>
-        BORSACI <span>SECURE ACCESS</span>
-      </div>
+      <div class="turkic-auth-title">𐰉𐰆𐰺𐰽𐰀𐰲𐰃</div>
     </div>
-    <p>AI TRADING TERMINAL</p>
-    <label for="loginPassword">PASSWORD</label>
+    <div class="turkic-crescent" aria-hidden="true">☪</div>
+    <p>GÜVENLİ İŞLEM TERMİNALİ</p>
+    <label for="loginPassword">ŞİFRE</label>
     <input
       id="loginPassword"
       type="password"
@@ -72,13 +71,13 @@
         src="/favicon.ico?v=2"
         alt=""
       >
-      <span class="brand-name">BORSACI</span>
+      <span class="brand-name">𐰉𐰆𐰺𐰽𐰀𐰲𐰃</span>
       <span class="brand-version">v1.0.0</span>
     </div>
 
     <div class="system-status">
       <span class="status-dot"></span>
-      SYSTEM READY
+      SİSTEM HAZIR
     </div>
 
     <button
@@ -98,6 +97,11 @@
     </div>
 
   </header>
+
+  <div class="turkic-main-banner" aria-label="BorsaCI">
+    <div>𐰉𐰆𐰺𐰽𐰀𐰲𐰃</div>
+    <span aria-hidden="true">☪</span>
+  </div>
 
 
   <!-- ==================================================
@@ -166,7 +170,7 @@
       <div class="panel-title">
 
         <span>
-          WATCHLIST
+          İZLEME LİSTESİ
         </span>
 
         <button
@@ -174,7 +178,7 @@
           class="mini-button"
           id="addSymbolBtn"
         >
-          + ADD
+          + EKLE
         </button>
 
       </div>
@@ -191,11 +195,11 @@
           </div>
 
           <span>
-            NO SYMBOLS LOADED
+            HİSSE YÜKLENMEDİ
           </span>
 
           <small>
-            Add a symbol to begin.
+            Başlamak için hisse ekleyin.
           </small>
 
         </div>
@@ -213,11 +217,11 @@
       <div class="panel-title">
 
         <span>
-          NEWS FEED
+          HABER AKIŞI
         </span>
 
         <span class="panel-status">
-          LIVE
+          CANLI
         </span>
 
       </div>
@@ -720,11 +724,11 @@ Waiting for input...
       <div class="trading-stat">
 
         <span class="trading-stat-label">
-          ENGINE
+          MOTOR
         </span>
 
         <strong class="status-online">
-          ● PAPER
+          ● KÂĞIT
         </strong>
 
       </div>
@@ -733,7 +737,7 @@ Waiting for input...
       <div class="trading-stat">
 
         <span class="trading-stat-label">
-          MARKET
+          PİYASA
         </span>
 
         <strong id="tradingMarketStatus">
@@ -746,7 +750,7 @@ Waiting for input...
       <div class="trading-stat">
 
         <span class="trading-stat-label">
-          ENGINE STATUS
+          MOTOR DURUMU
         </span>
 
         <strong id="tradingEngineStatus">
@@ -759,7 +763,7 @@ Waiting for input...
       <div class="trading-stat">
 
         <span class="trading-stat-label">
-          LAST SCAN
+          SON TARAMA
         </span>
 
         <strong id="lastScanTime">
@@ -771,7 +775,7 @@ Waiting for input...
       <div class="trading-stat">
 
         <span class="trading-stat-label">
-          ORDER MONITOR
+          EMİR İZLEYİCİ
         </span>
 
         <strong id="paperMonitorStatus">
@@ -793,14 +797,14 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          MARKET SCANNER
+          PİYASA TARAMASI
         </span>
 
         <span
           class="panel-status"
           id="scannerStatus"
         >
-          IDLE
+          HAZIR
         </span>
 
       </div>
@@ -813,7 +817,7 @@ Waiting for input...
           id="startScannerBtn"
           class="trading-button"
         >
-          START SCANNER
+          TARAMAYI BAŞLAT
         </button>
 
 
@@ -822,7 +826,7 @@ Waiting for input...
           id="stopScannerBtn"
           class="trading-button danger"
         >
-          STOP
+          DURDUR
         </button>
 
       </div>
@@ -851,11 +855,11 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          AI DECISIONS
+          YAPAY ZEKA KARARLARI
         </span>
 
         <span class="panel-status">
-          LIVE
+          CANLI
         </span>
 
       </div>
@@ -998,14 +1002,14 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          TECHNICAL SCORE BREAKDOWN
+          TEKNİK PUAN DAĞILIMI
         </span>
 
         <span
           class="panel-status"
           id="decisionScoreSymbol"
         >
-          NO DECISION
+          KARAR YOK
         </span>
 
       </div>
@@ -1029,8 +1033,8 @@ Waiting for input...
       <section class="panel trading-panel">
 
         <div class="panel-title">
-          <span>SIGNAL HISTORY</span>
-          <span class="panel-status" id="signalHistoryStatus">0 RECORDS</span>
+          <span>SİNYAL GEÇMİŞİ</span>
+          <span class="panel-status" id="signalHistoryStatus">0 KAYIT</span>
         </div>
 
         <div
@@ -1051,57 +1055,57 @@ Waiting for input...
       <section class="panel trading-panel">
 
         <div class="panel-title">
-          <span>PERFORMANCE</span>
-          <span class="panel-status">PAPER</span>
+          <span>PERFORMANS</span>
+          <span class="panel-status">KÂĞIT</span>
         </div>
 
         <div class="risk-grid">
 
           <div>
-            <span>TOTAL SIGNALS</span>
+            <span>TOPLAM SİNYAL</span>
             <strong id="performanceTotalSignals">0</strong>
           </div>
 
           <div>
-            <span>ACTIVE SETUPS</span>
+            <span>AKTİF KURULUM</span>
             <strong id="performanceActiveSignals">0</strong>
           </div>
 
           <div>
-            <span>AVERAGE CONFIDENCE</span>
+            <span>ORTALAMA GÜVEN</span>
             <strong id="performanceAvgConfidence">--</strong>
           </div>
 
           <div>
-            <span>RESOLVED OUTCOMES</span>
+            <span>SONUÇLANAN İŞLEM</span>
             <strong id="performanceResolved">0</strong>
           </div>
 
           <div>
-            <span>WIN RATE</span>
+            <span>BAŞARI ORANI</span>
             <strong id="performanceWinRate">--</strong>
           </div>
 
           <div>
-            <span>REALIZED P&L</span>
+            <span>GERÇEKLEŞEN K/Z</span>
             <strong id="performanceRealizedPnL">₺0.00</strong>
           </div>
 
         </div>
 
         <div class="performance-filter">
-          <label>PERIOD
+          <label>DÖNEM
             <select id="performanceRange">
-              <option value="ALL">All time</option>
-              <option value="1M">Last 1 month</option>
-              <option value="3M">Last 3 months</option>
-              <option value="6M">Last 6 months</option>
-              <option value="CUSTOM">Custom range</option>
+              <option value="ALL">Tüm zamanlar</option>
+              <option value="1M">Son 1 ay</option>
+              <option value="3M">Son 3 ay</option>
+              <option value="6M">Son 6 ay</option>
+              <option value="CUSTOM">Özel tarih aralığı</option>
             </select>
           </label>
-          <label>START DATE<input id="performanceStartDate" type="date"></label>
-          <label>END DATE<input id="performanceEndDate" type="date"></label>
-          <span id="performanceRangeLabel" class="panel-status">ALL TIME</span>
+          <label>BAŞLANGIÇ TARİHİ<input id="performanceStartDate" type="date"></label>
+          <label>BİTİŞ TARİHİ<input id="performanceEndDate" type="date"></label>
+          <span id="performanceRangeLabel" class="panel-status">TÜM ZAMANLAR</span>
         </div>
 
         <p
@@ -1146,7 +1150,7 @@ Waiting for input...
           <div>
 
             <span>
-              INITIAL CAPITAL
+              BAŞLANGIÇ SERMAYESİ
             </span>
 
             <strong id="paperInitialCapital">
@@ -1159,7 +1163,7 @@ Waiting for input...
           <div>
 
             <span>
-              CASH
+              NAKİT
             </span>
 
             <strong id="paperCash">
@@ -1172,7 +1176,7 @@ Waiting for input...
           <div>
 
             <span>
-              EQUITY
+              PORTFÖY DEĞERİ
             </span>
 
             <strong id="paperEquity">
@@ -1211,7 +1215,7 @@ Waiting for input...
           <div>
 
             <span>
-              CLOSED POSITIONS
+              KAPATILAN İŞLEM
             </span>
 
             <strong id="paperPositionCount">
@@ -1233,30 +1237,30 @@ Waiting for input...
       <section class="panel trading-panel">
 
         <div class="panel-title">
-          <span>RISK ENGINE</span>
-          <span class="panel-status">EDITABLE</span>
+          <span>RİSK MOTORU</span>
+          <span class="panel-status">DÜZENLENEBİLİR</span>
         </div>
 
         <div class="risk-grid">
-          <div><span>MAX POSITIONS</span><strong id="maxPositions">3</strong></div>
-          <div><span>TARGET POSITION</span><strong id="targetPositionSize">31.00%</strong></div>
-          <div><span>CASH RESERVE</span><strong id="cashReserve">7.00%</strong></div>
-          <div><span>STOP RULE</span><strong id="stopRule">AI DECISION</strong></div>
+          <div><span>AZAMİ İŞLEM SAYISI</span><strong id="maxPositions">3</strong></div>
+          <div><span>HEDEF POZİSYON</span><strong id="targetPositionSize">31.00%</strong></div>
+          <div><span>NAKİT REZERVİ</span><strong id="cashReserve">7.00%</strong></div>
+          <div><span>STOP KURALI</span><strong id="stopRule">YZ KARARI</strong></div>
         </div>
 
         <form id="riskSettingsForm" class="risk-settings">
-          <label>CAPITAL SOURCE
+          <label>SERMAYE KAYNAĞI
             <select id="capitalSourceInput">
-              <option value="MANUAL">Manual</option>
-              <option value="BROKER" disabled>Broker balance (yakında)</option>
+              <option value="MANUAL">Manuel</option>
+              <option value="BROKER" disabled>Aracı kurum bakiyesi (yakında)</option>
             </select>
           </label>
-          <label>CAPITAL (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
-          <label>TARGET POSITION (%)<input id="maxPositionInput" type="number" min="1" step="1" value="31"></label>
-          <label>MAX POSITIONS<input id="maxPositionsInput" type="number" min="1" step="1" value="3"></label>
+          <label>SERMAYE (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
+          <label>HEDEF POZİSYON (%)<input id="maxPositionInput" type="number" min="1" step="1" value="31"></label>
+          <label>AZAMİ İŞLEM SAYISI<input id="maxPositionsInput" type="number" min="1" step="1" value="3"></label>
           <div class="risk-settings-actions">
-            <button type="submit" class="trading-button">APPLY RISK SETTINGS</button>
-            <output id="riskAllocationGauge" class="risk-allocation-gauge" aria-live="polite">93% ALLOCATION</output>
+            <button type="submit" class="trading-button">RİSK AYARLARINI UYGULA</button>
+            <output id="riskAllocationGauge" class="risk-allocation-gauge" aria-live="polite">93% TAHSİS</output>
           </div>
         </form>
 
@@ -1275,14 +1279,14 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          PENDING ORDERS
+          BEKLEYEN EMİRLER
         </span>
 
         <span
           class="panel-status"
           id="pendingPaperOrderStatus"
         >
-          0 ORDERS
+          0 EMİR
         </span>
 
       </div>
@@ -1300,7 +1304,7 @@ Waiting for input...
       <div class="manual-paper-order-wrap">
 
         <div class="manual-paper-order-intro">
-          <strong>MANUAL ORDER</strong>
+          <strong>MANUEL EMİR</strong>
           <small>Kriterlerden bağımsız olarak manuel emir planı oluşturur; onaydan önce düzenlenebilir.</small>
         </div>
 
@@ -1310,7 +1314,7 @@ Waiting for input...
           novalidate
         >
           <label>
-            SYMBOL
+            SEMBOL
             <input
               name="symbol"
               type="text"
@@ -1336,7 +1340,7 @@ Waiting for input...
           </label>
 
           <label>
-            ENTRY PRICE (₺)
+            GİRİŞ FİYATI (₺)
             <input
               data-order-price-field
               name="entryPrice"
@@ -1349,15 +1353,15 @@ Waiting for input...
           </label>
 
           <label>
-            ORDER TYPE
+            EMİR TÜRÜ
             <select name="orderType">
-              <option value="MARKET">MARKET</option>
-              <option value="LIMIT">LIMIT</option>
+              <option value="MARKET">PİYASA</option>
+              <option value="LIMIT">LİMİT</option>
             </select>
           </label>
 
           <label>
-            STOP (OPTIONAL)
+            STOP (İSTEĞE BAĞLI)
             <input
               name="stop"
               type="number"
@@ -1406,7 +1410,7 @@ Waiting for input...
 
           <div class="paper-order-form-actions">
             <button type="submit" class="trading-button">
-              CREATE MANUAL ORDER
+              MANUEL EMİR OLUŞTUR
             </button>
             <small>Manuel emir onaydan önce düzenlenebilir. Emir gerçekleştirme şu an paper ortamındadır.</small>
           </div>
@@ -1427,14 +1431,14 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          OPEN POSITIONS
+          AÇIK POZİSYONLAR
         </span>
 
         <span
           class="panel-status"
           id="openPositionStatus"
         >
-          0 POSITIONS
+          0 POZİSYON
         </span>
 
       </div>
@@ -1449,19 +1453,19 @@ Waiting for input...
             <tr>
 
               <th>
-                SYMBOL
+                SEMBOL
               </th>
 
               <th>
-                SIDE
+                YÖN
               </th>
 
               <th>
-                ENTRY
+                GİRİŞ
               </th>
 
               <th>
-                CURRENT
+                GÜNCEL
               </th>
 
               <th>
@@ -1469,7 +1473,7 @@ Waiting for input...
               </th>
 
               <th>
-                POSITION TL
+                POZİSYON TL
               </th>
 
               <th>
@@ -1489,11 +1493,11 @@ Waiting for input...
               </th>
 
               <th>
-                STATUS
+                DURUM
               </th>
 
               <th>
-                ACTION
+                İŞLEM
               </th>
 
             </tr>
@@ -1509,7 +1513,7 @@ Waiting for input...
                 colspan="12"
                 class="table-empty"
               >
-                No open positions
+                Açık pozisyon yok
               </td>
 
             </tr>
@@ -1525,12 +1529,12 @@ Waiting for input...
 
     <section id="manualOrderPanel" class="panel trading-panel manual-order-panel">
       <div class="panel-title">
-        <span>MANUAL ORDER</span>
-        <span id="manualOrderStatus" class="panel-status">0 ORDERS</span>
+        <span>MANUEL EMİR</span>
+        <span id="manualOrderStatus" class="panel-status">0 EMİR</span>
       </div>
       <div id="manualPendingOrders" class="pending-paper-orders manual-pending-orders"></div>
       <details class="manual-order-create-panel">
-        <summary>CREATE NEW MANUAL ORDER</summary>
+        <summary>YENİ MANUEL EMİR OLUŞTUR</summary>
         <div id="manualOrderMount"></div>
       </details>
     </section>
@@ -1545,11 +1549,11 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          TRADING ACTIVITY
+          İŞLEM HAREKETLERİ
         </span>
 
         <span class="panel-status">
-          LOG
+          KAYIT
         </span>
 
       </div>
@@ -1567,7 +1571,7 @@ Waiting for input...
           </span>
 
           <span>
-            Trading engine initialized.
+            İşlem motoru başlatıldı.
           </span>
 
         </div>
@@ -1578,7 +1582,7 @@ Waiting for input...
 
 
     <section class="panel trading-panel trade-journal-panel">
-      <div class="panel-title"><span>TRADE JOURNAL</span><span class="panel-status">DETAILED</span></div>
+      <div class="panel-title"><span>İŞLEM GÜNLÜĞÜ</span><span class="panel-status">DETAYLI</span></div>
       <div id="tradeJournal" class="trade-journal"><div class="trading-empty">İşlem günlüğü bekleniyor.</div></div>
     </section>
 
@@ -1587,12 +1591,12 @@ Waiting for input...
          KILL SWITCH
     ================================================== -->
 
-    <section class="kill-switch-panel" aria-label="Emergency trading stop">
+    <section class="kill-switch-panel" aria-label="Acil işlem durdurma">
       <div class="kill-switch-heading">
         <span class="kill-switch-icon">⚠</span>
         <div>
-          <strong>KILL SWITCH</strong>
-          <small id="killSwitchStatus">SAFE · NEW PAPER TRADES ENABLED</small>
+          <strong>ACİL DURDURMA</strong>
+          <small id="killSwitchStatus">GÜVENLİ · YENİ KÂĞIT İŞLEMLER AÇIK</small>
         </div>
       </div>
 
@@ -1606,8 +1610,8 @@ Waiting for input...
           type="password"
           inputmode="numeric"
           autocomplete="off"
-          placeholder="KILL SWITCH PASSWORD"
-          aria-label="Kill Switch password"
+          placeholder="ACİL DURDURMA ŞİFRESİ"
+          aria-label="Acil durdurma şifresi"
         >
         <button
           type="button"
