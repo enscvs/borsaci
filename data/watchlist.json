@@ -1656,8 +1656,8 @@
         "id": "1787740133712-AHGAZ",
         "rank": 5,
         "symbol": "AHGAZ",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -1973,13 +1973,32 @@
           "summary": "Bu sembol için doğrulanmış haber bulunmamaktadır."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T10:28:53.712Z",
-          "expiresAt": "2026-08-27T10:28:53.712Z"
+          "expiresAt": "2026-08-27T10:28:53.712Z",
+          "overrideAt": "2026-08-26T10:29:02.240Z"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
-        "timestamp": "2026-08-26T10:28:53.712Z"
+        "timestamp": "2026-08-26T10:28:53.712Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "AHGAZ",
+          "quantity": 440,
+          "entryPrice": 35.18,
+          "orderType": "LIMIT",
+          "stop": 30.91,
+          "target1": 40.08,
+          "target2": 42.4,
+          "target3": 45.36,
+          "positionValue": 15479.2,
+          "actualRisk": 1878.8,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-26T10:29:02.240Z",
+          "updatedAt": "2026-08-26T10:29:02.240Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787554934863-DOHOL",
@@ -12130,6 +12149,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:29:02.240Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T10:28:54.275Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -12623,11 +12647,6 @@
         "timestamp": "2026-08-22T23:57:15.582Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-22T23:42:15.261Z",
-        "type": "SCAN",
-        "message": "5 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
