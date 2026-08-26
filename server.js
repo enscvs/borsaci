@@ -68,7 +68,8 @@ const TELEGRAM_WEBHOOK_SECRET =
 
 const PUBLIC_BASE_URL =
   process.env.PUBLIC_BASE_URL ||
-  process.env.RENDER_EXTERNAL_URL;
+  process.env.RENDER_EXTERNAL_URL ||
+  "https://gemini-borsaci.onrender.com";
 
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
@@ -4078,6 +4079,10 @@ async function fetchPaperMarketPrice(symbol) {
   return roundTradingValue(price);
 }
 
+function telegramMessagingReady() {
+  return Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID);
+}
+
 async function openPaperPositionForDecision(
   state,
   decision,
@@ -4819,13 +4824,10 @@ async function recordAiDecisions(
     stateResult.container
   );
 
-  if (telegramApprovalButtonsReady()) {
+  if (telegramMessagingReady()) {
     for (const decision of approvalRequests) {
       // Bildirim teslimi scanner HTTP yanıtını geciktiremez.
-      void sendTelegramNotification(
-        buildPaperApprovalNotification(decision),
-        paperApprovalKeyboard(decision)
-      );
+      void sendPaperApprovalRequest(decision);
     }
   }
 
@@ -4981,12 +4983,7 @@ async function handleManualPaperOrder(req, res) {
 
     await saveTradingState(state, stateResult.sha, stateResult.container);
 
-    if (telegramApprovalButtonsReady()) {
-      void sendTelegramNotification(
-        buildPaperApprovalNotification(decision),
-        paperApprovalKeyboard(decision)
-      );
-    }
+    void sendPaperApprovalRequest(decision);
 
     return sendJSON(res, 201, tradingStateForClient(state));
   } catch (error) {
@@ -5056,14 +5053,24 @@ async function handleDecisionPendingOverride(req, res) {
     decision.reason = `${decision.reason || ""} Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.`.trim();
     addTradingActivity(state, "AI_DECISION_MANUAL_PENDING", `${decision.symbol} kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi.`, timestamp);
     await saveTradingState(state, stateResult.sha, stateResult.container);
-    if (telegramApprovalButtonsReady()) {
-      void sendTelegramNotification(buildPaperApprovalNotification(decision), paperApprovalKeyboard(decision));
-    }
+    void sendPaperApprovalRequest(decision);
     return sendJSON(res, 200, tradingStateForClient(state));
   } catch (error) {
     console.error("AI DECISION PENDING OVERRIDE ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
   }
+}
+
+async function sendPaperApprovalRequest(decision) {
+  if (!telegramMessagingReady()) return false;
+  const interactive = telegramApprovalButtonsReady();
+  // Callback rotasını tekrar kurmak idempotenttir; eski Render instance'ı
+  // veya geçici Telegram hatası butonları kalıcı olarak bozmamalı.
+  if (interactive) void configureTelegramWebhook();
+  return sendTelegramNotification(
+    buildPaperApprovalNotification(decision),
+    interactive ? paperApprovalKeyboard(decision) : null
+  );
 }
 
 
@@ -5129,12 +5136,7 @@ async function handlePendingPaperOrderUpdate(req, res) {
 
     await saveTradingState(state, stateResult.sha, stateResult.container);
 
-    if (telegramApprovalButtonsReady()) {
-      void sendTelegramNotification(
-        buildPaperApprovalNotification(decision),
-        paperApprovalKeyboard(decision)
-      );
-    }
+    void sendPaperApprovalRequest(decision);
 
     return sendJSON(res, 200, tradingStateForClient(state));
   } catch (error) {
