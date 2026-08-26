@@ -71,9 +71,10 @@ const PUBLIC_BASE_URL =
   process.env.RENDER_EXTERNAL_URL ||
   "https://gemini-borsaci.onrender.com";
 
-// Genel Binance piyasa verisi için anahtar gerektirmeyen, taranacak USDT
-// pariteleri. Sunucu route'ları kurulmadan önce tanımlanır.
-const BINANCE_CRYPTO_SYMBOLS = [
+// Binance piyasa listesi alınamazsa taramanın tamamen durmaması için kısa
+// bir geri-dönüş evreni. Normal durumda her tarama öncesi hacme göre ilk 100
+// aktif USDT spot paritesi Binance'ten dinamik olarak seçilir.
+const BINANCE_CRYPTO_FALLBACK_SYMBOLS = [
   "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT",
   "DOGEUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "LTCUSDT", "ATOMUSDT",
   "NEARUSDT", "ARBUSDT", "OPUSDT", "SUIUSDT", "AAVEUSDT", "INJUSDT",
@@ -7374,10 +7375,17 @@ if (
 }
 
 async function fetchBinanceDailyHistory(symbol) {
-  const response = await fetch(
-    `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=1d&limit=550`,
-    {headers: {"Accept": "application/json"}}
-  );
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  let response;
+  try {
+    response = await fetch(
+      `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=1d&limit=550`,
+      {headers: {"Accept": "application/json"}, signal: controller.signal}
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) throw new Error(`Binance HTTP ${response.status}`);
   const rows = await response.json();
   if (!Array.isArray(rows)) throw new Error("Binance mum verisi geçersiz.");
@@ -7389,6 +7397,34 @@ async function fetchBinanceDailyHistory(symbol) {
       close: Number(row[4]), volume: Number(row[5]),
     }))
     .filter(candle => [candle.open, candle.high, candle.low, candle.close, candle.volume].every(Number.isFinite));
+}
+
+async function fetchBinanceTopUsdtSymbols(limit = 100) {
+  const [exchangeResponse, tickerResponse] = await Promise.all([
+    fetch("https://api.binance.com/api/v3/exchangeInfo", {headers: {"Accept": "application/json"}}),
+    fetch("https://api.binance.com/api/v3/ticker/24hr", {headers: {"Accept": "application/json"}})
+  ]);
+  if (!exchangeResponse.ok || !tickerResponse.ok) {
+    throw new Error(`Binance piyasa listesi alınamadı (${exchangeResponse.status}/${tickerResponse.status})`);
+  }
+  const exchange = await exchangeResponse.json();
+  const tickers = await tickerResponse.json();
+  if (!Array.isArray(exchange?.symbols) || !Array.isArray(tickers)) {
+    throw new Error("Binance piyasa listesi geçersiz.");
+  }
+  const stableBases = new Set(["USDT", "USDC", "FDUSD", "TUSD", "USDP", "DAI", "BUSD", "USDS", "USDE", "USDD"]);
+  const eligible = new Set(exchange.symbols
+    .filter(item => item?.status === "TRADING" && item?.quoteAsset === "USDT" && item?.isSpotTradingAllowed !== false)
+    .filter(item => !stableBases.has(item.baseAsset))
+    .filter(item => !/(UP|DOWN|BULL|BEAR)USDT$/i.test(item.symbol))
+    .map(item => item.symbol));
+  const symbols = tickers
+    .filter(item => eligible.has(item?.symbol) && Number(item.quoteVolume) > 0)
+    .sort((left, right) => Number(right.quoteVolume) - Number(left.quoteVolume))
+    .slice(0, limit)
+    .map(item => item.symbol);
+  if (!symbols.length) throw new Error("Binance'te uygun USDT spot paritesi bulunamadı.");
+  return symbols;
 }
 
 async function scanCryptoSymbol(symbol) {
@@ -7409,12 +7445,20 @@ async function handleCryptoScanner(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const jobId = String(url.searchParams.get("jobId") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
   try {
-    updateScannerJob(jobId, 3, "Binance günlük mum verileri alınıyor");
+    updateScannerJob(jobId, 3, "Binance hacim verisine göre en büyük 100 USDT paritesi seçiliyor");
+    let cryptoSymbols;
+    try {
+      cryptoSymbols = await fetchBinanceTopUsdtSymbols(100);
+    } catch (error) {
+      console.warn("CRYPTO UNIVERSE:", error.message);
+      cryptoSymbols = BINANCE_CRYPTO_FALLBACK_SYMBOLS;
+    }
+    updateScannerJob(jobId, 8, `${cryptoSymbols.length} USDT paritesi için günlük mum verileri alınıyor`);
     const results = [];
-    for (let index = 0; index < BINANCE_CRYPTO_SYMBOLS.length; index += 5) {
-      const batch = BINANCE_CRYPTO_SYMBOLS.slice(index, index + 5);
+    for (let index = 0; index < cryptoSymbols.length; index += 8) {
+      const batch = cryptoSymbols.slice(index, index + 8);
       results.push(...await Promise.all(batch.map(scanCryptoSymbol)));
-      updateScannerJob(jobId, 10 + Math.round(65 * Math.min(index + 5, BINANCE_CRYPTO_SYMBOLS.length) / BINANCE_CRYPTO_SYMBOLS.length), `${Math.min(index + 5, BINANCE_CRYPTO_SYMBOLS.length)}/${BINANCE_CRYPTO_SYMBOLS.length} kripto varlık kontrol edildi`);
+      updateScannerJob(jobId, 10 + Math.round(65 * Math.min(index + 8, cryptoSymbols.length) / cryptoSymbols.length), `${Math.min(index + 8, cryptoSymbols.length)}/${cryptoSymbols.length} kripto varlık kontrol edildi`);
     }
     // Kripto günlük mumları BIST'e özgü state alanlarından bağımsızdır;
     // gerçek, sıralı ve yeterli OHLCV dizisi bulunan her parite adaydır.
@@ -7428,7 +7472,7 @@ async function handleCryptoScanner(req, res) {
       return {...item, ...analysis, fibonacci, price:analysis.features.price, ema20:analysis.features.ema20, ema50:analysis.features.ema50, ema200:analysis.features.ema200, rsi:analysis.features.rsi, atr:analysis.features.atr, volumeRatio:analysis.features.volumeRatio};
     });
     updateScannerJob(jobId, 100, "Kripto taraması tamamlandı", "COMPLETE");
-    return sendJSON(res, 200, {success:true, timestamp:new Date().toISOString(), scanned:BINANCE_CRYPTO_SYMBOLS.length, successful:valid.length, results:ranked, source:"BINANCE_PUBLIC", diagnostics:results.map(item=>({symbol:item.symbol, bars:item.history?.length||0, code:item.validation?.code||"OK"}))});
+    return sendJSON(res, 200, {success:true, timestamp:new Date().toISOString(), scanned:cryptoSymbols.length, successful:valid.length, results:ranked, source:"BINANCE_PUBLIC", diagnostics:results.map(item=>({symbol:item.symbol, bars:item.history?.length||0, code:item.validation?.code||"OK"}))});
   } catch (error) {
     updateScannerJob(jobId, 100, `Kripto tarama hatası: ${error.message}`, "ERROR");
     return sendJSON(res, 500, {success:false, error:error.message});
