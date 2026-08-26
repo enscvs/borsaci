@@ -1728,7 +1728,7 @@
         "rank": 5,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2044,10 +2044,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-26T10:37:43.286Z",
           "expiresAt": "2026-08-27T10:37:43.287Z",
-          "overrideAt": "2026-08-26T10:37:56.502Z"
+          "overrideAt": "2026-08-26T10:37:56.502Z",
+          "rejectedAt": "2026-08-26T10:47:10.631Z",
+          "rejectedBy": "SITE"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
@@ -2069,7 +2071,8 @@
           "createdAt": "2026-08-26T10:37:56.502Z",
           "updatedAt": "2026-08-26T10:37:56.502Z",
           "editedAt": null
-        }
+        },
+        "outcome": "USER_REJECTED"
       },
       {
         "id": "1787554934863-DOHOL",
@@ -12820,6 +12823,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:47:10.631Z",
+        "type": "PAPER_REJECTED",
+        "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
         "timestamp": "2026-08-26T10:46:20.704Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -13313,11 +13321,6 @@
         "timestamp": "2026-08-23T00:18:49.666Z",
         "type": "PAPER_REJECTED",
         "message": "DOHOL paper işlem planı SITE üzerinden reddedildi."
-      },
-      {
-        "timestamp": "2026-08-23T00:01:39.222Z",
-        "type": "SCAN",
-        "message": "5 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
