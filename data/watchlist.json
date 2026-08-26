@@ -1486,8 +1486,8 @@
         "id": "1787743521670-GESAN",
         "rank": 3,
         "symbol": "GESAN",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1803,13 +1803,32 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T11:25:21.670Z",
-          "expiresAt": "2026-08-27T11:25:21.670Z"
+          "expiresAt": "2026-08-27T11:25:21.670Z",
+          "overrideAt": "2026-08-26T11:25:38.579Z"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
-        "timestamp": "2026-08-26T11:25:21.670Z"
+        "timestamp": "2026-08-26T11:25:21.670Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "GESAN",
+          "quantity": 173,
+          "entryPrice": 90.15,
+          "orderType": "LIMIT",
+          "stop": 63.21,
+          "target1": 94.03,
+          "target2": 102.06,
+          "target3": 112.28,
+          "positionValue": 15595.95,
+          "actualRisk": 4660.62,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-26T11:25:38.579Z",
+          "updatedAt": "2026-08-26T11:25:38.579Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787743521670-AHGAZ",
@@ -13569,6 +13588,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:25:38.579Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T11:25:22.785Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -14062,11 +14086,6 @@
         "timestamp": "2026-08-26T09:40:17.637Z",
         "type": "PAPER_APPROVED",
         "message": "ASELS paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-26T09:40:17.637Z",
-        "type": "PAPER_OPEN",
-        "message": "ASELS mevcut paper pozisyonuna eklendi: 10 lot · ortalama giriş ₺403,23."
       }
     ],
     "scannerSnapshot": {
