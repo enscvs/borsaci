@@ -7374,20 +7374,43 @@ if (
   return handlePendingPaperOrders(req, res);
 }
 
-async function fetchBinanceDailyHistory(symbol) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  let response;
-  try {
-    response = await fetch(
-      `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=1d&limit=550`,
-      {headers: {"Accept": "application/json"}, signal: controller.signal}
-    );
-  } finally {
-    clearTimeout(timeout);
+// Binance'in resmi dokümantasyonundaki yalnızca piyasa verisi aynası ilk
+// sıradadır. Render IP'si ana uç noktada 418/429 alırsa sıradaki resmi
+// uç nokta denenir; aynı yasaklı IP'ye tekrar tekrar istek atılmaz.
+const BINANCE_PUBLIC_BASE_URLS = [
+  "https://data-api.binance.vision",
+  "https://api-gcp.binance.com",
+  "https://api1.binance.com",
+  "https://api.binance.com"
+];
+
+async function fetchBinancePublicJson(path) {
+  let lastError = null;
+  for (const baseUrl of BINANCE_PUBLIC_BASE_URLS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const response = await fetch(`${baseUrl}${path}`, {
+        headers: {"Accept": "application/json"},
+        signal: controller.signal
+      });
+      if (response.ok) return response.json();
+      lastError = new Error(`Binance HTTP ${response.status}`);
+      // Yalnız erişim/rate-limit sorunlarında alternatif aynaya geçilir.
+      if (![403, 418, 429, 451, 500, 502, 503, 504].includes(response.status)) throw lastError;
+    } catch (error) {
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
-  if (!response.ok) throw new Error(`Binance HTTP ${response.status}`);
-  const rows = await response.json();
+  throw lastError || new Error("Binance piyasa verisi alınamadı.");
+}
+
+async function fetchBinanceDailyHistory(symbol) {
+  const rows = await fetchBinancePublicJson(
+    `/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=1d&limit=550`
+  );
   if (!Array.isArray(rows)) throw new Error("Binance mum verisi geçersiz.");
   return rows
     .filter(row => Number(row?.[6]) <= Date.now())
@@ -7400,15 +7423,10 @@ async function fetchBinanceDailyHistory(symbol) {
 }
 
 async function fetchBinanceTopUsdtSymbols(limit = 100) {
-  const [exchangeResponse, tickerResponse] = await Promise.all([
-    fetch("https://api.binance.com/api/v3/exchangeInfo", {headers: {"Accept": "application/json"}}),
-    fetch("https://api.binance.com/api/v3/ticker/24hr", {headers: {"Accept": "application/json"}})
+  const [exchange, tickers] = await Promise.all([
+    fetchBinancePublicJson("/api/v3/exchangeInfo"),
+    fetchBinancePublicJson("/api/v3/ticker/24hr")
   ]);
-  if (!exchangeResponse.ok || !tickerResponse.ok) {
-    throw new Error(`Binance piyasa listesi alınamadı (${exchangeResponse.status}/${tickerResponse.status})`);
-  }
-  const exchange = await exchangeResponse.json();
-  const tickers = await tickerResponse.json();
   if (!Array.isArray(exchange?.symbols) || !Array.isArray(tickers)) {
     throw new Error("Binance piyasa listesi geçersiz.");
   }
