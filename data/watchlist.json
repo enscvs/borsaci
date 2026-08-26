@@ -1731,7 +1731,7 @@
         "rank": 5,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2047,11 +2047,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-26T10:37:43.286Z",
           "expiresAt": "2026-08-27T10:37:43.287Z",
           "overrideAt": "2026-08-26T10:47:29.403Z",
-          "rejectedAt": "2026-08-26T10:47:10.631Z",
+          "rejectedAt": "2026-08-26T10:48:09.685Z",
           "rejectedBy": "SITE"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -12826,6 +12826,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:48:09.685Z",
+        "type": "PAPER_REJECTED",
+        "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
         "timestamp": "2026-08-26T10:47:29.403Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -13319,11 +13324,6 @@
         "timestamp": "2026-08-23T00:26:41.691Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-23T00:19:23.315Z",
-        "type": "SCAN",
-        "message": "5 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
