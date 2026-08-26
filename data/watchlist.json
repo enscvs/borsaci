@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 77697.88,
-      "equity": 93199.42060173035,
+      "cash": 62077.68,
+      "equity": 93183.82060173035,
       "pnl": 43184.89313681602,
       "pnlPercent": 86.36978627363204,
       "positions": [
+        {
+          "id": "paper-2026-08-26T11:08:11.404Z-GESAN-fa0c3b30",
+          "decisionId": "1787740663286-GESAN",
+          "decisionIds": [
+            "1787740663286-GESAN"
+          ],
+          "symbol": "GESAN",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 173,
+          "originalQuantity": 173,
+          "entry": 90.2,
+          "entryCommission": 15.6,
+          "current": 90.2,
+          "stop": 63.21,
+          "target1": 94.03,
+          "target2": 102.06,
+          "target3": 112.28,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T11:08:11.404Z",
+          "tp1Hit": false,
+          "realizedPnl": -15.6,
+          "pnl": -15.6
+        },
         {
           "id": "paper-2026-08-26T10:48:40.103Z-ALARK-448c017d",
           "decisionId": "manual-1787741307901-ALARK-29fe0d4f",
@@ -1406,7 +1431,7 @@
         "rank": 3,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1722,12 +1747,13 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T10:37:43.285Z",
           "expiresAt": "2026-08-27T10:37:43.286Z",
           "overrideAt": "2026-08-26T11:07:56.894Z",
           "rejectedAt": "2026-08-26T10:47:17.841Z",
-          "rejectedBy": "SITE"
+          "rejectedBy": "SITE",
+          "openedAt": "2026-08-26T11:08:11.404Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
@@ -1747,8 +1773,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:07:56.894Z",
-          "updatedAt": "2026-08-26T11:08:08.428Z",
-          "editedAt": "2026-08-26T11:08:08.428Z"
+          "updatedAt": "2026-08-26T11:08:11.404Z",
+          "editedAt": "2026-08-26T11:08:08.428Z",
+          "commission": 15.6,
+          "totalCost": 15620.2,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T11:08:11.404Z"
         },
         "outcome": "USER_REJECTED"
       },
@@ -12886,6 +12916,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:08:11.404Z",
+        "type": "PAPER_APPROVED",
+        "message": "GESAN paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T11:08:11.404Z",
+        "type": "PAPER_OPEN",
+        "message": "GESAN scanner paper pozisyonu açıldı: 173 lot · ₺15604.60 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-26T11:08:08.428Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "GESAN bekleyen paper emri düzenlendi: 173 lot · ₺90,20 · LIMIT."
@@ -13374,16 +13414,6 @@
         "timestamp": "2026-08-24T17:08:46.017Z",
         "type": "SCAN",
         "message": "2 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-24T07:02:50.821Z",
-        "type": "PAPER_APPROVED",
-        "message": "DOHOL paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-24T07:02:50.821Z",
-        "type": "PAPER_OPEN",
-        "message": "DOHOL paper pozisyonu açıldı: 717 lot · ₺15487.20."
       }
     ],
     "scannerSnapshot": {
