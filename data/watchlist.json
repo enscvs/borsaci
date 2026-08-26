@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 77589.62,
-      "equity": 93263.24043762207,
+      "cash": 61978.07,
+      "equity": 93247.64043762207,
       "pnl": 43112.07313681602,
       "pnlPercent": 86.22414627363204,
       "positions": [
+        {
+          "id": "paper-2026-08-26T11:25:51.332Z-GESAN-7db8e7f1",
+          "decisionId": "1787743521670-GESAN",
+          "decisionIds": [
+            "1787743521670-GESAN"
+          ],
+          "symbol": "GESAN",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 173,
+          "originalQuantity": 173,
+          "entry": 90.15,
+          "entryCommission": 15.6,
+          "current": 90.15,
+          "stop": 63.21,
+          "target1": 94.03,
+          "target2": 102.06,
+          "target3": 112.28,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T11:25:51.332Z",
+          "tp1Hit": false,
+          "realizedPnl": -15.6,
+          "pnl": -15.6
+        },
         {
           "id": "paper-2026-08-26T11:16:11.151Z-AHGAZ-319091d8",
           "decisionId": "1787740663287-AHGAZ",
@@ -1487,7 +1512,7 @@
         "rank": 3,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1803,10 +1828,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T11:25:21.670Z",
           "expiresAt": "2026-08-27T11:25:21.670Z",
-          "overrideAt": "2026-08-26T11:25:38.579Z"
+          "overrideAt": "2026-08-26T11:25:38.579Z",
+          "openedAt": "2026-08-26T11:25:51.332Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
@@ -1815,19 +1841,23 @@
         "pendingOrder": {
           "symbol": "GESAN",
           "quantity": 173,
-          "entryPrice": null,
+          "entryPrice": 90.15,
           "orderType": "MARKET",
           "stop": 63.21,
           "target1": 94.03,
           "target2": 102.06,
           "target3": 112.28,
-          "positionValue": null,
-          "actualRisk": null,
+          "positionValue": 15595.95,
+          "actualRisk": 4660.62,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:25:38.579Z",
-          "updatedAt": "2026-08-26T11:25:48.037Z",
-          "editedAt": "2026-08-26T11:25:48.037Z"
+          "updatedAt": "2026-08-26T11:25:51.332Z",
+          "editedAt": "2026-08-26T11:25:48.037Z",
+          "commission": 15.6,
+          "totalCost": 15611.55,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T11:25:51.332Z"
         }
       },
       {
@@ -13588,6 +13618,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:25:51.332Z",
+        "type": "PAPER_APPROVED",
+        "message": "GESAN paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T11:25:51.332Z",
+        "type": "PAPER_OPEN",
+        "message": "GESAN scanner paper pozisyonu açıldı: 173 lot · ₺15595.95 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T11:25:48.037Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "GESAN bekleyen paper emri düzenlendi: 173 lot · ₺0,00 · MARKET."
@@ -14076,16 +14116,6 @@
         "timestamp": "2026-08-26T09:46:55.856Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 50 lot · MARKET."
-      },
-      {
-        "timestamp": "2026-08-26T09:40:35.637Z",
-        "type": "CLOSED",
-        "message": "ASELS paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺-25.30."
-      },
-      {
-        "timestamp": "2026-08-26T09:40:23.108Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "ASELS bekleyen paper emri düzenlendi: 100 lot · ₺0,00 · MARKET."
       }
     ],
     "scannerSnapshot": {
