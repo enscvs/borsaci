@@ -8907,6 +8907,80 @@ function bindKillSwitch() {
 
 }
 
+let cryptoRenderedRecords = [];
+
+function formatCryptoUsd(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "—";
+  return new Intl.NumberFormat("tr-TR", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: number < 1 ? 6 : number < 100 ? 4 : 2,
+  }).format(number);
+}
+
+function cryptoChartUrl(symbol) {
+  const pair = String(symbol || "BTCUSDT").toUpperCase();
+  return `https://s.tradingview.com/widgetembed/?frameElementId=cryptoDecisionChart&symbol=BINANCE%3A${encodeURIComponent(pair)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f0f0f&theme=dark&style=1&locale=tr&timezone=Europe%2FIstanbul`;
+}
+
+function renderCryptoScoreBreakdown(item) {
+  const symbol = document.getElementById("cryptoScoreSymbol");
+  const content = document.getElementById("cryptoScoreContent");
+  if (!symbol || !content) return;
+  if (!item) {
+    symbol.textContent = "KARAR YOK";
+    content.textContent = "Bir kripto adayına dokunarak teknik puan kalemlerini burada gör.";
+    return;
+  }
+  symbol.textContent = item.symbol || "SEMBOL YOK";
+  const breakdown = item.scoreBreakdown || {};
+  const buckets = [["Trend", breakdown.trend], ["Momentum", breakdown.momentum], ["Hacim / likidite", breakdown.volumeLiquidity], ["Giriş kalitesi", breakdown.entryQuality]];
+  const rows = buckets.map(([label, bucket]) => {
+    const factors = Array.isArray(bucket?.items) ? bucket.items.map(entry => escapeHtml(String(entry?.label || entry))).join(" · ") : "Veri yok";
+    return `<tr><th>${escapeHtml(label)}</th><td><strong>${Number(bucket?.score || 0)}/${Number(bucket?.max || 0)}</strong></td><td>${factors || "—"}</td></tr>`;
+  }).join("");
+  content.innerHTML = `<div class="decision-score-summary"><strong>TEKNİK ${Number(item.score || 0)}/100 · ${escapeHtml(item.grade || "KARAR")}</strong><span>Bu puan başarı olasılığı değildir.</span></div><div class="decision-score-table-wrap"><table class="decision-score-table"><thead><tr><th>BAŞLIK</th><th>PUAN</th><th>KANITLAR</th></tr></thead><tbody>${rows}<tr class="decision-score-penalty-row"><th>Cezalar</th><td><strong>${Number(breakdown.penalties?.score || 0)}</strong></td><td>${Array.isArray(breakdown.penalties?.items) ? breakdown.penalties.items.map(entry => escapeHtml(String(entry?.label || entry))).join(" · ") : "Ceza yok"}</td></tr></tbody></table></div>`;
+}
+
+function renderCryptoDecisionDetail(item) {
+  const detail = document.getElementById("cryptoDecisionDetail");
+  const symbol = document.getElementById("cryptoDecisionSymbol");
+  const chart = document.getElementById("cryptoDecisionChart");
+  const chartSymbol = document.getElementById("cryptoChartSymbol");
+  if (!detail || !item) return;
+  const fib = item.fibonacci || {};
+  if (symbol) symbol.textContent = item.symbol || "SEMBOL YOK";
+  if (chartSymbol) chartSymbol.textContent = item.symbol || "SEMBOL YOK";
+  if (chart) chart.src = cryptoChartUrl(item.symbol);
+  renderCryptoScoreBreakdown(item);
+  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)}</span><span>Stop: ${formatCryptoUsd(fib.stopLoss)}</span><span>TP1: ${formatCryptoUsd(fib.tp1)} · R/R ${fib.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(fib.tp2)} · R/R ${fib.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(fib.tp3)} · R/R ${fib.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı; teknik kalite puanı yine gösterilir."))}</small>`;
+}
+
+function renderCryptoScanSummary(data, records) {
+  const history = document.getElementById("cryptoSignalHistory");
+  const status = document.getElementById("cryptoHistoryStatus");
+  const setText = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
+  setText("cryptoPerformanceScanned", Number(data.scanned || 0));
+  setText("cryptoPerformanceValid", Number(data.successful || 0));
+  setText("cryptoPerformanceBest", records.length ? `${Number(records[0].score || 0)}/100` : "—");
+  setText("cryptoPerformanceSelected", records.length);
+  if (status) status.textContent = `${records.length} KAYIT`;
+  if (history) history.innerHTML = records.length ? records.map((item, index) => `<button type="button" class="signal-history-item" data-crypto-history-index="${index}"><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.fibonacci?.status || "NO_VALID_STRUCTURE"))} · ${new Date(data.timestamp).toLocaleString("tr-TR")}</small></button>`).join("") : '<div class="trading-empty">Kaydedilecek kripto adayı bulunamadı.</div>';
+}
+
+function bindCryptoDecisionInteractions() {
+  document.querySelectorAll("#cryptoDecisionFeed [data-crypto-decision-index], [data-crypto-history-index]").forEach(element => {
+    if (element.dataset.cryptoDetailBound === "true") return;
+    element.dataset.cryptoDetailBound = "true";
+    element.addEventListener("click", () => {
+      const index = Number(element.dataset.cryptoDecisionIndex ?? element.dataset.cryptoHistoryIndex);
+      const item = cryptoRenderedRecords[index];
+      if (item) renderCryptoDecisionDetail(item);
+    });
+  });
+}
+
 async function runCryptoScanner() {
   const button = document.getElementById("startCryptoScannerBtn");
   const status = document.getElementById("cryptoScannerStatus");
@@ -8930,12 +9004,16 @@ async function runCryptoScanner() {
     const response = await fetch(`/api/crypto/scanner?jobId=${encodeURIComponent(jobId)}`, {cache:"no-store"});
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data?.error || "Kripto taraması başarısız.");
-    const cards = (data.results || []).map(item => {
+    cryptoRenderedRecords = Array.isArray(data.results) ? data.results : [];
+    const cards = cryptoRenderedRecords.map((item, index) => {
       const fib = item.fibonacci || {};
-      return `<article class="decision-item decision-card"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCurrency(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCurrency(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCurrency(fib.entryZoneLow)} – ${formatCurrency(fib.entryZoneHigh)} · SL: ${formatCurrency(fib.stopLoss)} · TP1/2/3: ${formatCurrency(fib.tp1)} / ${formatCurrency(fib.tp2)} / ${formatCurrency(fib.tp3)}</div></article>`;
+      return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)} · SL: ${formatCryptoUsd(fib.stopLoss)} · TP1/2/3: ${formatCryptoUsd(fib.tp1)} / ${formatCryptoUsd(fib.tp2)} / ${formatCryptoUsd(fib.tp3)}</div></article>`;
     }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
     if (results) results.innerHTML = `<div class="trading-empty">${data.scanned} Binance USDT paritesi tarandı · ${data.successful} geçerli günlük veri</div>`;
     if (feed) feed.innerHTML = cards;
+    renderCryptoScanSummary(data, cryptoRenderedRecords);
+    renderCryptoDecisionDetail(cryptoRenderedRecords[0]);
+    bindCryptoDecisionInteractions();
     if (status) status.textContent = "TAMAMLANDI";
     if (engine) engine.textContent = "HAZIR";
     const time = document.getElementById("cryptoLastScanTime");

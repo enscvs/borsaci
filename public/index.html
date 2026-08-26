@@ -1646,6 +1646,34 @@ Waiting for input...
       <div class="panel-title"><span>KRİPTO YZ KARARLARI</span><span class="panel-status">BİNANCE VERİSİ</span></div>
       <div id="cryptoDecisionFeed" class="decision-feed"><div class="trading-empty">Tarama sonrası en güçlü kripto adayları burada görünür.</div></div>
     </section>
+    <section class="panel trading-panel">
+      <div class="panel-title"><span>KRİPTO KARAR DETAYI</span><span id="cryptoDecisionSymbol" class="panel-status">KARAR YOK</span></div>
+      <div id="cryptoDecisionDetail" class="decision-detail-panel">Bir kripto adayına dokunarak A/B/C yapısını, giriş planını ve risk/getiri seviyelerini incele.</div>
+    </section>
+    <section class="panel chart trading-panel">
+      <div class="panel-title"><span>KRİPTO KARAR GRAFİĞİ</span><span id="cryptoChartSymbol" class="panel-status">SEMBOL YOK</span></div>
+      <div class="chart-area" style="min-height:420px"><iframe id="cryptoDecisionChart" title="Kripto karar grafiği" style="width:100%;height:420px;border:0;background:#071008" loading="lazy"></iframe></div>
+    </section>
+    <section class="panel trading-panel decision-score-panel">
+      <div class="panel-title"><span>KRİPTO TEKNİK PUAN DAĞILIMI</span><span id="cryptoScoreSymbol" class="panel-status">KARAR YOK</span></div>
+      <div id="cryptoScoreContent" class="decision-score-content">Bir kripto adayına dokunarak teknik puan kalemlerini burada gör.</div>
+    </section>
+    <div class="trading-two-column">
+      <section class="panel trading-panel">
+        <div class="panel-title"><span>KRİPTO SİNYAL GEÇMİŞİ</span><span id="cryptoHistoryStatus" class="panel-status">0 KAYIT</span></div>
+        <div id="cryptoSignalHistory" class="trading-log"><div class="trading-empty">Tarama sonrası seçilen adaylar burada saklanır.</div></div>
+      </section>
+      <section class="panel trading-panel">
+        <div class="panel-title"><span>KRİPTO TARAMA ÖZETİ</span><span class="panel-status">ANALİZ</span></div>
+        <div class="risk-grid">
+          <div><span>TARANAN PARİTE</span><strong id="cryptoPerformanceScanned">0</strong></div>
+          <div><span>GEÇERLİ GÜNLÜK VERİ</span><strong id="cryptoPerformanceValid">0</strong></div>
+          <div><span>EN YÜKSEK TEKNİK PUAN</span><strong id="cryptoPerformanceBest">--</strong></div>
+          <div><span>SEÇİLEN ADAY</span><strong id="cryptoPerformanceSelected">0</strong></div>
+        </div>
+        <p class="trading-empty">Bu alan tarama kalitesini gösterir; teknik puan başarı garantisi veya fiyat tahmini değildir.</p>
+      </section>
+    </div>
   </section>
 
 
@@ -1923,7 +1951,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260826-crypto"
+  src="/app.js?v=20260826-crypto-detail"
   defer
 ></script>
 
