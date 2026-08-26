@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 61978.07,
-      "equity": 93247.64070159913,
+      "cash": 57949.04,
+      "equity": 93243.61070159913,
       "pnl": 43112.07313681602,
       "pnlPercent": 86.22414627363204,
       "positions": [
+        {
+          "id": "paper-2026-08-26T11:26:40.885Z-ASELS-8c7be202",
+          "decisionId": "manual-1787743587344-ASELS-e0e9f245",
+          "decisionIds": [
+            "manual-1787743587344-ASELS-e0e9f245"
+          ],
+          "symbol": "ASELS",
+          "source": "MANUAL",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 10,
+          "originalQuantity": 10,
+          "entry": 402.5,
+          "entryCommission": 4.03,
+          "current": 402.5,
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T11:26:40.885Z",
+          "tp1Hit": false,
+          "realizedPnl": -4.03,
+          "pnl": -4.03
+        },
         {
           "id": "paper-2026-08-26T11:25:51.332Z-GESAN-7db8e7f1",
           "decisionId": "1787743521670-GESAN",
@@ -1512,7 +1537,7 @@
         "rank": null,
         "symbol": "ASELS",
         "action": "MANUAL PAPER",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "source": "MANUAL",
         "manualOrder": true,
         "paperOnly": true,
@@ -1564,28 +1589,33 @@
           "summary": "Manuel paper emir; AI/scanner kriteri uygulanmadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T11:26:27.344Z",
-          "expiresAt": null
+          "expiresAt": null,
+          "openedAt": "2026-08-26T11:26:40.885Z"
         },
         "reason": "Manuel paper emir; scanner kriterlerinden bağımsız olarak kullanıcı onayı bekliyor.",
         "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
         "pendingOrder": {
           "symbol": "ASELS",
           "quantity": 10,
-          "entryPrice": null,
+          "entryPrice": 402.5,
           "orderType": "MARKET",
           "stop": null,
           "target1": null,
           "target2": null,
           "target3": null,
-          "positionValue": null,
+          "positionValue": 4025,
           "actualRisk": null,
           "paperOnly": true,
           "source": "MANUAL",
           "createdAt": "2026-08-26T11:26:27.344Z",
-          "updatedAt": "2026-08-26T11:26:37.902Z",
-          "editedAt": "2026-08-26T11:26:37.902Z"
+          "updatedAt": "2026-08-26T11:26:40.885Z",
+          "editedAt": "2026-08-26T11:26:37.902Z",
+          "commission": 4.03,
+          "totalCost": 4029.03,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T11:26:40.885Z"
         },
         "timestamp": "2026-08-26T11:26:27.344Z"
       },
@@ -13700,6 +13730,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:26:40.885Z",
+        "type": "PAPER_APPROVED",
+        "message": "ASELS paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T11:26:40.885Z",
+        "type": "PAPER_OPEN",
+        "message": "ASELS manuel paper pozisyonu açıldı: 10 lot · ₺4025.00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T11:26:37.902Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 10 lot · ₺0,00 · MARKET."
@@ -14188,16 +14228,6 @@
         "timestamp": "2026-08-26T09:47:47.175Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 20 lot · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T09:47:16.583Z",
-        "type": "PAPER_APPROVED",
-        "message": "ASELS paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-26T09:47:16.583Z",
-        "type": "PAPER_OPEN",
-        "message": "ASELS manuel paper pozisyonu açıldı: 50 lot · ₺20087.50 · MARKET."
       }
     ],
     "scannerSnapshot": {
