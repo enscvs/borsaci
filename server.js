@@ -71,6 +71,15 @@ const PUBLIC_BASE_URL =
   process.env.RENDER_EXTERNAL_URL ||
   "https://gemini-borsaci.onrender.com";
 
+// Genel Binance piyasa verisi için anahtar gerektirmeyen, taranacak USDT
+// pariteleri. Sunucu route'ları kurulmadan önce tanımlanır.
+const BINANCE_CRYPTO_SYMBOLS = [
+  "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT",
+  "DOGEUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "LTCUSDT", "ATOMUSDT",
+  "NEARUSDT", "ARBUSDT", "OPUSDT", "SUIUSDT", "AAVEUSDT", "INJUSDT",
+  "FETUSDT", "RENDERUSDT"
+];
+
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
@@ -7363,13 +7372,6 @@ if (
 ) {
   return handlePendingPaperOrders(req, res);
 }
-
-const BINANCE_CRYPTO_SYMBOLS = [
-  "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT",
-  "DOGEUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "LTCUSDT", "ATOMUSDT",
-  "NEARUSDT", "ARBUSDT", "OPUSDT", "SUIUSDT", "AAVEUSDT", "INJUSDT",
-  "FETUSDT", "RENDERUSDT"
-];
 
 async function fetchBinanceDailyHistory(symbol) {
   const response = await fetch(
