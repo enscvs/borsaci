@@ -2146,21 +2146,19 @@
         "pendingOrder": {
           "symbol": "AHGAZ",
           "quantity": 440,
-          "entryPrice": 35.4,
-          "orderType": "LIMIT",
+          "entryPrice": null,
+          "orderType": "MARKET",
           "stop": 30.91,
           "target1": 40.08,
           "target2": 42.4,
           "target3": 45.36,
-          "positionValue": 15576,
-          "actualRisk": 1975.6,
+          "positionValue": null,
+          "actualRisk": null,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:09:01.426Z",
-          "updatedAt": "2026-08-26T11:16:00.600Z",
-          "editedAt": "2026-08-26T11:15:57.451Z",
-          "status": "PENDING_LIMIT",
-          "lastMarketPrice": 36
+          "updatedAt": "2026-08-26T11:16:08.085Z",
+          "editedAt": "2026-08-26T11:16:08.085Z"
         },
         "outcome": "USER_REJECTED"
       },
@@ -12983,6 +12981,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:16:08.085Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺0,00 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T11:16:00.600Z",
         "type": "PAPER_LIMIT_PENDING",
         "message": "AHGAZ LIMIT emir bekliyor: son ₺36,00 · limit ₺35,40."
@@ -13476,11 +13479,6 @@
         "timestamp": "2026-08-26T09:39:50.443Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 100 lot · ₺0,00 · MARKET."
-      },
-      {
-        "timestamp": "2026-08-26T09:36:38.427Z",
-        "type": "PAPER_MANUAL_PENDING",
-        "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 100 lot · LIMIT."
       }
     ],
     "scannerSnapshot": {
