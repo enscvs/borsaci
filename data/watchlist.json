@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 112120.39,
-      "equity": 143109.5098692322,
-      "pnl": 43226.79357443809,
-      "pnlPercent": 43.22679357443809,
+      "cash": 143078.52000000002,
+      "equity": 143078.52000000002,
+      "pnl": 43195.80357443809,
+      "pnlPercent": 43.19580357443809,
       "positions": [
         {
           "id": "paper-2026-08-26T16:31:17.053Z-AHGAZ-63e32255",
@@ -23,16 +23,18 @@
           "originalQuantity": 857,
           "entry": 36.16,
           "entryCommission": 30.99,
-          "current": 36.15999984741211,
+          "current": 36.16,
           "stop": 30.91,
           "target1": 40.08,
           "target2": 42.4,
           "target3": 45.36,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-26T16:31:17.053Z",
           "tp1Hit": false,
           "realizedPnl": -30.99,
-          "pnl": -0.0001307678193427364
+          "pnl": -61.98,
+          "closedAt": "2026-08-26T20:41:14.695Z",
+          "closeReason": "MANUAL_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-26T11:45:11.613Z-GESAN-feae92fe",
@@ -5036,13 +5038,15 @@
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
         "timestamp": "2026-08-26T19:00:14.783Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787761831810-AHGAZ",
         "rank": 4,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -5358,11 +5362,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-26T16:30:31.810Z",
           "expiresAt": "2026-08-27T16:30:31.810Z",
           "overrideAt": "2026-08-26T16:31:01.995Z",
-          "openedAt": "2026-08-26T16:31:17.053Z"
+          "openedAt": "2026-08-26T16:31:17.053Z",
+          "closedAt": "2026-08-26T20:41:14.695Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
@@ -5388,10 +5393,10 @@
           "totalCost": 31020.11,
           "status": "APPROVED",
           "approvedAt": "2026-08-26T16:31:17.053Z"
-        }
-      }
-    ],
-    "history": [
+        },
+        "outcome": "MANUAL_MARKET_CLOSE",
+        "realizedPnL": -61.98
+      },
       {
         "id": "1787554934863-DOHOL",
         "rank": 4,
@@ -17648,59 +17653,6 @@
         "timestamp": "2026-08-21T22:58:11.714Z",
         "outcome": "MANUAL_CLOSE",
         "realizedPnL": 236.60000000000096
-      },
-      {
-        "id": "1787352973195-BINBN",
-        "rank": 2,
-        "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "CLOSED",
-        "confidence": 94,
-        "entry": {
-          "low": 180.98,
-          "high": 184.51,
-          "reference": 183.1
-        },
-        "stop": 172.5,
-        "target1": 204.29,
-        "target2": 214.89,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 10.6,
-          "quantity": 84,
-          "positionValue": 15380.4,
-          "actualRisk": 890.4,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 54.69,
-          "atr": 7.06,
-          "volatility": 3.86
-        },
-        "lifecycle": {
-          "stage": "CLOSED",
-          "createdAt": "2026-08-21T22:56:13.195Z",
-          "expiresAt": "2026-08-22T22:56:13.195Z",
-          "openedAt": "2026-08-21T22:56:13.588Z",
-          "closedAt": "2026-08-21T22:57:58.192Z"
-        },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
-        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
-        "timestamp": "2026-08-21T22:56:13.195Z",
-        "outcome": "MANUAL_CLOSE",
-        "realizedPnL": 117.60000000000048
       }
     ],
     "dailySummary": {
@@ -17709,6 +17661,11 @@
       "snapshotCreatedAt": "2026-08-26T16:30:31.810Z"
     },
     "activity": [
+      {
+        "timestamp": "2026-08-26T20:41:14.695Z",
+        "type": "CLOSED",
+        "message": "AHGAZ paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-61.98."
+      },
       {
         "timestamp": "2026-08-26T19:00:15.442Z",
         "type": "SCAN",
@@ -18203,11 +18160,6 @@
         "timestamp": "2026-08-26T10:11:16.904Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "GESAN bekleyen paper emri düzenlendi: 174 lot · ₺90,45 · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T10:10:59.755Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "GESAN bekleyen paper emri düzenlendi: 174 lot · ₺88,65 · LIMIT."
       }
     ],
     "scannerSnapshot": {
