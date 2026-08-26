@@ -7526,10 +7526,35 @@ function cryptoPaperStateForClient(state) {
   return {...paper, positions: (paper.positions || []).filter(position => position.status === "OPEN")};
 }
 
+function compactCryptoAiPendingOrders(paper, timestamp = new Date().toISOString()) {
+  const pendingAi = (paper.decisions || []).filter(decision =>
+    decision.status === "PENDING_APPROVAL" &&
+    String(decision.pendingOrder?.source || decision.source || "").toUpperCase() !== "MANUAL"
+  );
+  if (pendingAi.length <= 1) return false;
+  const [, ...superseded] = pendingAi;
+  paper.history = superseded.map(decision => ({
+    ...decision,
+    status: "SUPERSEDED",
+    closedAt: timestamp,
+  })).concat(paper.history || []).slice(0, 100);
+  paper.decisions = paper.decisions.filter(decision => !superseded.includes(decision));
+  paper.activity = [{
+    timestamp,
+    type: "CRYPTO_PENDING_COMPACTED",
+    message: "Eski kripto YZ emir planları tek güncel planla birleştirildi.",
+  }, ...(paper.activity || [])].slice(0, 100);
+  return true;
+}
+
 async function handleCryptoState(req, res) {
   try {
     const stateResult = await getTradingState();
-    return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(stateResult.content)});
+    const state = stateResult.content;
+    if (compactCryptoAiPendingOrders(state.cryptoPaper)) {
+      await saveTradingState(state, stateResult.sha, stateResult.container);
+    }
+    return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
   } catch (error) {
     return sendJSON(res, 500, {error: error.message});
   }
