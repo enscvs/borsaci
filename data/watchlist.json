@@ -1787,7 +1787,7 @@
         "rank": 5,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "PENDING_LIMIT",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2103,12 +2103,14 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "PENDING_LIMIT",
           "createdAt": "2026-08-26T10:37:43.286Z",
           "expiresAt": "2026-08-27T10:37:43.287Z",
           "overrideAt": "2026-08-26T11:09:01.426Z",
           "rejectedAt": "2026-08-26T10:48:09.685Z",
-          "rejectedBy": "SITE"
+          "rejectedBy": "SITE",
+          "lastCheckedAt": "2026-08-26T11:09:13.528Z",
+          "lastMarketPrice": 35.9
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
@@ -2128,8 +2130,10 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T11:09:01.426Z",
-          "updatedAt": "2026-08-26T11:09:10.560Z",
-          "editedAt": "2026-08-26T11:09:10.560Z"
+          "updatedAt": "2026-08-26T11:09:13.528Z",
+          "editedAt": "2026-08-26T11:09:10.560Z",
+          "status": "PENDING_LIMIT",
+          "lastMarketPrice": 35.9
         },
         "outcome": "USER_REJECTED"
       },
@@ -12916,6 +12920,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:09:13.528Z",
+        "type": "PAPER_LIMIT_PENDING",
+        "message": "AHGAZ LIMIT emir bekliyor: son ₺35,90 · limit ₺35,40."
+      },
+      {
         "timestamp": "2026-08-26T11:09:10.560Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,40 · LIMIT."
@@ -13409,11 +13418,6 @@
         "timestamp": "2026-08-25T16:25:50.531Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-25T11:53:37.661Z",
-        "type": "SCAN",
-        "message": "2 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
