@@ -1189,6 +1189,88 @@
     },
     "decisions": [
       {
+        "id": "manual-1787736929476-ASELS-c16a7504",
+        "rank": null,
+        "symbol": "ASELS",
+        "action": "MANUAL PAPER",
+        "status": "PENDING_APPROVAL",
+        "source": "MANUAL",
+        "manualOrder": true,
+        "paperOnly": true,
+        "confidence": null,
+        "grade": "MANUEL",
+        "entry": {
+          "low": null,
+          "high": null,
+          "reference": null
+        },
+        "stop": null,
+        "target1": null,
+        "target2": null,
+        "target3": null,
+        "riskReward": {
+          "tp1": null,
+          "tp2": null,
+          "tp3": null
+        },
+        "riskPlan": {
+          "capital": 50000,
+          "targetPositionValue": null,
+          "reservePercent": null,
+          "quantity": 100,
+          "positionValue": null,
+          "actualRisk": null,
+          "maxPositionPercent": null,
+          "maxPositions": 3,
+          "manualOverride": true
+        },
+        "indicators": {
+          "score": null,
+          "rsi": null,
+          "atr": null,
+          "macd": null
+        },
+        "filters": {
+          "manualOverride": true
+        },
+        "planMethod": "MANUAL_PAPER_ORDER",
+        "fibonacci": null,
+        "reasons": [
+          "Kullanıcı tarafından manuel paper emir taslağı oluşturuldu."
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": false,
+          "provider": "NOT_USED",
+          "summary": "Manuel paper emir; AI/scanner kriteri uygulanmadı."
+        },
+        "lifecycle": {
+          "stage": "PENDING_APPROVAL",
+          "createdAt": "2026-08-26T09:35:29.476Z",
+          "expiresAt": null
+        },
+        "reason": "Manuel paper emir; scanner kriterlerinden bağımsız olarak kullanıcı onayı bekliyor.",
+        "invalidation": "Bu emir yalnızca paper trading içindir; onaydan önce düzenlenebilir veya reddedilebilir.",
+        "pendingOrder": {
+          "symbol": "ASELS",
+          "quantity": 100,
+          "entryPrice": null,
+          "orderType": "MARKET",
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "positionValue": null,
+          "actualRisk": null,
+          "paperOnly": true,
+          "source": "MANUAL",
+          "createdAt": "2026-08-26T09:35:29.476Z",
+          "updatedAt": "2026-08-26T09:35:29.476Z",
+          "editedAt": null
+        },
+        "timestamp": "2026-08-26T09:35:29.476Z"
+      },
+      {
         "id": "manual-1787736917762-ASELS-52517639",
         "rank": null,
         "symbol": "ASELS",
@@ -10515,6 +10597,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T09:35:29.476Z",
+        "type": "PAPER_MANUAL_PENDING",
+        "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 100 lot · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T09:35:17.762Z",
         "type": "PAPER_MANUAL_PENDING",
         "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 100 lot · MARKET."
@@ -11008,11 +11095,6 @@
         "timestamp": "2026-08-22T19:50:35.333Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-22T19:50:27.253Z",
-        "type": "CLOSED",
-        "message": "GESAN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
       }
     ],
     "scannerSnapshot": {
