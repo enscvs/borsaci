@@ -1567,8 +1567,8 @@
         "id": "1787744504074-GESAN",
         "rank": 3,
         "symbol": "GESAN",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1884,13 +1884,32 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T11:41:44.074Z",
-          "expiresAt": "2026-08-27T11:41:44.074Z"
+          "expiresAt": "2026-08-27T11:41:44.074Z",
+          "overrideAt": "2026-08-26T11:44:13.192Z"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
-        "timestamp": "2026-08-26T11:41:44.074Z"
+        "timestamp": "2026-08-26T11:41:44.074Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "GESAN",
+          "quantity": 173,
+          "entryPrice": 90,
+          "orderType": "LIMIT",
+          "stop": 63.21,
+          "target1": 94.03,
+          "target2": 102.06,
+          "target3": 112.28,
+          "positionValue": 15570,
+          "actualRisk": 4634.67,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-26T11:44:13.192Z",
+          "updatedAt": "2026-08-26T11:44:13.192Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787554934863-DOHOL",
@@ -13961,6 +13980,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:44:13.192Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T11:43:38.663Z",
         "type": "CLOSED",
         "message": "GESAN paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-48.48."
@@ -14454,11 +14478,6 @@
         "timestamp": "2026-08-26T09:54:47.571Z",
         "type": "PAPER_OPEN",
         "message": "ASELS mevcut paper pozisyonuna eklendi: 10 lot · ortalama giriş ₺402,28."
-      },
-      {
-        "timestamp": "2026-08-26T09:54:44.461Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "ASELS bekleyen paper emri düzenlendi: 10 lot · ₺0,00 · MARKET."
       }
     ],
     "scannerSnapshot": {
