@@ -4943,17 +4943,36 @@ async function handleManualPaperOrder(req, res) {
     const stateResult = await getTradingState();
     const state = stateResult.content;
     const timestamp = new Date().toISOString();
-    const decision = await createManualPaperDecision(input, state, timestamp);
+    const candidate = await createManualPaperDecision(input, state, timestamp);
+    const existing = (state.decisions || []).find(item =>
+      item.status === "PENDING_APPROVAL" &&
+      isManualPaperDecision(item) &&
+      item.symbol === candidate.symbol
+    );
+    const decision = existing || candidate;
 
-    state.decisions = [
-      decision,
-      ...(Array.isArray(state.decisions) ? state.decisions : []),
-    ];
+    if (existing) {
+      decision.entry = candidate.entry;
+      decision.stop = candidate.stop;
+      decision.target1 = candidate.target1;
+      decision.target2 = candidate.target2;
+      decision.target3 = candidate.target3;
+      decision.riskPlan = candidate.riskPlan;
+      decision.pendingOrder = {
+        ...candidate.pendingOrder,
+        createdAt: existing.pendingOrder?.createdAt || existing.timestamp || timestamp,
+        updatedAt: timestamp,
+        editedAt: timestamp,
+      };
+      decision.lifecycle = {...(existing.lifecycle || {}), stage: "PENDING_APPROVAL"};
+    } else {
+      state.decisions = [decision, ...(Array.isArray(state.decisions) ? state.decisions : [])];
+    }
 
     addTradingActivity(
       state,
       "PAPER_MANUAL_PENDING",
-      `${decision.symbol} için MANUAL PAPER ONLY emir onayı bekliyor: ${decision.pendingOrder.quantity} lot · ${decision.pendingOrder.orderType}.`,
+      `${decision.symbol} için manuel paper emir ${existing ? "güncellendi" : "onayı bekliyor"}: ${decision.pendingOrder.quantity} lot · ${decision.pendingOrder.orderType}.`,
       timestamp
     );
 
@@ -5267,6 +5286,18 @@ async function approvePaperDecision(decisionId, source) {
     throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
   }
   const timestamp = new Date().toISOString();
+  if (isManualPaperDecision(decision)) {
+    // Daha önce oluşmuş aynı-sembol manuel taslaklarını onay kuyruğunda
+    // bırakma; tek emir onaylanır ve eski kopyalar geçmişe kaldırılır.
+    for (const duplicate of (state.decisions || []).filter(item =>
+      item.id !== decision.id &&
+      item.status === "PENDING_APPROVAL" &&
+      isManualPaperDecision(item) &&
+      item.symbol === decision.symbol
+    )) {
+      archivePaperDecision(state, duplicate.id, "REJECTED", "SUPERSEDED_BY_LATEST_MANUAL_ORDER", timestamp, 0);
+    }
+  }
   const position = await openPaperPositionForDecision(state, decision, timestamp);
   addTradingActivity(
     state,

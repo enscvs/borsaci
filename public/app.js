@@ -6400,7 +6400,19 @@ function pendingPaperOrdersFromState(
     .filter(item => item?.status === "PENDING_APPROVAL")
     .forEach(item => append(item, item));
 
-  return orders.filter(order => sourceFilter === "ALL" || order.source === sourceFilter);
+  const filtered = orders.filter(order => sourceFilter === "ALL" || order.source === sourceFilter);
+  // Manuel tarafta aynı sembol için tek taslak tutulur. Eski istemci
+  // sürümlerinin aynı kaydı birden çok kez yansıtması, ekranda boş kartlar
+  // oluşturmamalı; en güncel taslak kazanır.
+  if (sourceFilter !== "MANUAL") return filtered;
+  const latestBySymbol = new Map();
+  for (const order of filtered) {
+    const previous = latestBySymbol.get(order.symbol);
+    const orderTime = Date.parse(order.updatedAt || order.createdAt || "") || 0;
+    const previousTime = Date.parse(previous?.updatedAt || previous?.createdAt || "") || 0;
+    if (!previous || orderTime >= previousTime) latestBySymbol.set(order.symbol, order);
+  }
+  return [...latestBySymbol.values()];
 }
 
 
