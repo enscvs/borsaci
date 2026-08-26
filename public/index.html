@@ -1250,7 +1250,7 @@ Waiting for input...
 
 
     <!-- ==================================================
-         PENDING PAPER ORDERS + MANUAL PAPER ORDER
+         PENDING ORDERS + MANUAL ORDER
     ================================================== -->
 
     <section class="panel trading-panel pending-paper-orders-panel">
@@ -1258,7 +1258,7 @@ Waiting for input...
       <div class="panel-title">
 
         <span>
-          PENDING PAPER ORDERS
+          PENDING ORDERS
         </span>
 
         <span
@@ -1276,15 +1276,15 @@ Waiting for input...
         aria-live="polite"
       >
         <div class="trading-empty">
-          Bekleyen paper emir yok.
+          Bekleyen emir yok.
         </div>
       </div>
 
       <div class="manual-paper-order-wrap">
 
         <div class="manual-paper-order-intro">
-          <strong>MANUAL PAPER ORDER</strong>
-          <small>Kriterlerden bağımsız olarak bir paper emir planı oluşturur. Gerçek borsa emri gönderilmez; emir önce yukarıdaki onay kuyruğuna düşer.</small>
+          <strong>MANUAL ORDER</strong>
+          <small>Kriterlerden bağımsız olarak manuel emir planı oluşturur; onaydan önce düzenlenebilir.</small>
         </div>
 
         <form
@@ -1321,13 +1321,13 @@ Waiting for input...
           <label>
             ENTRY PRICE (₺)
             <input
+              data-order-price-field
               name="entryPrice"
               type="number"
               min="0.01"
               step="0.01"
               inputmode="decimal"
               placeholder="0.00"
-              required
             >
           </label>
 
@@ -1389,9 +1389,9 @@ Waiting for input...
 
           <div class="paper-order-form-actions">
             <button type="submit" class="trading-button">
-              CREATE PENDING PAPER ORDER
+              CREATE MANUAL ORDER
             </button>
-            <small>PAPER ONLY · Manuel emir de açılmadan önce onay bekler.</small>
+            <small>Manuel emir onaydan önce düzenlenebilir. Emir gerçekleştirme şu an paper ortamındadır.</small>
           </div>
 
         </form>
@@ -1503,6 +1503,15 @@ Waiting for input...
 
       </div>
 
+    </section>
+
+
+    <section id="manualOrderPanel" class="panel trading-panel manual-order-panel">
+      <div class="panel-title">
+        <span>MANUAL ORDER</span>
+        <span class="panel-status">PAPER</span>
+      </div>
+      <div id="manualOrderMount"></div>
     </section>
 
 

@@ -29,9 +29,9 @@ test("paper order edits recompute position value and stop risk", () => {
   assert.equal(edited.symbol, "ALARK");
   assert.equal(edited.orderType, "MARKET");
   assert.equal(edited.quantity, 150);
-  assert.equal(edited.entryPrice, 105.5);
-  assert.equal(edited.positionValue, 15825);
-  assert.equal(edited.actualRisk, 645);
+  assert.equal(edited.entryPrice, null);
+  assert.equal(edited.positionValue, null);
+  assert.equal(edited.actualRisk, null);
   assert.equal(edited.stop, 101.2);
 });
 
