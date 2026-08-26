@@ -74,6 +74,7 @@ const PUBLIC_BASE_URL =
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
+let paperMonitorRunning = false;
 
 function updateScannerJob(jobId, progress, message, status = "RUNNING") {
   if (!jobId) return;
@@ -4440,7 +4441,18 @@ async function monitorPaperPositions() {
       item => item.status === "OPEN"
     );
 
-  if (openPositions.length === 0) {
+  // Kullanıcının onayladığı ancak limit fiyatı henüz gelmemiş emirler de
+  // pozisyon monitörünün parçasıdır. Böylece sayfadaki CHECK LIMIT ORDER
+  // düğmesine tekrar basmak gerekmez; fiyat limitine indiğinde paper pozisyon
+  // sunucu tarafından açılır.
+  const pendingLimitDecisions =
+    (state.decisions || []).filter(
+      decision =>
+        decision?.status === "PENDING_LIMIT" &&
+        getEffectivePendingOrder(decision)?.orderType === "LIMIT"
+    );
+
+  if (openPositions.length === 0 && pendingLimitDecisions.length === 0) {
     return;
   }
 
@@ -4449,6 +4461,40 @@ async function monitorPaperPositions() {
 
   const notifications = [];
   let changed = false;
+
+  for (const decision of pendingLimitDecisions) {
+    const order = getEffectivePendingOrder(decision);
+
+    try {
+      const marketPrice = await fetchPaperMarketPrice(order.symbol);
+
+      // Alış limit emri yalnızca son doğrulanmış fiyat limitin altına/eşitse
+      // gerçekleşir. Fiyat yukarıdaysa emir beklemeye devam eder.
+      if (marketPrice > Number(order.entryPrice)) {
+        continue;
+      }
+
+      const position = await openPaperPositionForDecision(
+        state,
+        decision,
+        timestamp
+      );
+
+      addTradingActivity(
+        state,
+        "PAPER_LIMIT_FILLED",
+        `${position.symbol} LIMIT emri gerçekleşti: ${position.quantity} lot · ${formatTelegramCurrency(position.entry)}.`,
+        timestamp
+      );
+      notifications.push(buildPaperOpenNotification(position));
+      changed = true;
+    } catch (error) {
+      console.error(
+        `PAPER LIMIT MONITOR ${order?.symbol || decision?.symbol}:`,
+        error.message
+      );
+    }
+  }
 
   for (
     const savedPosition of openPositions
@@ -5014,6 +5060,19 @@ async function handlePendingPaperOrders(req, res) {
   } catch (error) {
     console.error("PAPER PENDING ORDERS ERROR:", error.message);
     return sendJSON(res, 500, {error: error.message});
+  }
+}
+
+async function runPaperMonitor() {
+  if (paperMonitorRunning) {
+    return;
+  }
+
+  paperMonitorRunning = true;
+  try {
+    await monitorPaperPositions();
+  } finally {
+    paperMonitorRunning = false;
   }
 }
 
@@ -7813,7 +7872,7 @@ server.listen(
 
     setTimeout(
       () => {
-        monitorPaperPositions()
+        runPaperMonitor()
           .catch(
             error =>
               console.error(
@@ -7827,7 +7886,7 @@ server.listen(
 
     setInterval(
       () => {
-        monitorPaperPositions()
+        runPaperMonitor()
           .catch(
             error =>
               console.error(
@@ -7836,7 +7895,7 @@ server.listen(
               )
           );
       },
-      5 * 60 * 1000
+      60 * 1000
     );
 
     // Seans kapanışından sonra güncel scanner kaydı varsa tek günlük
