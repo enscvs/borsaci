@@ -2226,6 +2226,43 @@ textarea::placeholder {
   white-space: nowrap;
 }
 
+.risk-settings-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.risk-settings-actions .trading-button,
+.risk-allocation-gauge {
+  min-height: 34px;
+  box-sizing: border-box;
+}
+
+.risk-settings-actions .trading-button {
+  grid-column: auto;
+}
+
+.risk-allocation-gauge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 118px;
+  padding: 0 10px;
+  border: 1px solid rgba(95, 255, 145, .55);
+  background: rgba(28, 104, 56, .18);
+  color: #9fffc0;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: .06em;
+}
+
+.risk-allocation-gauge.is-over {
+  border-color: rgba(255, 91, 91, .9);
+  background: rgba(143, 21, 21, .25);
+  color: #ff9f9f;
+}
+
 .paper-order-form {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

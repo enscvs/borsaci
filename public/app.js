@@ -8193,21 +8193,15 @@ function normalizeRiskSettings(
         Number(value?.capital) || 100000
       ),
     maxPositionPercent:
-      Math.min(
-        31,
-        Math.max(
-          1,
-          Number(value?.maxPositionPercent) || 31
-        )
+      Math.max(
+        1,
+        Number(value?.maxPositionPercent) || 31
       ),
     maxPositions:
-      Math.min(
-        3,
-        Math.max(
-          1,
-          Math.floor(
-            Number(value?.maxPositions) || 3
-          )
+      Math.max(
+        1,
+        Math.floor(
+          Number(value?.maxPositions) || 3
         )
       ),
     capitalSource:
@@ -8285,6 +8279,20 @@ function renderRiskSettings(
     }
   );
 
+  renderRiskAllocationGauge(risk);
+
+}
+
+function renderRiskAllocationGauge(settings) {
+  const gauge = document.getElementById("riskAllocationGauge");
+  if (!gauge) return;
+  const risk = normalizeRiskSettings(settings);
+  const allocation = risk.maxPositionPercent * risk.maxPositions;
+  const overAllocated = allocation > 100;
+  gauge.textContent = `${allocation.toFixed(0)}% ALLOCATION`;
+  gauge.classList.toggle("is-over", overAllocated);
+  gauge.classList.toggle("is-safe", !overAllocated);
+  gauge.title = `${risk.maxPositionPercent}% × ${risk.maxPositions} işlem = toplam ${allocation.toFixed(2)}%`;
 }
 
 
@@ -8377,6 +8385,14 @@ function bindRiskSettings() {
     "submit",
     saveRiskSettingsFromForm
   );
+
+  form.addEventListener("input", () => {
+    renderRiskAllocationGauge({
+      capital: document.getElementById("riskCapitalInput")?.value,
+      maxPositionPercent: document.getElementById("maxPositionInput")?.value,
+      maxPositions: document.getElementById("maxPositionsInput")?.value,
+    });
+  });
 
   renderRiskSettings(
     currentRiskSettings()

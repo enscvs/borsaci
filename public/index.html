@@ -1252,9 +1252,12 @@ Waiting for input...
             </select>
           </label>
           <label>CAPITAL (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
-          <label>TARGET POSITION (%)<input id="maxPositionInput" type="number" min="1" max="31" step="1" value="31"></label>
-          <label>MAX POSITIONS<input id="maxPositionsInput" type="number" min="1" max="3" step="1" value="3"></label>
-          <button type="submit" class="trading-button">APPLY RISK SETTINGS</button>
+          <label>TARGET POSITION (%)<input id="maxPositionInput" type="number" min="1" step="1" value="31"></label>
+          <label>MAX POSITIONS<input id="maxPositionsInput" type="number" min="1" step="1" value="3"></label>
+          <div class="risk-settings-actions">
+            <button type="submit" class="trading-button">APPLY RISK SETTINGS</button>
+            <output id="riskAllocationGauge" class="risk-allocation-gauge" aria-live="polite">93% ALLOCATION</output>
+          </div>
         </form>
 
       </section>
