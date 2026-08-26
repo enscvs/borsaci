@@ -127,7 +127,7 @@ body::before {
 
 .topbar {
 
-  min-height: 56px;
+  min-height: 78px;
 
   border: 1px solid var(--border);
 
@@ -135,14 +135,11 @@ body::before {
 
   display: grid;
 
-  grid-template-columns:
-    1fr
-    auto
-    auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
 
   align-items: center;
 
-  gap: 25px;
+  gap: 18px;
 
   padding: 0 18px;
 }
@@ -197,6 +194,41 @@ body::before {
   color: #d9b96b;
   text-align: center;
   text-shadow: 0 0 12px rgba(217, 185, 107, .16);
+}
+
+.topbar-turkic-banner {
+  margin: 3px 0;
+  align-self: start;
+}
+
+.topbar-turkic-banner > div {
+  font-size: clamp(25px, 3.6vw, 40px);
+}
+
+.topbar-turkic-banner > span {
+  font-size: 13px;
+}
+
+.system-clock-stack {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.system-clock-stack .clock {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.logout-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin: 10px 0 18px;
+}
+
+.logout-footer .logout-button {
+  min-width: 112px;
 }
 
 .turkic-main-banner > div,
@@ -1074,15 +1106,32 @@ textarea::placeholder {
 
   .topbar {
 
-    grid-template-columns:
-      1fr auto;
-
-    gap: 10px;
+    min-height: 68px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 0 9px;
   }
 
-
-  .system-status {
+  .brand-version {
     display: none;
+  }
+
+  .header-logo {
+    width: 25px;
+    height: 25px;
+  }
+
+  .topbar-turkic-banner > div {
+    font-size: clamp(21px, 7vw, 29px);
+  }
+
+  .system-clock-stack {
+    gap: 3px;
+  }
+
+  .system-clock-stack .system-status,
+  .system-clock-stack .clock {
+    font-size: 8px;
   }
 
 

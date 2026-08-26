@@ -71,38 +71,23 @@
         src="/favicon.ico?v=2"
         alt=""
       >
-      <span class="brand-name">𐰉𐰆𐰺𐰽𐰀𐰲𐰃</span>
       <span class="brand-version">v1.0.0</span>
     </div>
 
-    <div class="system-status">
-      <span class="status-dot"></span>
-      SİSTEM HAZIR
+    <div class="turkic-main-banner topbar-turkic-banner" aria-label="BorsaCI">
+      <div>𐰉𐰆𐰺𐰽𐰀𐰲𐰃</div>
+      <span aria-hidden="true">☪</span>
     </div>
 
-    <button
-      type="button"
-      id="logoutButton"
-      class="logout-button"
-      hidden
-    >
-      ÇIKIŞ YAP
-    </button>
-
-    <div
-      class="clock"
-      id="clock"
-    >
-      --:--:--
+    <div class="system-clock-stack">
+      <div class="system-status">
+        <span class="status-dot"></span>
+        SİSTEM HAZIR
+      </div>
+      <div class="clock" id="clock">--:--:--</div>
     </div>
 
   </header>
-
-  <div class="turkic-main-banner" aria-label="BorsaCI">
-    <div>𐰉𐰆𐰺𐰽𐰀𐰲𐰃</div>
-    <span aria-hidden="true">☪</span>
-  </div>
-
 
   <!-- ==================================================
        MAIN TABS
@@ -1618,10 +1603,21 @@ Waiting for input...
           id="killSwitchToggle"
           class="kill-switch-button"
         >
-          ACTIVATE KILL SWITCH
+          ACİL DURDURMAYI ETKİNLEŞTİR
         </button>
       </div>
     </section>
+
+    <div class="logout-footer">
+      <button
+        type="button"
+        id="logoutButton"
+        class="logout-button"
+        hidden
+      >
+        ÇIKIŞ YAP
+      </button>
+    </div>
 
 
   </section>
