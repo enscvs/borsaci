@@ -81,6 +81,16 @@ const BINANCE_CRYPTO_FALLBACK_SYMBOLS = [
   "FETUSDT", "RENDERUSDT"
 ];
 
+// Binance'in resmî, yalnızca piyasa verisi için sunduğu ayna ilk sıradadır.
+// Bu sabit route'lar çalışmadan önce başlatılır; istek callback'i içindeki
+// temporal-dead-zone hatasını önler.
+const BINANCE_PUBLIC_BASE_URLS = [
+  "https://data-api.binance.vision",
+  "https://api-gcp.binance.com",
+  "https://api1.binance.com",
+  "https://api.binance.com"
+];
+
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
@@ -7373,16 +7383,6 @@ if (
 ) {
   return handlePendingPaperOrders(req, res);
 }
-
-// Binance'in resmi dokümantasyonundaki yalnızca piyasa verisi aynası ilk
-// sıradadır. Render IP'si ana uç noktada 418/429 alırsa sıradaki resmi
-// uç nokta denenir; aynı yasaklı IP'ye tekrar tekrar istek atılmaz.
-const BINANCE_PUBLIC_BASE_URLS = [
-  "https://data-api.binance.vision",
-  "https://api-gcp.binance.com",
-  "https://api1.binance.com",
-  "https://api.binance.com"
-];
 
 async function fetchBinancePublicJson(path) {
   let lastError = null;
