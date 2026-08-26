@@ -6303,6 +6303,7 @@ function buildPendingPaperOrder(
   return {
     orderId,
     decisionId,
+    status: String(order.status || pendingOrder.status || decision.status || "PENDING_APPROVAL").toUpperCase(),
     symbol: String(
       order.symbol ||
       decision.symbol ||
@@ -6397,14 +6398,14 @@ function pendingPaperOrdersFromState(
   explicitOrders
     .filter(order => {
       const status = String(order?.status || "PENDING_APPROVAL").toUpperCase();
-      return status === "PENDING" || status === "PENDING_APPROVAL";
+      return status === "PENDING" || status === "PENDING_APPROVAL" || status === "PENDING_LIMIT";
     })
     .forEach(order => {
       append(order, byDecisionId.get(String(order?.decisionId || "")));
     });
 
   decisions
-    .filter(item => item?.status === "PENDING_APPROVAL")
+    .filter(item => ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item?.status))
     .forEach(item => append(item, item));
 
   const filtered = orders.filter(order => sourceFilter === "ALL" || order.source === sourceFilter);
@@ -6462,6 +6463,10 @@ function renderPendingPaperOrders(
       : "ONAY BEKLİYOR";
     const orderId = escapeHtml(order.orderId);
     const decisionId = escapeHtml(order.decisionId);
+    const gross = Number(order.quantity) * Number(order.entryPrice);
+    const commission = Number.isFinite(gross) ? gross * 0.001 : null;
+    const lower = Number.isFinite(Number(order.entryPrice)) ? Number(order.entryPrice) * 0.9 : null;
+    const upper = Number.isFinite(Number(order.entryPrice)) ? Number(order.entryPrice) * 1.1 : null;
 
     return `
       <article
@@ -6473,7 +6478,7 @@ function renderPendingPaperOrders(
       >
         <div class="pending-paper-order-head">
           <strong>${escapeHtml(order.symbol)} · ${manual ? "MANUAL" : "AI PLAN"}</strong>
-          <span class="pending-paper-order-badge">PENDING APPROVAL</span>
+          <span class="pending-paper-order-badge">${escapeHtml(order.status || "PENDING APPROVAL")}</span>
           <small>${escapeHtml(created)}</small>
         </div>
         <form class="paper-order-form" data-pending-paper-order-form novalidate>
@@ -6503,9 +6508,10 @@ function renderPendingPaperOrders(
           </label>
           <div class="paper-order-form-actions">
             <button type="submit" class="trading-button">SAVE SETTINGS</button>
-            <button type="button" class="trading-button" data-paper-order-action="approve">APPROVE PAPER ORDER</button>
+            <button type="button" class="trading-button" data-paper-order-action="approve">${order.status === "PENDING_LIMIT" ? "CHECK LIMIT ORDER" : "APPROVE PAPER ORDER"}</button>
             <button type="button" class="trading-button danger" data-paper-order-action="reject">REJECT</button>
             <small>PAPER ONLY · Fiyat, lot ve emir türü onaydan önce düzenlenebilir.</small>
+            <small>KOMİSYON ‰1: ${formatCurrency(commission)} · TAVAN/TABAN: ${formatCurrency(lower)} / ${formatCurrency(upper)}</small>
           </div>
         </form>
       </article>
@@ -7905,6 +7911,12 @@ function renderPaperPortfolio(
       String(closedPositions.length);
   }
 
+  const costs = document.getElementById("paperCostSummary");
+  if (costs) {
+    const totalEntryFees = (paper.positions || []).reduce((sum, item) => sum + Number(item.entryCommission || 0), 0);
+    costs.textContent = `KOMİSYON: ‰1 · GİRİŞ KOMİSYONU: ${formatCurrency(totalEntryFees)} · BIST FİYAT BANTI: ±10%`;
+  }
+
 }
 
 
@@ -7934,6 +7946,11 @@ function renderTradingActivity(
         </div>
       `
     ).join("");
+
+  const journal = document.getElementById("tradeJournal");
+  if (journal) {
+    journal.innerHTML = activity.slice(0, 100).map(item => `<details><summary>${escapeHtml(item.type || "EVENT")} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</summary><p>${escapeHtml(item.message || "")}</p></details>`).join("") || '<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
+  }
 
 }
 

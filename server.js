@@ -4097,7 +4097,7 @@ async function openPaperPositionForDecision(
   if (
     !decision ||
     !isPaperApprovableDecision(decision) ||
-    !["PENDING", "PENDING_APPROVAL"].includes(decision.status)
+    !["PENDING", "PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)
   ) {
     throw new Error("Bu karar paper işlem açmak için uygun değil.");
   }
@@ -4138,6 +4138,8 @@ async function openPaperPositionForDecision(
     ? marketPrice
     : Math.min(marketPrice, Number(order.entryPrice));
   const positionValue = quantity * entry;
+  const entryCommission = roundTradingValue(positionValue * PAPER_COMMISSION_RATE);
+  const totalCost = roundTradingValue(positionValue + entryCommission);
 
   if (order.stop !== null && Number(order.stop) >= entry) {
     throw new Error("Doğrulanmış fiyatla MARKET emrin stopu girişin altında olmalı.");
@@ -4151,7 +4153,7 @@ async function openPaperPositionForDecision(
   if (quantity <= 0 || positionValue <= 0) {
     throw new Error("Kararın lot veya giriş fiyatı geçersiz.");
   }
-  if (positionValue > Number(paper.cash)) {
+  if (totalCost > Number(paper.cash)) {
     throw new Error("Paper bakiyesi bu pozisyon için yeterli değil.");
   }
 
@@ -4167,10 +4169,10 @@ async function openPaperPositionForDecision(
     existingSymbolPosition.current = marketPrice;
     existingSymbolPosition.pnl = roundTradingValue((marketPrice - averageEntry) * combinedQuantity);
     existingSymbolPosition.decisionIds = [...new Set([...(existingSymbolPosition.decisionIds || [existingSymbolPosition.decisionId]), decision.id])];
-    paper.cash = roundTradingValue(Number(paper.cash) - positionValue);
+    paper.cash = roundTradingValue(Number(paper.cash) - totalCost);
     decision.status = "OPEN";
     decision.lifecycle = {...(decision.lifecycle || {}), stage: "OPEN", openedAt: timestamp};
-    decision.pendingOrder = {...order, entryPrice: entry, positionValue, actualRisk: order.stop === null ? null : roundTradingValue((entry - Number(order.stop)) * quantity), status: "APPROVED", updatedAt: timestamp, approvedAt: timestamp};
+    decision.pendingOrder = {...order, entryPrice: entry, positionValue, commission: entryCommission, totalCost, actualRisk: order.stop === null ? null : roundTradingValue((entry - Number(order.stop)) * quantity), status: "FILLED", updatedAt: timestamp, approvedAt: timestamp};
     addTradingActivity(state, "PAPER_OPEN", `${existingSymbolPosition.symbol} mevcut paper pozisyonuna eklendi: ${quantity} lot · ortalama giriş ${formatTelegramCurrency(averageEntry)}.`, timestamp);
     recalculatePaper(paper);
     return existingSymbolPosition;
@@ -4187,6 +4189,7 @@ async function openPaperPositionForDecision(
     quantity,
     originalQuantity: quantity,
     entry,
+    entryCommission,
     current: entry,
     stop: order.stop,
     target1: order.target1,
@@ -4195,11 +4198,11 @@ async function openPaperPositionForDecision(
     status: "OPEN",
     openedAt: timestamp,
     tp1Hit: false,
-    realizedPnl: 0,
-    pnl: 0,
+    realizedPnl: -entryCommission,
+    pnl: -entryCommission,
   };
 
-  paper.cash = roundTradingValue(Number(paper.cash) - positionValue);
+  paper.cash = roundTradingValue(Number(paper.cash) - totalCost);
   paper.positions = [position, ...paper.positions];
   decision.status = "OPEN";
   decision.lifecycle = {...(decision.lifecycle || {}), stage: "OPEN", openedAt: timestamp};
@@ -4207,6 +4210,8 @@ async function openPaperPositionForDecision(
     ...order,
     entryPrice: entry,
     positionValue: roundTradingValue(positionValue),
+    commission: entryCommission,
+    totalCost,
     actualRisk: order.stop === null ? null : roundTradingValue((entry - Number(order.stop)) * quantity),
     status: "APPROVED",
     updatedAt: timestamp,
@@ -4349,9 +4354,10 @@ function closeMonitoredPaperPosition(
   const paper =
     state.paper;
 
+  const exitCommission = roundTradingValue(closePrice * Number(position.quantity) * PAPER_COMMISSION_RATE);
   const closingPnl =
     (closePrice - Number(position.entry)) *
-    Number(position.quantity);
+    Number(position.quantity) - exitCommission;
 
   const totalPnl =
     Number(position.realizedPnl || 0) +
@@ -4359,7 +4365,7 @@ function closeMonitoredPaperPosition(
 
   paper.cash =
     Number(paper.cash) +
-    closePrice * Number(position.quantity);
+    closePrice * Number(position.quantity) - exitCommission;
 
   paper.pnl =
     Number(paper.pnl) + closingPnl;
@@ -5089,7 +5095,7 @@ async function handlePendingPaperOrderUpdate(req, res) {
 
     if (
       !decision ||
-      decision.status !== "PENDING_APPROVAL" ||
+      !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status) ||
       !isPaperApprovableDecision(decision)
     ) {
       throw new Error("Bu paper emir artık düzenlenemez.");
@@ -5339,10 +5345,22 @@ async function approvePaperDecision(decisionId, source) {
   const stateResult = await getTradingState();
   const state = stateResult.content;
   const decision = (state.decisions || []).find(item => item.id === decisionId);
-  if (!decision || decision.status !== "PENDING_APPROVAL") {
+  if (!decision || !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) {
     throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
   }
   const timestamp = new Date().toISOString();
+  const pendingOrder = getEffectivePendingOrder(decision);
+  if (pendingOrder?.orderType === "LIMIT") {
+    const marketPrice = await fetchPaperMarketPrice(pendingOrder.symbol);
+    if (marketPrice > Number(pendingOrder.entryPrice)) {
+      decision.status = "PENDING_LIMIT";
+      decision.lifecycle = {...(decision.lifecycle || {}), stage: "PENDING_LIMIT", lastCheckedAt: timestamp, lastMarketPrice: marketPrice};
+      decision.pendingOrder = {...pendingOrder, status: "PENDING_LIMIT", lastMarketPrice: marketPrice, updatedAt: timestamp};
+      addTradingActivity(state, "PAPER_LIMIT_PENDING", `${decision.symbol} LIMIT emir bekliyor: son ${formatTelegramCurrency(marketPrice)} · limit ${formatTelegramCurrency(pendingOrder.entryPrice)}.`, timestamp);
+      await saveTradingState(state, stateResult.sha, stateResult.container);
+      return state;
+    }
+  }
   if (isManualPaperDecision(decision)) {
     // Daha önce oluşmuş aynı-sembol manuel taslaklarını onay kuyruğunda
     // bırakma; tek emir onaylanır ve eski kopyalar geçmişe kaldırılır.
@@ -5483,7 +5501,7 @@ function ensurePendingOrder(decision, timestamp) {
 
 
 function getEffectivePendingOrder(decision) {
-  if (!decision || decision.status !== "PENDING_APPROVAL") {
+  if (!decision || !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) {
     return null;
   }
 
@@ -5499,7 +5517,7 @@ function pendingPaperOrders(state) {
   return (Array.isArray(state?.decisions) ? state.decisions : [])
     .filter(
       decision =>
-        decision?.status === "PENDING_APPROVAL" &&
+        ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision?.status) &&
         isPaperApprovableDecision(decision)
     )
     .map(decision => {
@@ -5512,7 +5530,7 @@ function pendingPaperOrders(state) {
       return {
         id: decision.id,
         decisionId: decision.id,
-        status: "PENDING_APPROVAL",
+        status: decision.status,
         manualOrder: isManualPaperDecision(decision),
         source: order.source,
         paperOnly: true,
@@ -5701,12 +5719,13 @@ async function handlePaperClose(req, res) {
         state, position, closePrice, "CLOSED", `MANUAL_${orderType}_CLOSE`, timestamp
       );
     } else {
-      const realizedPnl = roundTradingValue((closePrice - Number(position.entry)) * quantity);
+      const exitCommission = roundTradingValue(closePrice * quantity * PAPER_COMMISSION_RATE);
+      const realizedPnl = roundTradingValue((closePrice - Number(position.entry)) * quantity - exitCommission);
       position.quantity = Number(position.quantity) - quantity;
       position.current = closePrice;
       position.realizedPnl = roundTradingValue(Number(position.realizedPnl || 0) + realizedPnl);
       position.pnl = roundTradingValue((closePrice - Number(position.entry)) * Number(position.quantity));
-      state.paper.cash = roundTradingValue(Number(state.paper.cash) + closePrice * quantity);
+      state.paper.cash = roundTradingValue(Number(state.paper.cash) + closePrice * quantity - exitCommission);
       state.paper.pnl = roundTradingValue(Number(state.paper.pnl) + realizedPnl);
       addTradingActivity(state, "PAPER_PARTIAL_CLOSE", `${position.symbol} ${quantity} lot ${orderType} ile kapatıldı. Kalan: ${position.quantity} lot.`, timestamp);
       notification = {message: `BORSACI PAPER KISMİ SATIŞ\n${position.symbol}\n${quantity} lot · ${orderType} · ${formatTelegramCurrency(closePrice)}\nKalan: ${position.quantity} lot`};
@@ -5787,6 +5806,8 @@ const BIST100_SYMBOLS = [
 
 /* v5: 60 puan BUY SETUP eşiği ve bekleyen paper emir metadatası. */
 const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v5";
+const PAPER_COMMISSION_RATE = 0.001;
+const BIST_DAILY_PRICE_LIMIT = 0.10;
 
 function istanbulClock(now = new Date()) {
   const parts = Object.fromEntries(
