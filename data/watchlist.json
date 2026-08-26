@@ -1588,8 +1588,8 @@
       "capitalSource": "MANUAL"
     },
     "killSwitch": {
-      "active": true,
-      "activatedAt": "2026-08-26T11:54:43.302Z"
+      "active": false,
+      "activatedAt": null
     },
     "decisions": [],
     "history": [
@@ -13911,6 +13911,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:54:56.718Z",
+        "type": "KILL_SWITCH",
+        "message": "KILL SWITCH KAPATILDI: yeni paper işlemler yeniden açılabilir."
+      },
+      {
         "timestamp": "2026-08-26T11:54:43.302Z",
         "type": "KILL_SWITCH",
         "message": "KILL SWITCH AKTİF: 1 açık paper pozisyon piyasa fiyatından kapatıldı. Takip edilecek açık pozisyon kalmadı."
@@ -14404,11 +14409,6 @@
         "timestamp": "2026-08-26T10:08:23.716Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 50 lot · ₺0,00 · MARKET."
-      },
-      {
-        "timestamp": "2026-08-26T10:08:19.053Z",
-        "type": "PAPER_MANUAL_PENDING",
-        "message": "ASELS için manuel paper emir onayı bekliyor: 50 lot · MARKET."
       }
     ],
     "scannerSnapshot": {
