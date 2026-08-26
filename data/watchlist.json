@@ -1708,8 +1708,8 @@
         "id": "1787740663287-AHGAZ",
         "rank": 5,
         "symbol": "AHGAZ",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2025,13 +2025,32 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T10:37:43.286Z",
-          "expiresAt": "2026-08-27T10:37:43.287Z"
+          "expiresAt": "2026-08-27T10:37:43.287Z",
+          "overrideAt": "2026-08-26T10:37:56.502Z"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
-        "timestamp": "2026-08-26T10:37:43.286Z"
+        "timestamp": "2026-08-26T10:37:43.286Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "AHGAZ",
+          "quantity": 440,
+          "entryPrice": 35.94,
+          "orderType": "LIMIT",
+          "stop": 30.91,
+          "target1": 40.08,
+          "target2": 42.4,
+          "target3": 45.36,
+          "positionValue": 15813.6,
+          "actualRisk": 2213.2,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-26T10:37:56.502Z",
+          "updatedAt": "2026-08-26T10:37:56.502Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787554934863-DOHOL",
@@ -12782,6 +12801,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:37:56.502Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T10:37:44.637Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -13275,11 +13299,6 @@
         "timestamp": "2026-08-23T00:01:39.222Z",
         "type": "PAPER_APPROVAL_REQUESTED",
         "message": "BINBN için paper işlem onayı bekleniyor."
-      },
-      {
-        "timestamp": "2026-08-23T00:01:39.222Z",
-        "type": "PAPER_APPROVAL_REQUESTED",
-        "message": "DOHOL için paper işlem onayı bekleniyor."
       }
     ],
     "scannerSnapshot": {
