@@ -227,6 +227,14 @@ body::before {
   margin: 10px 0 18px;
 }
 
+/* Terminal bir CSS grid'i olduğu için çıkış düğmesini tek bir hücreye değil,
+   tüm satıra yayar; buton böylece her ekran genişliğinde sağ altta kalır. */
+.dashboard > .logout-footer {
+  grid-column: 1 / -1;
+  width: 100%;
+  margin-top: 16px;
+}
+
 .logout-footer .logout-button {
   min-width: 112px;
 }
