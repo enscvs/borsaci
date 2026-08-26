@@ -7154,8 +7154,14 @@ async function handleTradingScanner(req,res) {
     const existingState=existingStateResult.content;
     if(canReuseScannerSnapshot(existingState.scannerSnapshot,riskSettings)){
       const snapshot=existingState.scannerSnapshot;
+      // Piyasa kapalıyken günlük mumları yeniden indirmeyiz; ancak eski
+      // sürümden kalmış karar kartlarını aynen döndürmek de yanlış seçim
+      // üretir. Aynı ilk beş snapshot'tan güncel ilk üç karar kümesini
+      // yeniden kurup kalıcı state'i tekilleştiriyoruz.
+      const cachedDecisions=createAiDecisions(snapshot.results,riskSettings);
+      const state=await recordAiDecisions(cachedDecisions,snapshot);
       updateScannerJob(jobId,100,"Piyasa kapalı: son tamamlanmış günlük tarama aynen kullanıldı","COMPLETE");
-      return sendJSON(res,200,{success:true,cached:true,timestamp:new Date().toISOString(),scanned:snapshot.scanned,successful:snapshot.successful,complete:true,xu100:{status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."},results:snapshot.results,decisions:existingState.decisions,paper:paperStateForClient(existingState),activity:existingState.activity,history:existingState.history,risk:existingState.risk});
+      return sendJSON(res,200,{success:true,cached:true,timestamp:new Date().toISOString(),scanned:snapshot.scanned,successful:snapshot.successful,complete:true,xu100:{status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."},results:snapshot.results,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
     }
     /*
      * Tarama tek HTTP isteğinde biter: günlük evren için ayrı,
