@@ -6765,7 +6765,7 @@ async function evaluateTradingCandidatesWithAi(
     "Uzman yorumu alanı, gerçek bir uzman alıntısı değildir: yalnızca verilen başlıkların ihtiyatlı AI yorumu olmalı. Başlık yoksa 'Doğrulanmış haber başlığı alınamadı.' yaz.",
     "Yalnızca aşağıdaki JSON nesnesini döndür:",
     '{"reviews":[{"symbol":"ASELS","newsComment":"en fazla 120 karakter","expertComment":"en fazla 120 karakter","summary":"en fazla 120 karakter"}]}',
-    "Tüm adayları eksiksiz döndür. Açıklamalar kısa olmalı ve yalnızca JSON döndürmelisin.",
+    "Tüm adayları eksiksiz döndür. Açıklamalar kısa, doğal Türkçe olmalı ve yalnızca JSON döndürmelisin.",
     "AL, SAT, APPROVE, REJECT, puan, olasılık, giriş, stop veya hedef üretme.",
     "Adaylar:",
     JSON.stringify(enriched),
@@ -7147,12 +7147,12 @@ async function handleTradingScanner(req,res) {
       return {...item,...analysis,score:technicalScore,grade:item.grade,scoreBreakdown:item.scoreBreakdown,fibonacci:fib,decision,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};
     });
     updateScannerJob(jobId,88,"Haber başlıkları için AI özeti hazırlanıyor");
-    const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}]));
+    const noAi=new Map(enriched.slice(0,5).map(item=>[item.symbol,{available:false,provider:"PENDING",summary:"YZ DEĞERLENDİRMESİ BEKLİYOR",newsComment:"",expertComment:""}]));
     const rawAi=await Promise.race([
       evaluateTradingCandidatesWithAi(enriched.slice(0,5)),
       new Promise(resolve=>setTimeout(()=>resolve(noAi),7000))
     ]).catch(()=>noAi);
-    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"AI INTEL PENDING",newsComment:"",expertComment:""}}));
+    const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"YZ DEĞERLENDİRMESİ BEKLİYOR",newsComment:"",expertComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
     updateScannerJob(jobId,96,"Uygun Fibonacci kurulumları kaydediliyor");
     const snapshot=createScannerSnapshot(ranked,riskSettings,scanned,valid.length);

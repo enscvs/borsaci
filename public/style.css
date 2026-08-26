@@ -189,6 +189,51 @@ body::before {
   color: var(--green);
 }
 
+.turkic-main-banner {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  margin: 16px 0 10px;
+  color: #d9b96b;
+  text-align: center;
+  text-shadow: 0 0 12px rgba(217, 185, 107, .16);
+}
+
+.turkic-main-banner > div,
+.turkic-auth-title {
+  font-family: "Segoe UI Historic", "Noto Sans Old Turkic", "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: .17em;
+}
+
+.turkic-main-banner > div {
+  font-size: clamp(30px, 5vw, 58px);
+  line-height: 1;
+}
+
+.turkic-main-banner > span,
+.turkic-crescent {
+  display: inline-block;
+  color: #d9b96b;
+  font-size: 17px;
+  line-height: 1;
+  transform: rotate(-90deg);
+  opacity: .82;
+}
+
+.turkic-auth-title {
+  color: #d9b96b;
+  font-size: 31px;
+  line-height: 1.15;
+  text-shadow: 0 0 11px rgba(217, 185, 107, .14);
+}
+
+.auth-card .turkic-crescent {
+  display: block;
+  width: max-content;
+  margin: -2px auto 8px;
+}
+
 
 .brand-version {
 
