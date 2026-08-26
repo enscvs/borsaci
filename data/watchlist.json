@@ -1668,6 +1668,93 @@
       ],
       "decisions": [
         {
+          "id": "crypto-1787774294512-SPXUSDT-a078da14",
+          "symbol": "SPXUSDT",
+          "market": "CRYPTO",
+          "action": "BUY SETUP",
+          "status": "PENDING_APPROVAL",
+          "grade": "A / AL ADAYI",
+          "paperOnly": true,
+          "timestamp": "2026-08-26T19:58:14.512Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": 0.26,
+          "target1": 0.47,
+          "target2": 0.53,
+          "target3": 0.6,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 294,
+              "price": 0.201,
+              "date": "2026-04-09T23:59:59.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 304,
+              "price": 0.533,
+              "date": "2026-04-19T23:59:59.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 358,
+              "price": 0.2672,
+              "date": "2026-06-12T23:59:59.000Z"
+            },
+            "range": 0.33,
+            "retracementRatio": 0.8006,
+            "entryTriggerPrice": 0.28,
+            "entryZoneLow": 0.28,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-25T23:59:59.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 0.26,
+            "tp1": 0.47,
+            "tp2": 0.53,
+            "tp3": 0.6,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
+          },
+          "indicators": {
+            "score": 68
+          },
+          "pendingOrder": {
+            "symbol": "SPXUSDT",
+            "quantity": 3751,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": 0.26,
+            "target1": 0.47,
+            "target2": 0.53,
+            "target3": 0.6,
+            "positionValue": null,
+            "actualRisk": null,
+            "paperOnly": true,
+            "source": "CRYPTO AI",
+            "createdAt": "2026-08-26T19:58:14.512Z",
+            "updatedAt": "2026-08-26T19:58:14.512Z"
+          }
+        },
+        {
           "id": "crypto-1787774278511-ASTERUSDT-b77354ed",
           "symbol": "ASTERUSDT",
           "market": "CRYPTO",
@@ -2546,6 +2633,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-26T19:58:14.512Z",
+          "type": "CRYPTO_PENDING",
+          "message": "SPXUSDT kripto paper emri onay bekliyor."
+        },
         {
           "timestamp": "2026-08-26T19:57:58.510Z",
           "type": "CRYPTO_PENDING",
