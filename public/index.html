@@ -690,6 +690,12 @@ Waiting for input...
 
     </footer>
 
+    <div class="logout-footer" aria-label="Oturum işlemleri">
+      <button type="button" class="logout-button" data-logout-button hidden>
+        ÇIKIŞ YAP
+      </button>
+    </div>
+
 
   </main>
 
@@ -2326,6 +2332,10 @@ Waiting for input...
             >
           </label>
 
+          <div id="cryptoManualLivePrice" class="paper-order-live-price">
+            CANLI PİYASA FİYATI: PARİTE GİRİLMESİ BEKLENİYOR
+          </div>
+
           <div class="paper-order-form-actions">
             <button type="submit" class="trading-button">
               KRİPTO MANUEL EMİR OLUŞTUR
@@ -2510,9 +2520,17 @@ Waiting for input...
     ================================================== -->
 
 
+    <div class="logout-footer" aria-label="Oturum işlemleri">
+      <button type="button" class="logout-button" data-logout-button hidden>
+        ÇIKIŞ YAP
+      </button>
+    </div>
+
 
 
   </section>
+
+</div>
 
 <!-- =====================================================
      LIGHTWEIGHT CHARTS
@@ -2780,12 +2798,12 @@ Waiting for input...
 ===================================================== -->
 
 <script
-  src="/auth.js?v=20260822-auth-landing"
+  src="/auth.js?v=20260826-multi-logout"
   defer
 ></script>
 
 <script
-  src="/app.js?v=20260826-crypto-ai-parity"
+  src="/app.js?v=20260826-crypto-state-logout"
   defer
 ></script>
 

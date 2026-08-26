@@ -24,6 +24,14 @@
     }
   }
 
+  function logoutButtons() {
+    return [
+      ...document.querySelectorAll(
+        "#logoutButton, [data-logout-button]"
+      ),
+    ];
+  }
+
   function setSubmitting(submitting) {
     const button =
       document.getElementById("loginButton");
@@ -47,12 +55,11 @@
     const app =
       document.getElementById("appShell");
 
-    const logout =
-      document.getElementById("logoutButton");
-
     if (screen) screen.hidden = true;
     if (app) app.hidden = false;
-    if (logout) logout.hidden = false;
+    logoutButtons().forEach(button => {
+      button.hidden = false;
+    });
 
     showLoginError("");
 
@@ -71,11 +78,10 @@
     const app =
       document.getElementById("appShell");
 
-    const logout =
-      document.getElementById("logoutButton");
-
     if (app) app.hidden = true;
-    if (logout) logout.hidden = true;
+    logoutButtons().forEach(button => {
+      button.hidden = true;
+    });
     if (screen) screen.hidden = false;
 
     showLoginError(message);
@@ -262,8 +268,7 @@
   const form =
     document.getElementById("loginForm");
 
-  const logoutButton =
-    document.getElementById("logoutButton");
+  const logoutButtonList = logoutButtons();
 
   if (form) {
     form.addEventListener(
@@ -272,12 +277,12 @@
     );
   }
 
-  if (logoutButton) {
+  logoutButtonList.forEach(logoutButton => {
     logoutButton.addEventListener(
       "click",
       logout
     );
-  }
+  });
 
   checkSession();
 })();
