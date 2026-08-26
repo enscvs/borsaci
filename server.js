@@ -7416,7 +7416,11 @@ async function handleCryptoScanner(req, res) {
       results.push(...await Promise.all(batch.map(scanCryptoSymbol)));
       updateScannerJob(jobId, 10 + Math.round(65 * Math.min(index + 5, BINANCE_CRYPTO_SYMBOLS.length) / BINANCE_CRYPTO_SYMBOLS.length), `${Math.min(index + 5, BINANCE_CRYPTO_SYMBOLS.length)}/${BINANCE_CRYPTO_SYMBOLS.length} kripto varlık kontrol edildi`);
     }
-    const valid = results.filter(item => item.validation?.ok).sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
+    // Kripto günlük mumları BIST'e özgü state alanlarından bağımsızdır;
+    // gerçek, sıralı ve yeterli OHLCV dizisi bulunan her parite adaydır.
+    const valid = results
+      .filter(item => Array.isArray(item.history) && item.history.length >= 220)
+      .sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
     updateScannerJob(jobId, 82, "İlk 5 aday için Fibonacci A-B-C hesaplanıyor");
     const ranked = valid.slice(0, 5).map(item => {
       const fibonacci = fibonacciEngine.fibonacciPlan(item.history);
@@ -7424,7 +7428,7 @@ async function handleCryptoScanner(req, res) {
       return {...item, ...analysis, fibonacci, price:analysis.features.price, ema20:analysis.features.ema20, ema50:analysis.features.ema50, ema200:analysis.features.ema200, rsi:analysis.features.rsi, atr:analysis.features.atr, volumeRatio:analysis.features.volumeRatio};
     });
     updateScannerJob(jobId, 100, "Kripto taraması tamamlandı", "COMPLETE");
-    return sendJSON(res, 200, {success:true, timestamp:new Date().toISOString(), scanned:BINANCE_CRYPTO_SYMBOLS.length, successful:valid.length, results:ranked, source:"BINANCE_PUBLIC"});
+    return sendJSON(res, 200, {success:true, timestamp:new Date().toISOString(), scanned:BINANCE_CRYPTO_SYMBOLS.length, successful:valid.length, results:ranked, source:"BINANCE_PUBLIC", diagnostics:results.map(item=>({symbol:item.symbol, bars:item.history?.length||0, code:item.validation?.code||"OK"}))});
   } catch (error) {
     updateScannerJob(jobId, 100, `Kripto tarama hatası: ${error.message}`, "ERROR");
     return sendJSON(res, 500, {success:false, error:error.message});
