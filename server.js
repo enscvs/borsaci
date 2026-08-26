@@ -3727,6 +3727,21 @@ function createDefaultTradingState() {
       positions: [],
     },
 
+    // Kripto paper hesabı BIST kâğıt hesabından tamamen ayrıdır. Aynı
+    // sembol adı, bakiye veya fiyat kaynağı iki piyasayı birbirine karıştırmaz.
+    cryptoPaper: {
+      initialCapital: 10000,
+      cash: 10000,
+      equity: 10000,
+      pnl: 0,
+      pnlPercent: 0,
+      positions: [],
+      decisions: [],
+      history: [],
+      activity: [],
+      risk: {maxPositionPercent: 20, maxPositions: 5},
+    },
+
     risk: {
       maxPositionPercent: 31,
       maxPositions: 3,
@@ -3791,6 +3806,16 @@ function normalizeTradingState(
     paper: {
       ...fallback.paper,
       ...((value || {}).paper || {}),
+    },
+
+    cryptoPaper: {
+      ...fallback.cryptoPaper,
+      ...((value || {}).cryptoPaper || {}),
+      positions: Array.isArray((value || {}).cryptoPaper?.positions) ? (value || {}).cryptoPaper.positions : [],
+      decisions: Array.isArray((value || {}).cryptoPaper?.decisions) ? (value || {}).cryptoPaper.decisions : [],
+      history: Array.isArray((value || {}).cryptoPaper?.history) ? (value || {}).cryptoPaper.history : [],
+      activity: Array.isArray((value || {}).cryptoPaper?.activity) ? (value || {}).cryptoPaper.activity : [],
+      risk: {...fallback.cryptoPaper.risk, ...((value || {}).cryptoPaper?.risk || {})},
     },
 
     risk: {
@@ -7335,6 +7360,12 @@ if (
   return handleCryptoScanner(req, res);
 }
 
+if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
+if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
+if (req.method === "POST" && pathname === "/api/crypto/paper/approve") return handleCryptoPaperApprove(req, res);
+if (req.method === "POST" && pathname === "/api/crypto/paper/reject") return handleCryptoPaperReject(req, res);
+if (req.method === "POST" && pathname === "/api/crypto/paper/close") return handleCryptoPaperClose(req, res);
+
 if (
   req.method === "GET" &&
   (
@@ -7431,6 +7462,134 @@ async function fetchBinanceDailyHistory(symbol) {
       close: Number(row[4]), volume: Number(row[5]),
     }))
     .filter(candle => [candle.open, candle.high, candle.low, candle.close, candle.volume].every(Number.isFinite));
+}
+
+async function fetchCryptoPaperMarketPrice(symbol) {
+  const quote = await fetchBinancePublicJson(`/api/v3/ticker/price?symbol=${encodeURIComponent(symbol)}`);
+  const price = Number(quote?.price);
+  if (!Number.isFinite(price) || price <= 0) throw new Error(`${symbol} için doğrulanmış kripto piyasa fiyatı alınamadı.`);
+  return roundTradingValue(price);
+}
+
+function recalculateCryptoPaper(paper) {
+  const openValue = (paper.positions || []).filter(position => position.status === "OPEN")
+    .reduce((sum, position) => sum + Number(position.current || position.entry || 0) * Number(position.quantity || 0), 0);
+  paper.equity = roundTradingValue(Number(paper.cash || 0) + openValue);
+  paper.pnl = roundTradingValue(Number(paper.equity) - Number(paper.initialCapital || 0));
+  paper.pnlPercent = Number(paper.initialCapital) > 0 ? roundTradingValue(Number(paper.pnl) * 100 / Number(paper.initialCapital)) : 0;
+}
+
+function cryptoPaperStateForClient(state) {
+  const paper = state.cryptoPaper || createDefaultTradingState().cryptoPaper;
+  return {...paper, positions: (paper.positions || []).filter(position => position.status === "OPEN")};
+}
+
+async function handleCryptoState(req, res) {
+  try {
+    const stateResult = await getTradingState();
+    return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(stateResult.content)});
+  } catch (error) {
+    return sendJSON(res, 500, {error: error.message});
+  }
+}
+
+function cryptoPaperDecisionFromInput(input, paper, timestamp) {
+  const order = paperOrders.normalizePaperOrder({
+    symbol: input.symbol,
+    quantity: input.quantity,
+    entryPrice: input.entryPrice,
+    orderType: input.orderType || "MARKET",
+    stop: input.stop,
+    target1: input.target1,
+    target2: input.target2,
+    target3: input.target3,
+  }, {requireSymbol: true, requireOrderType: true});
+  return {
+    id: `crypto-${Date.now()}-${order.symbol}-${crypto.randomBytes(4).toString("hex")}`,
+    symbol: order.symbol, market: "CRYPTO", action: "BUY SETUP", status: "PENDING_APPROVAL",
+    grade: input.grade || "KRİPTO ADAYI", paperOnly: true, timestamp,
+    entry: {low: order.entryPrice, high: order.entryPrice, reference: order.entryPrice},
+    stop: order.stop, target1: order.target1, target2: order.target2, target3: order.target3,
+    fibonacci: input.fibonacci || null, indicators: {score: Number(input.score) || null},
+    pendingOrder: {...order, source: input.source || "CRYPTO AI", paperOnly: true, createdAt: timestamp, updatedAt: timestamp},
+  };
+}
+
+async function handleCryptoPaperQueue(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const paper = state.cryptoPaper;
+    const timestamp = new Date().toISOString();
+    const candidate = cryptoPaperDecisionFromInput(input, paper, timestamp);
+    const existing = paper.decisions.find(decision => decision.status === "PENDING_APPROVAL" && decision.symbol === candidate.symbol);
+    if (existing) {
+      existing.pendingOrder = candidate.pendingOrder;
+      existing.entry = candidate.entry; existing.stop = candidate.stop; existing.target1 = candidate.target1; existing.target2 = candidate.target2; existing.target3 = candidate.target3;
+    } else paper.decisions = [candidate, ...paper.decisions].slice(0, 100);
+    paper.activity = [{timestamp, type: "CRYPTO_PENDING", message: `${candidate.symbol} kripto paper emri onay bekliyor.`}, ...paper.activity].slice(0, 100);
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+    return sendJSON(res, 201, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
+  } catch (error) { return sendJSON(res, 400, {error: error.message}); }
+}
+
+async function handleCryptoPaperApprove(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
+    const decision = paper.decisions.find(value => value.id === String(input.decisionId || "") && value.status === "PENDING_APPROVAL");
+    if (!decision) throw new Error("Bu kripto emri artık onay beklemiyor.");
+    const order = decision.pendingOrder;
+    const marketPrice = await fetchCryptoPaperMarketPrice(order.symbol);
+    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) throw new Error(`${order.symbol} limit emri bekliyor: son fiyat $${marketPrice}, limit $${order.entryPrice}.`);
+    const entry = order.orderType === "MARKET" ? marketPrice : Math.min(marketPrice, Number(order.entryPrice));
+    if (order.stop !== null && Number(order.stop) >= entry) throw new Error("Stop, gerçekleşen giriş fiyatının altında olmalı.");
+    const cost = roundTradingValue(entry * Number(order.quantity));
+    if (cost > Number(paper.cash)) throw new Error("Kripto paper bakiyesi bu emir için yeterli değil.");
+    let position = paper.positions.find(value => value.status === "OPEN" && value.symbol === order.symbol);
+    if (position) {
+      const combined = Number(position.quantity) + Number(order.quantity);
+      position.entry = roundTradingValue((Number(position.entry) * Number(position.quantity) + entry * Number(order.quantity)) / combined);
+      position.quantity = combined; position.current = marketPrice;
+    } else {
+      const max = Math.max(1, Number(paper.risk?.maxPositions) || 5);
+      if (paper.positions.filter(value => value.status === "OPEN").length >= max) throw new Error(`En fazla ${max} açık kripto pozisyonu olabilir.`);
+      position = {id: `crypto-pos-${Date.now()}-${order.symbol}`, decisionId: decision.id, symbol: order.symbol, market: "CRYPTO", status: "OPEN", quantity: Number(order.quantity), entry, current: marketPrice, stop: order.stop, target1: order.target1, target2: order.target2, target3: order.target3, openedAt: new Date().toISOString(), paperOnly: true};
+      paper.positions = [position, ...paper.positions];
+    }
+    paper.cash = roundTradingValue(Number(paper.cash) - cost); decision.status = "OPEN";
+    paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_OPEN", message: `${order.symbol} kripto paper pozisyonu açıldı.`}, ...paper.activity].slice(0, 100);
+    recalculateCryptoPaper(paper); await saveTradingState(state, stateResult.sha, stateResult.container);
+    return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
+  } catch (error) { return sendJSON(res, 400, {error: error.message}); }
+}
+
+async function handleCryptoPaperReject(req, res) {
+  try {
+    const input = await readTradingRequest(req); const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
+    const decision = paper.decisions.find(value => value.id === String(input.decisionId || "") && value.status === "PENDING_APPROVAL");
+    if (!decision) throw new Error("Bu kripto emri artık onay beklemiyor.");
+    decision.status = "REJECTED_BY_USER"; paper.history = [{...decision, closedAt: new Date().toISOString()}, ...paper.history].slice(0, 100);
+    paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_REJECT", message: `${decision.symbol} kripto emri reddedildi.`}, ...paper.activity].slice(0, 100);
+    await saveTradingState(state, stateResult.sha, stateResult.container); return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
+  } catch (error) { return sendJSON(res, 400, {error: error.message}); }
+}
+
+async function handleCryptoPaperClose(req, res) {
+  try {
+    const input = await readTradingRequest(req); const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
+    const position = paper.positions.find(value => value.status === "OPEN" && value.id === String(input.positionId || ""));
+    if (!position) throw new Error("Açık kripto paper pozisyon bulunamadı.");
+    const quantity = Number(input.quantity || position.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0 || quantity > Number(position.quantity)) throw new Error("Satılacak miktar geçersiz.");
+    const price = await fetchCryptoPaperMarketPrice(position.symbol);
+    const proceeds = roundTradingValue(price * quantity); paper.cash = roundTradingValue(Number(paper.cash) + proceeds);
+    position.quantity = roundTradingValue(Number(position.quantity) - quantity); position.current = price;
+    if (position.quantity <= 0) { position.status = "CLOSED"; position.closedAt = new Date().toISOString(); paper.history = [{...position}, ...paper.history].slice(0, 100); }
+    paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_CLOSE", message: `${position.symbol} kripto paper pozisyonu kapatıldı.`}, ...paper.activity].slice(0, 100);
+    recalculateCryptoPaper(paper); await saveTradingState(state, stateResult.sha, stateResult.container); return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
+  } catch (error) { return sendJSON(res, 400, {error: error.message}); }
 }
 
 async function fetchBinanceTopUsdtSymbols(limit = 100) {
