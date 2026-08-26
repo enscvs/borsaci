@@ -1302,7 +1302,7 @@
         "rank": 1,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "REJECTED_BY_USER",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1618,14 +1618,14 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "REJECTED_BY_USER",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T08:18:10.119Z",
           "expiresAt": "2026-08-27T08:18:10.119Z",
-          "overrideAt": "2026-08-26T10:07:19.913Z",
+          "overrideAt": "2026-08-26T10:10:40.298Z",
           "rejectedAt": "2026-08-26T10:10:30.430Z",
           "rejectedBy": "SITE"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
         "timestamp": "2026-08-26T08:18:10.119Z",
         "manualOverride": true,
@@ -1642,9 +1642,9 @@
           "actualRisk": 4426.56,
           "paperOnly": true,
           "source": "SCANNER",
-          "createdAt": "2026-08-26T10:07:19.913Z",
-          "updatedAt": "2026-08-26T10:09:34.632Z",
-          "editedAt": "2026-08-26T10:09:34.632Z"
+          "createdAt": "2026-08-26T10:10:40.298Z",
+          "updatedAt": "2026-08-26T10:10:40.298Z",
+          "editedAt": null
         },
         "outcome": "USER_REJECTED"
       },
@@ -11441,6 +11441,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:10:40.298Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T10:10:30.430Z",
         "type": "PAPER_REJECTED",
         "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
@@ -11934,11 +11939,6 @@
         "timestamp": "2026-08-22T23:39:46.847Z",
         "type": "PAPER_OPEN",
         "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15498.00."
-      },
-      {
-        "timestamp": "2026-08-22T23:39:46.847Z",
-        "type": "PAPER_OPEN",
-        "message": "DOHOL paper pozisyonu açıldı: 717 lot · ₺15487.20."
       }
     ],
     "scannerSnapshot": {
