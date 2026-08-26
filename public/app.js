@@ -8929,9 +8929,39 @@ function formatCryptoUsd(value) {
   }).format(number);
 }
 
+function renderCryptoDecisionCards(records) {
+  const feed = document.getElementById("cryptoDecisionFeed");
+  if (!feed) return;
+  feed.innerHTML = (records || []).map((item, index) => {
+    const fib = item.fibonacci || {};
+    return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)} · SL: ${formatCryptoUsd(fib.stopLoss)} · TP1/2/3: ${formatCryptoUsd(fib.tp1)} / ${formatCryptoUsd(fib.tp2)} / ${formatCryptoUsd(fib.tp3)}</div><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">EMİR OLUŞTUR</button></article>`;
+  }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
+  bindCryptoDecisionInteractions();
+  bindCryptoPaperActions();
+}
+
+function restoreCryptoSavedScan(paper) {
+  const scanner = paper?.scanner || {};
+  const records = Array.isArray(scanner.results) ? scanner.results : [];
+  if (!records.length || cryptoRenderedRecords.length) return;
+  cryptoRenderedRecords = records;
+  renderCryptoDecisionCards(records);
+  renderCryptoDecisionDetail(records[0]);
+  const timestamp = scanner.timestamp ? new Date(scanner.timestamp) : null;
+  const results = document.getElementById("cryptoScannerResults");
+  if (results) results.innerHTML = `<div class="trading-empty">Son tarama geri yüklendi · ${Number(scanner.scanned || 0)} Binance USDT paritesi · ${Number(scanner.successful || 0)} geçerli günlük veri</div>`;
+  const status = document.getElementById("cryptoScannerStatus");
+  const engine = document.getElementById("cryptoEngineStatus");
+  const time = document.getElementById("cryptoLastScanTime");
+  if (status) status.textContent = "SON TARAMA";
+  if (engine) engine.textContent = "HAZIR";
+  if (time && timestamp && !Number.isNaN(timestamp.getTime())) time.textContent = timestamp.toLocaleTimeString("tr-TR", {hour:"2-digit", minute:"2-digit", second:"2-digit"});
+}
+
 function renderCryptoPaperState(payload) {
   const paper = payload?.cryptoPaper || payload || {};
   latestCryptoPaperState = paper;
+  restoreCryptoSavedScan(paper);
   const setText = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
   setText("cryptoPaperInitial", formatCryptoUsd(paper.initialCapital));
   setText("cryptoPaperCash", formatCryptoUsd(paper.cash));
@@ -9348,17 +9378,11 @@ async function runCryptoScanner() {
     if (requestId !== cryptoScannerRequestId) return;
     if (!response.ok || !data.success) throw new Error(data?.error || "Kripto taraması başarısız.");
     cryptoRenderedRecords = Array.isArray(data.results) ? data.results : [];
-    const cards = cryptoRenderedRecords.map((item, index) => {
-      const fib = item.fibonacci || {};
-      return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)} · SL: ${formatCryptoUsd(fib.stopLoss)} · TP1/2/3: ${formatCryptoUsd(fib.tp1)} / ${formatCryptoUsd(fib.tp2)} / ${formatCryptoUsd(fib.tp3)}</div><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">EMİR OLUŞTUR</button></article>`;
-    }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
     if (results) results.innerHTML = `<div class="trading-empty">${data.scanned} Binance USDT paritesi tarandı · ${data.successful} geçerli günlük veri</div>`;
-    if (feed) feed.innerHTML = cards;
+    if (feed) renderCryptoDecisionCards(cryptoRenderedRecords);
     renderCryptoScanSummary(data, cryptoRenderedRecords);
     if (data.cryptoPaper) renderCryptoPaperState({cryptoPaper: data.cryptoPaper});
     renderCryptoDecisionDetail(cryptoRenderedRecords[0]);
-    bindCryptoDecisionInteractions();
-    bindCryptoPaperActions();
     if (status) status.textContent = "TAMAMLANDI";
     if (engine) engine.textContent = "HAZIR";
     const time = document.getElementById("cryptoLastScanTime");

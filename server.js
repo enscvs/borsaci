@@ -3740,6 +3740,9 @@ function createDefaultTradingState() {
       history: [],
       signals: [],
       activity: [],
+      // Son taramanın hafif özeti saklanır. Mum serilerini burada tutmuyoruz;
+      // GitHub state dosyası şişmeden yenileme sonrasında karar kartları geri gelir.
+      scanner: {timestamp: null, scanned: 0, successful: 0, results: []},
       risk: {maxPositionPercent: 20, maxPositions: 5},
     },
 
@@ -3817,6 +3820,13 @@ function normalizeTradingState(
       history: Array.isArray((value || {}).cryptoPaper?.history) ? (value || {}).cryptoPaper.history : [],
       signals: Array.isArray((value || {}).cryptoPaper?.signals) ? (value || {}).cryptoPaper.signals : [],
       activity: Array.isArray((value || {}).cryptoPaper?.activity) ? (value || {}).cryptoPaper.activity : [],
+      scanner: {
+        ...fallback.cryptoPaper.scanner,
+        ...((value || {}).cryptoPaper?.scanner || {}),
+        results: Array.isArray((value || {}).cryptoPaper?.scanner?.results)
+          ? (value || {}).cryptoPaper.scanner.results
+          : [],
+      },
       risk: {...fallback.cryptoPaper.risk, ...((value || {}).cryptoPaper?.risk || {})},
     },
 
@@ -7563,7 +7573,31 @@ async function handleCryptoPaperQueue(req, res) {
     const paper = state.cryptoPaper;
     const timestamp = new Date().toISOString();
     const candidate = cryptoPaperDecisionFromInput(input, paper, timestamp);
-    const existing = paper.decisions.find(decision => decision.status === "PENDING_APPROVAL" && decision.symbol === candidate.symbol);
+    const isManual = String(candidate.pendingOrder?.source || "").toUpperCase() === "MANUAL";
+
+    // Kripto YZ emir alanı tek aktif plan taşır. Yeni bir coin seçildiğinde
+    // eski YZ planı görünmez bir ikinci/üçüncü kart olarak kalmaz; geçmişe
+    // "yerine yenisi geldi" kaydıyla aktarılır. Manuel emirler ayrıdır.
+    if (!isManual) {
+      const superseded = (paper.decisions || []).filter(decision =>
+        decision.status === "PENDING_APPROVAL" &&
+        String(decision.pendingOrder?.source || decision.source || "").toUpperCase() !== "MANUAL" &&
+        decision.symbol !== candidate.symbol
+      );
+      if (superseded.length) {
+        paper.history = superseded.map(decision => ({
+          ...decision,
+          status: "SUPERSEDED",
+          closedAt: timestamp,
+        })).concat(paper.history || []).slice(0, 100);
+        paper.decisions = paper.decisions.filter(decision => !superseded.includes(decision));
+      }
+    }
+    const existing = paper.decisions.find(decision =>
+      decision.status === "PENDING_APPROVAL" &&
+      decision.symbol === candidate.symbol &&
+      (String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL") === isManual
+    );
     if (existing) {
       existing.pendingOrder = candidate.pendingOrder;
       existing.entry = candidate.entry; existing.stop = candidate.stop; existing.target1 = candidate.target1; existing.target2 = candidate.target2; existing.target3 = candidate.target3;
@@ -7749,6 +7783,18 @@ async function handleCryptoScanner(req, res) {
     }));
     const existingKeys = new Set(existingSignals.map(item => `${item.symbol}:${String(item.timestamp || "").slice(0, 10)}`));
     state.cryptoPaper.signals = [...newSignals.filter(item => !existingKeys.has(`${item.symbol}:${signalTime.slice(0, 10)}`)), ...existingSignals].slice(0, 200);
+    // Karar kartlarını sayfa yenilemesinden sonra da yeniden kurabilmek için
+    // sadece görselde gereken sonuç alanlarını sakla. Tam OHLCV geçmişi
+    // bilinçli olarak saklanmaz; grafik yeni taramada tekrar gerçek veriden kurulur.
+    state.cryptoPaper.scanner = {
+      timestamp: signalTime,
+      scanned: cryptoSymbols.length,
+      successful: valid.length,
+      results: ranked.map(item => {
+        const {history, ...persisted} = item;
+        return persisted;
+      }).slice(0, 5),
+    };
     state.cryptoPaper.activity = [{timestamp: signalTime, type: "CRYPTO_SCAN", message: `${cryptoSymbols.length} USDT paritesi tarandı; ${ranked.length} aday kaydedildi.`}, ...(state.cryptoPaper.activity || [])].slice(0, 100);
     await saveTradingState(state, stateResult.sha, stateResult.container);
     updateScannerJob(jobId, 100, "Kripto taraması tamamlandı", "COMPLETE");
