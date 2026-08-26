@@ -8908,6 +8908,9 @@ function bindKillSwitch() {
 }
 
 let cryptoRenderedRecords = [];
+let cryptoMarketChart = null;
+let cryptoCandleSeries = null;
+let cryptoChartMarkers = null;
 
 function formatCryptoUsd(value) {
   const number = Number(value);
@@ -8919,9 +8922,48 @@ function formatCryptoUsd(value) {
   }).format(number);
 }
 
-function cryptoChartUrl(symbol) {
-  const pair = String(symbol || "BTCUSDT").toUpperCase();
-  return `https://s.tradingview.com/widgetembed/?frameElementId=cryptoDecisionChart&symbol=BINANCE%3A${encodeURIComponent(pair)}&interval=D&hidesidetoolbar=1&symboledit=0&saveimage=0&toolbarbg=0f0f0f&theme=dark&style=1&locale=tr&timezone=Europe%2FIstanbul`;
+function renderCryptoDecisionChart(item) {
+  const container = document.getElementById("cryptoDecisionChart");
+  if (!container || typeof LightweightCharts === "undefined") return;
+  try {
+    if (cryptoMarketChart) cryptoMarketChart.remove();
+    cryptoMarketChart = LightweightCharts.createChart(container, {
+      width: Math.max(280, container.clientWidth || 320), height: 300,
+      layout: {background: {color: "#071008"}, textColor: "#b8d9c0"},
+      grid: {vertLines: {color: "rgba(72,255,104,.08)"}, horzLines: {color: "rgba(72,255,104,.08)"}},
+      rightPriceScale: {borderColor: "rgba(72,255,104,.25)"},
+      timeScale: {borderColor: "rgba(72,255,104,.25)", timeVisible: false},
+    });
+    cryptoCandleSeries = cryptoMarketChart.addSeries(LightweightCharts.CandlestickSeries, {
+      upColor: "#42d392", downColor: "#f05b6b", borderVisible: false,
+      wickUpColor: "#42d392", wickDownColor: "#f05b6b",
+    });
+    const candles = (item.history || []).slice(-150).map(candle => ({
+      time: Number(candle.time), open: Number(candle.open), high: Number(candle.high), low: Number(candle.low), close: Number(candle.close),
+    })).filter(candle => Number.isFinite(candle.time) && [candle.open, candle.high, candle.low, candle.close].every(Number.isFinite));
+    cryptoCandleSeries.setData(candles);
+    const fib = item.fibonacci || {};
+    const lineStyle = LightweightCharts.LineStyle || {};
+    [
+      [fib.entryTriggerPrice, "FIB TETİK", "#76a9ff", lineStyle.Dashed ?? 2],
+      [fib.entryZoneLow, "GİRİŞ ALT", "#72dddd", lineStyle.Dotted ?? 1],
+      [fib.entryZoneHigh, "GİRİŞ ÜST", "#72dddd", lineStyle.Dotted ?? 1],
+      [fib.stopLoss, "SL", "#ff6b6b", lineStyle.Solid ?? 0],
+      [fib.tp1, "TP1", "#78e58b", lineStyle.Solid ?? 0],
+      [fib.tp2, "TP2", "#78e58b", lineStyle.Solid ?? 0],
+      [fib.tp3, "TP3", "#78e58b", lineStyle.Solid ?? 0],
+    ].forEach(([price, title, color, lineStyleValue]) => {
+      if (Number.isFinite(Number(price)) && Number(price) > 0) cryptoCandleSeries.createPriceLine({price: Number(price), title, color, lineWidth: 1, lineStyle: lineStyleValue, axisLabelVisible: true});
+    });
+    const points = [[fib.pointA, "A", "belowBar", "#f8c35a"], [fib.pointB, "B", "aboveBar", "#76a9ff"], [fib.pointC, "C", "belowBar", "#ff7a7a"]]
+      .filter(([point]) => Number.isFinite(Number(point?.price)) && point?.date)
+      .map(([point, text, position, color]) => ({time: Math.floor(new Date(point.date).getTime() / 1000), position, color, shape: "circle", text}));
+    if (points.length && typeof LightweightCharts.createSeriesMarkers === "function") cryptoChartMarkers = LightweightCharts.createSeriesMarkers(cryptoCandleSeries, points);
+    cryptoMarketChart.timeScale().fitContent();
+  } catch (error) {
+    console.warn("CRYPTO CHART:", error.message);
+    container.innerHTML = '<div class="trading-empty">Kripto grafik verisi oluşturulamadı.</div>';
+  }
 }
 
 function renderCryptoScoreBreakdown(item) {
@@ -8940,7 +8982,7 @@ function renderCryptoScoreBreakdown(item) {
     const factors = Array.isArray(bucket?.items) ? bucket.items.map(entry => escapeHtml(String(entry?.label || entry))).join(" · ") : "Veri yok";
     return `<tr><th>${escapeHtml(label)}</th><td><strong>${Number(bucket?.score || 0)}/${Number(bucket?.max || 0)}</strong></td><td>${factors || "—"}</td></tr>`;
   }).join("");
-  content.innerHTML = `<div class="decision-score-summary"><strong>TEKNİK ${Number(item.score || 0)}/100 · ${escapeHtml(item.grade || "KARAR")}</strong><span>Bu puan başarı olasılığı değildir.</span></div><div class="decision-score-table-wrap"><table class="decision-score-table"><thead><tr><th>BAŞLIK</th><th>PUAN</th><th>KANITLAR</th></tr></thead><tbody>${rows}<tr class="decision-score-penalty-row"><th>Cezalar</th><td><strong>${Number(breakdown.penalties?.score || 0)}</strong></td><td>${Array.isArray(breakdown.penalties?.items) ? breakdown.penalties.items.map(entry => escapeHtml(String(entry?.label || entry))).join(" · ") : "Ceza yok"}</td></tr></tbody></table></div>`;
+  content.innerHTML = `<div class="decision-score-summary"><strong>TEKNİK ${Number(item.score || 0)}/100 · ${escapeHtml(item.grade || "KARAR")}</strong><span>Bu puan başarı olasılığı değildir.</span></div><div class="crypto-score-table-wrap"><table class="crypto-score-table"><thead><tr><th>BAŞLIK</th><th>PUAN</th><th>KANITLAR</th></tr></thead><tbody>${rows}<tr class="decision-score-penalty-row"><th>Cezalar</th><td><strong>${Number(breakdown.penalties?.score || 0)}</strong></td><td>${Array.isArray(breakdown.penalties?.items) ? breakdown.penalties.items.map(entry => escapeHtml(String(entry?.label || entry))).join(" · ") : "Ceza yok"}</td></tr></tbody></table></div>`;
 }
 
 function renderCryptoDecisionDetail(item) {
@@ -8952,7 +8994,7 @@ function renderCryptoDecisionDetail(item) {
   const fib = item.fibonacci || {};
   if (symbol) symbol.textContent = item.symbol || "SEMBOL YOK";
   if (chartSymbol) chartSymbol.textContent = item.symbol || "SEMBOL YOK";
-  if (chart) chart.src = cryptoChartUrl(item.symbol);
+  if (chart) renderCryptoDecisionChart(item);
   renderCryptoScoreBreakdown(item);
   detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(fib.entryZoneLow)} – ${formatCryptoUsd(fib.entryZoneHigh)}</span><span>Stop: ${formatCryptoUsd(fib.stopLoss)}</span><span>TP1: ${formatCryptoUsd(fib.tp1)} · R/R ${fib.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(fib.tp2)} · R/R ${fib.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(fib.tp3)} · R/R ${fib.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı; teknik kalite puanı yine gösterilir."))}</small>`;
 }

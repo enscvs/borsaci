@@ -2743,6 +2743,75 @@ textarea::placeholder {
   visibility: hidden;
 }
 
+/* Kripto karar alanı BIST puan tablosunun geniş masaüstü düzenini devralmaz. */
+.crypto-chart-area {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+.crypto-chart-area .market-chart {
+  position: absolute;
+  inset: 0;
+}
+
+.crypto-score-table-wrap {
+  overflow: hidden;
+  border: 1px solid rgba(72, 255, 104, .16);
+}
+
+.crypto-score-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 10px;
+}
+
+.crypto-score-table th,
+.crypto-score-table td {
+  padding: 7px 8px;
+  vertical-align: top;
+  text-align: left;
+  border-bottom: 1px solid rgba(72, 255, 104, .12);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.crypto-score-table th:nth-child(1) { width: 28%; }
+.crypto-score-table th:nth-child(2),
+.crypto-score-table td:nth-child(2) { width: 15%; white-space: nowrap; }
+.crypto-score-table th:nth-child(3) { width: 57%; }
+
+#cryptoSignalHistory .signal-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(72, 255, 104, .12);
+  background: transparent;
+  color: #b8d9c0;
+  font: inherit;
+  text-align: left;
+}
+
+#cryptoSignalHistory .signal-history-item strong { color: #d2f5d8; }
+#cryptoSignalHistory .signal-history-item span { color: #8eb697; font-size: 10px; text-align: right; }
+#cryptoSignalHistory .signal-history-item small { grid-column: 1 / -1; color: #708c76; font-size: 9px; }
+#cryptoSignalHistory .signal-history-item:active { background: rgba(72, 255, 104, .08); }
+
+@media (max-width: 680px) {
+  .crypto-score-table { font-size: 9px; }
+  .crypto-score-table th,
+  .crypto-score-table td { padding: 6px 5px; line-height: 1.38; }
+  .crypto-score-table th:nth-child(1) { width: 27%; }
+  .crypto-score-table th:nth-child(2),
+  .crypto-score-table td:nth-child(2) { width: 16%; }
+  .crypto-score-table th:nth-child(3) { width: 57%; }
+  #cryptoSignalHistory .signal-history-item { font-size: 10px; }
+}
+
 .decision-chart-status {
   display: flex;
   flex-wrap: wrap;
