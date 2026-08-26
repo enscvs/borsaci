@@ -1521,8 +1521,8 @@
       ]
     },
     "risk": {
-      "maxPositionPercent": 31,
-      "maxPositions": 3,
+      "maxPositionPercent": 30,
+      "maxPositions": 1,
       "riskPerTradePercent": 1,
       "capital": 50000,
       "capitalSource": "MANUAL"
@@ -13730,6 +13730,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:28:31.591Z",
+        "type": "RISK",
+        "message": "Risk Engine ve Paper Portfolio sermayesi ₺50.000,00 olarak eşitlendi."
+      },
+      {
         "timestamp": "2026-08-26T11:26:40.885Z",
         "type": "PAPER_APPROVED",
         "message": "ASELS paper işlemi SITE üzerinden onaylandı."
@@ -14223,11 +14228,6 @@
         "timestamp": "2026-08-26T09:47:52.475Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "ASELS bekleyen paper emri düzenlendi: 20 lot · ₺401,00 · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T09:47:47.175Z",
-        "type": "PAPER_MANUAL_PENDING",
-        "message": "ASELS için MANUAL PAPER ONLY emir onayı bekliyor: 20 lot · LIMIT."
       }
     ],
     "scannerSnapshot": {
