@@ -1787,7 +1787,7 @@
         "rank": 5,
         "symbol": "AHGAZ",
         "action": "BUY SETUP",
-        "status": "REJECTED_BY_USER",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 31.91,
@@ -2103,32 +2103,32 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "REJECTED_BY_USER",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-26T10:37:43.286Z",
           "expiresAt": "2026-08-27T10:37:43.287Z",
-          "overrideAt": "2026-08-26T10:47:29.403Z",
+          "overrideAt": "2026-08-26T11:09:01.426Z",
           "rejectedAt": "2026-08-26T10:48:09.685Z",
           "rejectedBy": "SITE"
         },
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (30.91) planı geçersiz kılar.",
         "timestamp": "2026-08-26T10:37:43.286Z",
         "manualOverride": true,
         "pendingOrder": {
           "symbol": "AHGAZ",
           "quantity": 440,
-          "entryPrice": 35.92,
+          "entryPrice": 35.9,
           "orderType": "LIMIT",
           "stop": 30.91,
           "target1": 40.08,
           "target2": 42.4,
           "target3": 45.36,
-          "positionValue": 15804.8,
-          "actualRisk": 2204.4,
+          "positionValue": 15796,
+          "actualRisk": 2195.6,
           "paperOnly": true,
           "source": "SCANNER",
-          "createdAt": "2026-08-26T10:47:29.403Z",
-          "updatedAt": "2026-08-26T10:47:29.403Z",
+          "createdAt": "2026-08-26T11:09:01.426Z",
+          "updatedAt": "2026-08-26T11:09:01.426Z",
           "editedAt": null
         },
         "outcome": "USER_REJECTED"
@@ -12916,6 +12916,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T11:09:01.426Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-26T11:08:11.404Z",
         "type": "PAPER_APPROVED",
         "message": "GESAN paper işlemi SITE üzerinden onaylandı."
@@ -13407,11 +13412,6 @@
       },
       {
         "timestamp": "2026-08-25T11:45:44.768Z",
-        "type": "SCAN",
-        "message": "2 active AI decision(s) refreshed or generated."
-      },
-      {
-        "timestamp": "2026-08-24T17:08:46.017Z",
         "type": "SCAN",
         "message": "2 active AI decision(s) refreshed or generated."
       }
