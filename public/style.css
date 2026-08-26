@@ -157,10 +157,40 @@ body::before {
   font-weight: bold;
 
   letter-spacing: 2px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
 }
 
 
-.brand span {
+.app-logo {
+
+  display: block;
+
+  flex: 0 0 auto;
+
+  object-fit: contain;
+}
+
+
+.header-logo {
+
+  width: 29px;
+
+  height: 29px;
+}
+
+
+.brand-name {
+
+  color: var(--green);
+}
+
+
+.brand-version {
 
   color: var(--muted);
 
@@ -2111,6 +2141,176 @@ textarea::placeholder {
 
 
 /* =========================================================
+   PENDING PAPER ORDERS
+========================================================= */
+
+.pending-paper-orders {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
+
+  padding: 12px;
+  border-bottom: 1px solid rgba(72, 255, 104, .15);
+}
+
+.pending-paper-order-card {
+  border: 1px solid rgba(255, 176, 0, .48);
+  background: linear-gradient(135deg, rgba(255, 176, 0, .075), rgba(4, 14, 5, .5));
+}
+
+.pending-paper-order-card.is-manual {
+  border-color: rgba(111, 190, 255, .48);
+  background: linear-gradient(135deg, rgba(71, 137, 213, .09), rgba(4, 14, 5, .5));
+}
+
+.pending-paper-order-card.is-focused {
+  border-color: #f5df8e;
+  box-shadow: 0 0 0 2px rgba(245, 223, 142, .14), 0 0 24px rgba(245, 223, 142, .13);
+}
+
+.pending-paper-order-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 9px;
+
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(255, 176, 0, .24);
+}
+
+.pending-paper-order-head strong {
+  color: #fff0bd;
+  font-size: 12px;
+  letter-spacing: .05em;
+}
+
+.pending-paper-order-card.is-manual .pending-paper-order-head {
+  border-bottom-color: rgba(111, 190, 255, .25);
+}
+
+.pending-paper-order-card.is-manual .pending-paper-order-head strong {
+  color: #b7dcff;
+}
+
+.pending-paper-order-badge {
+  padding: 2px 5px;
+  border: 1px solid rgba(255, 176, 0, .5);
+  color: #ffd676;
+  font-size: 9px;
+  letter-spacing: .06em;
+}
+
+.pending-paper-order-card.is-manual .pending-paper-order-badge {
+  border-color: rgba(111, 190, 255, .5);
+  color: #a9ceff;
+}
+
+.pending-paper-order-head small {
+  margin-left: auto;
+  color: #8ba48e;
+  font-size: 9px;
+}
+
+.paper-order-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+
+  padding: 10px;
+}
+
+.paper-order-form label {
+  display: grid;
+  gap: 4px;
+
+  color: #9db9a1;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.paper-order-form input,
+.paper-order-form select {
+  width: 100%;
+  box-sizing: border-box;
+
+  border: 1px solid #315431;
+  background: #071007;
+  color: #d7f7d7;
+
+  padding: 7px;
+  outline: 0;
+
+  font: inherit;
+  font-size: 11px;
+}
+
+.paper-order-form input:focus,
+.paper-order-form select:focus {
+  border-color: #72d581;
+  box-shadow: 0 0 0 1px rgba(114, 213, 129, .2);
+}
+
+.paper-order-form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 10px;
+
+  margin-top: 2px;
+}
+
+.paper-order-form-actions small {
+  color: #829287;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.paper-order-form-actions .trading-button[data-paper-order-action="approve"] {
+  color: #aef5b8;
+  border-color: #36723e;
+}
+
+.paper-order-form-actions .trading-button[data-paper-order-action="reject"] {
+  color: #ff9d9d;
+  border-color: #7f3434;
+}
+
+.manual-paper-order-wrap {
+  margin: 12px;
+  border: 1px solid rgba(111, 190, 255, .28);
+  background: rgba(22, 52, 78, .08);
+}
+
+.manual-paper-order-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 5px 12px;
+
+  padding: 10px;
+  border-bottom: 1px solid rgba(111, 190, 255, .22);
+}
+
+.manual-paper-order-intro strong {
+  color: #b7dcff;
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+
+.manual-paper-order-intro small {
+  color: #9ab3a1;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.manual-paper-order-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+
+/* =========================================================
    POSITION TABLE
 ========================================================= */
 
@@ -2270,6 +2470,11 @@ textarea::placeholder {
     grid-template-columns: 1fr;
   }
 
+  .paper-order-form,
+  .manual-paper-order-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
 }
 
 
@@ -2301,6 +2506,26 @@ textarea::placeholder {
   .scanner-score,
   .scanner-change {
     display: none;
+  }
+
+  .pending-paper-orders {
+    grid-template-columns: 1fr;
+    padding: 8px;
+  }
+
+  .manual-paper-order-wrap {
+    margin: 8px;
+  }
+
+  .paper-order-form,
+  .manual-paper-order-form {
+    grid-template-columns: 1fr 1fr;
+    padding: 8px;
+  }
+
+  .pending-paper-order-head small {
+    width: 100%;
+    margin-left: 0;
   }
 
 }

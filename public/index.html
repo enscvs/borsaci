@@ -34,7 +34,16 @@
   aria-label="BorsaCI giriş"
 >
   <form id="loginForm" class="auth-card">
-    <div class="auth-brand">BORSACI <span>SECURE ACCESS</span></div>
+    <div class="auth-brand">
+      <img
+        class="app-logo auth-logo"
+        src="/favicon.ico?v=2"
+        alt=""
+      >
+      <div>
+        BORSACI <span>SECURE ACCESS</span>
+      </div>
+    </div>
     <p>AI TRADING TERMINAL</p>
     <label for="loginPassword">PASSWORD</label>
     <input
@@ -58,7 +67,13 @@
   <header class="topbar">
 
     <div class="brand">
-      BORSACI <span>v1.0.0</span>
+      <img
+        class="app-logo header-logo"
+        src="/favicon.ico?v=2"
+        alt=""
+      >
+      <span class="brand-name">BORSACI</span>
+      <span class="brand-version">v1.0.0</span>
     </div>
 
     <div class="system-status">
@@ -1237,6 +1252,158 @@ Waiting for input...
 
 
     <!-- ==================================================
+         PENDING PAPER ORDERS + MANUAL PAPER ORDER
+    ================================================== -->
+
+    <section class="panel trading-panel pending-paper-orders-panel">
+
+      <div class="panel-title">
+
+        <span>
+          PENDING PAPER ORDERS
+        </span>
+
+        <span
+          class="panel-status"
+          id="pendingPaperOrderStatus"
+        >
+          0 ORDERS
+        </span>
+
+      </div>
+
+      <div
+        id="pendingPaperOrders"
+        class="pending-paper-orders"
+        aria-live="polite"
+      >
+        <div class="trading-empty">
+          Bekleyen paper emir yok.
+        </div>
+      </div>
+
+      <div class="manual-paper-order-wrap">
+
+        <div class="manual-paper-order-intro">
+          <strong>MANUAL PAPER ORDER</strong>
+          <small>Kriterlerden bağımsız olarak bir paper emir planı oluşturur. Gerçek borsa emri gönderilmez; emir önce yukarıdaki onay kuyruğuna düşer.</small>
+        </div>
+
+        <form
+          id="manualPaperOrderForm"
+          class="paper-order-form manual-paper-order-form"
+          novalidate
+        >
+          <label>
+            SYMBOL
+            <input
+              name="symbol"
+              type="text"
+              maxlength="12"
+              autocomplete="off"
+              autocapitalize="characters"
+              placeholder="ÖRN. ALARK"
+              required
+            >
+          </label>
+
+          <label>
+            LOT
+            <input
+              name="quantity"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="100"
+              required
+            >
+          </label>
+
+          <label>
+            ENTRY PRICE (₺)
+            <input
+              name="entryPrice"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0.00"
+              required
+            >
+          </label>
+
+          <label>
+            ORDER TYPE
+            <select name="orderType">
+              <option value="MARKET">MARKET</option>
+              <option value="LIMIT">LIMIT</option>
+            </select>
+          </label>
+
+          <label>
+            STOP (OPTIONAL)
+            <input
+              name="stop"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP1 (OPTIONAL)
+            <input
+              name="target1"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP2 (OPTIONAL)
+            <input
+              name="target2"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP3 (OPTIONAL)
+            <input
+              name="target3"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <div class="paper-order-form-actions">
+            <button type="submit" class="trading-button">
+              CREATE PENDING PAPER ORDER
+            </button>
+            <small>PAPER ONLY · Manuel emir de açılmadan önce onay bekler.</small>
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
          OPEN POSITIONS
     ================================================== -->
 
@@ -1646,10 +1813,14 @@ Waiting for input...
     font-family: inherit;
   }
   .auth-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     color: #74ff87;
     font-size: 20px;
     letter-spacing: .12em;
   }
+  .auth-logo { width: 52px; height: 52px; }
   .auth-brand span {
     display: block;
     margin-top: 5px;

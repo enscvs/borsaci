@@ -113,7 +113,18 @@ function pendingApprovalLines(state) {
   const rows = (Array.isArray(state?.decisions) ? state.decisions : [])
     .filter(item => item?.status === "PENDING_APPROVAL")
     .slice(0, 5)
-    .map(item => `${item.symbol} · Giriş ${currency(item.entry?.reference)} · SL ${currency(item.stop)} · ${item.riskPlan?.quantity || 0} lot`);
+    .map(item => {
+      const order = item.pendingOrder || {};
+      const entry = order.entryPrice ?? item.entry?.reference;
+      const stop = order.stop ?? item.stop;
+      const quantity = order.quantity ?? item.riskPlan?.quantity ?? 0;
+      const orderType = order.orderType ? ` · ${order.orderType}` : "";
+      const manual = item.manualOrder || item.source === "MANUAL"
+        ? " · MANUEL PAPER"
+        : "";
+
+      return `${item.symbol} · Giriş ${currency(entry)} · SL ${currency(stop)} · ${quantity} lot${orderType}${manual}`;
+    });
 
   return rows.length ? rows : ["Onay bekleyen paper işlem yok."];
 }
