@@ -8914,6 +8914,7 @@ let cryptoChartMarkers = null;
 let latestCryptoPaperState = null;
 let cryptoVisibleSignals = [];
 let cryptoQuoteRefreshTimer = null;
+let cryptoManualQuoteTimer = null;
 
 function formatCryptoUsd(value) {
   const number = Number(value);
@@ -8985,6 +8986,16 @@ function renderCryptoPersistentSignals(paper) {
   bindCryptoSignalHistoryDetails();
 }
 
+function cryptoHistoryDetailMarkup(item) {
+  const fib = item?.fibonacci || {};
+  return `<strong>${escapeHtml(item?.symbol || "KRİPTO")} · ${escapeHtml(item?.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(item?.status || fib.status || "NO_VALID_STRUCTURE"))}</strong>
+    <div>Fiyat: ${formatCryptoUsd(item?.price)} · Teknik puan: ${Number(item?.score || 0)}/100</div>
+    <div>Giriş: ${formatCryptoUsd(fib.entryZoneLow)}–${formatCryptoUsd(fib.entryZoneHigh)} · SL: ${formatCryptoUsd(fib.stopLoss)}</div>
+    <div>TP1: ${formatCryptoUsd(fib.tp1)} · TP2: ${formatCryptoUsd(fib.tp2)} · TP3: ${formatCryptoUsd(fib.tp3)}</div>
+    <div>A/B/C: ${formatCryptoUsd(fib.pointA?.price)} / ${formatCryptoUsd(fib.pointB?.price)} / ${formatCryptoUsd(fib.pointC?.price)} · Tetik: ${formatCryptoUsd(fib.entryTriggerPrice)}</div>
+    <small>${escapeHtml(item?.reason || (fib.valid ? "Fibonacci seviyeleri Binance günlük verisinden hesaplandı." : "Geçerli Fibonacci yapısı bulunamadı."))}</small>`;
+}
+
 async function loadCryptoPaperState() {
   try {
     const response = await fetch("/api/crypto/state", {cache: "no-store"});
@@ -9022,6 +9033,27 @@ async function refreshCryptoQuotes() {
   }
 }
 
+async function refreshCryptoManualPrice() {
+  const form = document.getElementById("cryptoManualOrderForm");
+  const target = document.getElementById("cryptoManualLivePrice");
+  const symbol = String(form?.elements?.symbol?.value || "").trim().toUpperCase();
+  if (!target) return;
+  if (!/^[A-Z0-9]{2,12}$/.test(symbol)) {
+    target.textContent = "CANLI PİYASA FİYATI: PARİTE GİRİLMESİ BEKLENİYOR";
+    return;
+  }
+  target.textContent = "CANLI PİYASA FİYATI: YÜKLENİYOR…";
+  try {
+    const response = await fetch(`/api/crypto/quotes?symbols=${encodeURIComponent(symbol)}`, {cache: "no-store"});
+    const payload = await response.json();
+    const quote = payload?.quotes?.[symbol];
+    if (!response.ok || !quote) throw new Error("Fiyat alınamadı.");
+    target.textContent = `CANLI PİYASA FİYATI: ${formatCryptoUsd(quote.price)}`;
+  } catch {
+    target.textContent = "CANLI PİYASA FİYATI: GEÇİCİ OLARAK ALINAMADI";
+  }
+}
+
 function bindCryptoSignalHistoryDetails() {
   document.querySelectorAll("#cryptoSignalHistory [data-crypto-signal-index]").forEach(button => {
     if (button.dataset.cryptoSignalBound === "true") return;
@@ -9036,8 +9068,8 @@ function bindCryptoSignalHistoryDetails() {
         indicators: signal.indicators || {},
         history: signal.history || [],
       };
-      renderCryptoDecisionDetail(record);
-      document.getElementById("cryptoDecisionDetail")?.scrollIntoView({behavior: "smooth", block: "center"});
+      const detail = document.getElementById("cryptoSignalDetail");
+      if (detail) detail.innerHTML = cryptoHistoryDetailMarkup(record);
     });
   });
 }
@@ -9123,6 +9155,11 @@ function bindCryptoWorkspaceControls() {
       if (label) label.firstChild.textContent = market ? "PİYASA FİYATI ($)" : "LİMİT FİYAT ($)";
     };
     manualForm.elements.orderType?.addEventListener("change", syncManualOrderType);
+    manualForm.elements.symbol?.addEventListener("input", () => {
+      window.clearTimeout(cryptoManualQuoteTimer);
+      cryptoManualQuoteTimer = window.setTimeout(() => { void refreshCryptoManualPrice(); }, 350);
+    });
+    manualForm.elements.symbol?.addEventListener("change", () => { void refreshCryptoManualPrice(); });
     syncManualOrderType();
     manualForm.addEventListener("submit", async event => {
       event.preventDefault(); const data = Object.fromEntries(new FormData(manualForm));
@@ -9130,7 +9167,7 @@ function bindCryptoWorkspaceControls() {
       try {
         const response = await fetch("/api/crypto/paper/queue", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({...data, source: "MANUAL", grade: "MANUEL"})});
         const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Manuel emir oluşturulamadı.");
-        renderCryptoPaperState(payload); manualForm.reset(); syncManualOrderType();
+        renderCryptoPaperState(payload); manualForm.reset(); syncManualOrderType(); void refreshCryptoManualPrice();
       } catch (error) { window.alert(error.message); }
     });
   }
