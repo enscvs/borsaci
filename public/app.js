@@ -6176,10 +6176,12 @@ function renderAiDecisions(decisions) {
   if (!records.length) {
     aiDecisionFeed.innerHTML='<div class="trading-empty">Detaylı teknik aday bulunamadı.</div>';
     renderPendingPaperOrders(pendingState);
+    renderManualPendingOrders(pendingState);
     return;
   }
   aiDecisionFeed.innerHTML=records.map((item,index)=>`<article class="decision-item decision-card" data-decision-index="${index}"><header><strong>${item.symbol}</strong><span>${item.grade||item.action}</span><span>${item.status==="PENDING_APPROVAL"?"ONAY BEKLİYOR":item.status}</span><span class="ai-score-pill">TEKNİK ${item.indicators?.score??"--"}/100</span></header><div class="decision-price-grid"><span><small>GİRİŞ</small>${formatCurrency(item.entry?.low)} – ${formatCurrency(item.entry?.high)}</span><span><small>STOP</small>${formatCurrency(item.stop)}</span><span><small>TP1 / TP2 / TP3</small>${formatCurrency(item.target1)} / ${formatCurrency(item.target2)} / ${formatCurrency(item.target3)}</span></div><div class="decision-summary">${item.planMethod||"DESTEK / DİRENÇ + ATR"} · R/R TP2: ${item.riskReward?.tp2??"--"} · Garanti değildir.</div></article>`).join("");
   renderPendingPaperOrders(pendingState);
+  renderManualPendingOrders(pendingState);
 }
 
 
