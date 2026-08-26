@@ -1635,835 +1635,928 @@ Waiting for input...
      CRYPTO AI TRADING TAB
 ================================================== -->
 
-<section
-  id="cryptoTradingTab"
-  class="trading-tab"
-  style="display:none;"
->
-
-  <!-- STATUS -->
-
-  <div class="trading-status-grid">
-
-    <div class="trading-stat">
-      <span class="trading-stat-label">ENGINE</span>
-      <strong class="status-online">● PAPER</strong>
-    </div>
-
-    <div class="trading-stat">
-      <span class="trading-stat-label">MARKET</span>
-      <strong id="cryptoTradingMarketStatus">
-        BINANCE SPOT
-      </strong>
-    </div>
-
-    <div class="trading-stat">
-      <span class="trading-stat-label">ENGINE STATUS</span>
-      <strong id="cryptoTradingEngineStatus">
-        READY
-      </strong>
-    </div>
-
-    <div class="trading-stat">
-      <span class="trading-stat-label">LAST SCAN</span>
-      <strong id="cryptoLastScanTime">
-        --
-      </strong>
-    </div>
-
-    <div class="trading-stat">
-      <span class="trading-stat-label">ORDER MONITOR</span>
-      <strong id="cryptoPaperMonitorStatus">
-        BAĞLANIYOR
-      </strong>
-    </div>
-
-  </div>
-
-
-  <!-- MARKET SCANNER -->
-
-  <section class="panel trading-panel">
-
-    <div class="panel-title">
-      <span>CRYPTO MARKET SCANNER</span>
-
-      <span
-        class="panel-status"
-        id="cryptoScannerStatus"
-      >
-        IDLE
-      </span>
-    </div>
-
-    <div class="scanner-controls">
-
-      <button
-        type="button"
-        id="cryptoStartScannerBtn"
-        class="trading-button"
-      >
-        START SCANNER
-      </button>
-
-      <button
-        type="button"
-        id="cryptoStopScannerBtn"
-        class="trading-button danger"
-      >
-        STOP
-      </button>
-
-    </div>
-
-    <div
-      id="cryptoScannerResults"
-      class="scanner-results"
-    >
-      <div class="trading-empty">
-        Scanner henüz çalıştırılmadı.
-      </div>
-    </div>
-
-  </section>
-
-
-  <!-- AI DECISIONS -->
-
-  <section class="panel trading-panel">
-
-    <div class="panel-title">
-      <span>AI DECISIONS</span>
-      <span class="panel-status">LIVE</span>
-    </div>
-
-    <div
-      id="cryptoAiDecisionFeed"
-      class="decision-feed"
-    >
-      <div class="trading-empty">
-        Henüz AI kararı yok.
-      </div>
-    </div>
-
-    <div
-      id="cryptoAiDecisionDetail"
-      class="decision-detail-panel"
-    >
-      Bir karar kartına tıklayarak detayları ve paper işlem seçeneklerini aç.
-    </div>
-
-  </section>
-
-
-  <!-- DECISION CHART -->
-
-  <section class="panel chart trading-panel">
-
-    <div class="panel-title">
-
-      <span>DECISION CHART</span>
-
-      <span
-        class="panel-status"
-        id="cryptoChartSymbol"
-      >
-        NO SYMBOL
-      </span>
-
-    </div>
-
-    <div
-      class="chart-area"
-      id="cryptoChartArea"
-    >
-
-      <div
-        id="cryptoMarketChart"
-        class="market-chart"
-        aria-label="BorsaCI Crypto karar grafiği"
-      ></div>
-
-      <div
-        id="cryptoChartEmpty"
-        class="chart-empty"
-        aria-live="polite"
-      ></div>
-
-    </div>
-
-  </section>
-
-
-  <!-- TECHNICAL SCORE BREAKDOWN -->
-
   <section
-    id="cryptoDecisionScorePanel"
-    class="panel trading-panel decision-score-panel"
-    aria-live="polite"
+    id="tradingTab"
+    class="trading-tab"
   >
 
-    <div class="panel-title">
 
-      <span>
-        TECHNICAL SCORE BREAKDOWN
-      </span>
+    <!-- ==================================================
+         STATUS
+    ================================================== -->
 
-      <span
-        class="panel-status"
-        id="cryptoDecisionScoreSymbol"
-      >
-        NO DECISION
-      </span>
-
-    </div>
-
-    <div
-      id="cryptoDecisionScoreContent"
-      class="decision-score-content"
-    >
-      Bir AI kararına tıklayarak puanın nedenlerini burada gör.
-    </div>
-
-  </section>
+    <div class="trading-status-grid">
 
 
-  <!-- SIGNAL HISTORY + PERFORMANCE -->
+      <div class="trading-stat">
 
-  <div class="trading-two-column">
-
-    <section class="panel trading-panel">
-
-      <div class="panel-title">
-        <span>SIGNAL HISTORY</span>
-        <span
-          class="panel-status"
-          id="cryptoSignalHistoryStatus"
-        >
-          0 RECORDS
-        </span>
-      </div>
-
-      <div
-        id="cryptoSignalHistory"
-        class="trading-log"
-      >
-        <div class="trading-empty">
-          İlk tarama sonrası sinyal geçmişi burada oluşur.
-        </div>
-      </div>
-
-      <div
-        id="cryptoSignalDetail"
-        class="trading-empty"
-      >
-        Ayrıntıları görmek için bir geçmiş sinyaline tıkla.
-      </div>
-
-    </section>
-
-
-    <section class="panel trading-panel">
-
-      <div class="panel-title">
-        <span>PERFORMANCE</span>
-        <span class="panel-status">PAPER</span>
-      </div>
-
-      <div class="risk-grid">
-
-        <div>
-          <span>TOTAL SIGNALS</span>
-          <strong id="cryptoPerformanceTotalSignals">0</strong>
-        </div>
-
-        <div>
-          <span>ACTIVE SETUPS</span>
-          <strong id="cryptoPerformanceActiveSignals">0</strong>
-        </div>
-
-        <div>
-          <span>AVERAGE CONFIDENCE</span>
-          <strong id="cryptoPerformanceAvgConfidence">--</strong>
-        </div>
-
-        <div>
-          <span>RESOLVED OUTCOMES</span>
-          <strong id="cryptoPerformanceResolved">0</strong>
-        </div>
-
-        <div>
-          <span>WIN RATE</span>
-          <strong id="cryptoPerformanceWinRate">--</strong>
-        </div>
-
-        <div>
-          <span>REALIZED P&L</span>
-          <strong id="cryptoPerformanceRealizedPnL">$0.00</strong>
-        </div>
-
-      </div>
-
-      <div class="performance-filter">
-
-        <label>
-          PERIOD
-          <select id="cryptoPerformanceRange">
-            <option value="ALL">All time</option>
-            <option value="1M">Last 1 month</option>
-            <option value="3M">Last 3 months</option>
-            <option value="6M">Last 6 months</option>
-            <option value="CUSTOM">Custom range</option>
-          </select>
-        </label>
-
-        <label>
-          START DATE
-          <input id="cryptoPerformanceStartDate" type="date">
-        </label>
-
-        <label>
-          END DATE
-          <input id="cryptoPerformanceEndDate" type="date">
-        </label>
-
-        <span
-          id="cryptoPerformanceRangeLabel"
-          class="panel-status"
-        >
-          ALL TIME
+        <span class="trading-stat-label">
+          ENGINE
         </span>
 
-      </div>
-
-      <p
-        id="cryptoPerformanceNote"
-        class="trading-empty"
-      >
-        Crypto paper işlem sonuçları burada ölçülecek.
-      </p>
-
-    </section>
-
-  </div>
-
-
-  <!-- PORTFOLIO + RISK -->
-
-  <div class="trading-two-column">
-
-    <section class="panel trading-panel">
-
-      <div class="panel-title">
-        <span>CRYPTO PAPER PORTFOLIO</span>
-        <span class="panel-status">PAPER</span>
-      </div>
-
-      <div class="portfolio-grid">
-
-        <div>
-          <span>INITIAL CAPITAL</span>
-          <strong id="cryptoPaperInitialCapital">$10,000</strong>
-        </div>
-
-        <div>
-          <span>CASH</span>
-          <strong id="cryptoPaperCash">$10,000</strong>
-        </div>
-
-        <div>
-          <span>EQUITY</span>
-          <strong id="cryptoPaperEquity">$10,000</strong>
-        </div>
-
-        <div>
-          <span>P&L</span>
-          <strong id="cryptoPaperPnL">$0</strong>
-        </div>
-
-        <div>
-          <span>P&L %</span>
-          <strong id="cryptoPaperPnLPct">0.00%</strong>
-        </div>
-
-        <div>
-          <span>CLOSED POSITIONS</span>
-          <strong id="cryptoPaperPositionCount">0</strong>
-        </div>
+        <strong class="status-online">
+          ● PAPER
+        </strong>
 
       </div>
 
-      <div
-        id="cryptoPaperCostSummary"
-        class="paper-cost-summary"
-      >
-        BINANCE SPOT · PAPER MODE
-      </div>
 
-    </section>
+      <div class="trading-stat">
 
-
-    <section class="panel trading-panel">
-
-      <div class="panel-title">
-        <span>RISK ENGINE</span>
-        <span class="panel-status">EDITABLE</span>
-      </div>
-
-      <div class="risk-grid">
-
-        <div>
-          <span>MAX POSITIONS</span>
-          <strong id="cryptoMaxPositions">3</strong>
-        </div>
-
-        <div>
-          <span>TARGET POSITION</span>
-          <strong id="cryptoTargetPositionSize">31.00%</strong>
-        </div>
-
-        <div>
-          <span>CASH RESERVE</span>
-          <strong id="cryptoCashReserve">7.00%</strong>
-        </div>
-
-        <div>
-          <span>STOP RULE</span>
-          <strong id="cryptoStopRule">AI DECISION</strong>
-        </div>
-
-      </div>
-
-      <form
-        id="cryptoRiskSettingsForm"
-        class="risk-settings"
-      >
-
-        <label>
-          CAPITAL SOURCE
-          <select id="cryptoCapitalSourceInput">
-            <option value="MANUAL">Manual</option>
-            <option value="BINANCE" disabled>
-              Binance balance (yakında)
-            </option>
-          </select>
-        </label>
-
-        <label>
-          CAPITAL ($)
-          <input
-            id="cryptoRiskCapitalInput"
-            type="number"
-            min="100"
-            step="100"
-            value="10000"
-          >
-        </label>
-
-        <label>
-          TARGET POSITION (%)
-          <input
-            id="cryptoMaxPositionInput"
-            type="number"
-            min="1"
-            step="1"
-            value="31"
-          >
-        </label>
-
-        <label>
-          MAX POSITIONS
-          <input
-            id="cryptoMaxPositionsInput"
-            type="number"
-            min="1"
-            step="1"
-            value="3"
-          >
-        </label>
-
-        <div class="risk-settings-actions">
-
-          <button
-            type="submit"
-            class="trading-button"
-          >
-            APPLY RISK SETTINGS
-          </button>
-
-          <output
-            id="cryptoRiskAllocationGauge"
-            class="risk-allocation-gauge"
-            aria-live="polite"
-          >
-            93% ALLOCATION
-          </output>
-
-        </div>
-
-      </form>
-
-    </section>
-
-  </div>
-
-
-  <!-- PENDING ORDERS + MANUAL ORDER -->
-
-  <section class="panel trading-panel pending-paper-orders-panel">
-
-    <div class="panel-title">
-
-      <span>PENDING ORDERS</span>
-
-      <span
-        class="panel-status"
-        id="cryptoPendingPaperOrderStatus"
-      >
-        0 ORDERS
-      </span>
-
-    </div>
-
-    <div
-      id="cryptoPendingPaperOrders"
-      class="pending-paper-orders"
-      aria-live="polite"
-    >
-      <div class="trading-empty">
-        Bekleyen emir yok.
-      </div>
-    </div>
-
-    <div class="manual-paper-order-wrap">
-
-      <div class="manual-paper-order-intro">
-        <strong>MANUAL ORDER</strong>
-        <small>
-          Binance Spot için manuel emir planı oluşturur.
-        </small>
-      </div>
-
-      <form
-        id="cryptoManualPaperOrderForm"
-        class="paper-order-form manual-paper-order-form"
-        novalidate
-      >
-
-        <label>
-          SYMBOL
-          <input
-            name="symbol"
-            type="text"
-            maxlength="20"
-            autocomplete="off"
-            autocapitalize="characters"
-            placeholder="ÖRN. BTCUSDT"
-            required
-          >
-        </label>
-
-        <label>
-          QUANTITY
-          <input
-            name="quantity"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            placeholder="0.001"
-            required
-          >
-        </label>
-
-        <label>
-          ENTRY PRICE ($)
-          <input
-            data-order-price-field
-            name="entryPrice"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            placeholder="0.00"
-          >
-        </label>
-
-        <label>
-          ORDER TYPE
-          <select name="orderType">
-            <option value="MARKET">MARKET</option>
-            <option value="LIMIT">LIMIT</option>
-          </select>
-        </label>
-
-        <label>
-          STOP (OPTIONAL)
-          <input
-            name="stop"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            placeholder="—"
-          >
-        </label>
-
-        <label>
-          TP1 (OPTIONAL)
-          <input
-            name="target1"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            placeholder="—"
-          >
-        </label>
-
-        <label>
-          TP2 (OPTIONAL)
-          <input
-            name="target2"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            placeholder="—"
-          >
-        </label>
-
-        <label>
-          TP3 (OPTIONAL)
-          <input
-            name="target3"
-            type="number"
-            min="0"
-            step="any"
-            inputmode="decimal"
-            placeholder="—"
-          >
-        </label>
-
-        <div class="paper-order-form-actions">
-
-          <button
-            type="submit"
-            class="trading-button"
-          >
-            CREATE MANUAL ORDER
-          </button>
-
-          <small>
-            Emir gerçekleştirme şu an paper ortamındadır.
-          </small>
-
-        </div>
-
-      </form>
-
-    </div>
-
-  </section>
-
-
-  <!-- OPEN POSITIONS -->
-
-  <section class="panel trading-panel">
-
-    <div class="panel-title">
-
-      <span>OPEN POSITIONS</span>
-
-      <span
-        class="panel-status"
-        id="cryptoOpenPositionStatus"
-      >
-        0 POSITIONS
-      </span>
-
-    </div>
-
-    <div class="position-table-wrapper">
-
-      <table class="position-table">
-
-        <thead>
-          <tr>
-            <th>SYMBOL</th>
-            <th>SIDE</th>
-            <th>ENTRY</th>
-            <th>CURRENT</th>
-            <th>QUANTITY</th>
-            <th>POSITION $</th>
-            <th>SL</th>
-            <th>TP1</th>
-            <th>TP2</th>
-            <th>P&L</th>
-            <th>STATUS</th>
-            <th>ACTION</th>
-          </tr>
-        </thead>
-
-        <tbody id="cryptoOpenPositions">
-
-          <tr>
-            <td
-              colspan="12"
-              class="table-empty"
-            >
-              No open positions
-            </td>
-          </tr>
-
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </section>
-
-
-  <!-- MANUAL ORDER PANEL -->
-
-  <section
-    id="cryptoManualOrderPanel"
-    class="panel trading-panel manual-order-panel"
-  >
-
-    <div class="panel-title">
-      <span>MANUAL ORDER</span>
-
-      <span
-        id="cryptoManualOrderStatus"
-        class="panel-status"
-      >
-        0 ORDERS
-      </span>
-    </div>
-
-    <div
-      id="cryptoManualPendingOrders"
-      class="pending-paper-orders manual-pending-orders"
-    ></div>
-
-    <details class="manual-order-create-panel">
-
-      <summary>
-        CREATE NEW MANUAL ORDER
-      </summary>
-
-      <div id="cryptoManualOrderMount"></div>
-
-    </details>
-
-  </section>
-
-
-  <!-- ACTIVITY LOG -->
-
-  <section class="panel trading-panel">
-
-    <div class="panel-title">
-      <span>TRADING ACTIVITY</span>
-      <span class="panel-status">LOG</span>
-    </div>
-
-    <div
-      id="cryptoTradingActivity"
-      class="trading-log"
-    >
-      <div class="log-line">
-
-        <span class="log-time">
-          --:--:--
+        <span class="trading-stat-label">
+          MARKET
         </span>
+
+        <strong id="tradingMarketStatus">
+          BIST100
+        </strong>
+
+      </div>
+
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          ENGINE STATUS
+        </span>
+
+        <strong id="tradingEngineStatus">
+          READY
+        </strong>
+
+      </div>
+
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          LAST SCAN
+        </span>
+
+        <strong id="lastScanTime">
+          --
+        </strong>
+
+      </div>
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          ORDER MONITOR
+        </span>
+
+        <strong id="paperMonitorStatus">
+          BAĞLANIYOR
+        </strong>
+
+      </div>
+
+
+    </div>
+
+
+    <!-- ==================================================
+         MARKET SCANNER
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
 
         <span>
-          Crypto trading engine initialized.
+          MARKET SCANNER
+        </span>
+
+        <span
+          class="panel-status"
+          id="scannerStatus"
+        >
+          IDLE
         </span>
 
       </div>
-    </div>
-
-  </section>
 
 
-  <!-- TRADE JOURNAL -->
+      <div class="scanner-controls">
 
-  <section
-    class="panel trading-panel trade-journal-panel"
-  >
+        <button
+          type="button"
+          id="startScannerBtn"
+          class="trading-button"
+        >
+          START SCANNER
+        </button>
 
-    <div class="panel-title">
-      <span>TRADE JOURNAL</span>
-      <span class="panel-status">DETAILED</span>
-    </div>
 
-    <div
-      id="cryptoTradeJournal"
-      class="trade-journal"
+        <button
+          type="button"
+          id="stopScannerBtn"
+          class="trading-button danger"
+        >
+          STOP
+        </button>
+
+      </div>
+
+
+      <div
+        id="scannerResults"
+        class="scanner-results"
+      >
+
+        <div class="trading-empty">
+          Scanner henüz çalıştırılmadı.
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         AI DECISIONS
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          AI DECISIONS
+        </span>
+
+        <span class="panel-status">
+          LIVE
+        </span>
+
+      </div>
+
+
+      <div
+        id="aiDecisionFeed"
+        class="decision-feed"
+      >
+
+        <div class="trading-empty">
+          Henüz AI kararı yok.
+        </div>
+
+      </div>
+
+      <div id="aiDecisionDetail" class="decision-detail-panel">
+        Bir karar kartına tıklayarak detayları ve paper işlem seçeneklerini aç.
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         DECISION CHART
+    ================================================== -->
+
+    <section class="panel chart trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          DECISION CHART
+        </span>
+
+        <span
+          class="panel-status"
+          id="chartSymbol"
+        >
+          NO SYMBOL
+        </span>
+
+      </div>
+
+
+      <div
+        class="chart-area"
+        id="chartArea"
+      >
+
+        <!-- Karar seçildiğinde A/B/C ve işlem seviyeleri bu grafikte çizilir. -->
+        <div
+          id="market_chart"
+          class="market-chart"
+          aria-label="BorsaCI karar grafiği"
+        ></div>
+
+        <div
+          id="chartEmpty"
+          class="chart-empty"
+          aria-live="polite"
+        ></div>
+
+        <!-- BorsaCI grafiği kullanılamazsa görünür kalan TradingView yedeği. -->
+        <div
+          id="tradingviewChartFallback"
+          class="tradingview-widget-container"
+          style="height:100%;width:100%"
+        >
+
+          <div
+            class="tradingview-widget-container__widget"
+            style="height:calc(100% - 32px);width:100%"
+          ></div>
+
+          <div class="tradingview-widget-copyright">
+
+            <a
+              href="https://tr.tradingview.com/symbols/USDTRY/?exchange=FX"
+              rel="noopener nofollow"
+              target="_blank"
+            >
+
+              <span class="blue-text">
+                Track all markets on TradingView
+              </span>
+
+            </a>
+
+          </div>
+
+          <script
+            type="text/javascript"
+            src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+            async
+          >
+          {
+            "allow_symbol_change": true,
+            "calendar": false,
+            "details": false,
+            "hide_side_toolbar": true,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "hide_volume": false,
+            "hotlist": false,
+            "interval": "240",
+            "locale": "tr",
+            "save_image": true,
+            "style": "1",
+            "symbol": "FX:USDTRY",
+            "theme": "dark",
+            "timezone": "Europe/Istanbul",
+            "backgroundColor": "#0F0F0F",
+            "gridColor": "rgba(242, 242, 242, 0.2)",
+            "watchlist": [],
+            "withdateranges": false,
+            "compareSymbols": [],
+            "studies": [],
+            "autosize": true
+          }
+          </script>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         SELECTED DECISION // TECHNICAL SCORE BREAKDOWN
+    ================================================== -->
+
+    <section
+      id="decisionScorePanel"
+      class="panel trading-panel decision-score-panel"
+      aria-live="polite"
     >
-      <div class="trading-empty">
-        İşlem günlüğü bekleniyor.
+
+      <div class="panel-title">
+
+        <span>
+          TECHNICAL SCORE BREAKDOWN
+        </span>
+
+        <span
+          class="panel-status"
+          id="decisionScoreSymbol"
+        >
+          NO DECISION
+        </span>
+
       </div>
+
+      <div
+        id="decisionScoreContent"
+        class="decision-score-content"
+      >
+        Bir AI kararına tıklayarak puanın nedenlerini burada gör.
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         SIGNAL HISTORY + PERFORMANCE
+    ================================================== -->
+
+    <div class="trading-two-column">
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>SIGNAL HISTORY</span>
+          <span class="panel-status" id="signalHistoryStatus">0 RECORDS</span>
+        </div>
+
+        <div
+          id="signalHistory"
+          class="trading-log"
+        >
+          <div class="trading-empty">
+            İlk tarama sonrası sinyal geçmişi burada oluşur.
+          </div>
+        </div>
+
+        <div id="signalDetail" class="trading-empty">
+          Ayrıntıları görmek için bir geçmiş sinyaline tıkla.
+        </div>
+
+      </section>
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>PERFORMANCE</span>
+          <span class="panel-status">PAPER</span>
+        </div>
+
+        <div class="risk-grid">
+
+          <div>
+            <span>TOTAL SIGNALS</span>
+            <strong id="performanceTotalSignals">0</strong>
+          </div>
+
+          <div>
+            <span>ACTIVE SETUPS</span>
+            <strong id="performanceActiveSignals">0</strong>
+          </div>
+
+          <div>
+            <span>AVERAGE CONFIDENCE</span>
+            <strong id="performanceAvgConfidence">--</strong>
+          </div>
+
+          <div>
+            <span>RESOLVED OUTCOMES</span>
+            <strong id="performanceResolved">0</strong>
+          </div>
+
+          <div>
+            <span>WIN RATE</span>
+            <strong id="performanceWinRate">--</strong>
+          </div>
+
+          <div>
+            <span>REALIZED P&L</span>
+            <strong id="performanceRealizedPnL">₺0.00</strong>
+          </div>
+
+        </div>
+
+        <div class="performance-filter">
+          <label>PERIOD
+            <select id="performanceRange">
+              <option value="ALL">All time</option>
+              <option value="1M">Last 1 month</option>
+              <option value="3M">Last 3 months</option>
+              <option value="6M">Last 6 months</option>
+              <option value="CUSTOM">Custom range</option>
+            </select>
+          </label>
+          <label>START DATE<input id="performanceStartDate" type="date"></label>
+          <label>END DATE<input id="performanceEndDate" type="date"></label>
+          <span id="performanceRangeLabel" class="panel-status">ALL TIME</span>
+        </div>
+
+        <p
+          id="performanceNote"
+          class="trading-empty"
+        >
+          İşlem sonuçları, paper pozisyon açma/kapatma aşaması eklendiğinde ölçülecek.
+        </p>
+
+      </section>
+
     </div>
+
+
+    <!-- ==================================================
+         PORTFOLIO + RISK
+    ================================================== -->
+
+    <div class="trading-two-column">
+
+
+      <!-- PORTFOLIO -->
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+
+          <span>
+            PAPER PORTFOLIO
+          </span>
+
+          <span class="panel-status">
+            PAPER
+          </span>
+
+        </div>
+
+
+        <div class="portfolio-grid">
+
+
+          <div>
+
+            <span>
+              INITIAL CAPITAL
+            </span>
+
+            <strong id="paperInitialCapital">
+              ₺100,000
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              CASH
+            </span>
+
+            <strong id="paperCash">
+              ₺100,000
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              EQUITY
+            </span>
+
+            <strong id="paperEquity">
+              ₺100,000
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              P&L
+            </span>
+
+            <strong id="paperPnL">
+              ₺0
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              P&L %
+            </span>
+
+            <strong id="paperPnLPct">
+              0.00%
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              CLOSED POSITIONS
+            </span>
+
+            <strong id="paperPositionCount">
+              0
+            </strong>
+
+          </div>
+
+
+        </div>
+
+        <div id="paperCostSummary" class="paper-cost-summary">KOMİSYON: ‰1 · BIST FİYAT BANTI: ±10%</div>
+
+      </section>
+
+
+      <!-- RISK -->
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>RISK ENGINE</span>
+          <span class="panel-status">EDITABLE</span>
+        </div>
+
+        <div class="risk-grid">
+          <div><span>MAX POSITIONS</span><strong id="maxPositions">3</strong></div>
+          <div><span>TARGET POSITION</span><strong id="targetPositionSize">31.00%</strong></div>
+          <div><span>CASH RESERVE</span><strong id="cashReserve">7.00%</strong></div>
+          <div><span>STOP RULE</span><strong id="stopRule">AI DECISION</strong></div>
+        </div>
+
+        <form id="riskSettingsForm" class="risk-settings">
+          <label>CAPITAL SOURCE
+            <select id="capitalSourceInput">
+              <option value="MANUAL">Manual</option>
+              <option value="BROKER" disabled>Broker balance (yakında)</option>
+            </select>
+          </label>
+          <label>CAPITAL (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
+          <label>TARGET POSITION (%)<input id="maxPositionInput" type="number" min="1" step="1" value="31"></label>
+          <label>MAX POSITIONS<input id="maxPositionsInput" type="number" min="1" step="1" value="3"></label>
+          <div class="risk-settings-actions">
+            <button type="submit" class="trading-button">APPLY RISK SETTINGS</button>
+            <output id="riskAllocationGauge" class="risk-allocation-gauge" aria-live="polite">93% ALLOCATION</output>
+          </div>
+        </form>
+
+      </section>
+
+
+    </div>
+
+
+    <!-- ==================================================
+         PENDING ORDERS + MANUAL ORDER
+    ================================================== -->
+
+    <section class="panel trading-panel pending-paper-orders-panel">
+
+      <div class="panel-title">
+
+        <span>
+          PENDING ORDERS
+        </span>
+
+        <span
+          class="panel-status"
+          id="pendingPaperOrderStatus"
+        >
+          0 ORDERS
+        </span>
+
+      </div>
+
+      <div
+        id="pendingPaperOrders"
+        class="pending-paper-orders"
+        aria-live="polite"
+      >
+        <div class="trading-empty">
+          Bekleyen emir yok.
+        </div>
+      </div>
+
+      <div class="manual-paper-order-wrap">
+
+        <div class="manual-paper-order-intro">
+          <strong>MANUAL ORDER</strong>
+          <small>Kriterlerden bağımsız olarak manuel emir planı oluşturur; onaydan önce düzenlenebilir.</small>
+        </div>
+
+        <form
+          id="manualPaperOrderForm"
+          class="paper-order-form manual-paper-order-form"
+          novalidate
+        >
+          <label>
+            SYMBOL
+            <input
+              name="symbol"
+              type="text"
+              maxlength="12"
+              autocomplete="off"
+              autocapitalize="characters"
+              placeholder="ÖRN. ALARK"
+              required
+            >
+          </label>
+
+          <label>
+            LOT
+            <input
+              name="quantity"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="100"
+              required
+            >
+          </label>
+
+          <label>
+            ENTRY PRICE (₺)
+            <input
+              data-order-price-field
+              name="entryPrice"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0.00"
+            >
+          </label>
+
+          <label>
+            ORDER TYPE
+            <select name="orderType">
+              <option value="MARKET">MARKET</option>
+              <option value="LIMIT">LIMIT</option>
+            </select>
+          </label>
+
+          <label>
+            STOP (OPTIONAL)
+            <input
+              name="stop"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP1 (OPTIONAL)
+            <input
+              name="target1"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP2 (OPTIONAL)
+            <input
+              name="target2"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP3 (OPTIONAL)
+            <input
+              name="target3"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <div class="paper-order-form-actions">
+            <button type="submit" class="trading-button">
+              CREATE MANUAL ORDER
+            </button>
+            <small>Manuel emir onaydan önce düzenlenebilir. Emir gerçekleştirme şu an paper ortamındadır.</small>
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         OPEN POSITIONS
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          OPEN POSITIONS
+        </span>
+
+        <span
+          class="panel-status"
+          id="openPositionStatus"
+        >
+          0 POSITIONS
+        </span>
+
+      </div>
+
+
+      <div class="position-table-wrapper">
+
+        <table class="position-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                SYMBOL
+              </th>
+
+              <th>
+                SIDE
+              </th>
+
+              <th>
+                ENTRY
+              </th>
+
+              <th>
+                CURRENT
+              </th>
+
+              <th>
+                LOT
+              </th>
+
+              <th>
+                POSITION TL
+              </th>
+
+              <th>
+                SL
+              </th>
+
+              <th>
+                TP1
+              </th>
+
+              <th>
+                TP2
+              </th>
+
+              <th>
+                P&L
+              </th>
+
+              <th>
+                STATUS
+              </th>
+
+              <th>
+                ACTION
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="openPositions">
+
+            <tr>
+
+              <td
+                colspan="12"
+                class="table-empty"
+              >
+                No open positions
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <section id="manualOrderPanel" class="panel trading-panel manual-order-panel">
+      <div class="panel-title">
+        <span>MANUAL ORDER</span>
+        <span id="manualOrderStatus" class="panel-status">0 ORDERS</span>
+      </div>
+      <div id="manualPendingOrders" class="pending-paper-orders manual-pending-orders"></div>
+      <details class="manual-order-create-panel">
+        <summary>CREATE NEW MANUAL ORDER</summary>
+        <div id="manualOrderMount"></div>
+      </details>
+    </section>
+
+
+    <!-- ==================================================
+         ACTIVITY LOG
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          TRADING ACTIVITY
+        </span>
+
+        <span class="panel-status">
+          LOG
+        </span>
+
+      </div>
+
+
+      <div
+        id="tradingActivity"
+        class="trading-log"
+      >
+
+        <div class="log-line">
+
+          <span class="log-time">
+            --:--:--
+          </span>
+
+          <span>
+            Trading engine initialized.
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section class="panel trading-panel trade-journal-panel">
+      <div class="panel-title"><span>TRADE JOURNAL</span><span class="panel-status">DETAILED</span></div>
+      <div id="tradeJournal" class="trade-journal"><div class="trading-empty">İşlem günlüğü bekleniyor.</div></div>
+    </section>
+
+
+    <!-- ==================================================
+         KILL SWITCH
+    ================================================== -->
+
+    <section class="kill-switch-panel" aria-label="Emergency trading stop">
+      <div class="kill-switch-heading">
+        <span class="kill-switch-icon">⚠</span>
+        <div>
+          <strong>KILL SWITCH</strong>
+          <small id="killSwitchStatus">SAFE · NEW PAPER TRADES ENABLED</small>
+        </div>
+      </div>
+
+      <p>
+        Tüm açık paper pozisyonlarını son alınabilen piyasa fiyatıyla kapatır ve yeni işlemleri durdurur.
+      </p>
+
+      <div class="kill-switch-controls">
+        <input
+          id="killSwitchPassword"
+          type="password"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="KILL SWITCH PASSWORD"
+          aria-label="Kill Switch password"
+        >
+        <button
+          type="button"
+          id="killSwitchToggle"
+          class="kill-switch-button"
+        >
+          ACTIVATE KILL SWITCH
+        </button>
+      </div>
+    </section>
+
 
   </section>
 
 
-  <!-- KILL SWITCH -->
+</div>
 
-  <section
-    class="kill-switch-panel"
-    aria-label="Emergency crypto trading stop"
-  >
 
-    <div class="kill-switch-heading">
-
-      <span class="kill-switch-icon">
-        ⚠
-      </span>
-
-      <div>
-        <strong>KILL SWITCH</strong>
-
-        <small id="cryptoKillSwitchStatus">
-          SAFE · NEW PAPER TRADES ENABLED
-        </small>
-      </div>
-
-    </div>
-
-    <p>
-      Tüm açık crypto paper pozisyonlarını kapatır ve yeni işlemleri durdurur.
-    </p>
-
-    <div class="kill-switch-controls">
-
-      <input
-        id="cryptoKillSwitchPassword"
-        type="password"
-        inputmode="numeric"
-        autocomplete="off"
-        placeholder="KILL SWITCH PASSWORD"
-        aria-label="Crypto Kill Switch password"
-      >
-
-      <button
-        type="button"
-        id="cryptoKillSwitchToggle"
-        class="kill-switch-button"
-      >
-        ACTIVATE KILL SWITCH
-      </button>
-
-    </div>
-
-  </section>
-
-</section>
 <!-- =====================================================
      LIGHTWEIGHT CHARTS
 ===================================================== -->
