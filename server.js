@@ -85,11 +85,15 @@ const BINANCE_CRYPTO_FALLBACK_SYMBOLS = [
 // Bu sabit route'lar çalışmadan önce başlatılır; istek callback'i içindeki
 // temporal-dead-zone hatasını önler.
 const BINANCE_PUBLIC_BASE_URLS = [
+  // Global Render IP'leri Binance.com'da 418 alabiliyor; aynı spot piyasa
+  // verisini sağlayan ABD uç noktası bu ortam için önceliklidir.
+  "https://api.binance.us",
   "https://data-api.binance.vision",
   "https://api-gcp.binance.com",
   "https://api1.binance.com",
   "https://api.binance.com"
 ];
+let binanceActivePublicBaseUrl = null;
 
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
@@ -7386,7 +7390,10 @@ if (
 
 async function fetchBinancePublicJson(path) {
   let lastError = null;
-  for (const baseUrl of BINANCE_PUBLIC_BASE_URLS) {
+  const baseUrls = binanceActivePublicBaseUrl
+    ? [binanceActivePublicBaseUrl, ...BINANCE_PUBLIC_BASE_URLS.filter(baseUrl => baseUrl !== binanceActivePublicBaseUrl)]
+    : BINANCE_PUBLIC_BASE_URLS;
+  for (const baseUrl of baseUrls) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
     try {
@@ -7394,8 +7401,12 @@ async function fetchBinancePublicJson(path) {
         headers: {"Accept": "application/json"},
         signal: controller.signal
       });
-      if (response.ok) return response.json();
+      if (response.ok) {
+        binanceActivePublicBaseUrl = baseUrl;
+        return response.json();
+      }
       lastError = new Error(`Binance HTTP ${response.status}`);
+      if (baseUrl === binanceActivePublicBaseUrl) binanceActivePublicBaseUrl = null;
       // Yalnız erişim/rate-limit sorunlarında alternatif aynaya geçilir.
       if (![403, 418, 429, 451, 500, 502, 503, 504].includes(response.status)) throw lastError;
     } catch (error) {
