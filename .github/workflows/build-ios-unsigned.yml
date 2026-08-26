@@ -21,7 +21,7 @@ jobs:
           node-version: 20
       - name: Prepare app icon from website favicon
         run: |
-          base64 --decode favicon.b64 > favicon-source.png
+          base64 --decode -i favicon.b64 -o favicon-source.png
           sips -z 1024 1024 favicon-source.png --out icon.png
       - run: npm install
       - run: npx expo prebuild --platform ios --clean --no-install
