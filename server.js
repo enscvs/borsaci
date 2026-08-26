@@ -3950,25 +3950,32 @@ function roundTradingValue(
 function buildAiDecision(item, rank, riskSettings = {}) {
   if (!item?.validation?.ok) return null;
   const fib = item.fibonacci || {};
-  // Paper işlem planı yalnızca geçerli günlük A-B-C yapısı ve %2,70
-  // üzeri tamamlanmış günlük kapanış ile oluşturulur.
-  const plan = fib.valid ? fib : null;
-  if (!plan || !Number.isFinite(Number(plan.entryPrice)) || !Number.isFinite(Number(plan.stopLoss))) return null;
+  // İlk üç teknik aday her zaman karar ekranına gelir. Fibonacci planı
+  // yoksa/uygun değilse bunlar İZLE olarak gösterilir; uydurma seviye veya
+  // başka bir hisseden gelen emir planı üretmeyiz.
+  const hasPlan = Boolean(
+    fib.valid &&
+    Number.isFinite(Number(fib.entryPrice)) &&
+    Number.isFinite(Number(fib.stopLoss))
+  );
+  const plan = hasPlan ? fib : null;
   const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.max(1,Number(riskSettings.maxPositionPercent)||31);
-  const entry=Number(plan.entryPrice), stop=Number(plan.stopLoss), quantity=Math.floor(capital*allocation/100/entry);
-  const hasEntryUpper=Number.isFinite(Number(fib.entryZoneHigh))&&Number(fib.entryZoneHigh)>Number(fib.entryZoneLow);
+  const entry=hasPlan ? Number(plan.entryPrice) : null;
+  const stop=hasPlan ? Number(plan.stopLoss) : null;
+  const quantity=entry ? Math.floor(capital*allocation/100/entry) : 0;
+  const hasEntryUpper=hasPlan&&Number.isFinite(Number(fib.entryZoneHigh))&&Number(fib.entryZoneHigh)>Number(fib.entryZoneLow);
   // Trend direnci olmadan giriş üst limiti yoktur; bu durumda onaya
   // düşebilecek bir BUY SETUP üretmeyiz.
   const active=Boolean(fib.status === "ACTIVE" && fib.confirmationPassed && hasEntryUpper);
-  const action=scannerAction({active,score:item.score});
+  const action=hasPlan ? scannerAction({active,score:item.score}) : "WATCH";
   const status=action==="BUY SETUP"?"PENDING_APPROVAL":action==="NO TRADE"?"REJECTED":"PENDING";
   const now=new Date().toISOString();
   const decision = {
     id:`${Date.now()}-${item.symbol}`,rank,symbol:item.symbol,action,status,confidence:null,
-    entry:{low:roundTradingValue(fib.entryZoneLow),high:hasEntryUpper?roundTradingValue(fib.entryZoneHigh):null,reference:roundTradingValue(entry)},
-    stop:roundTradingValue(stop),target1:roundTradingValue(plan.tp1),target2:roundTradingValue(plan.tp2),target3:roundTradingValue(plan.tp3),
-    riskReward:{tp1:plan.riskRewardTp1??null,tp2:plan.riskRewardTp2??null,tp3:plan.riskRewardTp3??null},
-    riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.max(1,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.max(1,Number(riskSettings.maxPositions)||3)},
+    entry:{low:hasPlan?roundTradingValue(fib.entryZoneLow):null,high:hasEntryUpper?roundTradingValue(fib.entryZoneHigh):null,reference:entry===null?null:roundTradingValue(entry)},
+    stop:stop===null?null:roundTradingValue(stop),target1:hasPlan?roundTradingValue(plan.tp1):null,target2:hasPlan?roundTradingValue(plan.tp2):null,target3:hasPlan?roundTradingValue(plan.tp3):null,
+    riskReward:{tp1:hasPlan?plan.riskRewardTp1??null:null,tp2:hasPlan?plan.riskRewardTp2??null:null,tp3:hasPlan?plan.riskRewardTp3??null:null},
+    riskPlan:{capital,targetPositionValue:hasPlan?roundTradingValue(capital*allocation/100):null,reservePercent:Math.max(0,100-allocation*Math.max(1,Number(riskSettings.maxPositions)||3)),quantity,positionValue:hasPlan?roundTradingValue(quantity*entry):null,actualRisk:hasPlan?roundTradingValue(quantity*Math.max(0,entry-stop)):null,maxPositionPercent:allocation,maxPositions:Math.max(1,Number(riskSettings.maxPositions)||3)},
     indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
     /*
      * Bu tablo ilk teknik eleme skorunun açıklamasıdır. Fibonacci daha
@@ -3980,8 +3987,9 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     planMethod:"FIBONACCI_A_B_C_DAILY",fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
     aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
     lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
-    reason:active?"A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.":(fib.invalidReason||"C'den dönüş için günlük teyit bekleniyor."),
-    invalidation:`C seviyesinin %2 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`,
+    currentScan: true,
+    reason:hasPlan?(active?"A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.":(fib.invalidReason||"C'den dönüş için günlük teyit bekleniyor.")):(fib.invalidReason||"Geçerli Fibonacci işlem planı henüz oluşmadı; teknik aday izleniyor."),
+    invalidation:hasPlan?`C seviyesinin %2 altındaki stop (${fib.stopLoss}) planı geçersiz kılar.`:"Fibonacci işlem planı oluşmadan işlem emri verilmez.",
     timestamp:now,
   };
 
@@ -3994,36 +4002,15 @@ function createAiDecisions(
   riskSettings = {}
 ) {
 
-  const candidates =
-    (Array.isArray(results) ? results : [])
-      .map(
-        (item, index) =>
-          buildAiDecision(
-            item,
-            index + 1,
-            riskSettings
-          )
-      )
-      .filter(Boolean)
-      .sort(
-        (a, b) =>
-          Number(b.indicators?.score || 0) -
-          Number(a.indicators?.score || 0)
-      );
-
-  let approvals = 0;
-  return candidates.slice(0, 5).map(decision => {
-    if (decision.action !== "BUY SETUP") return decision;
-    approvals += 1;
-    if (approvals <= 3) return decision;
-    return {
-      ...decision,
-      action: "WATCH",
-      status: "PENDING",
-      lifecycle: {...decision.lifecycle, stage: "PENDING"},
-      reason: "İlk üç paper işlem onay kontenjanı dolu; bu kurulum izleniyor.",
-    };
-  });
+  // Karar havuzu scanner'ın sıraladığı ilk beş adaydan bağımsız yeni bir
+  // sıralama yapmaz: teknik puana göre tam ilk üç sembol seçilir.
+  return (Array.isArray(results) ? results : [])
+    .filter(item => item?.validation?.ok)
+    .slice()
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+    .slice(0, 3)
+    .map((item, index) => buildAiDecision(item, index + 1, riskSettings))
+    .filter(Boolean);
 
 }
 
@@ -4841,9 +4828,19 @@ async function recordAiDecisions(
   state.decisions =
     incoming.map(
       decision => {
+        // Aynı sembolde açık pozisyon varsa Fibonacci seviyeleri tarama
+        // arasında değişse bile ikinci bir karar kartı üretme. Açık planın
+        // kimliği korunur; yeni teknik sırası yalnızca bu karta yansır.
         const previous =
           existingByFingerprint.get(
             decisionFingerprint(decision)
+          ) || existing.find(item =>
+            item?.symbol === decision.symbol &&
+            item?.status === "OPEN" &&
+            !isManualPaperDecision(item) &&
+            state.paper.positions.some(position =>
+              position.decisionId === item.id && position.status === "OPEN"
+            )
           );
 
         if (!previous) {
@@ -4905,7 +4902,7 @@ async function recordAiDecisions(
           position.status === "OPEN"
       ) &&
       !state.decisions.some(next => next.id === decision.id)
-  );
+  ).map(decision => ({...decision, currentScan: false}));
   // Manuel paper emirleri scanner kriterine bağlı değildir. Yeni scanner
   // snapshot'ı bunları expire/replace etmez; kullanıcı onaylayana,
   // reddedene veya işlem kapanana kadar yaşarlar.

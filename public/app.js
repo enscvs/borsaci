@@ -6201,7 +6201,10 @@ function renderAiDecisions(decisions) {
   // Manuel emirler AI tarafından değerlendirilmiş bir karar değildir.
   // Onları yalnızca Pending Paper Orders kuyruğunda göster; aksi halde
   // boş Fibonacci/grafik alanlarıyla AI Decisions ekranını karıştırırlar.
-  const records=allRecords.filter(item=>!isManualPaperOrder(null,item));
+  // AI karar ekranı sadece son taramanın teknik ilk üç adayını gösterir.
+  // Önceki taramadan açık kalan pozisyonlar Open Positions bölümünde
+  // izlenir; burada yeni seçilmiş gibi ikinci kez görünmez.
+  const records=allRecords.filter(item=>!isManualPaperOrder(null,item)&&item.currentScan!==false);
   renderedDecisionRecords=records;
   const pendingState={
     ...(loadLocalTradingState()||latestPaperOrderState||{}),
