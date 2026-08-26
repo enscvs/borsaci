@@ -1607,7 +1607,7 @@
     },
     "cryptoPaper": {
       "initialCapital": 10000,
-      "cash": 8048.8,
+      "cash": 10000,
       "equity": 10000,
       "pnl": 0,
       "pnlPercent": 0,
@@ -1617,8 +1617,8 @@
           "decisionId": "crypto-1787760038379-XNOUSDT-9a18bcb5",
           "symbol": "XNOUSDT",
           "market": "CRYPTO",
-          "status": "OPEN",
-          "quantity": 4878,
+          "status": "CLOSED",
+          "quantity": 0,
           "entry": 0.4,
           "current": 0.4,
           "stop": 0.32,
@@ -1626,7 +1626,9 @@
           "target2": 0.58,
           "target3": 0.65,
           "openedAt": "2026-08-26T16:35:13.076Z",
-          "paperOnly": true
+          "paperOnly": true,
+          "closedAt": "2026-08-26T16:35:29.148Z",
+          "realizedPnl": 0
         },
         {
           "id": "crypto-pos-1787759552329-XNOUSDT",
@@ -1859,6 +1861,24 @@
         }
       ],
       "history": [
+        {
+          "id": "crypto-pos-1787762113076-XNOUSDT",
+          "decisionId": "crypto-1787760038379-XNOUSDT-9a18bcb5",
+          "symbol": "XNOUSDT",
+          "market": "CRYPTO",
+          "status": "CLOSED",
+          "quantity": 0,
+          "entry": 0.4,
+          "current": 0.4,
+          "stop": 0.32,
+          "target1": 0.53,
+          "target2": 0.58,
+          "target3": 0.65,
+          "openedAt": "2026-08-26T16:35:13.076Z",
+          "paperOnly": true,
+          "closedAt": "2026-08-26T16:35:29.148Z",
+          "realizedPnl": 0
+        },
         {
           "id": "crypto-pos-1787759552329-XNOUSDT",
           "decisionId": "crypto-1787759537799-XNOUSDT-8d179173",
@@ -2134,6 +2154,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-26T16:35:29.148Z",
+          "type": "CRYPTO_CLOSE",
+          "message": "XNOUSDT kripto paper pozisyonu MARKET ile kapatıldı."
+        },
         {
           "timestamp": "2026-08-26T16:35:13.076Z",
           "type": "CRYPTO_OPEN",
