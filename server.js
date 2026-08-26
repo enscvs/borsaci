@@ -3772,24 +3772,16 @@ function normalizeTradingState(
     risk: {
       ...fallback.risk,
       ...((value || {}).risk || {}),
-      /*
-       * Eski kayıtlardaki %32 hedefini de yeni portföy
-       * kuralına uydur: en fazla üç işlemle toplam %93,
-       * en az %7 nakit rezerv.
-       */
-      maxPositionPercent: Math.min(
-        31,
-        Math.max(
-          1,
-          Number((value || {}).risk?.maxPositionPercent) || 31
-        )
+      // Risk ayarları kullanıcı tarafından belirlenir. Toplam tahsisin %100
+      // üzerindeki görünürlüğü arayüzdeki kapasite göstergesiyle sağlanır;
+      // eski %31 / 3 işlem tavanları burada uygulanmaz.
+      maxPositionPercent: Math.max(
+        1,
+        Number((value || {}).risk?.maxPositionPercent) || 31
       ),
-      maxPositions: Math.min(
-        3,
-        Math.max(
-          1,
-          Math.floor(Number((value || {}).risk?.maxPositions) || 3)
-        )
+      maxPositions: Math.max(
+        1,
+        Math.floor(Number((value || {}).risk?.maxPositions) || 3)
       ),
     },
 
@@ -3901,7 +3893,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   // üzeri tamamlanmış günlük kapanış ile oluşturulur.
   const plan = fib.valid ? fib : null;
   if (!plan || !Number.isFinite(Number(plan.entryPrice)) || !Number.isFinite(Number(plan.stopLoss))) return null;
-  const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.min(31,Math.max(1,Number(riskSettings.maxPositionPercent)||31));
+  const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.max(1,Number(riskSettings.maxPositionPercent)||31);
   const entry=Number(plan.entryPrice), stop=Number(plan.stopLoss), quantity=Math.floor(capital*allocation/100/entry);
   const hasEntryUpper=Number.isFinite(Number(fib.entryZoneHigh))&&Number(fib.entryZoneHigh)>Number(fib.entryZoneLow);
   // Trend direnci olmadan giriş üst limiti yoktur; bu durumda onaya
@@ -3915,7 +3907,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     entry:{low:roundTradingValue(fib.entryZoneLow),high:hasEntryUpper?roundTradingValue(fib.entryZoneHigh):null,reference:roundTradingValue(entry)},
     stop:roundTradingValue(stop),target1:roundTradingValue(plan.tp1),target2:roundTradingValue(plan.tp2),target3:roundTradingValue(plan.tp3),
     riskReward:{tp1:plan.riskRewardTp1??null,tp2:plan.riskRewardTp2??null,tp3:plan.riskRewardTp3??null},
-    riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.min(3,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.min(3,Math.max(1,Number(riskSettings.maxPositions)||3))},
+    riskPlan:{capital,targetPositionValue:roundTradingValue(capital*allocation/100),reservePercent:Math.max(0,100-allocation*Math.max(1,Number(riskSettings.maxPositions)||3)),quantity,positionValue:roundTradingValue(quantity*entry),actualRisk:roundTradingValue(quantity*Math.max(0,entry-stop)),maxPositionPercent:allocation,maxPositions:Math.max(1,Number(riskSettings.maxPositions)||3)},
     indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
     /*
      * Bu tablo ilk teknik eleme skorunun açıklamasıdır. Fibonacci daha
@@ -5174,7 +5166,7 @@ async function handleDecisionPendingOverride(req, res) {
       throw new Error("Bu karar için doğrulanmış giriş fiyatı yok.");
     }
     const capital = Number(state.risk?.capital || state.paper?.initialCapital || 0);
-    const allocation = Number(state.risk?.targetPositionPercent || 31) / 100;
+    const allocation = Number(state.risk?.maxPositionPercent || 31) / 100;
     const quantity = Math.max(1, Math.floor(Number(decision.riskPlan?.quantity) || (capital * allocation / entryPrice)));
     const optionalLevel = value => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : null;
     const order = paperOrders.normalizePaperOrder({
@@ -5300,13 +5292,13 @@ async function handleTradingRiskSettings(req, res) {
       Number(state.paper?.initialCapital) ||
       100000
     );
-    const maxPositionPercent = Math.min(
-      31,
-      Math.max(1, Number(input.maxPositionPercent) || 31)
+    const maxPositionPercent = Math.max(
+      1,
+      Number(input.maxPositionPercent) || 31
     );
-    const maxPositions = Math.min(
-      3,
-      Math.max(1, Math.floor(Number(input.maxPositions) || 3))
+    const maxPositions = Math.max(
+      1,
+      Math.floor(Number(input.maxPositions) || 3)
     );
 
     state.risk = {
@@ -5996,8 +5988,8 @@ function isBistOutsideTradingHours(now = new Date()) {
 function normalizedScannerRisk(settings = {}) {
   return {
     capital: Math.max(1000, Number(settings.capital) || 100000),
-    maxPositionPercent: Math.min(31, Math.max(1, Number(settings.maxPositionPercent) || 31)),
-    maxPositions: Math.min(3, Math.max(1, Math.floor(Number(settings.maxPositions) || 3))),
+    maxPositionPercent: Math.max(1, Number(settings.maxPositionPercent) || 31),
+    maxPositions: Math.max(1, Math.floor(Number(settings.maxPositions) || 3)),
   };
 }
 
