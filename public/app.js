@@ -5767,6 +5767,10 @@ let scannerRunning = false;
 let scannerAbortController = null;
 let scannerRequestId = 0;
 let scannerProgressTimer = null;
+let paperMonitorUiState = null;
+let paperMonitorRefreshTimer = null;
+let paperMonitorCountdownTimer = null;
+let paperMonitorRefreshInFlight = false;
 
 function renderScannerProgress(progress, message, status = "RUNNING") {
   if (!scannerResults) return;
@@ -6187,6 +6191,84 @@ function renderAiDecisions(decisions) {
   renderManualPendingOrders(pendingState);
 }
 
+function formatMonitorCountdown(target) {
+  const milliseconds = new Date(target || 0).getTime() - Date.now();
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0) return "ŞİMDİ";
+  const totalSeconds = Math.ceil(milliseconds / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function renderPaperMonitorStatus(monitor = paperMonitorUiState, prices = {}) {
+  const status = document.getElementById("paperMonitorStatus");
+  if (status) {
+    if (!monitor) {
+      status.textContent = "BAĞLANIYOR";
+    } else if (monitor.running) {
+      status.textContent = "FİYATLAR KONTROL EDİLİYOR";
+    } else if (monitor.lastError) {
+      status.textContent = "GEÇİCİ VERİ HATASI";
+    } else if (monitor.nextCheckAt) {
+      status.textContent = `LIVE · ${formatMonitorCountdown(monitor.nextCheckAt)}`;
+    } else {
+      status.textContent = "LIVE · İLK KONTROL HAZIR";
+    }
+  }
+
+  document.querySelectorAll("[data-order-market-price]").forEach(element => {
+    const symbol = String(element.dataset.symbol || "").toUpperCase();
+    const quote = prices[symbol];
+    if (!quote || !Number.isFinite(Number(quote.price))) return;
+    const time = quote.asOf
+      ? new Date(quote.asOf).toLocaleTimeString("tr-TR", {hour: "2-digit", minute: "2-digit", second: "2-digit"})
+      : "--";
+    element.textContent = `SON DOĞRULANMIŞ FİYAT: ${formatCurrency(quote.price)} · ${time}`;
+    element.title = "Sunucunun aldığı son tamamlanmış fiyat verisi";
+  });
+}
+
+async function refreshPaperMonitorStatus() {
+  if (paperMonitorRefreshInFlight) return;
+  paperMonitorRefreshInFlight = true;
+  try {
+    const symbols = [...new Set(
+      [...document.querySelectorAll("[data-order-market-price]")]
+        .map(element => String(element.dataset.symbol || "").toUpperCase())
+        .filter(Boolean)
+    )];
+    const response = await fetch(
+      `/api/trading/paper/monitor-status?symbols=${encodeURIComponent(symbols.join(","))}`,
+      {cache: "no-store"}
+    );
+    if (!response.ok) return;
+    const payload = await response.json();
+    paperMonitorUiState = payload?.monitor || paperMonitorUiState;
+    renderPaperMonitorStatus(paperMonitorUiState, payload?.prices || {});
+
+    (payload?.unavailable || []).forEach(symbol => {
+      document.querySelectorAll(`[data-order-market-price][data-symbol="${String(symbol).replace(/"/g, "\\\"")}"]`).forEach(element => {
+        element.textContent = "SON DOĞRULANMIŞ FİYAT: GEÇİCİ OLARAK ALINAMADI";
+      });
+    });
+  } catch {
+    // Ana emir kartını bozma; bir sonraki kısa yenilemede tekrar denenir.
+  } finally {
+    paperMonitorRefreshInFlight = false;
+  }
+}
+
+function startPaperMonitorUi() {
+  if (paperMonitorRefreshTimer) return;
+  void refreshPaperMonitorStatus();
+  paperMonitorRefreshTimer = window.setInterval(() => {
+    void refreshPaperMonitorStatus();
+  }, 15000);
+  paperMonitorCountdownTimer = window.setInterval(() => {
+    renderPaperMonitorStatus();
+  }, 1000);
+}
+
 
 function currentPaperState() {
 
@@ -6481,6 +6563,9 @@ function renderPendingPaperOrders(
           <span class="pending-paper-order-badge">${escapeHtml(order.status || "PENDING APPROVAL")}</span>
           <small>${escapeHtml(created)}</small>
         </div>
+        <div class="paper-order-live-price" data-order-market-price data-symbol="${escapeHtml(order.symbol)}">
+          SON DOĞRULANMIŞ FİYAT: YÜKLENİYOR…
+        </div>
         <form class="paper-order-form" data-pending-paper-order-form novalidate>
           <label>LOT
             <input name="quantity" type="number" min="1" step="1" inputmode="numeric" value="${paperOrderInputValue(order.quantity, 0)}" required>
@@ -6518,6 +6603,8 @@ function renderPendingPaperOrders(
     `;
   }).join("");
   container.querySelectorAll("[data-pending-paper-order-form]").forEach(syncOrderPriceField);
+  renderPaperMonitorStatus(source.paper?.monitor || paperMonitorUiState);
+  void refreshPaperMonitorStatus();
 }
 
 
@@ -6640,6 +6727,7 @@ function renderPaperOrderState(
   renderPerformance(state);
   renderPendingPaperOrders(state);
   renderManualPendingOrders(state);
+  renderPaperMonitorStatus(state.paper?.monitor || paperMonitorUiState);
 
   if (state.risk) {
     renderRiskSettings(state.risk);
@@ -8815,6 +8903,8 @@ function bindTradingScannerControls() {
   bindDecisionBoard();
 
   bindPaperOrderControls();
+
+  startPaperMonitorUi();
 
   bindKillSwitch();
 

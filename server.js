@@ -75,6 +75,18 @@ const PUBLIC_BASE_URL =
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
 let paperMonitorRunning = false;
+const PAPER_MONITOR_INTERVAL_MS = 60 * 1000;
+const PAPER_PRICE_CACHE_TTL_MS = 15 * 1000;
+const paperMarketPriceCache = new Map();
+const paperMonitorStatus = {
+  intervalMs: PAPER_MONITOR_INTERVAL_MS,
+  running: false,
+  lastStartedAt: null,
+  lastFinishedAt: null,
+  nextCheckAt: null,
+  watchedLimitOrders: 0,
+  lastError: null,
+};
 
 function updateScannerJob(jobId, progress, message, status = "RUNNING") {
   if (!jobId) return;
@@ -4080,6 +4092,25 @@ async function fetchPaperMarketPrice(symbol) {
   return roundTradingValue(price);
 }
 
+async function fetchCachedPaperMarketPrice(symbol) {
+  const normalizedSymbol = String(symbol || "").trim().toUpperCase();
+  const cached = paperMarketPriceCache.get(normalizedSymbol);
+  const now = Date.now();
+  if (cached && now - cached.fetchedAt < PAPER_PRICE_CACHE_TTL_MS) {
+    return cached;
+  }
+
+  const price = await fetchPaperMarketPrice(normalizedSymbol);
+  const value = {
+    price,
+    asOf: new Date().toISOString(),
+    source: "YAHOO_LAST_COMPLETED_CANDLE",
+    fetchedAt: now,
+  };
+  paperMarketPriceCache.set(normalizedSymbol, value);
+  return value;
+}
+
 function telegramMessagingReady() {
   return Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID);
 }
@@ -4452,6 +4483,8 @@ async function monitorPaperPositions() {
         getEffectivePendingOrder(decision)?.orderType === "LIMIT"
     );
 
+  paperMonitorStatus.watchedLimitOrders = pendingLimitDecisions.length;
+
   if (openPositions.length === 0 && pendingLimitDecisions.length === 0) {
     return;
   }
@@ -4466,7 +4499,7 @@ async function monitorPaperPositions() {
     const order = getEffectivePendingOrder(decision);
 
     try {
-      const marketPrice = await fetchPaperMarketPrice(order.symbol);
+      const marketPrice = (await fetchCachedPaperMarketPrice(order.symbol)).price;
 
       // Alış limit emri yalnızca son doğrulanmış fiyat limitin altına/eşitse
       // gerçekleşir. Fiyat yukarıdaysa emir beklemeye devam eder.
@@ -5069,11 +5102,55 @@ async function runPaperMonitor() {
   }
 
   paperMonitorRunning = true;
+  paperMonitorStatus.running = true;
+  paperMonitorStatus.lastStartedAt = new Date().toISOString();
+  paperMonitorStatus.lastError = null;
   try {
     await monitorPaperPositions();
+  } catch (error) {
+    paperMonitorStatus.lastError = "Fiyat kontrolü geçici olarak tamamlanamadı.";
+    throw error;
   } finally {
     paperMonitorRunning = false;
+    paperMonitorStatus.running = false;
+    paperMonitorStatus.lastFinishedAt = new Date().toISOString();
+    paperMonitorStatus.nextCheckAt = new Date(
+      Date.now() + PAPER_MONITOR_INTERVAL_MS
+    ).toISOString();
   }
+}
+
+async function handlePaperMonitorStatus(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const symbols = [...new Set(
+    String(url.searchParams.get("symbols") || "")
+      .split(",")
+      .map(symbol => symbol.trim().toUpperCase())
+      .filter(symbol => /^[A-Z0-9]{2,12}$/.test(symbol))
+      .slice(0, 12)
+  )];
+  const prices = {};
+  const unavailable = [];
+
+  await Promise.all(symbols.map(async symbol => {
+    try {
+      const quote = await fetchCachedPaperMarketPrice(symbol);
+      prices[symbol] = {
+        price: quote.price,
+        asOf: quote.asOf,
+        source: quote.source,
+      };
+    } catch {
+      unavailable.push(symbol);
+    }
+  }));
+
+  return sendJSON(res, 200, {
+    paperOnly: true,
+    monitor: {...paperMonitorStatus},
+    prices,
+    unavailable,
+  });
 }
 
 async function handleDecisionPendingOverride(req, res) {
@@ -5619,6 +5696,7 @@ function paperStateForClient(state) {
   return {
     ...(state?.paper || {}),
     pendingOrders: pendingPaperOrders(state),
+    monitor: {...paperMonitorStatus},
   };
 }
 
@@ -7288,6 +7366,13 @@ if (
 }
 
 if (
+  req.method === "GET" &&
+  pathname === "/api/trading/paper/monitor-status"
+) {
+  return handlePaperMonitorStatus(req, res);
+}
+
+if (
   req.method === "POST" &&
   pathname === "/api/trading/paper/decision/pending"
 ) {
@@ -7895,7 +7980,7 @@ server.listen(
               )
           );
       },
-      60 * 1000
+      PAPER_MONITOR_INTERVAL_MS
     );
 
     // Seans kapanışından sonra güncel scanner kaydı varsa tek günlük
