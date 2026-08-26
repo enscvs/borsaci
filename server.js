@@ -7306,6 +7306,13 @@ if (
 
 if (
   req.method === "GET" &&
+  pathname === "/api/crypto/scanner"
+) {
+  return handleCryptoScanner(req, res);
+}
+
+if (
+  req.method === "GET" &&
   (
     pathname === "/api/trading/scanner" ||
     pathname === "/trading/scanner"
@@ -7355,6 +7362,71 @@ if (
   pathname === "/api/trading/paper/pending"
 ) {
   return handlePendingPaperOrders(req, res);
+}
+
+const BINANCE_CRYPTO_SYMBOLS = [
+  "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT", "ADAUSDT",
+  "DOGEUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT", "LTCUSDT", "ATOMUSDT",
+  "NEARUSDT", "ARBUSDT", "OPUSDT", "SUIUSDT", "AAVEUSDT", "INJUSDT",
+  "FETUSDT", "RENDERUSDT"
+];
+
+async function fetchBinanceDailyHistory(symbol) {
+  const response = await fetch(
+    `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=1d&limit=550`,
+    {headers: {"Accept": "application/json"}}
+  );
+  if (!response.ok) throw new Error(`Binance HTTP ${response.status}`);
+  const rows = await response.json();
+  if (!Array.isArray(rows)) throw new Error("Binance mum verisi geçersiz.");
+  return rows
+    .filter(row => Number(row?.[6]) <= Date.now())
+    .map(row => ({
+      time: Math.floor(Number(row[6]) / 1000),
+      open: Number(row[1]), high: Number(row[2]), low: Number(row[3]),
+      close: Number(row[4]), volume: Number(row[5]),
+    }))
+    .filter(candle => [candle.open, candle.high, candle.low, candle.close, candle.volume].every(Number.isFinite));
+}
+
+async function scanCryptoSymbol(symbol) {
+  try {
+    const history = await fetchBinanceDailyHistory(symbol);
+    const validation = fibonacciEngine.validateDaily(history);
+    if (!validation.ok) return {symbol, history, validation, dataStatus: validation.message};
+    const baseFib = {valid:false, status:"NO_VALID_STRUCTURE", riskRewardTp2:null, riskRewardTp3:null, volumeConfirmation:"WEAK"};
+    const analysis = fibonacciEngine.score(history, baseFib);
+    return {symbol, history, validation, dataStatus:"OK", ...analysis, fibonacci:baseFib, timestamp:new Date().toISOString()};
+  } catch (error) {
+    console.warn(`CRYPTO SCANNER ${symbol}:`, error.message);
+    return {symbol, history:null, validation:{ok:false,code:"BINANCE_FETCH_FAILED"}, dataStatus:"VERİ YETERSİZ"};
+  }
+}
+
+async function handleCryptoScanner(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const jobId = String(url.searchParams.get("jobId") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
+  try {
+    updateScannerJob(jobId, 3, "Binance günlük mum verileri alınıyor");
+    const results = [];
+    for (let index = 0; index < BINANCE_CRYPTO_SYMBOLS.length; index += 5) {
+      const batch = BINANCE_CRYPTO_SYMBOLS.slice(index, index + 5);
+      results.push(...await Promise.all(batch.map(scanCryptoSymbol)));
+      updateScannerJob(jobId, 10 + Math.round(65 * Math.min(index + 5, BINANCE_CRYPTO_SYMBOLS.length) / BINANCE_CRYPTO_SYMBOLS.length), `${Math.min(index + 5, BINANCE_CRYPTO_SYMBOLS.length)}/${BINANCE_CRYPTO_SYMBOLS.length} kripto varlık kontrol edildi`);
+    }
+    const valid = results.filter(item => item.validation?.ok).sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
+    updateScannerJob(jobId, 82, "İlk 5 aday için Fibonacci A-B-C hesaplanıyor");
+    const ranked = valid.slice(0, 5).map(item => {
+      const fibonacci = fibonacciEngine.fibonacciPlan(item.history);
+      const analysis = fibonacciEngine.score(item.history, fibonacci);
+      return {...item, ...analysis, fibonacci, price:analysis.features.price, ema20:analysis.features.ema20, ema50:analysis.features.ema50, ema200:analysis.features.ema200, rsi:analysis.features.rsi, atr:analysis.features.atr, volumeRatio:analysis.features.volumeRatio};
+    });
+    updateScannerJob(jobId, 100, "Kripto taraması tamamlandı", "COMPLETE");
+    return sendJSON(res, 200, {success:true, timestamp:new Date().toISOString(), scanned:BINANCE_CRYPTO_SYMBOLS.length, successful:valid.length, results:ranked, source:"BINANCE_PUBLIC"});
+  } catch (error) {
+    updateScannerJob(jobId, 100, `Kripto tarama hatası: ${error.message}`, "ERROR");
+    return sendJSON(res, 500, {success:false, error:error.message});
+  }
 }
 
 if (
