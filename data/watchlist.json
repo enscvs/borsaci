@@ -4,11 +4,35 @@
     "version": 2,
     "paper": {
       "initialCapital": 50000,
-      "cash": 77697.88,
+      "cash": 62024.08,
       "equity": 93185.0802735138,
       "pnl": 43184.89313681602,
       "pnlPercent": 86.36978627363204,
       "positions": [
+        {
+          "id": "paper-2026-08-26T10:37:00.438Z-GESAN-adec4ac3",
+          "decisionId": "1787740133712-GESAN",
+          "decisionIds": [
+            "1787740133712-GESAN"
+          ],
+          "symbol": "GESAN",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 173,
+          "originalQuantity": 173,
+          "entry": 90.6,
+          "current": 90.6,
+          "stop": 63.21,
+          "target1": 94.03,
+          "target2": 102.06,
+          "target3": 112.28,
+          "status": "OPEN",
+          "openedAt": "2026-08-26T10:37:00.438Z",
+          "tp1Hit": false,
+          "realizedPnl": 0,
+          "pnl": 0
+        },
         {
           "id": "paper-2026-08-26T10:29:36.944Z-AHGAZ-9bf6fc27",
           "decisionId": "1787740133712-AHGAZ",
@@ -1354,7 +1378,7 @@
         "rank": 3,
         "symbol": "GESAN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 65.79,
@@ -1670,10 +1694,11 @@
           "summary": "Bu sembol için doğrulanmış haber bulunmamaktadır."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-26T10:28:53.712Z",
           "expiresAt": "2026-08-27T10:28:53.712Z",
-          "overrideAt": "2026-08-26T10:30:06.215Z"
+          "overrideAt": "2026-08-26T10:30:06.215Z",
+          "openedAt": "2026-08-26T10:37:00.438Z"
         },
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
@@ -1682,19 +1707,21 @@
         "pendingOrder": {
           "symbol": "GESAN",
           "quantity": 173,
-          "entryPrice": null,
+          "entryPrice": 90.6,
           "orderType": "MARKET",
           "stop": 63.21,
           "target1": 94.03,
           "target2": 102.06,
           "target3": 112.28,
-          "positionValue": null,
-          "actualRisk": null,
+          "positionValue": 15673.8,
+          "actualRisk": 4738.47,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-26T10:30:06.215Z",
-          "updatedAt": "2026-08-26T10:36:57.663Z",
-          "editedAt": "2026-08-26T10:36:57.663Z"
+          "updatedAt": "2026-08-26T10:37:00.438Z",
+          "editedAt": "2026-08-26T10:36:57.663Z",
+          "status": "APPROVED",
+          "approvedAt": "2026-08-26T10:37:00.438Z"
         }
       },
       {
@@ -12146,6 +12173,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-26T10:37:00.438Z",
+        "type": "PAPER_APPROVED",
+        "message": "GESAN paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-26T10:37:00.438Z",
+        "type": "PAPER_OPEN",
+        "message": "GESAN scanner paper pozisyonu açıldı: 173 lot · ₺15673.80 · MARKET."
+      },
+      {
         "timestamp": "2026-08-26T10:36:57.663Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "GESAN bekleyen paper emri düzenlendi: 173 lot · ₺0,00 · MARKET."
@@ -12634,16 +12671,6 @@
         "timestamp": "2026-08-23T00:00:33.927Z",
         "type": "CLOSED",
         "message": "BINBN paper pozisyonu kapatıldı: MANUAL_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-23T00:00:25.121Z",
-        "type": "PAPER_APPROVED",
-        "message": "BINBN paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-23T00:00:25.121Z",
-        "type": "PAPER_OPEN",
-        "message": "BINBN paper pozisyonu açıldı: 84 lot · ₺15498.00."
       }
     ],
     "scannerSnapshot": {
