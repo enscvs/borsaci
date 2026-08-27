@@ -105,7 +105,18 @@ let binanceActivePublicBaseUrl = null;
 // kullanılır. Public piyasa verisi/fallback akışından özellikle ayrıdır.
 const BINANCE_API_KEY = String(process.env.BINANCE_API_KEY || "").trim();
 const BINANCE_API_SECRET = String(process.env.BINANCE_API_SECRET || "").trim();
-const BINANCE_SPOT_ACCOUNT_BASE_URL = "https://api.binance.com";
+// İmzalı istekler public market-data aynalarına gönderilemez. Binance'in
+// Spot REST belgelerinde belirtilen resmi trading uçları arasında yalnızca
+// ağ engeli/rate-limit durumunda güvenli geri dönüş yapılır.
+const BINANCE_SPOT_PRIVATE_BASE_URLS = [
+  "https://api.binance.com",
+  "https://api-gcp.binance.com",
+  "https://api1.binance.com",
+  "https://api2.binance.com",
+  "https://api3.binance.com",
+  "https://api4.binance.com"
+];
+let binanceActiveSpotPrivateBaseUrl = null;
 const BINANCE_SPOT_ACCOUNT_RECV_WINDOW = 10000;
 
 // NASDAQ yalnızca Alpaca'nın server-side API'si üzerinden okunur. İstemciye
@@ -7858,33 +7869,45 @@ function createBinanceAccountError(code, message) {
 }
 
 function binanceAccountErrorForStatus(status) {
+  let error;
   if (status === 401 || status === 403) {
-    return createBinanceAccountError(
+    error = createBinanceAccountError(
       "BINANCE_AUTH_FAILED",
       "Binance kimlik doğrulaması başarısız. Render API anahtarlarını kontrol edin."
     );
-  }
-  if (status === 418 || status === 451) {
-    return createBinanceAccountError(
+  } else if (status === 418 || status === 451) {
+    error = createBinanceAccountError(
       "BINANCE_NETWORK_RESTRICTED",
       "Binance Spot hesabına bu sunucu konumundan erişilemiyor."
     );
-  }
-  if (status === 429) {
-    return createBinanceAccountError(
+  } else if (status === 429) {
+    error = createBinanceAccountError(
       "BINANCE_RATE_LIMITED",
       "Binance istek limiti geçici olarak aşıldı."
     );
+  } else {
+    error = createBinanceAccountError(
+      "BINANCE_ACCOUNT_UNAVAILABLE",
+      "Binance Spot hesap bilgisi şu anda alınamadı."
+    );
   }
-  return createBinanceAccountError(
-    "BINANCE_ACCOUNT_UNAVAILABLE",
-    "Binance Spot hesap bilgisi şu anda alınamadı."
-  );
+  error.status = Number(status);
+  return error;
 }
 
 function numberFromBinanceBalance(value) {
   const amount = Number(value);
   return Number.isFinite(amount) && amount >= 0 ? amount : 0;
+}
+
+function binancePrivateBaseUrls() {
+  return binanceActiveSpotPrivateBaseUrl
+    ? [binanceActiveSpotPrivateBaseUrl, ...BINANCE_SPOT_PRIVATE_BASE_URLS.filter(baseUrl => baseUrl !== binanceActiveSpotPrivateBaseUrl)]
+    : BINANCE_SPOT_PRIVATE_BASE_URLS;
+}
+
+function isBinanceRouteBlockedStatus(status) {
+  return [418, 451, 502, 503, 504].includes(Number(status));
 }
 
 async function fetchBinanceSpotAccount() {
@@ -7895,33 +7918,8 @@ async function fetchBinanceSpotAccount() {
     );
   }
 
-  const params = new URLSearchParams({
-    recvWindow: String(BINANCE_SPOT_ACCOUNT_RECV_WINDOW),
-    timestamp: String(Date.now())
-  });
-  const query = params.toString();
-  const signature = crypto
-    .createHmac("sha256", BINANCE_API_SECRET)
-    .update(query)
-    .digest("hex");
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-
   try {
-    const response = await fetch(
-      `${BINANCE_SPOT_ACCOUNT_BASE_URL}/api/v3/account?${query}&signature=${signature}`,
-      {
-        headers: {
-          Accept: "application/json",
-          "X-MBX-APIKEY": BINANCE_API_KEY
-        },
-        signal: controller.signal
-      }
-    );
-
-    if (!response.ok) throw binanceAccountErrorForStatus(response.status);
-
-    const account = await response.json();
+    const account = await requestBinanceSpotSigned("GET", "/api/v3/account");
     if (!Array.isArray(account?.balances)) {
       throw createBinanceAccountError(
         "BINANCE_ACCOUNT_INVALID_RESPONSE",
@@ -7954,8 +7952,6 @@ async function fetchBinanceSpotAccount() {
       "BINANCE_ACCOUNT_UNAVAILABLE",
       "Binance Spot hesap bilgisi şu anda alınamadı."
     );
-  } finally {
-    clearTimeout(timeout);
   }
 }
 
@@ -8026,61 +8022,99 @@ function safeBinanceOrderError(status) {
 }
 
 async function fetchBinanceSpotPublic(pathname) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await fetch(`${BINANCE_SPOT_ACCOUNT_BASE_URL}${pathname}`, {
-      headers: {Accept: "application/json"},
-      signal: controller.signal
-    });
-    if (!response.ok) throw safeBinanceOrderError(response.status);
-    return response.json();
-  } catch (error) {
-    if (String(error?.code || "").startsWith("BINANCE_")) throw error;
-    throw createBinanceAccountError("BINANCE_NETWORK_RESTRICTED", "Binance Spot servisine bu sunucudan erişilemiyor.");
-  } finally {
-    clearTimeout(timeout);
+  let lastError = null;
+  for (const baseUrl of binancePrivateBaseUrls()) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(`${baseUrl}${pathname}`, {
+        headers: {Accept: "application/json"},
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        const error = safeBinanceOrderError(response.status);
+        if (isBinanceRouteBlockedStatus(response.status)) {
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
+      binanceActiveSpotPrivateBaseUrl = baseUrl;
+      return response.json();
+    } catch (error) {
+      const retryable = error?.code === "BINANCE_NETWORK_RESTRICTED" || isBinanceRouteBlockedStatus(error?.status);
+      if (String(error?.code || "").startsWith("BINANCE_") && !retryable) throw error;
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw createBinanceAccountError("BINANCE_NETWORK_RESTRICTED", lastError?.message || "Binance Spot servisine bu sunucudan erişilemiyor.");
 }
 
 async function requestBinanceSpotSigned(method, pathname, params = {}) {
   if (!BINANCE_API_KEY || !BINANCE_API_SECRET) {
     throw createBinanceAccountError("BINANCE_NOT_CONFIGURED", "Binance API anahtarı veya secret Render ortamında tanımlı değil.");
   }
-  const search = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") search.set(key, String(value));
-  });
-  search.set("recvWindow", String(BINANCE_SPOT_ACCOUNT_RECV_WINDOW));
-  search.set("timestamp", String(Date.now()));
-  const query = search.toString();
-  const signature = crypto.createHmac("sha256", BINANCE_API_SECRET).update(query).digest("hex");
-  const signedQuery = `${query}&signature=${signature}`;
   const normalizedMethod = String(method || "GET").toUpperCase();
-  const requestUrl = ["GET", "DELETE"].includes(normalizedMethod)
-    ? `${BINANCE_SPOT_ACCOUNT_BASE_URL}${pathname}?${signedQuery}`
-    : `${BINANCE_SPOT_ACCOUNT_BASE_URL}${pathname}`;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10000);
-  try {
-    const response = await fetch(requestUrl, {
-      method: normalizedMethod,
-      headers: {
-        Accept: "application/json",
-        "X-MBX-APIKEY": BINANCE_API_KEY,
-        ...(["GET", "DELETE"].includes(normalizedMethod) ? {} : {"Content-Type": "application/x-www-form-urlencoded"})
-      },
-      body: ["GET", "DELETE"].includes(normalizedMethod) ? undefined : signedQuery,
-      signal: controller.signal
+  const isQueryRequest = ["GET", "DELETE"].includes(normalizedMethod);
+  let lastError = null;
+  for (const baseUrl of binancePrivateBaseUrls()) {
+    // Her alternatif endpoint denemesinde timestamp/signature yenilenir;
+    // önceki ağ gecikmesi recvWindow'u geçersiz kılmamalıdır.
+    const search = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") search.set(key, String(value));
     });
-    if (!response.ok) throw safeBinanceOrderError(response.status);
-    return response.json();
-  } catch (error) {
-    if (String(error?.code || "").startsWith("BINANCE_")) throw error;
-    throw createBinanceAccountError("BINANCE_SPOT_UNAVAILABLE", "Binance Spot işlemi şu anda gerçekleştirilemedi.");
-  } finally {
-    clearTimeout(timeout);
+    search.set("recvWindow", String(BINANCE_SPOT_ACCOUNT_RECV_WINDOW));
+    search.set("timestamp", String(Date.now()));
+    const query = search.toString();
+    const signature = crypto.createHmac("sha256", BINANCE_API_SECRET).update(query).digest("hex");
+    const signedQuery = `${query}&signature=${signature}`;
+    const requestUrl = isQueryRequest
+      ? `${baseUrl}${pathname}?${signedQuery}`
+      : `${baseUrl}${pathname}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(requestUrl, {
+        method: normalizedMethod,
+        headers: {
+          Accept: "application/json",
+          "X-MBX-APIKEY": BINANCE_API_KEY,
+          ...(isQueryRequest ? {} : {"Content-Type": "application/x-www-form-urlencoded"})
+        },
+        body: isQueryRequest ? undefined : signedQuery,
+        signal: controller.signal
+      });
+      if (!response.ok) {
+        const error = safeBinanceOrderError(response.status);
+        if (error?.code === "BINANCE_NETWORK_RESTRICTED" || (isQueryRequest && isBinanceRouteBlockedStatus(response.status))) {
+          lastError = error;
+          continue;
+        }
+        throw error;
+      }
+      binanceActiveSpotPrivateBaseUrl = baseUrl;
+      return response.json();
+    } catch (error) {
+      const retryable = error?.code === "BINANCE_NETWORK_RESTRICTED" || (isQueryRequest && isBinanceRouteBlockedStatus(error?.status));
+      if (String(error?.code || "").startsWith("BINANCE_") && !retryable) throw error;
+      // POST sırasında bağlantının cevap gelmeden kesilmesi, emrin Binance'e
+      // ulaşıp ulaşmadığını belirsiz bırakır. Bu durumda ikinci kez gönderip
+      // çift emir yaratmak yerine kullanıcıyı Binance tarafını kontrol etmeye yönlendir.
+      if (!isQueryRequest && !retryable) {
+        throw createBinanceAccountError(
+          "BINANCE_ORDER_STATUS_UNKNOWN",
+          "Binance bağlantısı emir sırasında kesildi. Aynı emri tekrar göndermeden önce Binance açık emirler ve işlem geçmişini kontrol edin."
+        );
+      }
+      lastError = error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw createBinanceAccountError("BINANCE_NETWORK_RESTRICTED", lastError?.message || "Binance Spot işlemi şu anda gerçekleştirilemedi.");
 }
 
 async function getBinanceSpotSymbolRules(symbol) {
