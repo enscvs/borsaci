@@ -7807,9 +7807,13 @@ async function handleCryptoScanner(req, res) {
       .sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
     updateScannerJob(jobId, 82, "İlk 5 aday için Fibonacci A-B-C hesaplanıyor");
     const ranked = valid.slice(0, 5).map(item => {
-      const fibonacci = fibonacciEngine.fibonacciPlan(item.history);
+      // Binance mumları closeTime ile yalnız tamamlanmış günlük mumlar olarak
+      // gelir. BIST'e özgü seans kapanış filtresi burada uygulanmaz; A-B-C
+      // seçimi ve Fibonacci hesap motoru bunun dışında BIST ile aynıdır.
+      const fibonacci = fibonacciEngine.fibonacciPlan(item.history, Date.now(), {market:"CRYPTO"});
       const analysis = fibonacciEngine.score(item.history, fibonacci);
-      return {...item, ...analysis, fibonacci, price:analysis.features.price, ema20:analysis.features.ema20, ema50:analysis.features.ema50, ema200:analysis.features.ema200, rsi:analysis.features.rsi, atr:analysis.features.atr, volumeRatio:analysis.features.volumeRatio};
+      const fallbackPlan = fibonacci.valid ? null : fibonacciEngine.fallbackPlan(item.history, analysis.features);
+      return {...item, ...analysis, fibonacci, fallbackPlan, price:analysis.features.price, ema20:analysis.features.ema20, ema50:analysis.features.ema50, ema200:analysis.features.ema200, rsi:analysis.features.rsi, macd:analysis.features.macd, atr:analysis.features.atr, volumeRatio:analysis.features.volumeRatio, turnover:analysis.features.turnover};
     });
     // Kripto sinyal geçmişi tarama sonrası kalıcı yazılır; tarayıcı
     // yenilense dahi adayların hangi günde oluştuğu kaybolmaz.
@@ -7822,6 +7826,7 @@ async function handleCryptoScanner(req, res) {
       symbol: item.symbol, timestamp: signalTime, score: Number(item.score || 0), grade: item.grade || "KARAR",
       status: item.fibonacci?.status || "NO_VALID_STRUCTURE", price: item.price,
       fibonacci: item.fibonacci || null,
+      fallbackPlan: item.fallbackPlan || null,
     }));
     const existingKeys = new Set(existingSignals.map(item => `${item.symbol}:${String(item.timestamp || "").slice(0, 10)}`));
     state.cryptoPaper.signals = [...newSignals.filter(item => !existingKeys.has(`${item.symbol}:${signalTime.slice(0, 10)}`)), ...existingSignals].slice(0, 200);

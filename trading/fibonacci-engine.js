@@ -55,8 +55,18 @@ function istanbulDateParts(value) {
   return Object.fromEntries(parts.filter(part=>part.type!=="literal").map(part=>[part.type,part.value]));
 }
 
-function completedDailyHistory(history, now=Date.now()) {
+function completedDailyHistory(history, now=Date.now(), options={}) {
   const completed = Array.isArray(history) ? history.slice() : [];
+  const market=String(options?.market || "BIST").toUpperCase();
+  /*
+   * Binance satırları closeTime ile alınır ve sunucuya yalnız closeTime
+   * geçmiş mumlar ulaşır. Bu nedenle UTC kapanışı İstanbul saatinde ertesi
+   * güne sarkmış olsa dahi yeniden BIST 18:15 filtresinden geçirilmez.
+   */
+  if(market === "CRYPTO") {
+    while(completed.length && (!finite(timeMs(completed.at(-1))) || timeMs(completed.at(-1))>now)) completed.pop();
+    return completed;
+  }
   const nowParts = istanbulDateParts(now);
   if (!nowParts) return completed;
   const today = `${nowParts.year}${nowParts.month}${nowParts.day}`;
@@ -166,8 +176,8 @@ function unavailableDescendingTrendline(reason, last) {
  * Daha yeni iki tepe alçalmıyorsa eski bir çizgiyi seçmeyiz: güncel düşüş
  * trendi geçersiz sayılır ve plan fail-closed kalır.
  */
-function findDescendingHighTrendline(history, pointB, now=Date.now()) {
-  const daily = completedDailyHistory(history,now);
+function findDescendingHighTrendline(history, pointB, now=Date.now(), options={}) {
+  const daily = completedDailyHistory(history,now,options);
   const lastIndex = daily.length-1;
   const last = daily[lastIndex];
   if (!pointB || !Number.isInteger(pointB.index) || !last || lastIndex <= pointB.index) {
@@ -296,8 +306,8 @@ function findAbc(history) {
   return best;
 }
 function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*(1-CONFIG.fibonacci.stopLossPercentBelowC/100),tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
-function fibonacciPlan(rawDaily, now=Date.now()) {
-  const daily=completedDailyHistory(rawDaily,now);
+function fibonacciPlan(rawDaily, now=Date.now(), options={}) {
+  const daily=completedDailyHistory(rawDaily,now,options);
   const abc=findAbc(daily);
   const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,entryUpperTrendlineBuffer:CONFIG.fibonacci.entryUpperTrendlineBuffer,confirmationTimeframe:"1d",completedDailyCandleTime:iso(daily.at(-1)),stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,entryUpperSource:"NO_DESCENDING_DAILY_HIGH_TRENDLINE",descendingResistance:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
   if(!abc)return base;
@@ -310,7 +320,7 @@ function fibonacciPlan(rawDaily, now=Date.now()) {
   const candlesAfterC=daily.slice(C.index+1); const confirm=candlesAfterC.find(x=>x.close>trigger);
   const last=daily.at(-1), volumeStrong=finite(features(daily).volumeRatio)&&features(daily).volumeRatio>=1;
   const levels=fibonacciLevels(C.price,range);
-  const descendingResistance=findDescendingHighTrendline(daily,B,now);
+  const descendingResistance=findDescendingHighTrendline(daily,B,now,options);
   const entryZoneHigh=descendingResistance.valid ? descendingResistance.entryUpperPrice : null;
   const fields={valid:true,status:"WAITING_CONFIRMATION",pointA:A,pointB:B,pointC:C,range:round(range),retracementRatio:round(retracement,4),entryTriggerPrice:round(levels.entryTriggerPrice),entryZoneLow:round(trigger),entryZoneHigh,entryUpperSource:descendingResistance.valid?"DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT":"NO_DESCENDING_DAILY_HIGH_TRENDLINE",descendingResistance,stopLoss:round(levels.stopLoss),tp1:round(levels.tp1),tp2:round(levels.tp2),tp3:round(levels.tp3),volumeConfirmation:volumeStrong?"STRONG":"WEAK",invalidReason:null};
   if(!descendingResistance.valid)return {...fields,status:"ENTRY_RESISTANCE_UNAVAILABLE",invalidReason:`Giriş üst seviyesi oluşturulmadı: ${descendingResistance.reason}`};
