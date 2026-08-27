@@ -12566,8 +12566,8 @@
         "id": "1787845693091-SDTTR",
         "rank": 1,
         "symbol": "SDTTR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -12865,14 +12865,33 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-27T18:40:55.196Z",
-          "expiresAt": "2026-08-28T18:40:55.196Z"
+          "expiresAt": "2026-08-28T18:40:55.196Z",
+          "overrideAt": "2026-08-27T18:41:16.793Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-27T18:40:55.196Z"
+        "timestamp": "2026-08-27T18:40:55.196Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "SDTTR",
+          "quantity": 1659,
+          "entryPrice": 24.4,
+          "orderType": "LIMIT",
+          "stop": 18.03,
+          "target1": 24.88,
+          "target2": 26.64,
+          "target3": 28.88,
+          "positionValue": 40479.6,
+          "actualRisk": 10567.83,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-27T18:41:16.793Z",
+          "updatedAt": "2026-08-27T18:41:16.793Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787845693091-ASTOR",
@@ -29027,6 +29046,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-27T18:41:16.793Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "SDTTR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
         "timestamp": "2026-08-27T18:40:56.287Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -29520,11 +29544,6 @@
         "timestamp": "2026-08-26T10:29:36.944Z",
         "type": "PAPER_APPROVED",
         "message": "AHGAZ paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-26T10:29:36.944Z",
-        "type": "PAPER_OPEN",
-        "message": "AHGAZ scanner paper pozisyonu açıldı: 440 lot · ₺15813.60 · MARKET."
       }
     ],
     "scannerSnapshot": {
