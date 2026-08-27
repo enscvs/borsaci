@@ -4939,12 +4939,12 @@
           "tp3": null
         },
         "riskPlan": {
-          "capital": 100000,
-          "targetPositionValue": 31000,
+          "capital": 50000,
+          "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 418,
-          "positionValue": 30952.9,
-          "actualRisk": 1274.9,
+          "quantity": 209,
+          "positionValue": 15476.45,
+          "actualRisk": 637.45,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
@@ -5221,13 +5221,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-27T08:04:07.929Z",
-          "expiresAt": "2026-08-28T08:04:07.929Z"
+          "createdAt": "2026-08-27T08:17:32.944Z",
+          "expiresAt": "2026-08-28T08:17:32.944Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (71) planı geçersiz kılar.",
-        "timestamp": "2026-08-27T08:04:07.929Z"
+        "timestamp": "2026-08-27T08:17:32.944Z"
       },
       {
         "id": "1787817847929-TAVHL",
@@ -5251,12 +5251,12 @@
           "tp3": null
         },
         "riskPlan": {
-          "capital": 100000,
-          "targetPositionValue": 31000,
+          "capital": 50000,
+          "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 120,
-          "positionValue": 30766.8,
-          "actualRisk": 837.6,
+          "quantity": 60,
+          "positionValue": 15383.4,
+          "actualRisk": 418.8,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
@@ -5533,13 +5533,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-27T08:04:07.929Z",
-          "expiresAt": "2026-08-28T08:04:07.929Z"
+          "createdAt": "2026-08-27T08:17:32.944Z",
+          "expiresAt": "2026-08-28T08:17:32.944Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (249.41) planı geçersiz kılar.",
-        "timestamp": "2026-08-27T08:04:07.929Z"
+        "timestamp": "2026-08-27T08:17:32.944Z"
       },
       {
         "id": "1787817847930-GESAN",
@@ -5563,12 +5563,12 @@
           "tp3": null
         },
         "riskPlan": {
-          "capital": 100000,
-          "targetPositionValue": 31000,
+          "capital": 50000,
+          "targetPositionValue": 15500,
           "reservePercent": 7,
-          "quantity": 347,
-          "positionValue": 30952.4,
-          "actualRisk": 9018.53,
+          "quantity": 173,
+          "positionValue": 15431.6,
+          "actualRisk": 4496.27,
           "maxPositionPercent": 31,
           "maxPositions": 3
         },
@@ -5863,13 +5863,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-27T08:04:07.930Z",
-          "expiresAt": "2026-08-28T08:04:07.930Z"
+          "createdAt": "2026-08-27T08:17:32.945Z",
+          "expiresAt": "2026-08-28T08:17:32.945Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (63.21) planı geçersiz kılar.",
-        "timestamp": "2026-08-27T08:04:07.930Z"
+        "timestamp": "2026-08-27T08:17:32.945Z"
       }
     ],
     "history": [
@@ -20059,6 +20059,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-27T08:17:33.847Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-27T08:04:08.822Z",
         "type": "SCAN",
         "message": "3 active AI decision(s) refreshed or generated."
@@ -20552,18 +20557,13 @@
         "timestamp": "2026-08-26T10:29:02.240Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:28:54.275Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) refreshed or generated."
       }
     ],
     "scannerSnapshot": {
       "version": "daily-top-five-v6",
       "sessionKey": "2026-08-26",
-      "riskKey": "100000|31|3",
-      "createdAt": "2026-08-27T08:04:07.930Z",
+      "riskKey": "50000|31|3",
+      "createdAt": "2026-08-27T08:17:32.945Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -20841,7 +20841,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-27T08:04:01.315Z",
+          "timestamp": "2026-08-27T08:17:26.614Z",
           "fallbackPlan": null,
           "decision": "A+ / GÜÇLÜ ADAY",
           "price": 95.30000305175781,
@@ -21137,7 +21137,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-27T08:04:05.018Z",
+          "timestamp": "2026-08-27T08:17:29.344Z",
           "fallbackPlan": null,
           "decision": "A+ / GÜÇLÜ ADAY",
           "price": 285.25,
@@ -21451,7 +21451,7 @@
             "confirmationCandleClose": 71,
             "entryPrice": 89.2
           },
-          "timestamp": "2026-08-27T08:04:02.117Z",
+          "timestamp": "2026-08-27T08:17:26.605Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 89.19999694824219,
@@ -21747,7 +21747,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-27T08:04:03.415Z",
+          "timestamp": "2026-08-27T08:17:28.051Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 62,
@@ -22024,7 +22024,7 @@
             "riskRewardTp3": null,
             "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
           },
-          "timestamp": "2026-08-27T08:04:02.115Z",
+          "timestamp": "2026-08-27T08:17:27.344Z",
           "fallbackPlan": {
             "method": "ATR_SUPPORT_RESISTANCE",
             "entryPrice": 9.21,
