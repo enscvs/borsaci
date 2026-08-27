@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   AppState,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -19,6 +20,7 @@ import { WebView } from 'react-native-webview';
 
 const URL_KEY = 'borsaci.serverUrl';
 const DEFAULT_SERVER_URL = 'https://gemini-borsaci.onrender.com';
+const BRAND_NAME = '𐰉𐰆𐰺𐰽𐰀𐰲𐰃';
 
 function normalizeUrl(value) {
   const trimmed = value.trim().replace(/\/$/, '');
@@ -92,8 +94,8 @@ export default function App() {
     return (
       <SafeAreaView style={styles.screen}>
         <View style={styles.lockCard}>
-          <Text style={styles.logo}>B</Text>
-          <Text style={styles.title}>Borsacı</Text>
+          <Image source={require('./assets/borsaci-crescent-star.png')} style={styles.logo} accessibilityLabel="Borsacı ay yıldız logosu" />
+          <Text style={styles.title}>{BRAND_NAME}</Text>
           <Text style={styles.subtitle}>Portföyünüz Face ID ile korunuyor.</Text>
           <Pressable style={styles.primaryButton} onPress={unlock}>
             <Text style={styles.primaryText}>Face ID ile aç</Text>
@@ -132,7 +134,7 @@ export default function App() {
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <View><Text style={styles.headerTitle}>Borsacı</Text><Text style={styles.status}>{webError ? 'Bağlantı sorunu' : 'Güvenli bağlantı'}</Text></View>
+        <View><Text style={styles.headerTitle}>{BRAND_NAME}</Text><Text style={styles.status}>{webError ? 'Bağlantı sorunu' : 'Güvenli bağlantı'}</Text></View>
         <View style={styles.actions}>
           <Pressable style={styles.action} onPress={() => webRef.current?.reload()}><Text style={styles.actionText}>Yenile</Text></Pressable>
           <Pressable style={styles.action} onPress={() => setSettings(true)}><Text style={styles.actionText}>Ayarlar</Text></Pressable>
@@ -163,11 +165,10 @@ export default function App() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#07110d' }, center: { flex: 1, backgroundColor: '#07110d', alignItems: 'center', justifyContent: 'center' },
-  lockCard: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }, logo: { width: 76, height: 76, borderRadius: 22, overflow: 'hidden', textAlign: 'center', paddingTop: 12, backgroundColor: '#16a34a', color: 'white', fontSize: 40, fontWeight: '900', marginBottom: 18 },
+  lockCard: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }, logo: { width: 118, height: 108, resizeMode: 'contain', marginBottom: 18 },
   title: { color: '#f8fafc', fontSize: 28, fontWeight: '800', marginBottom: 8 }, subtitle: { color: '#94a3b8', fontSize: 15, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   primaryButton: { minHeight: 52, width: '100%', borderRadius: 14, backgroundColor: '#16a34a', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20 }, primaryText: { color: 'white', fontWeight: '800', fontSize: 16 },
   secondaryButton: { padding: 16, alignItems: 'center' }, secondaryText: { color: '#94a3b8', fontWeight: '700' }, settings: { flex: 1, justifyContent: 'center', padding: 24 }, input: { minHeight: 54, borderRadius: 14, backgroundColor: '#111c17', borderWidth: 1, borderColor: '#263b31', color: '#f8fafc', paddingHorizontal: 16, fontSize: 15, marginBottom: 14 },
   header: { minHeight: 62, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#263b31' }, headerTitle: { color: '#f8fafc', fontSize: 19, fontWeight: '800' }, status: { color: '#22c55e', fontSize: 11, marginTop: 2 }, actions: { flexDirection: 'row', gap: 8 }, action: { backgroundColor: '#14231b', paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9 }, actionText: { color: '#d1fae5', fontSize: 12, fontWeight: '700' },
   progress: { position: 'absolute', top: 70, zIndex: 3, alignSelf: 'center', backgroundColor: '#14231b', padding: 8, borderRadius: 20 }, web: { flex: 1, backgroundColor: '#07110d' }, error: { padding: 14, backgroundColor: '#3f1515', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, errorText: { color: '#fecaca', flex: 1, fontSize: 12 }, retry: { color: '#fff', fontWeight: '800', marginLeft: 12 }
 });
-
