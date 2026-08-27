@@ -4963,18 +4963,38 @@
     },
     "nasdaqPaper": {
       "initialCapital": 5000,
-      "cash": 5000,
+      "cash": 1865.2,
       "equity": 5000,
       "pnl": 0,
       "pnlPercent": 0,
-      "positions": [],
+      "positions": [
+        {
+          "id": "nasdaq-pos-1787822979054-AAPL",
+          "decisionId": "nasdaq-1787822972141-AAPL-c283342f",
+          "symbol": "AAPL",
+          "market": "NASDAQ",
+          "status": "OPEN",
+          "quantity": 10,
+          "entry": 313.48,
+          "current": 313.48,
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "openedAt": "2026-08-27T09:29:39.054Z",
+          "broker": {
+            "submitted": false,
+            "mode": "LOCAL_PAPER"
+          }
+        }
+      ],
       "decisions": [
         {
           "id": "nasdaq-1787822972141-AAPL-c283342f",
           "symbol": "AAPL",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "OPEN",
           "grade": "MANUEL",
           "timestamp": "2026-08-27T09:29:32.141Z",
           "entry": {
@@ -7741,6 +7761,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T09:29:39.054Z",
+          "type": "NASDAQ_OPEN",
+          "message": "AAPL NASDAQ LOCAL_PAPER pozisyonu açıldı."
+        },
         {
           "timestamp": "2026-08-27T09:29:32.141Z",
           "type": "NASDAQ_PENDING",
