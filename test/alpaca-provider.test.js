@@ -1,0 +1,27 @@
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const {
+  isNasdaqTradableAsset, completedDailyBars, alpacaTradingBase, buildAlpacaOrderPayload,
+} = require("../trading/alpaca-provider");
+
+test("only active tradable Nasdaq common stock assets enter the universe", () => {
+  assert.equal(isNasdaqTradableAsset({symbol:"AAPL", status:"active", tradable:true, asset_class:"us_equity", exchange:"NASDAQ"}), true);
+  assert.equal(isNasdaqTradableAsset({symbol:"OTC", status:"active", tradable:true, asset_class:"us_equity", exchange:"OTC"}), false);
+});
+
+test("in-progress New York daily bar is excluded", () => {
+  const now = Date.parse("2026-08-27T16:00:00Z");
+  const bars = completedDailyBars([
+    {t:"2026-08-26T04:00:00Z", o:10, h:12, l:9, c:11, v:100},
+    {t:"2026-08-27T04:00:00Z", o:11, h:13, l:10, c:12, v:100},
+  ], now);
+  assert.deepEqual(bars.map(bar => bar.close), [11]);
+});
+
+test("paper and live bases plus market and limit payloads are explicit", () => {
+  assert.equal(alpacaTradingBase("paper"), "https://paper-api.alpaca.markets");
+  assert.equal(alpacaTradingBase("live"), "https://api.alpaca.markets");
+  assert.deepEqual(buildAlpacaOrderPayload({symbol:"MSFT", quantity:2, orderType:"MARKET"}), {symbol:"MSFT", qty:"2", side:"buy", type:"market", time_in_force:"day"});
+  assert.equal(buildAlpacaOrderPayload({symbol:"MSFT", quantity:2, orderType:"LIMIT", entryPrice:420}).limit_price, "420");
+});

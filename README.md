@@ -43,6 +43,21 @@ npm test
 
 For a manual check, open the site, log in, then use the normal UI. A request to a protected `/api/*` endpoint without a browser session must return `401 Unauthorized`.
 
+## NASDAQ / Alpaca
+
+The NASDAQ tab uses the same scanner, technical score, Fibonacci plan, approval flow and paper-position UI as BIST, while keeping its state separate. Market data is requested server-side from Alpaca in completed `1Day` bars; no Alpaca credential reaches the browser.
+
+Add these Render environment variables before using the NASDAQ scanner:
+
+- `ALPACA_API_KEY_ID`
+- `ALPACA_API_SECRET_KEY`
+- `ALPACA_DATA_FEED=sip` (the app labels an IEX fallback when SIP is unavailable)
+- `NASDAQ_UNIVERSE_LIMIT=300` (optional, allowed range 50–1200)
+- `ALPACA_TRADING_MODE=paper`
+- `ALPACA_TRADING_ENABLED=false`
+
+With the default `false`, approvals create only local NASDAQ paper positions. The server-side Alpaca order path is prepared but does not submit an external order. Enable it only after testing an Alpaca paper account by setting `ALPACA_TRADING_ENABLED=true`; use `ALPACA_TRADING_MODE=live` only when intentionally authorizing live Alpaca orders.
+
 
 ## Precision Engine
 

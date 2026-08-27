@@ -8922,6 +8922,141 @@ let cryptoScannerAbortController = null;
 let cryptoScannerPollTimer = null;
 let cryptoScannerRequestId = 0;
 
+/* ========================================================
+   NASDAQ WORKSPACE
+   ========================================================
+   Kullanıcı NASDAQ HTML'ini BIST ekranından kopyaladı. Bu bölümde yalnızca
+   NASDAQ tabı içindeki id'ler ad alanına alınır; BIST controller'ın ilk
+   bulduğu elementler değişmez. Böylece iki panelin görünümü aynı kalırken
+   state ve olaylar birbirine karışmaz.
+*/
+const nasdaqTab = document.getElementById("nasdaqTab");
+function isolateNasdaqDom() {
+  if (!nasdaqTab || nasdaqTab.dataset.nasdaqIsolated === "true") return;
+  nasdaqTab.querySelectorAll("[id]").forEach(element => {
+    const legacy = element.id;
+    element.dataset.nasdaqId = legacy;
+    element.id = `nasdaq-${legacy}`;
+  });
+  nasdaqTab.dataset.nasdaqIsolated = "true";
+}
+isolateNasdaqDom();
+const ns = name => nasdaqTab?.querySelector(`#nasdaq-${name}`) || null;
+let nasdaqRecords = [];
+let nasdaqAiRecords = [];
+let latestNasdaqPaperState = null;
+let nasdaqScannerAbortController = null;
+let nasdaqScannerPollTimer = null;
+let nasdaqScannerRequestId = 0;
+let nasdaqMarketChart = null;
+let nasdaqQuoteTimer = null;
+
+function formatNasdaqUsd(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "—";
+  return new Intl.NumberFormat("tr-TR", {style:"currency", currency:"USD", maximumFractionDigits:number < 10 ? 4 : 2}).format(number);
+}
+function nasdaqText(name, value) { const element = ns(name); if (element) element.textContent = value; }
+function nasdaqPlan(item) { const fib=item?.fibonacci || {}; return fib.valid ? fib : (item?.fallbackPlan || {}); }
+function nasdaqEntry(item) { const fib=item?.fibonacci || {}; const plan=nasdaqPlan(item); return {low:fib.valid ? fib.entryZoneLow : plan.entryPrice, high:fib.valid ? fib.entryZoneHigh : plan.entryPrice}; }
+function nasdaqLocalTime(value) { return value ? new Date(value).toLocaleString("tr-TR") : "—"; }
+
+function renderNasdaqScannerResults(data, records) {
+  const results = ns("scannerResults");
+  if (results) results.innerHTML = `<div class="trading-empty">${Number(data.scanned || 0)} aktif NASDAQ hissesi tarandı · ${Number(data.successful || 0)} geçerli günlük veri · Kaynak: ${escapeHtml(String(data.source || latestNasdaqPaperState?.scanner?.source || "ALPACA"))}</div>`;
+  const history = ns("signalHistory");
+  const status = ns("signalHistoryStatus");
+  if (status) status.textContent = `${(latestNasdaqPaperState?.signals || records || []).length} KAYIT`;
+  if (history) {
+    const signals = latestNasdaqPaperState?.signals?.length ? latestNasdaqPaperState.signals : records;
+    history.innerHTML = signals?.length ? signals.slice(0,80).map((item,index) => `<button type="button" class="signal-history-item" data-nasdaq-history-index="${index}"><strong>${escapeHtml(item.symbol || "SEMBOL")}</strong><span>${escapeHtml(item.grade || "KARAR")} · TEKNİK ${Number(item.score || 0)}/100</span><small>${escapeHtml(translateTradingStatus(item.status || item.fibonacci?.status || "NO_VALID_STRUCTURE"))} · ${nasdaqLocalTime(item.timestamp)}</small></button>`).join("") : '<div class="trading-empty">İlk NASDAQ taraması sonrası sinyal geçmişi burada oluşur.</div>';
+  }
+}
+
+function renderNasdaqDecisionCards(records) {
+  const feed = ns("aiDecisionFeed");
+  if (!feed) return;
+  feed.innerHTML = (records || []).map((item,index) => {
+    const plan=nasdaqPlan(item), entry=nasdaqEntry(item), fib=item.fibonacci || {};
+    return `<article class="decision-item decision-card" tabindex="0" role="button" data-nasdaq-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>${escapeHtml(item.grade || "KARAR")}</span><span>TEKNİK ${Number(item.score || 0)}/100</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatNasdaqUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatNasdaqUsd(item.atr)}</span><span><small>FIBONACCI</small>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></div><p>${escapeHtml((item.reasons || []).slice(0,4).join(" · ") || item.reason || "Teknik veriler günlük Alpaca OHLCV kaynağından hesaplandı.")}</p><small>Giriş: ${formatNasdaqUsd(entry.low)} – ${formatNasdaqUsd(entry.high)} · SL: ${formatNasdaqUsd(plan.stopLoss)} · TP1/2/3: ${formatNasdaqUsd(plan.tp1)} / ${formatNasdaqUsd(plan.tp2)} / ${formatNasdaqUsd(plan.tp3)}</small></article>`;
+  }).join("") || '<div class="trading-empty">Henüz NASDAQ AI kararı yok.</div>';
+  bindNasdaqInteractions();
+}
+
+function renderNasdaqChart(item) {
+  const container=ns("market_chart"); const empty=ns("chartEmpty");
+  if (!container || typeof LightweightCharts === "undefined" || !item?.history?.length) { if (empty) empty.textContent = item ? "Grafik, yeni NASDAQ taramasında tamamlanmış günlük verilerle hazırlanır." : "Bir karar seçin."; return; }
+  try {
+    nasdaqMarketChart?.remove(); container.innerHTML="";
+    nasdaqMarketChart=LightweightCharts.createChart(container,{width:Math.max(280,container.clientWidth||320),height:300,layout:{background:{color:"#071008"},textColor:"#b8d9c0"},grid:{vertLines:{color:"rgba(72,255,104,.08)"},horzLines:{color:"rgba(72,255,104,.08)"}},rightPriceScale:{borderColor:"rgba(72,255,104,.25)"},timeScale:{borderColor:"rgba(72,255,104,.25)",timeVisible:false}});
+    const candles=nasdaqMarketChart.addSeries(LightweightCharts.CandlestickSeries,{upColor:"#42d392",downColor:"#f05b6b",borderVisible:false,wickUpColor:"#42d392",wickDownColor:"#f05b6b"});
+    candles.setData(item.history.slice(-150).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Number.isFinite(c.time)&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));
+    const fib=item.fibonacci||{},plan=nasdaqPlan(item), style=LightweightCharts.LineStyle||{};
+    [[fib.valid?fib.entryTriggerPrice:null,"FIB TETİK","#76a9ff",style.Dashed??2],[fib.valid?fib.entryZoneLow:plan.entryPrice,"GİRİŞ","#72dddd",style.Dotted??1],[fib.valid?fib.entryZoneHigh:null,"GİRİŞ ÜST","#72dddd",style.Dotted??1],[plan.stopLoss,"SL","#ff6b6b",style.Solid??0],[plan.tp1,"TP1","#78e58b",style.Solid??0],[plan.tp2,"TP2","#78e58b",style.Solid??0],[plan.tp3,"TP3","#78e58b",style.Solid??0]].forEach(([price,title,color,lineStyle])=>{if(Number.isFinite(Number(price))&&Number(price)>0)candles.createPriceLine({price:Number(price),title,color,lineWidth:1,lineStyle,axisLabelVisible:true});});
+    const markers=[[fib.pointA,"A","belowBar","#f8c35a"],[fib.pointB,"B","aboveBar","#76a9ff"],[fib.pointC,"C","belowBar","#ff7a7a"]].filter(([point])=>point?.date&&Number.isFinite(Number(point.price))).map(([point,text,position,color])=>({time:Math.floor(new Date(point.date).getTime()/1000),position,color,shape:"circle",text}));
+    if (markers.length && typeof LightweightCharts.createSeriesMarkers === "function") LightweightCharts.createSeriesMarkers(candles,markers);
+    nasdaqMarketChart.timeScale().fitContent(); if(empty) empty.textContent="";
+  } catch (error) { if(empty) empty.textContent="NASDAQ grafik katmanı oluşturulamadı."; }
+}
+
+function renderNasdaqScore(item) {
+  const content=ns("decisionScoreContent"); nasdaqText("decisionScoreSymbol",item?.symbol || "KARAR YOK");
+  if (!content) return;
+  if (!item) { content.textContent="Bir NASDAQ kararına tıklayarak teknik puan kalemlerini burada gör."; return; }
+  const score=item.scoreBreakdown || {}; const rows=[["Trend",score.trend],["Momentum",score.momentum],["Hacim / likidite",score.volumeLiquidity],["Giriş kalitesi",score.entryQuality]].map(([label,bucket])=>`<tr><th>${label}</th><td><strong>${Number(bucket?.score || 0)}/${Number(bucket?.max || 0)}</strong></td><td>${escapeHtml((bucket?.items || []).map(entry=>entry?.label || entry).join(" · ") || "—")}</td></tr>`).join("");
+  content.innerHTML=`<div class="decision-score-summary"><strong>TEKNİK ${Number(item.score || 0)}/100 · ${escapeHtml(item.grade || "KARAR")}</strong><span>Bu puan başarı olasılığı değildir.</span></div><div class="crypto-score-table-wrap"><table class="crypto-score-table"><thead><tr><th>BAŞLIK</th><th>PUAN</th><th>KANITLAR</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderNasdaqDetail(item) {
+  const detail=ns("aiDecisionDetail"); if(!detail || !item) return;
+  const fib=item.fibonacci||{},plan=nasdaqPlan(item),entry=nasdaqEntry(item),review=item.aiReview||{};
+  nasdaqText("chartSymbol",item.symbol || "SEMBOL YOK"); renderNasdaqChart(item); renderNasdaqScore(item);
+  const index=nasdaqAiRecords.indexOf(item);
+  detail.innerHTML=`<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Giriş: ${formatNasdaqUsd(entry.low)} – ${formatNasdaqUsd(entry.high)}</span><span>Stop: ${formatNasdaqUsd(plan.stopLoss)}</span><span>TP1: ${formatNasdaqUsd(plan.tp1)} · R/R ${plan.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatNasdaqUsd(plan.tp2)} · R/R ${plan.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatNasdaqUsd(plan.tp3)} · R/R ${plan.riskRewardTp3 ?? "—"}</span><span>A/B/C: ${formatNasdaqUsd(fib.pointA?.price)} / ${formatNasdaqUsd(fib.pointB?.price)} / ${formatNasdaqUsd(fib.pointC?.price)}</span></div><div class="ai-comment"><strong>HABER YORUMU</strong><p>${escapeHtml(review.newsComment || "Doğrulanmış haber başlığı alınamadı.")}</p><strong>UZMAN / ANALİST BİLGİSİ</strong><p>${escapeHtml(review.expertComment || "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.")}</p><strong>AI ÖZETİ</strong><p>${escapeHtml(review.summary || "Teknik plan backend günlük verisinden oluşturuldu.")}</p></div><small>${escapeHtml(item.reason || plan.message || "Fibonacci seviyeleri günlük Alpaca OHLCV verisi ile hesaplandı.")}</small>${index>=0?`<br><button type="button" class="trading-button" data-nasdaq-action="queue" data-nasdaq-index="${index}">BEKLEYEN NASDAQ EMRİ OLUŞTUR</button>`:""}`;
+  bindNasdaqPaperActions();
+}
+
+function renderNasdaqHistoryDetail(index) {
+  const source=latestNasdaqPaperState?.signals?.length ? latestNasdaqPaperState.signals : nasdaqRecords; const item=source?.[index]; const target=ns("signalDetail"); if(!target || !item) return;
+  const fib=item.fibonacci||{},plan=nasdaqPlan(item); target.innerHTML=`<strong>${escapeHtml(item.symbol || "SEMBOL")} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(item.status || fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Fiyat: ${formatNasdaqUsd(item.price)}</span><span>Giriş: ${formatNasdaqUsd(nasdaqEntry(item).low)} – ${formatNasdaqUsd(nasdaqEntry(item).high)}</span><span>SL: ${formatNasdaqUsd(plan.stopLoss)}</span><span>TP1/TP2/TP3: ${formatNasdaqUsd(plan.tp1)} / ${formatNasdaqUsd(plan.tp2)} / ${formatNasdaqUsd(plan.tp3)}</span></div>`;
+}
+
+function renderNasdaqPerformance(paper) {
+  const all=[...(paper.signals||[]),...(paper.history||[])]; const range=ns("performanceRange")?.value || "ALL"; const now=Date.now(); const days={"1M":31,"3M":92,"6M":184}; const active=range==="ALL"?all:range==="CUSTOM"?all.filter(item=>{const time=new Date(item.timestamp||item.closedAt||0).getTime();const start=ns("performanceStartDate")?.value?new Date(ns("performanceStartDate").value).getTime():-Infinity;const end=ns("performanceEndDate")?.value?new Date(`${ns("performanceEndDate").value}T23:59:59`).getTime():Infinity;return time>=start&&time<=end;}):all.filter(item=>new Date(item.timestamp||item.closedAt||0).getTime()>=now-(days[range]||0)*86400000); const closed=(paper.history||[]).filter(item=>item.status==="CLOSED"); const wins=closed.filter(item=>Number(item.realizedPnl)>0); nasdaqText("performanceTotalSignals",String(active.length));nasdaqText("performanceActiveSignals",String((paper.positions||[]).length));nasdaqText("performanceAvgConfidence","—");nasdaqText("performanceResolved",String(closed.length));nasdaqText("performanceWinRate",closed.length?`${(wins.length*100/closed.length).toFixed(1)}%`:"—");nasdaqText("performanceRealizedPnL",formatNasdaqUsd(closed.reduce((sum,item)=>sum+Number(item.realizedPnl||0),0)));nasdaqText("performanceRangeLabel",range==="ALL"?"TÜM ZAMANLAR":range==="CUSTOM"?"ÖZEL ARALIK":`SON ${days[range]} GÜN`);
+}
+
+function nasdaqPendingCard(decision) {
+  const order=decision.pendingOrder||{}; const market=order.orderType === "MARKET";
+  return `<article class="pending-paper-card" data-nasdaq-pending-card data-nasdaq-decision-id="${escapeHtml(decision.id)}"><header><strong>${escapeHtml(decision.symbol)} · ${escapeHtml(order.source || "NASDAQ AI")}</strong><span>ONAY BEKLİYOR</span></header><form data-nasdaq-pending-form><div class="paper-order-grid"><label>MİKTAR<input name="quantity" type="number" min="1" step="1" value="${Number(order.quantity || 1)}" required></label><label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.0001" step="0.0001" value="${market?"":Number(order.entryPrice || "")}" ${market?"disabled":"required"}></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET" ${market?"selected":""}>PİYASA</option><option value="LIMIT" ${!market?"selected":""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.0001" step="0.0001" value="${Number(order.stop || "")}"></label><label>TP1<input name="target1" type="number" min="0.0001" step="0.0001" value="${Number(order.target1 || "")}"></label><label>TP2<input name="target2" type="number" min="0.0001" step="0.0001" value="${Number(order.target2 || "")}"></label><label>TP3<input name="target3" type="number" min="0.0001" step="0.0001" value="${Number(order.target3 || "")}"></label></div><div class="paper-order-form-actions"><button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button success" data-nasdaq-action="approve" data-nasdaq-decision-id="${escapeHtml(decision.id)}">KÂĞIT EMRİ ONAYLA</button><button type="button" class="trading-button danger" data-nasdaq-action="reject" data-nasdaq-decision-id="${escapeHtml(decision.id)}">REDDET</button></div></form><small>Son tamamlanmış günlük Alpaca fiyatı onay sırasında doğrulanır.</small></article>`;
+}
+
+function renderNasdaqPaperState(payload) {
+  const paper=payload?.nasdaqPaper || payload || {}; latestNasdaqPaperState=paper;
+  nasdaqText("paperInitialCapital",formatNasdaqUsd(paper.initialCapital));nasdaqText("paperCash",formatNasdaqUsd(paper.cash));nasdaqText("paperEquity",formatNasdaqUsd(paper.equity));nasdaqText("paperPnL",formatNasdaqUsd(paper.pnl));nasdaqText("paperPnLPct",Number.isFinite(Number(paper.pnlPercent))?`${Number(paper.pnlPercent).toFixed(2)}%`:"—");nasdaqText("paperPositionCount",String((paper.history||[]).filter(item=>item.status==="CLOSED").length));nasdaqText("paperCostSummary",`ALPACA · ${paper.broker?.dataFeed || "SIP"} GÜNLÜK VERİ · ${paper.broker?.mode || "PAPER"} ${paper.broker?.orderSubmissionEnabled ? "EMİR HATTI AÇIK" : "KÂĞIT MOD"}`);
+  nasdaqText("maxPositions",String(paper.risk?.maxPositions || 5));nasdaqText("targetPositionSize",`${Number(paper.risk?.maxPositionPercent || 20).toFixed(0)}%`);nasdaqText("cashReserve",`${Math.max(0,100-Number(paper.risk?.maxPositionPercent||20)*Number(paper.risk?.maxPositions||5)).toFixed(0)}%`);nasdaqText("stopRule","YZ KARARI");
+  const allocation=ns("maxPositionInput"), max=ns("maxPositionsInput"), capital=ns("riskCapitalInput"); if(allocation)allocation.value=Number(paper.risk?.maxPositionPercent || 20);if(max)max.value=Number(paper.risk?.maxPositions || 5);if(capital)capital.value=Number(paper.initialCapital || 10000); const gauge=ns("riskAllocationGauge");if(gauge){const total=Number(allocation?.value||0)*Number(max?.value||0);gauge.textContent=`${total}% TAHSİS`;gauge.classList.toggle("risk-overallocated",total>100);}
+  const pending=(paper.decisions||[]).filter(item=>item.status==="PENDING_APPROVAL"&&String(item.pendingOrder?.source||"").toUpperCase()!=="MANUAL");const manual=(paper.decisions||[]).filter(item=>item.status==="PENDING_APPROVAL"&&String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL"); const pendingBox=ns("pendingPaperOrders"),manualBox=ns("manualPendingOrders");nasdaqText("pendingPaperOrderStatus",`${pending.length} EMİR`);nasdaqText("manualOrderStatus",`${manual.length} EMİR`);if(pendingBox)pendingBox.innerHTML=pending.map(nasdaqPendingCard).join("")||'<div class="trading-empty">Bekleyen NASDAQ AI emri yok.</div>';if(manualBox)manualBox.innerHTML=manual.map(nasdaqPendingCard).join("")||'<div class="trading-empty">Bekleyen manuel NASDAQ emri yok.</div>';
+  const positions=paper.positions||[];const tbody=ns("openPositions");nasdaqText("openPositionStatus",`${positions.length} POZİSYON`);if(tbody)tbody.innerHTML=positions.length?positions.map(position=>`<tr><td>${escapeHtml(position.symbol)}</td><td>LONG</td><td>${formatNasdaqUsd(position.entry)}</td><td>${formatNasdaqUsd(position.current)}</td><td>${Number(position.quantity)}</td><td>${formatNasdaqUsd(Number(position.current||position.entry)*Number(position.quantity||0))}</td><td>${formatNasdaqUsd(position.stop)}</td><td>${formatNasdaqUsd(position.target1)}</td><td>${formatNasdaqUsd(position.target2)}</td><td>${formatNasdaqUsd((Number(position.current)-Number(position.entry))*Number(position.quantity))}</td><td>AÇIK</td><td><button class="trading-button danger" data-nasdaq-action="close" data-nasdaq-position-id="${escapeHtml(position.id)}">KAPAT</button></td></tr>`).join(""):'<tr><td colspan="12" class="table-empty">Açık NASDAQ pozisyon yok</td></tr>';
+  const activity=ns("tradingActivity"),journal=ns("tradeJournal");const activityRows=(paper.activity||[]).slice(0,100).map(item=>`<div class="log-line"><span class="log-time">${new Date(item.timestamp).toLocaleTimeString("tr-TR")}</span><span>${escapeHtml(item.type || "İŞLEM")} · ${escapeHtml(item.message || "")}</span></div>`).join("")||'<div class="trading-empty">İşlem hareketi yok.</div>';if(activity)activity.innerHTML=activityRows;if(journal)journal.innerHTML=(paper.history||[]).slice(0,40).map(item=>`<details><summary>${escapeHtml(item.symbol || "SEMBOL")} · ${escapeHtml(item.status || "KAYIT")} · ${nasdaqLocalTime(item.closedAt || item.timestamp)}</summary><p>Giriş: ${formatNasdaqUsd(item.entry)} · K/Z: ${formatNasdaqUsd(item.realizedPnl)}</p></details>`).join("")||'<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
+  renderNasdaqPerformance(paper);renderNasdaqScannerResults({scanned:paper.scanner?.scanned,successful:paper.scanner?.successful,source:paper.scanner?.source},nasdaqRecords);bindNasdaqPaperActions();
+}
+
+async function nasdaqRequest(endpoint, body = null) { const response=await fetch(endpoint,{method:body?"POST":"GET",headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined,cache:"no-store"});const payload=await response.json();if(!response.ok)throw new Error(payload?.error||"NASDAQ işlemi tamamlanamadı.");return payload; }
+function composeNasdaqAiRecords(records, decisions) {
+  const bySymbol = new Map((records || []).map(item => [item.symbol, item]));
+  return (decisions || []).slice(0, 3).map(decision => ({...(bySymbol.get(decision.symbol) || {}), ...decision, history: bySymbol.get(decision.symbol)?.history || decision.history}));
+}
+async function loadNasdaqPaperState(){if(!nasdaqTab)return;try{const data=await nasdaqRequest("/api/nasdaq/state");renderNasdaqPaperState(data);nasdaqRecords=Array.isArray(data.nasdaqPaper?.scanner?.results)?data.nasdaqPaper.scanner.results:[];nasdaqAiRecords=composeNasdaqAiRecords(nasdaqRecords,data.nasdaqPaper?.decisions);renderNasdaqDecisionCards(nasdaqAiRecords);if(nasdaqAiRecords[0])renderNasdaqDetail(nasdaqAiRecords[0]);}catch(error){const target=ns("scannerResults");if(target)target.innerHTML=`<div class="trading-empty">NASDAQ yapılandırması bekleniyor: ${escapeHtml(error.message)}</div>`;}}
+
+async function queueNasdaqDecision(item){const plan=nasdaqPlan(item);const entry=nasdaqEntry(item);if(!Number.isFinite(Number(entry.low))||!Number.isFinite(Number(plan.stopLoss))){throw new Error("Bu NASDAQ adayında doğrulanmış giriş ve stop seviyesi yok.");}const paper=latestNasdaqPaperState||{};const quantity=Math.max(1,Math.floor(Number(paper.initialCapital||10000)*Number(paper.risk?.maxPositionPercent||20)/100/Number(entry.low)));const data=await nasdaqRequest("/api/nasdaq/paper/queue",{symbol:item.symbol,quantity,entryPrice:entry.low,orderType:"LIMIT",stop:plan.stopLoss,target1:plan.tp1,target2:plan.tp2,target3:plan.tp3,score:item.score,grade:item.grade,fibonacci:item.fibonacci,source:"NASDAQ AI"});renderNasdaqPaperState(data);}
+
+function openNasdaqCloseDialog(position){const previous=document.getElementById("nasdaqPaperCloseDialog");previous?.remove();const dialog=document.createElement("dialog");dialog.id="nasdaqPaperCloseDialog";dialog.className="paper-order-dialog";dialog.innerHTML=`<form method="dialog" class="paper-order-form"><h3>${escapeHtml(position.symbol)} POZİSYON KAPAT</h3><label>MİKTAR<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" value="${Number(position.quantity)}" required></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label><label>LİMİT FİYAT ($)<input name="limitPrice" type="number" min="0.0001" step="0.0001" disabled></label><div class="paper-order-form-actions"><button value="cancel" type="button" data-cancel>KAPAT</button><button value="default" type="submit" class="trading-button danger">SATIŞI ONAYLA</button></div></form>`;document.body.append(dialog);const form=dialog.querySelector("form"),select=form.elements.orderType,price=form.elements.limitPrice;select.addEventListener("change",()=>{price.disabled=select.value==="MARKET";price.required=select.value==="LIMIT";if(price.disabled)price.value="";});form.querySelector("[data-cancel]").addEventListener("click",()=>dialog.close());form.addEventListener("submit",async event=>{event.preventDefault();try{const data=await nasdaqRequest("/api/nasdaq/paper/close",{positionId:position.id,quantity:Number(form.elements.quantity.value),orderType:select.value,limitPrice:select.value==="LIMIT"?Number(price.value):null});dialog.close();renderNasdaqPaperState(data);}catch(error){window.alert(error.message);}});dialog.showModal();}
+
+function bindNasdaqInteractions(){nasdaqTab?.querySelectorAll("[data-nasdaq-decision-index],[data-nasdaq-history-index]").forEach(element=>{if(element.dataset.nasdaqDetailBound)return;element.dataset.nasdaqDetailBound="true";element.addEventListener("click",()=>{const historyIndex=element.dataset.nasdaqHistoryIndex;if(historyIndex!==undefined)return renderNasdaqHistoryDetail(Number(historyIndex));const item=nasdaqAiRecords[Number(element.dataset.nasdaqDecisionIndex)];if(item)renderNasdaqDetail(item);});});}
+function bindNasdaqPaperActions(){nasdaqTab?.querySelectorAll("[data-nasdaq-action]").forEach(button=>{if(button.dataset.nasdaqActionBound)return;button.dataset.nasdaqActionBound="true";button.addEventListener("click",async()=>{try{const action=button.dataset.nasdaqAction;if(action==="queue"){const item=nasdaqAiRecords[Number(button.dataset.nasdaqIndex)];if(item)await queueNasdaqDecision(item);return;}if(action==="close"){const position=(latestNasdaqPaperState?.positions||[]).find(item=>item.id===button.dataset.nasdaqPositionId);if(position)openNasdaqCloseDialog(position);return;}const data=await nasdaqRequest(`/api/nasdaq/paper/${action}`,{decisionId:button.dataset.nasdaqDecisionId});renderNasdaqPaperState(data);}catch(error){window.alert(error.message);}});});nasdaqTab?.querySelectorAll("[data-nasdaq-pending-form]").forEach(form=>{if(form.dataset.nasdaqBound)return;form.dataset.nasdaqBound="true";const type=form.elements.orderType,price=form.elements.entryPrice;type?.addEventListener("change",()=>{const market=type.value==="MARKET";price.disabled=market;price.required=!market;if(market)price.value="";});form.addEventListener("submit",async event=>{event.preventDefault();try{const card=form.closest("[data-nasdaq-pending-card]"),data=Object.fromEntries(new FormData(form));if(data.orderType==="MARKET")data.entryPrice=null;const payload=await nasdaqRequest("/api/nasdaq/paper/update",{...data,decisionId:card?.dataset.nasdaqDecisionId});renderNasdaqPaperState(payload);}catch(error){window.alert(error.message);}});});}
+
+function bindNasdaqWorkspaceControls(){if(!nasdaqTab)return;const start=ns("startScannerBtn"),stop=ns("stopScannerBtn");if(start&&!start.dataset.nasdaqBound){start.dataset.nasdaqBound="true";start.addEventListener("click",async()=>{if(start.disabled)return;const requestId=++nasdaqScannerRequestId,jobId=`nasdaq-${Date.now()}`;nasdaqScannerAbortController=new AbortController();start.disabled=true;start.textContent="TARANIYOR…";nasdaqText("scannerStatus","TARANIYOR");nasdaqText("tradingEngineStatus","TARANIYOR");nasdaqScannerPollTimer=window.setInterval(async()=>{try{const job=await nasdaqRequest(`/api/trading/scanner/status?jobId=${encodeURIComponent(jobId)}`);if(requestId!==nasdaqScannerRequestId)return;const results=ns("scannerResults");if(results&&job.status!=="COMPLETE")results.innerHTML=`<div class="trading-empty scanner-progress"><strong>NASDAQ TARAMASI ÇALIŞIYOR</strong><br><small>${escapeHtml(job.message||"Hazırlanıyor")}</small><div style="height:8px;border:1px solid #2f6;background:#071008;margin:12px auto;max-width:480px"><div style="height:100%;width:${Math.max(0,Math.min(100,Number(job.progress)||0))}%;background:#34ff75"></div></div></div>`;}catch{}},700);try{const data=await nasdaqRequest(`/api/nasdaq/scanner?jobId=${encodeURIComponent(jobId)}`);nasdaqRecords=Array.isArray(data.results)?data.results:[];nasdaqAiRecords=composeNasdaqAiRecords(nasdaqRecords,data.decisions);renderNasdaqPaperState(data);renderNasdaqDecisionCards(nasdaqAiRecords);renderNasdaqScannerResults(data,nasdaqRecords);if(nasdaqAiRecords[0])renderNasdaqDetail(nasdaqAiRecords[0]);nasdaqText("scannerStatus","TAMAMLANDI");nasdaqText("tradingEngineStatus","HAZIR");nasdaqText("lastScanTime",new Date(data.timestamp).toLocaleTimeString("tr-TR"));}catch(error){const results=ns("scannerResults");if(results)results.innerHTML=`<div class="trading-empty">NASDAQ tarama hatası: ${escapeHtml(error.message)}</div>`;nasdaqText("scannerStatus","HATA");nasdaqText("tradingEngineStatus","HATA");}finally{window.clearInterval(nasdaqScannerPollTimer);nasdaqScannerPollTimer=null;if(requestId===nasdaqScannerRequestId){start.disabled=false;start.textContent="TARAMAYI BAŞLAT";nasdaqScannerAbortController=null;}}});}if(stop&&!stop.dataset.nasdaqBound){stop.dataset.nasdaqBound="true";stop.addEventListener("click",()=>{nasdaqScannerRequestId++;nasdaqScannerAbortController?.abort();window.clearInterval(nasdaqScannerPollTimer);nasdaqText("scannerStatus","DURDURULDU");nasdaqText("tradingEngineStatus","HAZIR");if(start){start.disabled=false;start.textContent="TARAMAYI BAŞLAT";}});}const risk=ns("riskSettingsForm");if(risk&&!risk.dataset.nasdaqBound){risk.dataset.nasdaqBound="true";risk.addEventListener("submit",async event=>{event.preventDefault();try{const data=await nasdaqRequest("/api/nasdaq/risk-settings",{capital:ns("riskCapitalInput")?.value,maxPositionPercent:ns("maxPositionInput")?.value,maxPositions:ns("maxPositionsInput")?.value});renderNasdaqPaperState(data);}catch(error){window.alert(error.message);}});["maxPositionInput","maxPositionsInput"].forEach(name=>ns(name)?.addEventListener("input",()=>{const gauge=ns("riskAllocationGauge"),total=Number(ns("maxPositionInput")?.value||0)*Number(ns("maxPositionsInput")?.value||0);if(gauge){gauge.textContent=`${total}% TAHSİS`;gauge.classList.toggle("risk-overallocated",total>100);}}));}const manual=ns("manualPaperOrderForm");if(manual&&!manual.dataset.nasdaqBound){manual.dataset.nasdaqBound="true";const type=manual.elements.orderType,price=manual.elements.entryPrice,symbol=manual.elements.symbol;const quote=async()=>{const value=String(symbol?.value||"").trim().toUpperCase();if(!/^[A-Z]{1,8}$/.test(value))return;try{const data=await nasdaqRequest(`/api/nasdaq/quotes?symbols=${encodeURIComponent(value)}`);const current=data.quotes?.[value];let label=manual.querySelector(".manual-market-price");if(!label){label=document.createElement("small");label.className="manual-market-price";manual.prepend(label);}label.textContent=current?`SON TAMAMLANMIŞ GÜNLÜK FİYAT: ${formatNasdaqUsd(current.price)} · ${current.source}`:"Fiyat alınamadı";}catch{}};const sync=()=>{const market=type?.value==="MARKET";price.disabled=market;price.required=!market;if(market)price.value="";};type?.addEventListener("change",sync);symbol?.addEventListener("change",quote);symbol?.addEventListener("input",()=>{window.clearTimeout(manual._quoteTimer);manual._quoteTimer=window.setTimeout(quote,400);});sync();manual.addEventListener("submit",async event=>{event.preventDefault();try{const data=Object.fromEntries(new FormData(manual));if(data.orderType==="MARKET")data.entryPrice=null;const payload=await nasdaqRequest("/api/nasdaq/paper/queue",{...data,source:"MANUAL",grade:"MANUEL"});renderNasdaqPaperState(payload);manual.reset();sync();}catch(error){window.alert(error.message);}});} ["performanceRange","performanceStartDate","performanceEndDate"].forEach(name=>ns(name)?.addEventListener("change",()=>renderNasdaqPerformance(latestNasdaqPaperState||{})));if(!nasdaqQuoteTimer)nasdaqQuoteTimer=window.setInterval(()=>{if(latestNasdaqPaperState)renderNasdaqPaperState({nasdaqPaper:latestNasdaqPaperState});},30000);}
+
 function formatCryptoUsd(value) {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) return "—";
@@ -9525,6 +9660,9 @@ async function startTradingWhenAuthenticated() {
   }
 
   bindTradingScannerControls();
+  // NASDAQ controller BIST akışından bağımsız state/DOM alanını kullanır.
+  bindNasdaqWorkspaceControls();
+  void loadNasdaqPaperState();
 }
 
 if (

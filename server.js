@@ -14,6 +14,12 @@ const fibonacciEngine = require("./trading/fibonacci-engine");
 const dailySummary = require("./trading/daily-summary");
 const paperOrders = require("./trading/paper-orders");
 const { scannerAction } = require("./trading/decision-policy");
+const {
+  isNasdaqTradableAsset,
+  completedDailyBars,
+  alpacaTradingBase,
+  buildAlpacaOrderPayload,
+} = require("./trading/alpaca-provider");
 
 const precision = require("./precision/engine");
 
@@ -94,6 +100,15 @@ const BINANCE_PUBLIC_BASE_URLS = [
   "https://api.binance.com"
 ];
 let binanceActivePublicBaseUrl = null;
+
+// NASDAQ yalnızca Alpaca'nın server-side API'si üzerinden okunur. İstemciye
+// anahtar veya secret gönderilmez. Basic planda SIP tarihsel verisi yaklaşık
+// 15 dakika gecikmeli kullanılabildiğinden varsayılan bitiş zamanı geridedir.
+const ALPACA_DATA_BASE_URL = "https://data.alpaca.markets";
+const ALPACA_TRADING_MODE = String(process.env.ALPACA_TRADING_MODE || "paper").toLowerCase() === "live" ? "live" : "paper";
+const ALPACA_TRADING_ENABLED = String(process.env.ALPACA_TRADING_ENABLED || "false").toLowerCase() === "true";
+const ALPACA_DATA_FEED = String(process.env.ALPACA_DATA_FEED || "sip").toLowerCase() === "iex" ? "iex" : "sip";
+const NASDAQ_UNIVERSE_LIMIT = Math.max(50, Math.min(1200, Number(process.env.NASDAQ_UNIVERSE_LIMIT) || 300));
 
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
@@ -3746,6 +3761,22 @@ function createDefaultTradingState() {
       risk: {maxPositionPercent: 20, maxPositions: 5},
     },
 
+    // ABD hisseleri BIST ve kripto paper hesaplarından ayrı tutulur.
+    nasdaqPaper: {
+      initialCapital: 10000,
+      cash: 10000,
+      equity: 10000,
+      pnl: 0,
+      pnlPercent: 0,
+      positions: [],
+      decisions: [],
+      history: [],
+      signals: [],
+      activity: [],
+      scanner: {timestamp: null, scanned: 0, successful: 0, results: [], source: null},
+      risk: {maxPositionPercent: 20, maxPositions: 5},
+    },
+
     risk: {
       maxPositionPercent: 31,
       maxPositions: 3,
@@ -3828,6 +3859,24 @@ function normalizeTradingState(
           : [],
       },
       risk: {...fallback.cryptoPaper.risk, ...((value || {}).cryptoPaper?.risk || {})},
+    },
+
+    nasdaqPaper: {
+      ...fallback.nasdaqPaper,
+      ...((value || {}).nasdaqPaper || {}),
+      positions: Array.isArray((value || {}).nasdaqPaper?.positions) ? (value || {}).nasdaqPaper.positions : [],
+      decisions: Array.isArray((value || {}).nasdaqPaper?.decisions) ? (value || {}).nasdaqPaper.decisions : [],
+      history: Array.isArray((value || {}).nasdaqPaper?.history) ? (value || {}).nasdaqPaper.history : [],
+      signals: Array.isArray((value || {}).nasdaqPaper?.signals) ? (value || {}).nasdaqPaper.signals : [],
+      activity: Array.isArray((value || {}).nasdaqPaper?.activity) ? (value || {}).nasdaqPaper.activity : [],
+      scanner: {
+        ...fallback.nasdaqPaper.scanner,
+        ...((value || {}).nasdaqPaper?.scanner || {}),
+        results: Array.isArray((value || {}).nasdaqPaper?.scanner?.results)
+          ? (value || {}).nasdaqPaper.scanner.results
+          : [],
+      },
+      risk: {...fallback.nasdaqPaper.risk, ...((value || {}).nasdaqPaper?.risk || {})},
     },
 
     risk: {
@@ -7247,6 +7296,186 @@ function handleTradingScannerStatus(req,res) {
   return sendJSON(res,200,job||{progress:0,message:"Tarama durumu bekleniyor",status:"PENDING"});
 }
 
+/* ========================================================
+   NASDAQ / ALPACA PROVIDER + PAPER WORKSPACE
+   ======================================================== */
+
+function alpacaHeaders() {
+  const key = String(process.env.ALPACA_API_KEY_ID || "").trim();
+  const secret = String(process.env.ALPACA_API_SECRET_KEY || "").trim();
+  if (!key || !secret) throw new Error("Alpaca API yapılandırması gerekli. Render'a ALPACA_API_KEY_ID ve ALPACA_API_SECRET_KEY ekleyin.");
+  return {"APCA-API-KEY-ID": key, "APCA-API-SECRET-KEY": secret, Accept: "application/json"};
+}
+
+async function alpacaJson(url, {method = "GET", body = null} = {}) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch(url, {method, headers: {...alpacaHeaders(), ...(body ? {"Content-Type":"application/json"} : {})}, body: body ? JSON.stringify(body) : undefined, signal: controller.signal});
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(String(payload?.message || `Alpaca HTTP ${response.status}`).slice(0, 240));
+    return payload;
+  } finally { clearTimeout(timeout); }
+}
+
+function nasdaqSafeSymbol(value) {
+  const symbol = String(value || "").trim().toUpperCase();
+  if (!/^[A-Z]{1,8}$/.test(symbol)) throw new Error("Geçerli NASDAQ sembolü gerekli.");
+  return symbol;
+}
+
+async function fetchNasdaqUniverse() {
+  const assets = await alpacaJson("https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity");
+  const symbols = (Array.isArray(assets) ? assets : [])
+    .filter(isNasdaqTradableAsset)
+    .map(asset => String(asset.symbol).toUpperCase())
+    .sort((left, right) => left.localeCompare(right, "en"));
+  if (!symbols.length) throw new Error("Alpaca'dan aktif ve işlem yapılabilir NASDAQ hissesi alınamadı.");
+  return symbols.slice(0, NASDAQ_UNIVERSE_LIMIT);
+}
+
+function alpacaHistoricalEnd() {
+  // Basic SIP gecikmesini karşılamak için tamamlanmış piyasa verisinin daima
+  // gerisinde kalır; açık gün mumu ayrıca completedDailyBars ile atılır.
+  return new Date(Date.now() - 16 * 60 * 1000).toISOString();
+}
+
+async function fetchNasdaqBars(symbols, feed = ALPACA_DATA_FEED) {
+  const barsBySymbol = new Map((symbols || []).map(symbol => [symbol, []]));
+  let pageToken = null;
+  const end = alpacaHistoricalEnd();
+  const start = new Date(Date.now() - 920 * 24 * 60 * 60 * 1000).toISOString();
+  do {
+    const query = new URLSearchParams({symbols: symbols.join(","), timeframe:"1Day", start, end, limit:"10000", feed});
+    if (pageToken) query.set("page_token", pageToken);
+    const payload = await alpacaJson(`${ALPACA_DATA_BASE_URL}/v2/stocks/bars?${query.toString()}`);
+    for (const [symbol, rows] of Object.entries(payload?.bars || {})) {
+      barsBySymbol.set(symbol, [...(barsBySymbol.get(symbol) || []), ...(Array.isArray(rows) ? rows : [])]);
+    }
+    pageToken = payload?.next_page_token || null;
+  } while (pageToken);
+  return {feed, barsBySymbol: new Map([...barsBySymbol].map(([symbol, rows]) => [symbol, completedDailyBars(rows)]))};
+}
+
+async function fetchNasdaqBarsWithFallback(symbols) {
+  try { return await fetchNasdaqBars(symbols, ALPACA_DATA_FEED); }
+  catch (error) {
+    if (ALPACA_DATA_FEED !== "sip") throw error;
+    // Basic SIP yetkisi/uygun gecikme yoksa ücretsiz IEX verisini açıkça
+    // kaynak etiketiyle kullanırız; SIP gibi gösterilmez.
+    return await fetchNasdaqBars(symbols, "iex");
+  }
+}
+
+async function fetchNasdaqDailyClose(symbol) {
+  const result = await fetchNasdaqBarsWithFallback([nasdaqSafeSymbol(symbol)]);
+  const history = result.barsBySymbol.get(nasdaqSafeSymbol(symbol)) || [];
+  const latest = history.at(-1);
+  if (!latest || !Number.isFinite(Number(latest.close)) || Number(latest.close) <= 0) throw new Error(`${symbol} için tamamlanmış günlük Alpaca fiyatı alınamadı.`);
+  return {price: roundTradingValue(latest.close), asOf: new Date(latest.time * 1000).toISOString(), source: `ALPACA_${String(result.feed).toUpperCase()}_1DAY`};
+}
+
+async function fetchNasdaqNews(symbol) {
+  const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(symbol)}&newsCount=5`, {headers:{"User-Agent":"Mozilla/5.0",Accept:"application/json"}, signal:controller.signal});
+    if (!response.ok) return [];
+    const payload = await response.json();
+    return (payload?.news || []).slice(0, 5).map(item => ({title:String(item?.title || "").slice(0,240), publisher:String(item?.publisher || "").slice(0,80), publishedAt:item?.providerPublishTime ? new Date(Number(item.providerPublishTime) * 1000).toISOString() : null})).filter(item => item.title);
+  } catch { return []; } finally { clearTimeout(timeout); }
+}
+
+async function evaluateNasdaqCandidatesWithAi(candidates) {
+  const list = (Array.isArray(candidates) ? candidates : []).slice(0, 3);
+  const fallback = new Map(list.map(item => [item.symbol, {available:false, provider:"UNAVAILABLE", verdict:"INFO", score:null, newsComment:"Doğrulanmış haber başlığı alınamadı.", expertComment:"Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.", summary:"AI bilgi akışı için yapılandırılmış kaynak bekleniyor."}]));
+  if (!list.length || (!process.env.GROQ_API_KEY && !process.env.GEMINI_API_KEY && !process.env.MISTRAL_API_KEY)) return fallback;
+  const input = await Promise.all(list.map(async item => ({symbol:item.symbol, news:await fetchNasdaqNews(item.symbol)})));
+  const prompt = [
+    "NASDAQ hisseleri için yalnızca verilen doğrulanmış haber başlıklarını kısa Türkçe özetle.",
+    "Teknik değer, puan, giriş, stop, hedef, AL/SAT kararı veya başarı olasılığı üretme/değiştirme.",
+    "Şirket gelişmesi, analist görüşü veya hedef fiyat ancak verilen başlıkta açıkça varsa anılabilir; yoksa uydurma.",
+    "Sadece JSON döndür: {\\\"reviews\\\":[{\\\"symbol\\\":\\\"AAPL\\\",\\\"newsComment\\\":\\\"...\\\",\\\"expertComment\\\":\\\"...\\\",\\\"summary\\\":\\\"...\\\"}]}",
+    JSON.stringify(input),
+  ].join("\\n\\n");
+  let response; let provider = "GROQ";
+  const messages = [{role:"system",content:"Temkinli ABD hisse araştırma asistanısın. Yalnızca geçerli JSON."},{role:"user",content:prompt}];
+  try {
+    if (process.env.GROQ_API_KEY) response = await groqAI.chat.completions.create({model:TRADING_AI_MODEL,messages,temperature:0.1,response_format:{type:"json_object"},max_tokens:1100},{timeout:12000});
+    else if (process.env.GEMINI_API_KEY) { provider="GEMINI"; response=await geminiAI.chat.completions.create({model:VISION_MODEL,messages,temperature:0.1,max_tokens:1100},{timeout:12000}); }
+    else { provider="MISTRAL"; response=await mistralAI.chat.completions.create({model:"mistral-small-latest",messages,temperature:0.1,max_tokens:1100},{timeout:12000}); }
+    const parsed = parseTradingAiJson(response?.choices?.[0]?.message?.content);
+    const reviews = new Map((parsed?.reviews || []).map(review => [String(review?.symbol || "").toUpperCase(), {available:true,provider,verdict:"INFO",score:null,newsComment:String(review?.newsComment || "").slice(0,160),expertComment:String(review?.expertComment || "").slice(0,160),summary:String(review?.summary || "").slice(0,180)}]));
+    return new Map(list.map(item => [item.symbol, reviews.get(item.symbol) || fallback.get(item.symbol)]));
+  } catch (error) {
+    console.warn("NASDAQ AI:", String(error?.message || "unavailable").slice(0, 180));
+    return fallback;
+  }
+}
+
+function nasdaqPaperStateForClient(state) {
+  const paper = state.nasdaqPaper || createDefaultTradingState().nasdaqPaper;
+  return {...paper, broker:{configured:Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), mode:ALPACA_TRADING_MODE.toUpperCase(), orderSubmissionEnabled:ALPACA_TRADING_ENABLED, dataFeed:ALPACA_DATA_FEED.toUpperCase()}, positions:(paper.positions || []).filter(position => position.status === "OPEN")};
+}
+
+function recalculateNasdaqPaper(paper) {
+  const openValue = (paper.positions || []).filter(position => position.status === "OPEN").reduce((sum, position) => sum + Number(position.current || position.entry || 0) * Number(position.quantity || 0), 0);
+  paper.equity = roundTradingValue(Number(paper.cash || 0) + openValue);
+  paper.pnl = roundTradingValue(Number(paper.equity) - Number(paper.initialCapital || 0));
+  paper.pnlPercent = Number(paper.initialCapital) > 0 ? roundTradingValue(Number(paper.pnl) * 100 / Number(paper.initialCapital)) : 0;
+}
+
+function normalizeNasdaqPaperOrder(input = {}, {existing = null} = {}) {
+  const symbol = nasdaqSafeSymbol(input.symbol ?? existing?.symbol);
+  const orderType = String(input.orderType ?? existing?.orderType ?? "MARKET").trim().toUpperCase();
+  if (!["MARKET","LIMIT"].includes(orderType)) throw new Error("Emir türü PİYASA veya LİMİT olmalı.");
+  const number = (value, label, required = false) => { if (value === undefined || value === null || value === "") { if (required) throw new Error(`${label} gerekli.`); return null; } const parsed=Number(value); if (!Number.isFinite(parsed) || parsed <= 0) throw new Error(`${label} geçerli olmalı.`); return roundTradingValue(parsed); };
+  const quantity = number(input.quantity ?? existing?.quantity, "Miktar", true);
+  if (!Number.isInteger(quantity)) throw new Error("NASDAQ hisse miktarı tam sayı olmalı.");
+  const entryPrice = orderType === "MARKET" ? null : number(input.entryPrice ?? input.price ?? existing?.entryPrice, "Limit fiyatı", true);
+  const stop=number(input.stop ?? existing?.stop,"Stop"), target1=number(input.target1 ?? existing?.target1,"TP1"), target2=number(input.target2 ?? existing?.target2,"TP2"), target3=number(input.target3 ?? existing?.target3,"TP3");
+  if (entryPrice !== null && stop !== null && stop >= entryPrice) throw new Error("Uzun işlemde stop girişin altında olmalı.");
+  for (const [label, target] of [["TP1",target1],["TP2",target2],["TP3",target3]]) if (entryPrice !== null && target !== null && target <= entryPrice) throw new Error(`${label} girişin üzerinde olmalı.`);
+  return {symbol,quantity,entryPrice,orderType,stop,target1,target2,target3,paperOnly:!ALPACA_TRADING_ENABLED};
+}
+
+function nasdaqDecisionFromInput(input, timestamp) {
+  const order=normalizeNasdaqPaperOrder(input);
+  return {id:`nasdaq-${Date.now()}-${order.symbol}-${crypto.randomBytes(4).toString("hex")}`,symbol:order.symbol,market:"NASDAQ",action:"BUY SETUP",status:"PENDING_APPROVAL",grade:input.grade || "NASDAQ ADAYI",timestamp,entry:{low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice},stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,fibonacci:input.fibonacci || null,indicators:{score:Number(input.score) || null},pendingOrder:{...order,source:input.source || "NASDAQ AI",createdAt:timestamp,updatedAt:timestamp}};
+}
+
+async function submitAlpacaPaperOrLiveOrder(order) {
+  if (!ALPACA_TRADING_ENABLED) return {submitted:false, mode:"LOCAL_PAPER"};
+  const payload = buildAlpacaOrderPayload(order);
+  const result = await alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/orders`, {method:"POST", body:payload});
+  return {submitted:true,mode:ALPACA_TRADING_MODE.toUpperCase(),brokerOrderId:String(result?.id || "") || null,status:String(result?.status || "submitted")};
+}
+
+async function handleNasdaqState(req,res) { try { const saved=await getTradingState(); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,500,{error:error.message}); } }
+async function handleNasdaqQuotes(req,res) { const url=new URL(req.url,`http://${req.headers.host || "localhost"}`); const symbols=[...new Set(String(url.searchParams.get("symbols") || "").split(",").map(value=>value.trim().toUpperCase()).filter(value=>/^[A-Z]{1,8}$/.test(value)).slice(0,30))]; const quotes={}; const unavailable=[]; await Promise.all(symbols.map(async symbol=>{try { quotes[symbol]=await fetchNasdaqDailyClose(symbol); } catch { unavailable.push(symbol); }})); return sendJSON(res,200,{quotes,unavailable}); }
+
+async function handleNasdaqRiskSettings(req,res) { try { const input=await readTradingRequest(req); const saved=await getTradingState(); const paper=saved.content.nasdaqPaper; const capital=Math.max(100,Number(input.capital)||Number(paper.initialCapital)||10000), allocation=Math.max(1,Number(input.maxPositionPercent)||Number(paper.risk?.maxPositionPercent)||20), maxPositions=Math.max(1,Math.floor(Number(input.maxPositions)||Number(paper.risk?.maxPositions)||5)); paper.cash=roundTradingValue(Number(paper.cash || 0)+capital-Number(paper.initialCapital || 0)); paper.initialCapital=capital; paper.risk={maxPositionPercent:allocation,maxPositions}; recalculateNasdaqPaper(paper); paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_RISK",message:"NASDAQ risk ayarları güncellendi."},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
+
+async function handleNasdaqPaperQueue(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, timestamp=new Date().toISOString(), candidate=nasdaqDecisionFromInput(input,timestamp); const manual=String(candidate.pendingOrder.source).toUpperCase()==="MANUAL"; const existing=(paper.decisions||[]).find(item=>item.status==="PENDING_APPROVAL"&&item.symbol===candidate.symbol&&(String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL")===manual); if(existing){Object.assign(existing,{entry:candidate.entry,stop:candidate.stop,target1:candidate.target1,target2:candidate.target2,target3:candidate.target3,pendingOrder:candidate.pendingOrder});}else paper.decisions=[candidate,...(paper.decisions||[])].slice(0,100); paper.activity=[{timestamp,type:"NASDAQ_PENDING",message:`${candidate.symbol} NASDAQ emri onay bekliyor.`},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,201,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
+
+async function handleNasdaqPaperUpdate(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez."); const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder}); decision.pendingOrder={...decision.pendingOrder,...order,updatedAt:new Date().toISOString(),editedAt:new Date().toISOString()}; decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice}; decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3; await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); }catch(error){return sendJSON(res,400,{error:error.message});} }
+
+async function handleNasdaqPaperApprove(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor."); const order=decision.pendingOrder, quote=await fetchNasdaqDailyClose(order.symbol), marketPrice=quote.price; if(order.orderType==="LIMIT"&&marketPrice>Number(order.entryPrice)) throw new Error(`${order.symbol} limit emri bekliyor: son tamamlanmış günlük fiyat $${marketPrice}, limit $${order.entryPrice}.`); const entry=order.orderType==="MARKET"?marketPrice:Math.min(marketPrice,Number(order.entryPrice)); if(order.stop!==null&&Number(order.stop)>=entry) throw new Error("Stop gerçekleşen girişin altında olmalı."); const cost=roundTradingValue(entry*Number(order.quantity)); if(cost>Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil."); const broker=await submitAlpacaPaperOrLiveOrder({...order,entryPrice:entry}); let position=(paper.positions||[]).find(item=>item.status==="OPEN"&&item.symbol===order.symbol); if(position){const total=Number(position.quantity)+Number(order.quantity);position.entry=roundTradingValue((Number(position.entry)*Number(position.quantity)+entry*Number(order.quantity))/total);position.quantity=total;position.current=marketPrice;}else{const max=Number(paper.risk?.maxPositions)||5;if((paper.positions||[]).filter(item=>item.status==="OPEN").length>=max)throw new Error(`En fazla ${max} açık NASDAQ pozisyonu olabilir.`);position={id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:Number(order.quantity),entry,current:marketPrice,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:new Date().toISOString(),broker};paper.positions=[position,...(paper.positions||[])];} paper.cash=roundTradingValue(Number(paper.cash)-cost);decision.status="OPEN";paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_OPEN",message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`},...(paper.activity||[])].slice(0,100);recalculateNasdaqPaper(paper);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
+
+async function handleNasdaqPaperReject(req,res) { try { const input=await readTradingRequest(req),saved=await getTradingState(),paper=saved.content.nasdaqPaper,decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL");if(!decision)throw new Error("Bu NASDAQ emri artık onay beklemiyor.");decision.status="REJECTED";decision.closedAt=new Date().toISOString();paper.history=[decision,...(paper.history||[])].slice(0,100);paper.activity=[{timestamp:decision.closedAt,type:"NASDAQ_REJECT",message:`${decision.symbol} NASDAQ emri reddedildi.`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
+
+async function handleNasdaqPaperClose(req,res) { try { const input=await readTradingRequest(req),saved=await getTradingState(),paper=saved.content.nasdaqPaper,position=(paper.positions||[]).find(item=>item.status==="OPEN"&&item.id===String(input.positionId||""));if(!position)throw new Error("Açık NASDAQ pozisyon bulunamadı.");const quantity=Number(input.quantity||position.quantity);if(!Number.isInteger(quantity)||quantity<=0||quantity>Number(position.quantity))throw new Error("Satılacak hisse adedi geçersiz.");const orderType=String(input.orderType||"MARKET").toUpperCase(),quote=await fetchNasdaqDailyClose(position.symbol),limitPrice=Number(input.limitPrice);if(orderType==="LIMIT"&&(!Number.isFinite(limitPrice)||limitPrice<=0))throw new Error("LIMIT satış için fiyat gerekli.");if(orderType==="LIMIT"&&quote.price<limitPrice)throw new Error(`${position.symbol} limit satış bekliyor: son tamamlanmış günlük fiyat $${quote.price}, limit $${limitPrice}.`);const price=orderType==="LIMIT"?Math.max(quote.price,limitPrice):quote.price,proceeds=roundTradingValue(price*quantity);paper.cash=roundTradingValue(Number(paper.cash)+proceeds);position.quantity-=quantity;position.current=price;const realizedPnl=roundTradingValue((price-Number(position.entry))*quantity);if(position.quantity<=0){position.status="CLOSED";position.closedAt=new Date().toISOString();position.realizedPnl=realizedPnl;paper.history=[{...position},...(paper.history||[])].slice(0,100);}paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_CLOSE",message:`${position.symbol} NASDAQ pozisyonu ${orderType} ile kapatıldı.`},...(paper.activity||[])].slice(0,100);recalculateNasdaqPaper(paper);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
+
+async function handleNasdaqScanner(req,res) {
+  const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);const jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
+  try {
+    updateScannerJob(jobId,2,"Alpaca'dan aktif NASDAQ evreni alınıyor");const symbols=await fetchNasdaqUniverse();updateScannerJob(jobId,8,`${symbols.length} NASDAQ hissesi için günlük OHLCV alınıyor`);
+    const collected=[];let feedUsed=ALPACA_DATA_FEED;
+    for(let index=0;index<symbols.length;index+=50){const group=symbols.slice(index,index+50);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history);if(validation.ok){const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};collected.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
+    const valid=collected.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||a.symbol.localeCompare(b.symbol,"en"));updateScannerJob(jobId,75,"Teknik puanla ilk 5 aday için Fibonacci hesaplanıyor");const ranked=valid.slice(0,5).map(item=>{const fibonacci=fibonacciEngine.fibonacciPlan(item.history,Date.now(),{market:"NASDAQ"});const analysis=fibonacciEngine.score(item.history,fibonacci);const fallbackPlan=fibonacci.valid?null:fibonacciEngine.fallbackPlan(item.history,analysis.features);return {...item,...analysis,fibonacci,fallbackPlan,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};});
+    updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful:valid.length,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};const selectedSymbols=new Set(decisions.map(item=>item.symbol));paper.decisions=[...decisions,...(paper.decisions||[]).filter(item=>!(item.status==="PENDING_APPROVAL"&&selectedSymbols.has(item.symbol)))].slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful:valid.length,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
+  } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
+}
+
 
 /*
 ========================================================
@@ -7397,6 +7626,17 @@ if (req.method === "POST" && pathname === "/api/crypto/paper/update") return han
 if (req.method === "POST" && pathname === "/api/crypto/paper/approve") return handleCryptoPaperApprove(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/reject") return handleCryptoPaperReject(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/close") return handleCryptoPaperClose(req, res);
+
+// NASDAQ endpointleri de merkezi /api oturum korumasından otomatik geçer.
+if (req.method === "GET" && pathname === "/api/nasdaq/scanner") return handleNasdaqScanner(req, res);
+if (req.method === "GET" && pathname === "/api/nasdaq/state") return handleNasdaqState(req, res);
+if (req.method === "GET" && pathname === "/api/nasdaq/quotes") return handleNasdaqQuotes(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/risk-settings") return handleNasdaqRiskSettings(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return handleNasdaqPaperQueue(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return handleNasdaqPaperUpdate(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return handleNasdaqPaperApprove(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return handleNasdaqPaperReject(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return handleNasdaqPaperClose(req, res);
 
 if (
   req.method === "GET" &&
