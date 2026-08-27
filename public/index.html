@@ -2531,10 +2531,20 @@ Waiting for input...
       <div id="cryptoTradeJournal" class="trade-journal"><div class="trading-empty">İşlem günlüğü bekleniyor.</div></div>
     </section>
 
-
-    <!-- ==================================================
-         KILL SWITCH
-    ================================================== -->
+    <section class="kill-switch-panel crypto-kill-switch-panel" aria-label="Kripto acil işlem durdurma">
+      <div class="kill-switch-heading">
+        <span class="kill-switch-icon">⚠</span>
+        <div>
+          <strong>KRİPTO ACİL DURDURMA</strong>
+          <small id="cryptoKillSwitchStatus">GÜVENLİ · YENİ KRİPTO KÂĞIT İŞLEMLER AÇIK</small>
+        </div>
+      </div>
+      <p>Yalnız bu sayfadaki açık kripto pozisyonlarını son alınabilen piyasa fiyatıyla kapatır ve kripto bekleyen emirlerini iptal eder.</p>
+      <div class="kill-switch-controls">
+        <input id="cryptoKillSwitchPassword" type="password" inputmode="numeric" autocomplete="off" placeholder="ACİL DURDURMA ŞİFRESİ" aria-label="Kripto acil durdurma şifresi">
+        <button type="button" id="cryptoKillSwitchToggle" class="kill-switch-button">KRİPTO DURDURMAYI ETKİNLEŞTİR</button>
+      </div>
+    </section>
 
 
     <div class="logout-footer" aria-label="Oturum işlemleri">

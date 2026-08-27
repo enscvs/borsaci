@@ -2802,9 +2802,10 @@ textarea::placeholder {
   gap: 3px 8px;
   width: 100%;
   padding: 9px 10px;
-  border: 0;
-  border-bottom: 1px solid rgba(91, 169, 255, .18);
-  background: transparent;
+  appearance: none;
+  border: 1px solid rgba(91, 169, 255, .2);
+  border-radius: 0;
+  background: #0b1820;
   color: #bfd2df;
   font: inherit;
   text-align: left;
@@ -2835,6 +2836,9 @@ textarea::placeholder {
 #nasdaqTab .pending-paper-order-card {
   min-width: 0;
   overflow: hidden;
+  width: auto;
+  border-color: rgba(255, 176, 0, .46);
+  background: #0b151a;
 }
 
 #nasdaqTab .paper-order-form {
@@ -2857,6 +2861,46 @@ textarea::placeholder {
 
 #nasdaqTab .paper-order-live-price {
   color: #90d6ef;
+}
+
+#nasdaqTab .pending-paper-orders {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+#nasdaqTab .paper-order-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  padding: 12px;
+  background: #0b151a;
+}
+
+#nasdaqTab .paper-order-form label { color: #b7d2dc; }
+#nasdaqTab .paper-order-form input,
+#nasdaqTab .paper-order-form select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #071116;
+  color: #e0f4fb;
+  border-color: rgba(91, 169, 255, .42);
+}
+#nasdaqTab .paper-order-form-actions { grid-column: 1 / -1; }
+#nasdaqTab [data-nasdaq-id="chartArea"] { background: #0b141b !important; }
+
+.nasdaq-close-dialog .paper-order-live-price {
+  margin: 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(91, 169, 255, .35);
+  background: #09171e;
+  color: #a9e0f4;
+}
+.nasdaq-close-dialog .paper-order-form { background: transparent; }
+.nasdaq-close-dialog .paper-order-form-actions { display: flex; gap: 9px; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  #nasdaqTab .paper-order-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 680px) {

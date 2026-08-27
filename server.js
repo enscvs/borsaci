@@ -114,6 +114,7 @@ const NASDAQ_UNIVERSE_LIMIT = Math.max(50, Math.min(1200, Number(process.env.NAS
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
 let paperMonitorRunning = false;
+let marketPaperMonitorRunning = false;
 const PAPER_MONITOR_INTERVAL_MS = 60 * 1000;
 const PAPER_PRICE_CACHE_TTL_MS = 15 * 1000;
 const paperMarketPriceCache = new Map();
@@ -3759,6 +3760,8 @@ function createDefaultTradingState() {
       // GitHub state dosyası şişmeden yenileme sonrasında karar kartları geri gelir.
       scanner: {timestamp: null, scanned: 0, successful: 0, results: []},
       risk: {maxPositionPercent: 20, maxPositions: 5},
+      // Kripto acil durdurma BIST ve NASDAQ hesaplarından bağımsızdır.
+      killSwitch: {active: false, activatedAt: null},
     },
 
     // ABD hisseleri BIST ve kripto paper hesaplarından ayrı tutulur.
@@ -3860,6 +3863,11 @@ function normalizeTradingState(
           : [],
       },
       risk: {...fallback.cryptoPaper.risk, ...((value || {}).cryptoPaper?.risk || {})},
+      killSwitch: {
+        ...fallback.cryptoPaper.killSwitch,
+        ...((value || {}).cryptoPaper?.killSwitch || {}),
+        active: Boolean((value || {}).cryptoPaper?.killSwitch?.active),
+      },
     },
 
     nasdaqPaper: {
@@ -7490,7 +7498,7 @@ async function handleNasdaqKillSwitch(req, res) {
         closed += 1;
       }
       (paper.decisions || []).forEach(decision => {
-        if (decision.status === "PENDING_APPROVAL") {
+        if (["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) {
           decision.status = "CANCELLED";
           decision.closedAt = timestamp;
           paper.history = [{...decision}, ...(paper.history || [])].slice(0, 100);
@@ -7528,7 +7536,7 @@ async function handleNasdaqPaperQueue(req,res) {
     // PENDING_APPROVAL kaydını tamamen değiştirir; onay/red geçmişi korunur.
     paper.decisions = [
       candidate,
-      ...(paper.decisions || []).filter(item => item.status !== "PENDING_APPROVAL" || !isSameQueue(item)),
+      ...(paper.decisions || []).filter(item => !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) || !isSameQueue(item)),
     ].slice(0, 100);
     paper.activity = [{timestamp, type:"NASDAQ_PENDING", message:`${candidate.symbol} NASDAQ emri onay bekliyor.`}, ...(paper.activity || [])].slice(0,100);
     await saveTradingState(saved.content, saved.sha, saved.container);
@@ -7540,9 +7548,63 @@ async function handleNasdaqPaperQueue(req,res) {
 
 async function handleNasdaqPaperUpdate(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez."); const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder}); decision.pendingOrder={...decision.pendingOrder,...order,updatedAt:new Date().toISOString(),editedAt:new Date().toISOString()}; decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice}; decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3; await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); }catch(error){return sendJSON(res,400,{error:error.message});} }
 
-async function handleNasdaqPaperApprove(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper; if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada emir onaylanamaz."); const decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor."); const order=decision.pendingOrder, quote=await fetchNasdaqDailyClose(order.symbol), marketPrice=quote.price; if(order.orderType==="LIMIT"&&marketPrice>Number(order.entryPrice)) throw new Error(`${order.symbol} limit emri bekliyor: son tamamlanmış günlük fiyat $${marketPrice}, limit $${order.entryPrice}.`); const entry=order.orderType==="MARKET"?marketPrice:Math.min(marketPrice,Number(order.entryPrice)); if(order.stop!==null&&Number(order.stop)>=entry) throw new Error("Stop gerçekleşen girişin altında olmalı."); const cost=roundTradingValue(entry*Number(order.quantity)); if(cost>Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil."); const broker=await submitAlpacaPaperOrLiveOrder({...order,entryPrice:entry}); let position=(paper.positions||[]).find(item=>item.status==="OPEN"&&item.symbol===order.symbol); if(position){const total=Number(position.quantity)+Number(order.quantity);position.entry=roundTradingValue((Number(position.entry)*Number(position.quantity)+entry*Number(order.quantity))/total);position.quantity=total;position.current=marketPrice;}else{const max=Number(paper.risk?.maxPositions)||5;if((paper.positions||[]).filter(item=>item.status==="OPEN").length>=max)throw new Error(`En fazla ${max} açık NASDAQ pozisyonu olabilir.`);position={id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:Number(order.quantity),entry,current:marketPrice,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:new Date().toISOString(),broker};paper.positions=[position,...(paper.positions||[])];} paper.cash=roundTradingValue(Number(paper.cash)-cost);decision.status="OPEN";paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_OPEN",message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`},...(paper.activity||[])].slice(0,100);recalculateNasdaqPaper(paper);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
+async function handleNasdaqPaperApprove(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const saved = await getTradingState();
+    const paper = saved.content.nasdaqPaper;
+    if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada emir onaylanamaz.");
+    const decision = (paper.decisions || []).find(item => item.id === String(input.decisionId || "") && item.status === "PENDING_APPROVAL");
+    if (!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor.");
+    const order = decision.pendingOrder;
+    const quote = await fetchNasdaqDailyClose(order.symbol);
+    const marketPrice = Number(quote.price);
+    const timestamp = new Date().toISOString();
+    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
+      decision.status = "PENDING_LIMIT";
+      decision.pendingOrder = {...order, status:"PENDING_LIMIT", lastMarketPrice:marketPrice, updatedAt:timestamp};
+      decision.lifecycle = {...(decision.lifecycle || {}), stage:"PENDING_LIMIT", lastCheckedAt:timestamp, lastMarketPrice:marketPrice};
+      paper.activity = [{timestamp, type:"NASDAQ_LIMIT_PENDING", message:`${order.symbol} limit alış emri $${Number(order.entryPrice).toFixed(2)} seviyesinde izleniyor.`}, ...(paper.activity || [])].slice(0,100);
+      await saveTradingState(saved.content, saved.sha, saved.container);
+      return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+    }
+    const entry = order.orderType === "MARKET" ? marketPrice : Math.min(marketPrice, Number(order.entryPrice));
+    if (order.stop !== null && Number(order.stop) >= entry) throw new Error("Stop gerçekleşen girişin altında olmalı.");
+    const cost = roundTradingValue(entry * Number(order.quantity));
+    if (cost > Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil.");
+    const broker = await submitAlpacaPaperOrLiveOrder({...order, entryPrice:entry});
+    let position = (paper.positions || []).find(item => item.status === "OPEN" && item.symbol === order.symbol);
+    if (position) {
+      const total = Number(position.quantity) + Number(order.quantity);
+      position.entry = roundTradingValue((Number(position.entry) * Number(position.quantity) + entry * Number(order.quantity)) / total);
+      position.quantity = total; position.current = marketPrice;
+    } else {
+      const max = Number(paper.risk?.maxPositions) || 5;
+      if ((paper.positions || []).filter(item => item.status === "OPEN").length >= max) throw new Error(`En fazla ${max} açık NASDAQ pozisyonu olabilir.`);
+      position = {id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:Number(order.quantity),entry,current:marketPrice,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:timestamp,broker};
+      paper.positions = [position, ...(paper.positions || [])];
+    }
+    paper.cash = roundTradingValue(Number(paper.cash) - cost);
+    decision.status = "OPEN";
+    paper.activity = [{timestamp, type:"NASDAQ_OPEN", message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`}, ...(paper.activity || [])].slice(0,100);
+    recalculateNasdaqPaper(paper);
+    await saveTradingState(saved.content,saved.sha,saved.container);
+    return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  } catch(error) { return sendJSON(res,400,{error:error.message}); }
+}
 
-async function handleNasdaqPaperReject(req,res) { try { const input=await readTradingRequest(req),saved=await getTradingState(),paper=saved.content.nasdaqPaper,decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL");if(!decision)throw new Error("Bu NASDAQ emri artık onay beklemiyor.");decision.status="REJECTED";decision.closedAt=new Date().toISOString();paper.history=[decision,...(paper.history||[])].slice(0,100);paper.activity=[{timestamp:decision.closedAt,type:"NASDAQ_REJECT",message:`${decision.symbol} NASDAQ emri reddedildi.`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
+async function handleNasdaqPaperReject(req,res) {
+  try {
+    const input=await readTradingRequest(req),saved=await getTradingState(),paper=saved.content.nasdaqPaper;
+    const decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&["PENDING_APPROVAL","PENDING_LIMIT"].includes(item.status));
+    if(!decision)throw new Error("Bu NASDAQ emri artık beklemiyor.");
+    decision.status="REJECTED";decision.closedAt=new Date().toISOString();
+    paper.history=[decision,...(paper.history||[])].slice(0,100);
+    paper.activity=[{timestamp:decision.closedAt,type:"NASDAQ_REJECT",message:`${decision.symbol} NASDAQ emri reddedildi.`},...(paper.activity||[])].slice(0,100);
+    await saveTradingState(saved.content,saved.sha,saved.container);
+    return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  }catch(error){return sendJSON(res,400,{error:error.message});}
+}
 
 async function handleNasdaqPaperClose(req,res) { try { const input=await readTradingRequest(req),saved=await getTradingState(),paper=saved.content.nasdaqPaper,position=(paper.positions||[]).find(item=>item.status==="OPEN"&&item.id===String(input.positionId||""));if(!position)throw new Error("Açık NASDAQ pozisyon bulunamadı.");const quantity=Number(input.quantity||position.quantity);if(!Number.isInteger(quantity)||quantity<=0||quantity>Number(position.quantity))throw new Error("Satılacak hisse adedi geçersiz.");const orderType=String(input.orderType||"MARKET").toUpperCase(),quote=await fetchNasdaqDailyClose(position.symbol),limitPrice=Number(input.limitPrice);if(orderType==="LIMIT"&&(!Number.isFinite(limitPrice)||limitPrice<=0))throw new Error("LIMIT satış için fiyat gerekli.");if(orderType==="LIMIT"&&quote.price<limitPrice)throw new Error(`${position.symbol} limit satış bekliyor: son tamamlanmış günlük fiyat $${quote.price}, limit $${limitPrice}.`);const price=orderType==="LIMIT"?Math.max(quote.price,limitPrice):quote.price,proceeds=roundTradingValue(price*quantity);paper.cash=roundTradingValue(Number(paper.cash)+proceeds);position.quantity-=quantity;position.current=price;const realizedPnl=roundTradingValue((price-Number(position.entry))*quantity);if(position.quantity<=0){position.status="CLOSED";position.closedAt=new Date().toISOString();position.realizedPnl=realizedPnl;paper.history=[{...position},...(paper.history||[])].slice(0,100);}paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_CLOSE",message:`${position.symbol} NASDAQ pozisyonu ${orderType} ile kapatıldı.`},...(paper.activity||[])].slice(0,100);recalculateNasdaqPaper(paper);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
 
@@ -7706,6 +7768,7 @@ if (
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
 if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
+if (req.method === "POST" && pathname === "/api/crypto/kill-switch") return handleCryptoKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/update") return handleCryptoPaperUpdate(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/approve") return handleCryptoPaperApprove(req, res);
@@ -7870,12 +7933,17 @@ function cryptoPaperStateForClient(state) {
 }
 
 function compactCryptoAiPendingOrders(paper, timestamp = new Date().toISOString()) {
-  const pendingAi = (paper.decisions || []).filter(decision =>
-    decision.status === "PENDING_APPROVAL" &&
-    String(decision.pendingOrder?.source || decision.source || "").toUpperCase() !== "MANUAL"
+  const active = ["PENDING_APPROVAL", "PENDING_LIMIT"];
+  const groups = new Map();
+  for (const decision of paper.decisions || []) {
+    if (!active.includes(decision.status)) continue;
+    const group = String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL" ? "MANUAL" : "AI";
+    groups.set(group, [...(groups.get(group) || []), decision]);
+  }
+  const superseded = [...groups.values()].flatMap(items =>
+    items.sort((a, b) => String(b.pendingOrder?.updatedAt || b.timestamp || "").localeCompare(String(a.pendingOrder?.updatedAt || a.timestamp || ""))).slice(1)
   );
-  if (pendingAi.length <= 1) return false;
-  const [, ...superseded] = pendingAi;
+  if (!superseded.length) return false;
   paper.history = superseded.map(decision => ({
     ...decision,
     status: "SUPERSEDED",
@@ -7885,7 +7953,7 @@ function compactCryptoAiPendingOrders(paper, timestamp = new Date().toISOString(
   paper.activity = [{
     timestamp,
     type: "CRYPTO_PENDING_COMPACTED",
-    message: "Eski kripto YZ emir planları tek güncel planla birleştirildi.",
+    message: "Eski kripto bekleyen emir taslakları tek güncel planla birleştirildi.",
   }, ...(paper.activity || [])].slice(0, 100);
   return true;
 }
@@ -7933,36 +8001,88 @@ function cryptoPaperDecisionFromInput(input, paper, timestamp) {
   };
 }
 
+async function handleCryptoKillSwitch(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const expectedPassword = String(process.env.KILL_SWITCH_PASSWORD || "");
+    if (!expectedPassword) throw new Error("KILL_SWITCH_PASSWORD Render ortamında ayarlı değil.");
+    if (String(input.password || "") !== expectedPassword) throw new Error("Acil durdurma şifresi yanlış.");
+
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    const paper = state.cryptoPaper;
+    const timestamp = new Date().toISOString();
+    const active = input.action === "activate";
+    paper.killSwitch = {active, activatedAt: active ? timestamp : null};
+    let closed = 0;
+
+    if (active) {
+      for (const position of paper.positions || []) {
+        if (position.status !== "OPEN") continue;
+        let price = Number(position.current || position.entry || 0);
+        try {
+          const quote = await fetchCryptoPaperMarketPrice(position.symbol);
+          if (Number.isFinite(Number(quote)) && Number(quote) > 0) price = Number(quote);
+        } catch {}
+        const quantity = Number(position.quantity || 0);
+        position.current = price;
+        position.status = "CLOSED";
+        position.closedAt = timestamp;
+        position.realizedPnl = roundTradingValue((price - Number(position.entry || 0)) * quantity);
+        paper.cash = roundTradingValue(Number(paper.cash || 0) + price * quantity);
+        paper.history = [{...position}, ...(paper.history || [])].slice(0, 100);
+        closed += 1;
+      }
+      for (const decision of paper.decisions || []) {
+        if (!["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) continue;
+        decision.status = "CANCELLED";
+        decision.closedAt = timestamp;
+        paper.history = [{...decision}, ...(paper.history || [])].slice(0, 100);
+      }
+      recalculateCryptoPaper(paper);
+    }
+
+    const message = active
+      ? `KRİPTO ACİL DURDURMA: ${closed} açık kripto pozisyon kapatıldı; yalnız kripto bekleyen emirleri iptal edildi.`
+      : "KRİPTO acil durdurma kapatıldı; yalnız kripto yeni emirleri yeniden açılabilir.";
+    paper.activity = [{timestamp, type: "CRYPTO_KILL_SWITCH", message}, ...(paper.activity || [])].slice(0, 100);
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+    void sendTelegramNotification(`${active ? "🛑" : "🟢"} BORSACI ${message}`);
+    return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
+  } catch (error) {
+    console.error("CRYPTO KILL SWITCH ERROR:", error.message);
+    return sendJSON(res, 400, {error: error.message});
+  }
+}
+
 async function handleCryptoPaperQueue(req, res) {
   try {
     const input = await readTradingRequest(req);
     const stateResult = await getTradingState();
     const state = stateResult.content;
     const paper = state.cryptoPaper;
+    if (paper.killSwitch?.active) throw new Error("KRİPTO acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
     const timestamp = new Date().toISOString();
     const candidate = cryptoPaperDecisionFromInput(input, paper, timestamp);
     const isManual = String(candidate.pendingOrder?.source || "").toUpperCase() === "MANUAL";
 
-    // Kripto YZ emir alanı tek aktif plan taşır. Yeni bir coin seçildiğinde
-    // eski YZ planı görünmez bir ikinci/üçüncü kart olarak kalmaz; geçmişe
-    // "yerine yenisi geldi" kaydıyla aktarılır. Manuel emirler ayrıdır.
-    if (!isManual) {
-      const superseded = (paper.decisions || []).filter(decision =>
-        decision.status === "PENDING_APPROVAL" &&
-        String(decision.pendingOrder?.source || decision.source || "").toUpperCase() !== "MANUAL" &&
-        decision.symbol !== candidate.symbol
-      );
-      if (superseded.length) {
-        paper.history = superseded.map(decision => ({
-          ...decision,
-          status: "SUPERSEDED",
-          closedAt: timestamp,
-        })).concat(paper.history || []).slice(0, 100);
-        paper.decisions = paper.decisions.filter(decision => !superseded.includes(decision));
-      }
+    // YZ ve manuel panellerin her biri yalnız bir aktif taslak taşır.
+    // Yeni coin planı geldiğinde aynı paneldeki eski taslak geçmişe aktarılır.
+    const superseded = (paper.decisions || []).filter(decision =>
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status) &&
+      (String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL") === isManual &&
+      decision.symbol !== candidate.symbol
+    );
+    if (superseded.length) {
+      paper.history = superseded.map(decision => ({
+        ...decision,
+        status: "SUPERSEDED",
+        closedAt: timestamp,
+      })).concat(paper.history || []).slice(0, 100);
+      paper.decisions = paper.decisions.filter(decision => !superseded.includes(decision));
     }
     const existing = paper.decisions.find(decision =>
-      decision.status === "PENDING_APPROVAL" &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status) &&
       decision.symbol === candidate.symbol &&
       (String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL") === isManual
     );
@@ -8009,11 +8129,20 @@ async function handleCryptoPaperApprove(req, res) {
   try {
     const input = await readTradingRequest(req);
     const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
+    if (paper.killSwitch?.active) throw new Error("KRİPTO acil durdurma aktif; bu sayfada emir onaylanamaz.");
     const decision = paper.decisions.find(value => value.id === String(input.decisionId || "") && value.status === "PENDING_APPROVAL");
     if (!decision) throw new Error("Bu kripto emri artık onay beklemiyor.");
     const order = decision.pendingOrder;
     const marketPrice = await fetchCryptoPaperMarketPrice(order.symbol);
-    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) throw new Error(`${order.symbol} limit emri bekliyor: son fiyat $${marketPrice}, limit $${order.entryPrice}.`);
+    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
+      const timestamp = new Date().toISOString();
+      decision.status = "PENDING_LIMIT";
+      decision.pendingOrder = {...order, status:"PENDING_LIMIT", lastMarketPrice:marketPrice, updatedAt:timestamp};
+      decision.lifecycle = {...(decision.lifecycle || {}), stage:"PENDING_LIMIT", lastCheckedAt:timestamp, lastMarketPrice:marketPrice};
+      paper.activity = [{timestamp, type:"CRYPTO_LIMIT_PENDING", message:`${order.symbol} limit alış emri $${Number(order.entryPrice)} seviyesinde izleniyor.`}, ...(paper.activity || [])].slice(0,100);
+      await saveTradingState(state, stateResult.sha, stateResult.container);
+      return sendJSON(res, 200, {paperOnly:true, cryptoPaper:cryptoPaperStateForClient(state)});
+    }
     const entry = order.orderType === "MARKET" ? marketPrice : Math.min(marketPrice, Number(order.entryPrice));
     if (order.stop !== null && Number(order.stop) >= entry) throw new Error("Stop, gerçekleşen giriş fiyatının altında olmalı.");
     const cost = roundTradingValue(entry * Number(order.quantity));
@@ -8039,8 +8168,8 @@ async function handleCryptoPaperApprove(req, res) {
 async function handleCryptoPaperReject(req, res) {
   try {
     const input = await readTradingRequest(req); const stateResult = await getTradingState(); const state = stateResult.content; const paper = state.cryptoPaper;
-    const decision = paper.decisions.find(value => value.id === String(input.decisionId || "") && value.status === "PENDING_APPROVAL");
-    if (!decision) throw new Error("Bu kripto emri artık onay beklemiyor.");
+    const decision = paper.decisions.find(value => value.id === String(input.decisionId || "") && ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(value.status));
+    if (!decision) throw new Error("Bu kripto emri artık beklemiyor.");
     decision.status = "REJECTED_BY_USER"; paper.history = [{...decision, closedAt: new Date().toISOString()}, ...paper.history].slice(0, 100);
     paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_REJECT", message: `${decision.symbol} kripto emri reddedildi.`}, ...paper.activity].slice(0, 100);
     await saveTradingState(state, stateResult.sha, stateResult.container); return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
@@ -8068,6 +8197,140 @@ async function handleCryptoPaperClose(req, res) {
     paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_CLOSE", message: `${position.symbol} kripto paper pozisyonu ${orderType} ile kapatıldı.`}, ...paper.activity].slice(0, 100);
     recalculateCryptoPaper(paper); await saveTradingState(state, stateResult.sha, stateResult.container); return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
   } catch (error) { return sendJSON(res, 400, {error: error.message}); }
+}
+
+function closeMonitoredPaperPosition(paper, position, price, timestamp, type, message, quantity = Number(position.quantity || 0), roundQuantity = value => value) {
+  const sold = roundQuantity(quantity);
+  if (!Number.isFinite(sold) || sold <= 0) return false;
+  const proceeds = roundTradingValue(price * sold);
+  paper.cash = roundTradingValue(Number(paper.cash || 0) + proceeds);
+  position.quantity = roundQuantity(Number(position.quantity || 0) - sold);
+  position.current = price;
+  const realizedPnl = roundTradingValue((price - Number(position.entry || 0)) * sold);
+  if (position.quantity <= 0) {
+    position.status = "CLOSED";
+    position.closedAt = timestamp;
+    position.realizedPnl = realizedPnl;
+    paper.history = [{...position}, ...(paper.history || [])].slice(0, 100);
+  }
+  paper.activity = [{timestamp, type, message}, ...(paper.activity || [])].slice(0, 100);
+  return true;
+}
+
+async function monitorCryptoPaperTrading(paper, timestamp) {
+  if (paper.killSwitch?.active) return false;
+  let changed = false;
+  for (const decision of paper.decisions || []) {
+    if (decision.status !== "PENDING_LIMIT") continue;
+    const order = decision.pendingOrder || {};
+    let price;
+    try { price = await fetchCryptoPaperMarketPrice(order.symbol); } catch { continue; }
+    if (!Number.isFinite(price) || price > Number(order.entryPrice || 0)) continue;
+    const cost = roundTradingValue(price * Number(order.quantity || 0));
+    if (cost > Number(paper.cash || 0)) continue;
+    let position = (paper.positions || []).find(item => item.status === "OPEN" && item.symbol === order.symbol);
+    if (!position && (paper.positions || []).filter(item => item.status === "OPEN").length >= Math.max(1, Number(paper.risk?.maxPositions) || 5)) continue;
+    if (position) {
+      const total = Number(position.quantity) + Number(order.quantity);
+      position.entry = roundCryptoValue((Number(position.entry) * Number(position.quantity) + price * Number(order.quantity)) / total);
+      position.quantity = total;
+      position.current = price;
+    } else {
+      position = {id:`crypto-pos-${Date.now()}-${order.symbol}`, decisionId:decision.id, symbol:order.symbol, market:"CRYPTO", status:"OPEN", quantity:Number(order.quantity), entry:price, current:price, stop:order.stop, target1:order.target1, target2:order.target2, target3:order.target3, openedAt:timestamp, paperOnly:true};
+      paper.positions = [position, ...(paper.positions || [])];
+    }
+    paper.cash = roundTradingValue(Number(paper.cash) - cost);
+    decision.status = "OPEN";
+    decision.lifecycle = {...(decision.lifecycle || {}), stage:"FILLED", filledAt:timestamp, lastMarketPrice:price};
+    paper.activity = [{timestamp,type:"CRYPTO_LIMIT_FILLED",message:`${order.symbol} limit alış emri $${roundTradingValue(price)} ile gerçekleşti.`},...(paper.activity || [])].slice(0,100);
+    changed = true;
+  }
+  for (const position of paper.positions || []) {
+    if (position.status !== "OPEN") continue;
+    let price;
+    try { price = await fetchCryptoPaperMarketPrice(position.symbol); } catch { continue; }
+    if (Number(position.stop) > 0 && price <= Number(position.stop)) {
+      changed = closeMonitoredPaperPosition(paper, position, price, timestamp, "CRYPTO_STOP", `${position.symbol} kripto stop seviyesiyle kapatıldı.`, Number(position.quantity), roundCryptoValue) || changed;
+      continue;
+    }
+    if (Number(position.target2) > 0 && price >= Number(position.target2)) {
+      changed = closeMonitoredPaperPosition(paper, position, price, timestamp, "CRYPTO_TP2", `${position.symbol} kripto TP2 hedefiyle kapatıldı.`, Number(position.quantity), roundCryptoValue) || changed;
+      continue;
+    }
+    if (!position.tp1Hit && Number(position.target1) > 0 && price >= Number(position.target1) && Number(position.quantity) > 0) {
+      const half = roundCryptoValue(Number(position.quantity) / 2);
+      if (half > 0 && half < Number(position.quantity)) {
+        closeMonitoredPaperPosition(paper, position, price, timestamp, "CRYPTO_TP1", `${position.symbol} kripto TP1'de pozisyonun yarısı kapatıldı; stop girişe çekildi.`, half, roundCryptoValue);
+        position.tp1Hit = true; position.stop = position.entry; changed = true;
+      }
+    }
+  }
+  if (changed) recalculateCryptoPaper(paper);
+  return changed;
+}
+
+async function monitorNasdaqPaperTrading(paper, timestamp) {
+  if (paper.killSwitch?.active || ALPACA_TRADING_ENABLED) return false;
+  let changed = false;
+  for (const decision of paper.decisions || []) {
+    if (decision.status !== "PENDING_LIMIT") continue;
+    const order = decision.pendingOrder || {};
+    let quote;
+    try { quote = await fetchNasdaqDailyClose(order.symbol); } catch { continue; }
+    const price = Number(quote?.price);
+    if (!Number.isFinite(price) || price > Number(order.entryPrice || 0)) continue;
+    const cost = roundTradingValue(price * Number(order.quantity || 0));
+    if (cost > Number(paper.cash || 0)) continue;
+    let position = (paper.positions || []).find(item => item.status === "OPEN" && item.symbol === order.symbol);
+    if (!position && (paper.positions || []).filter(item => item.status === "OPEN").length >= Math.max(1, Number(paper.risk?.maxPositions) || 5)) continue;
+    if (position) {
+      const total = Number(position.quantity) + Number(order.quantity);
+      position.entry = roundTradingValue((Number(position.entry) * Number(position.quantity) + price * Number(order.quantity)) / total);
+      position.quantity = total; position.current = price;
+    } else {
+      position = {id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:Number(order.quantity),entry:price,current:price,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:timestamp,broker:{submitted:false,mode:"LOCAL_PAPER"}};
+      paper.positions = [position, ...(paper.positions || [])];
+    }
+    paper.cash = roundTradingValue(Number(paper.cash) - cost);
+    decision.status = "OPEN";
+    decision.lifecycle = {...(decision.lifecycle || {}), stage:"FILLED", filledAt:timestamp, lastMarketPrice:price};
+    paper.activity = [{timestamp,type:"NASDAQ_LIMIT_FILLED",message:`${order.symbol} NASDAQ limit alış emri $${roundTradingValue(price)} ile gerçekleşti.`},...(paper.activity || [])].slice(0,100);
+    changed = true;
+  }
+  for (const position of paper.positions || []) {
+    if (position.status !== "OPEN") continue;
+    let quote;
+    try { quote = await fetchNasdaqDailyClose(position.symbol); } catch { continue; }
+    const price = Number(quote?.price);
+    if (!Number.isFinite(price)) continue;
+    if (Number(position.stop) > 0 && price <= Number(position.stop)) {
+      changed = closeMonitoredPaperPosition(paper, position, price, timestamp, "NASDAQ_STOP", `${position.symbol} NASDAQ stop seviyesiyle kapatıldı.`) || changed;
+      continue;
+    }
+    if (Number(position.target2) > 0 && price >= Number(position.target2)) {
+      changed = closeMonitoredPaperPosition(paper, position, price, timestamp, "NASDAQ_TP2", `${position.symbol} NASDAQ TP2 hedefiyle kapatıldı.`) || changed;
+      continue;
+    }
+    if (!position.tp1Hit && Number(position.target1) > 0 && price >= Number(position.target1) && Number(position.quantity) >= 2) {
+      const half = Math.floor(Number(position.quantity) / 2);
+      closeMonitoredPaperPosition(paper, position, price, timestamp, "NASDAQ_TP1", `${position.symbol} NASDAQ TP1'de pozisyonun yarısı kapatıldı; stop girişe çekildi.`, half);
+      position.tp1Hit = true; position.stop = position.entry; changed = true;
+    }
+  }
+  if (changed) recalculateNasdaqPaper(paper);
+  return changed;
+}
+
+async function runMarketPaperMonitors() {
+  if (marketPaperMonitorRunning) return;
+  marketPaperMonitorRunning = true;
+  try {
+    const saved = await getTradingState();
+    const timestamp = new Date().toISOString();
+    const cryptoChanged = await monitorCryptoPaperTrading(saved.content.cryptoPaper, timestamp);
+    const nasdaqChanged = await monitorNasdaqPaperTrading(saved.content.nasdaqPaper, timestamp);
+    if (cryptoChanged || nasdaqChanged) await saveTradingState(saved.content, saved.sha, saved.container);
+  } finally { marketPaperMonitorRunning = false; }
 }
 
 async function fetchBinanceTopUsdtSymbols(limit = 100) {
@@ -8809,6 +9072,25 @@ server.listen(
                 error.message
               )
           );
+      },
+      PAPER_MONITOR_INTERVAL_MS
+    );
+
+    // Kripto ve NASDAQ limit emirleri, açık pozisyonların stop/hedefleri
+    // tarayıcı açık olmasa da sunucuda izlenir. Yalnız durum değiştiğinde
+    // kalıcı state yazılır; her kontrolde gereksiz GitHub kaydı oluşmaz.
+    setTimeout(
+      () => {
+        runMarketPaperMonitors()
+          .catch(error => console.error("MARKET PAPER MONITOR START ERROR:", error.message));
+      },
+      30000
+    );
+
+    setInterval(
+      () => {
+        runMarketPaperMonitors()
+          .catch(error => console.error("MARKET PAPER MONITOR ERROR:", error.message));
       },
       PAPER_MONITOR_INTERVAL_MS
     );

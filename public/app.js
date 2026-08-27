@@ -9058,18 +9058,19 @@ function renderNasdaqPerformance(paper) {
 
 function nasdaqPendingCard(decision) {
   const order=decision.pendingOrder||{}; const market=order.orderType === "MARKET";
+  const waiting=decision.status === "PENDING_LIMIT";
   const source = String(order.source || "NASDAQ AI").toUpperCase() === "MANUAL" ? "MANUEL" : "NASDAQ AI";
-  return `<article class="pending-paper-order-card${source === "MANUEL" ? " is-manual" : ""}" data-nasdaq-pending-card data-nasdaq-decision-id="${escapeHtml(decision.id)}"><div class="pending-paper-order-head"><strong>${escapeHtml(decision.symbol)} · ${source}</strong><span class="pending-paper-order-badge">ONAY BEKLİYOR</span></div><div class="paper-order-live-price">SON TAMAMLANMIŞ GÜNLÜK FİYAT: ${formatNasdaqUsd(order.lastMarketPrice || decision.price)}</div><form class="paper-order-form" data-nasdaq-pending-form><label>MİKTAR<input name="quantity" type="number" min="1" step="1" value="${Number(order.quantity || 1)}" required></label><label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.0001" step="0.0001" value="${market?"":Number(order.entryPrice || "")}" ${market?"disabled":"required"}></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET" ${market?"selected":""}>PİYASA</option><option value="LIMIT" ${!market?"selected":""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.0001" step="0.0001" value="${Number(order.stop || "")}"></label><label>TP1<input name="target1" type="number" min="0.0001" step="0.0001" value="${Number(order.target1 || "")}"></label><label>TP2<input name="target2" type="number" min="0.0001" step="0.0001" value="${Number(order.target2 || "")}"></label><label>TP3<input name="target3" type="number" min="0.0001" step="0.0001" value="${Number(order.target3 || "")}"></label><div class="paper-order-form-actions"><button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button success" data-nasdaq-action="approve" data-nasdaq-decision-id="${escapeHtml(decision.id)}">KÂĞIT EMRİ ONAYLA</button><button type="button" class="trading-button danger" data-nasdaq-action="reject" data-nasdaq-decision-id="${escapeHtml(decision.id)}">REDDET</button></div></form><small>Fiyat, miktar, emir türü, stop ve hedefler onaydan önce düzenlenebilir.</small></article>`;
+  return `<article class="pending-paper-order-card${source === "MANUEL" ? " is-manual" : ""}" data-nasdaq-pending-card data-nasdaq-decision-id="${escapeHtml(decision.id)}"><div class="pending-paper-order-head"><strong>${escapeHtml(decision.symbol)} · ${source}</strong><span class="pending-paper-order-badge">${waiting ? "LİMİT BEKLİYOR" : "ONAY BEKLİYOR"}</span></div><div class="paper-order-live-price">SON TAMAMLANMIŞ GÜNLÜK FİYAT: ${formatNasdaqUsd(order.lastMarketPrice || decision.price)}</div><form class="paper-order-form" data-nasdaq-pending-form><label>MİKTAR<input name="quantity" type="number" min="1" step="1" value="${Number(order.quantity || 1)}" required${waiting ? " disabled" : ""}></label><label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.0001" step="0.0001" value="${market?"":Number(order.entryPrice || "")}" ${market || waiting ? "disabled" : "required"}></label><label>EMİR TÜRÜ<select name="orderType"${waiting ? " disabled" : ""}><option value="MARKET" ${market?"selected":""}>PİYASA</option><option value="LIMIT" ${!market?"selected":""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.0001" step="0.0001" value="${Number(order.stop || "")}"${waiting ? " disabled" : ""}></label><label>TP1<input name="target1" type="number" min="0.0001" step="0.0001" value="${Number(order.target1 || "")}"${waiting ? " disabled" : ""}></label><label>TP2<input name="target2" type="number" min="0.0001" step="0.0001" value="${Number(order.target2 || "")}"${waiting ? " disabled" : ""}></label><label>TP3<input name="target3" type="number" min="0.0001" step="0.0001" value="${Number(order.target3 || "")}"${waiting ? " disabled" : ""}></label><div class="paper-order-form-actions">${waiting ? "<small>Limit fiyatına gelince sunucu tarafındaki işlem monitörü emri açar.</small>" : `<button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button success" data-nasdaq-action="approve" data-nasdaq-decision-id="${escapeHtml(decision.id)}">KÂĞIT EMRİ ONAYLA</button>`}<button type="button" class="trading-button danger" data-nasdaq-action="reject" data-nasdaq-decision-id="${escapeHtml(decision.id)}">REDDET</button></div></form><small>Fiyat, miktar, emir türü, stop ve hedefler onaydan önce düzenlenebilir.</small></article>`;
 }
 
 function renderNasdaqPaperState(payload) {
   const paper=payload?.nasdaqPaper || payload || {}; latestNasdaqPaperState=paper;
-  nasdaqText("paperInitialCapital",formatNasdaqUsd(paper.initialCapital));nasdaqText("paperCash",formatNasdaqUsd(paper.cash));nasdaqText("paperEquity",formatNasdaqUsd(paper.equity));nasdaqText("paperPnL",formatNasdaqUsd(paper.pnl));nasdaqText("paperPnLPct",Number.isFinite(Number(paper.pnlPercent))?`${Number(paper.pnlPercent).toFixed(2)}%`:"—");nasdaqText("paperPositionCount",String((paper.history||[]).filter(item=>item.status==="CLOSED").length));nasdaqText("paperCostSummary",`ALPACA · ${paper.broker?.dataFeed || "SIP"} GÜNLÜK VERİ · ${paper.broker?.mode || "PAPER"} ${paper.broker?.orderSubmissionEnabled ? "EMİR HATTI AÇIK" : "KÂĞIT MOD"}`);
+  nasdaqText("paperInitialCapital",formatNasdaqUsd(paper.initialCapital));nasdaqText("paperCash",formatNasdaqUsd(paper.cash));nasdaqText("paperEquity",formatNasdaqUsd(paper.equity));nasdaqText("paperPnL",formatNasdaqUsd(paper.pnl));nasdaqText("paperPnLPct",Number.isFinite(Number(paper.pnlPercent))?`${Number(paper.pnlPercent).toFixed(2)}%`:"—");nasdaqText("paperPositionCount",String((paper.history||[]).filter(item=>item.status==="CLOSED").length));nasdaqText("paperCostSummary",`ALPACA · ${paper.broker?.dataFeed || "SIP"} GÜNLÜK VERİ · ${paper.broker?.mode || "PAPER"} ${paper.broker?.orderSubmissionEnabled ? "EMİR HATTI AÇIK" : "KÂĞIT MOD"} · 60 SN İŞLEM MONİTÖRÜ`);
   nasdaqText("maxPositions",String(paper.risk?.maxPositions || 5));nasdaqText("targetPositionSize",`${Number(paper.risk?.maxPositionPercent || 20).toFixed(0)}%`);nasdaqText("cashReserve",`${Math.max(0,100-Number(paper.risk?.maxPositionPercent||20)*Number(paper.risk?.maxPositions||5)).toFixed(0)}%`);nasdaqText("stopRule","YZ KARARI");
   const allocation=ns("maxPositionInput"), max=ns("maxPositionsInput"), capital=ns("riskCapitalInput"); if(allocation)allocation.value=Number(paper.risk?.maxPositionPercent || 20);if(max)max.value=Number(paper.risk?.maxPositions || 5);if(capital)capital.value=Number(paper.initialCapital || 10000); const gauge=ns("riskAllocationGauge");if(gauge){const total=Number(allocation?.value||0)*Number(max?.value||0);gauge.textContent=`${total}% TAHSİS`;gauge.classList.toggle("risk-overallocated",total>100);}
   // Eski kayıtlardan kalmış tekrarlar olsa bile her onay panelinde yalnız son
   // taslak görünür. Sunucu yeni emir geldiğinde diğer taslakları da temizler.
-  const pending=(paper.decisions||[]).filter(item=>item.status==="PENDING_APPROVAL"&&String(item.pendingOrder?.source||"").toUpperCase()!=="MANUAL").slice(0,1);const manual=(paper.decisions||[]).filter(item=>item.status==="PENDING_APPROVAL"&&String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL").slice(0,1); const pendingBox=ns("pendingPaperOrders"),manualBox=ns("manualPendingOrders");nasdaqText("pendingPaperOrderStatus",`${pending.length} EMİR`);nasdaqText("manualOrderStatus",`${manual.length} EMİR`);if(pendingBox)pendingBox.innerHTML=pending.map(nasdaqPendingCard).join("")||'<div class="trading-empty">Bekleyen NASDAQ AI emri yok.</div>';if(manualBox)manualBox.innerHTML=manual.map(nasdaqPendingCard).join("")||'<div class="trading-empty">Bekleyen manuel NASDAQ emri yok.</div>';
+  const pending=(paper.decisions||[]).filter(item=>["PENDING_APPROVAL","PENDING_LIMIT"].includes(item.status)&&String(item.pendingOrder?.source||"").toUpperCase()!=="MANUAL").slice(0,1);const manual=(paper.decisions||[]).filter(item=>["PENDING_APPROVAL","PENDING_LIMIT"].includes(item.status)&&String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL").slice(0,1); const pendingBox=ns("pendingPaperOrders"),manualBox=ns("manualPendingOrders");nasdaqText("pendingPaperOrderStatus",`${pending.length} EMİR`);nasdaqText("manualOrderStatus",`${manual.length} EMİR`);if(pendingBox)pendingBox.innerHTML=pending.map(nasdaqPendingCard).join("")||'<div class="trading-empty">Bekleyen NASDAQ AI emri yok.</div>';if(manualBox)manualBox.innerHTML=manual.map(nasdaqPendingCard).join("")||'<div class="trading-empty">Bekleyen manuel NASDAQ emri yok.</div>';
   const positions=paper.positions||[];const tbody=ns("openPositions");nasdaqText("openPositionStatus",`${positions.length} POZİSYON`);if(tbody)tbody.innerHTML=positions.length?positions.map(position=>`<tr><td>${escapeHtml(position.symbol)}</td><td>LONG</td><td>${formatNasdaqUsd(position.entry)}</td><td>${formatNasdaqUsd(position.current)}</td><td>${Number(position.quantity)}</td><td>${formatNasdaqUsd(Number(position.current||position.entry)*Number(position.quantity||0))}</td><td>${formatNasdaqUsd(position.stop)}</td><td>${formatNasdaqUsd(position.target1)}</td><td>${formatNasdaqUsd(position.target2)}</td><td>${formatNasdaqUsd((Number(position.current)-Number(position.entry))*Number(position.quantity))}</td><td>AÇIK</td><td><button class="trading-button danger" data-nasdaq-action="close" data-nasdaq-position-id="${escapeHtml(position.id)}">KAPAT</button></td></tr>`).join(""):'<tr><td colspan="12" class="table-empty">Açık NASDAQ pozisyon yok</td></tr>';
   const activity=ns("tradingActivity"),journal=ns("tradeJournal");const activityRows=(paper.activity||[]).slice(0,100).map(item=>`<div class="log-line"><span class="log-time">${new Date(item.timestamp).toLocaleTimeString("tr-TR")}</span><span>${escapeHtml(item.type || "İŞLEM")} · ${escapeHtml(item.message || "")}</span></div>`).join("")||'<div class="trading-empty">İşlem hareketi yok.</div>';if(activity)activity.innerHTML=activityRows;if(journal)journal.innerHTML=(paper.history||[]).slice(0,40).map(item=>`<details><summary>${escapeHtml(item.symbol || "SEMBOL")} · ${escapeHtml(item.status || "KAYIT")} · ${nasdaqLocalTime(item.closedAt || item.timestamp)}</summary><p>Giriş: ${formatNasdaqUsd(item.entry)} · K/Z: ${formatNasdaqUsd(item.realizedPnl)}</p></details>`).join("")||'<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
   renderNasdaqKillSwitch(paper.killSwitch);renderNasdaqPerformance(paper);renderNasdaqScannerResults({scanned:paper.scanner?.scanned,successful:paper.scanner?.successful,source:paper.scanner?.source},nasdaqRecords);bindNasdaqPaperActions();
@@ -9084,7 +9085,47 @@ async function loadNasdaqPaperState(){if(!nasdaqTab)return;try{const data=await 
 
 async function queueNasdaqDecision(item){const plan=nasdaqPlan(item);const entry=nasdaqEntry(item);if(!Number.isFinite(Number(entry.low))||!Number.isFinite(Number(plan.stopLoss))){throw new Error("Bu NASDAQ adayında doğrulanmış giriş ve stop seviyesi yok.");}const paper=latestNasdaqPaperState||{};const quantity=Math.max(1,Math.floor(Number(paper.initialCapital||10000)*Number(paper.risk?.maxPositionPercent||20)/100/Number(entry.low)));const data=await nasdaqRequest("/api/nasdaq/paper/queue",{symbol:item.symbol,quantity,entryPrice:entry.low,orderType:"LIMIT",stop:plan.stopLoss,target1:plan.tp1,target2:plan.tp2,target3:plan.tp3,score:item.score,grade:item.grade,fibonacci:item.fibonacci,source:"NASDAQ AI"});renderNasdaqPaperState(data);}
 
-function openNasdaqCloseDialog(position){const previous=document.getElementById("nasdaqPaperCloseDialog");previous?.remove();const dialog=document.createElement("dialog");dialog.id="nasdaqPaperCloseDialog";dialog.className="paper-order-dialog";dialog.innerHTML=`<form method="dialog" class="paper-order-form"><h3>${escapeHtml(position.symbol)} POZİSYON KAPAT</h3><label>MİKTAR<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" value="${Number(position.quantity)}" required></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label><label>LİMİT FİYAT ($)<input name="limitPrice" type="number" min="0.0001" step="0.0001" disabled></label><div class="paper-order-form-actions"><button value="cancel" type="button" data-cancel>KAPAT</button><button value="default" type="submit" class="trading-button danger">SATIŞI ONAYLA</button></div></form>`;document.body.append(dialog);const form=dialog.querySelector("form"),select=form.elements.orderType,price=form.elements.limitPrice;select.addEventListener("change",()=>{price.disabled=select.value==="MARKET";price.required=select.value==="LIMIT";if(price.disabled)price.value="";});form.querySelector("[data-cancel]").addEventListener("click",()=>dialog.close());form.addEventListener("submit",async event=>{event.preventDefault();try{const data=await nasdaqRequest("/api/nasdaq/paper/close",{positionId:position.id,quantity:Number(form.elements.quantity.value),orderType:select.value,limitPrice:select.value==="LIMIT"?Number(price.value):null});dialog.close();renderNasdaqPaperState(data);}catch(error){window.alert(error.message);}});dialog.showModal();}
+async function openNasdaqCloseDialog(position) {
+  document.getElementById("nasdaqPaperCloseDialog")?.remove();
+  const dialog = document.createElement("div");
+  dialog.id = "nasdaqPaperCloseDialog";
+  dialog.className = "paper-order-dialog-backdrop nasdaq-close-dialog-backdrop";
+  dialog.innerHTML = `<section class="paper-order-dialog nasdaq-close-dialog" role="dialog" aria-modal="true" aria-label="NASDAQ satış emri">
+    <header><strong>${escapeHtml(position.symbol)} · SATIŞ EMRİ</strong><button type="button" class="trading-button danger" data-nasdaq-close-dialog>×</button></header>
+    <p>Varsayılan değerler açık pozisyondan gelir. Piyasa emri son tamamlanmış günlük Alpaca fiyatıyla; limit emri ise belirlediğin fiyata ulaştığında gerçekleşir.</p>
+    <div class="paper-order-live-price" data-nasdaq-close-market-price>SON TAMAMLANMIŞ GÜNLÜK FİYAT: YÜKLENİYOR…</div>
+    <form class="paper-order-form" data-nasdaq-close-order-form>
+      <label>AÇIK MİKTAR<input name="openQuantity" value="${Number(position.quantity)}" disabled></label>
+      <label>SATILACAK MİKTAR<input name="quantity" type="number" min="1" max="${Number(position.quantity)}" step="1" value="${Number(position.quantity)}" required></label>
+      <label>GÜNCEL FİYAT ($)<input name="currentPrice" value="${Number(position.current || position.entry || 0)}" disabled></label>
+      <label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label>
+      <label>LİMİT FİYAT ($)<input name="limitPrice" type="number" min="0.0001" step="0.0001" value="${Number(position.current || position.entry || "")}" disabled></label>
+      <div class="paper-order-form-actions"><button type="submit" class="trading-button danger">SATIŞI ONAYLA</button><button type="button" class="trading-button" data-nasdaq-close-dialog>İPTAL</button></div>
+    </form>
+  </section>`;
+  const form = dialog.querySelector("form");
+  const orderType = form.elements.orderType;
+  const limitPrice = form.elements.limitPrice;
+  const currentPrice = form.elements.currentPrice;
+  const livePrice = dialog.querySelector("[data-nasdaq-close-market-price]");
+  const sync = () => { const market = orderType.value === "MARKET"; limitPrice.disabled = market; limitPrice.required = !market; };
+  orderType.addEventListener("change", sync);
+  dialog.addEventListener("click", event => { if (event.target === dialog || event.target.closest("[data-nasdaq-close-dialog]")) dialog.remove(); });
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    try {
+      const data = await nasdaqRequest("/api/nasdaq/paper/close", {positionId:position.id, quantity:Number(form.elements.quantity.value), orderType:orderType.value, limitPrice:orderType.value === "LIMIT" ? Number(limitPrice.value) : null});
+      dialog.remove(); renderNasdaqPaperState(data);
+    } catch (error) { window.alert(error.message); }
+  });
+  document.body.append(dialog); sync();
+  try {
+    const quote = await nasdaqRequest(`/api/nasdaq/quotes?symbols=${encodeURIComponent(position.symbol)}`);
+    const latest = quote?.quotes?.[position.symbol];
+    if (latest?.price) { currentPrice.value = Number(latest.price); if (orderType.value === "MARKET") limitPrice.value = Number(latest.price); livePrice.textContent = `SON TAMAMLANMIŞ GÜNLÜK FİYAT: ${formatNasdaqUsd(latest.price)}`; }
+    else livePrice.textContent = "SON TAMAMLANMIŞ GÜNLÜK FİYAT: GEÇİCİ OLARAK ALINAMADI";
+  } catch { livePrice.textContent = "SON TAMAMLANMIŞ GÜNLÜK FİYAT: GEÇİCİ OLARAK ALINAMADI"; }
+}
 
 function bindNasdaqInteractions(){nasdaqTab?.querySelectorAll("[data-nasdaq-decision-index],[data-nasdaq-history-index]").forEach(element=>{if(element.dataset.nasdaqDetailBound)return;element.dataset.nasdaqDetailBound="true";element.addEventListener("click",()=>{const historyIndex=element.dataset.nasdaqHistoryIndex;if(historyIndex!==undefined)return renderNasdaqHistoryDetail(Number(historyIndex));const item=nasdaqAiRecords[Number(element.dataset.nasdaqDecisionIndex)];if(item)renderNasdaqDetail(item);});});}
 function bindNasdaqPaperActions(){nasdaqTab?.querySelectorAll("[data-nasdaq-action]").forEach(button=>{if(button.dataset.nasdaqActionBound)return;button.dataset.nasdaqActionBound="true";button.addEventListener("click",async()=>{try{const action=button.dataset.nasdaqAction;if(action==="queue"){const item=nasdaqAiRecords[Number(button.dataset.nasdaqIndex)];if(item)await queueNasdaqDecision(item);return;}if(action==="close"){const position=(latestNasdaqPaperState?.positions||[]).find(item=>item.id===button.dataset.nasdaqPositionId);if(position)openNasdaqCloseDialog(position);return;}const data=await nasdaqRequest(`/api/nasdaq/paper/${action}`,{decisionId:button.dataset.nasdaqDecisionId});renderNasdaqPaperState(data);}catch(error){window.alert(error.message);}});});nasdaqTab?.querySelectorAll("[data-nasdaq-pending-form]").forEach(form=>{if(form.dataset.nasdaqBound)return;form.dataset.nasdaqBound="true";const type=form.elements.orderType,price=form.elements.entryPrice;type?.addEventListener("change",()=>{const market=type.value==="MARKET";price.disabled=market;price.required=!market;if(market)price.value="";});form.addEventListener("submit",async event=>{event.preventDefault();try{const card=form.closest("[data-nasdaq-pending-card]"),data=Object.fromEntries(new FormData(form));if(data.orderType==="MARKET")data.entryPrice=null;const payload=await nasdaqRequest("/api/nasdaq/paper/update",{...data,decisionId:card?.dataset.nasdaqDecisionId});renderNasdaqPaperState(payload);}catch(error){window.alert(error.message);}});});}
@@ -9168,6 +9209,7 @@ function restoreCryptoSavedScan(paper) {
 function renderCryptoPaperState(payload) {
   const paper = payload?.cryptoPaper || payload || {};
   latestCryptoPaperState = paper;
+  renderCryptoKillSwitch(paper.killSwitch || {});
   restoreCryptoSavedScan(paper);
   const setText = (id, value) => { const element = document.getElementById(id); if (element) element.textContent = value; };
   setText("cryptoPaperInitial", formatCryptoUsd(paper.initialCapital));
@@ -9176,20 +9218,21 @@ function renderCryptoPaperState(payload) {
   setText("cryptoPaperPnl", formatCryptoUsd(paper.pnl));
   setText("cryptoPaperPnlPct", Number.isFinite(Number(paper.pnlPercent)) ? `${Number(paper.pnlPercent).toFixed(2)}%` : "—");
   setText("cryptoPaperPositionCount", `${(paper.positions || []).filter(item => item.status === "OPEN").length} / ${Number(paper.risk?.maxPositions || 5)}`);
-  setText("cryptoPaperMonitorStatus", "BAĞLI · KÂĞIT");
+  setText("cryptoPaperMonitorStatus", "BAĞLI · 60 SN İŞLEM MONİTÖRÜ");
   setText("cryptoRiskMax", Number(paper.risk?.maxPositions || 5));
   setText("cryptoRiskAllocation", `${Number(paper.risk?.maxPositionPercent || 20)}%`);
   const riskCapital = document.getElementById("cryptoRiskCapital"); if (riskCapital) riskCapital.value = Number(paper.initialCapital || 10000);
   const riskAllocation = document.getElementById("cryptoRiskAllocationInput"); if (riskAllocation) riskAllocation.value = Number(paper.risk?.maxPositionPercent || 20);
   const riskMax = document.getElementById("cryptoRiskMaxInput"); if (riskMax) riskMax.value = Number(paper.risk?.maxPositions || 5);
   renderCryptoRiskGauge();
-  const allPending = (paper.decisions || []).filter(item => item.status === "PENDING_APPROVAL");
+  const allPending = (paper.decisions || []).filter(item => ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status));
   const pending = allPending.filter(item => String(item.pendingOrder?.source || item.source || "").toUpperCase() !== "MANUAL");
   const manualPending = allPending.filter(item => String(item.pendingOrder?.source || item.source || "").toUpperCase() === "MANUAL");
   const pendingMount = document.getElementById("cryptoPendingOrders");
-  const renderPendingCards = items => items.map(item => {
+  const renderPendingCards = items => items.slice(0, 1).map(item => {
     const order = item.pendingOrder || {};
-    return `<article class="pending-paper-order-card${String(order.source || "").toUpperCase() === "MANUAL" ? " is-manual" : ""}" data-crypto-pending-card data-crypto-decision-id="${escapeHtml(item.id)}"><div class="pending-paper-order-head"><strong>${escapeHtml(item.symbol)} · ${String(order.source || "").toUpperCase() === "MANUAL" ? "MANUEL" : "YZ PLANI"}</strong><span class="pending-paper-order-badge">ONAY BEKLİYOR</span></div><div class="paper-order-live-price" data-crypto-market-price data-crypto-symbol="${escapeHtml(item.symbol)}">CANLI PİYASA FİYATI: YÜKLENİYOR…</div><form class="paper-order-form" data-crypto-pending-form><label>MİKTAR<input name="quantity" type="number" min="0.00000001" step="any" value="${Number(order.quantity || 1)}" required></label><label data-crypto-price-label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.00000001" step="any" value="${order.entryPrice ?? ""}"${order.orderType === "MARKET" ? " disabled" : " required"}></label><label>EMİR TÜRÜ<select name="orderType"><option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>PİYASA</option><option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.00000001" step="any" value="${order.stop ?? ""}"></label><label>TP1<input name="target1" type="number" min="0.00000001" step="any" value="${order.target1 ?? ""}"></label><label>TP2<input name="target2" type="number" min="0.00000001" step="any" value="${order.target2 ?? ""}"></label><label>TP3<input name="target3" type="number" min="0.00000001" step="any" value="${order.target3 ?? ""}"></label><div class="paper-order-form-actions"><button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button" data-crypto-paper-action="approve" data-crypto-decision-id="${escapeHtml(item.id)}">KÂĞIT EMRİ ONAYLA</button><button type="button" class="trading-button danger" data-crypto-paper-action="reject" data-crypto-decision-id="${escapeHtml(item.id)}">REDDET</button><small>YALNIZCA KÂĞIT · Fiyat, miktar, emir türü, SL ve hedefler onaydan önce düzenlenebilir.</small></div></form></article>`;
+    const waiting = item.status === "PENDING_LIMIT";
+    return `<article class="pending-paper-order-card${String(order.source || "").toUpperCase() === "MANUAL" ? " is-manual" : ""}" data-crypto-pending-card data-crypto-decision-id="${escapeHtml(item.id)}"><div class="pending-paper-order-head"><strong>${escapeHtml(item.symbol)} · ${String(order.source || "").toUpperCase() === "MANUAL" ? "MANUEL" : "YZ PLANI"}</strong><span class="pending-paper-order-badge">${waiting ? "LİMİT BEKLİYOR" : "ONAY BEKLİYOR"}</span></div><div class="paper-order-live-price" data-crypto-market-price data-crypto-symbol="${escapeHtml(item.symbol)}">CANLI PİYASA FİYATI: YÜKLENİYOR…</div><form class="paper-order-form" data-crypto-pending-form><label>MİKTAR<input name="quantity" type="number" min="0.00000001" step="any" value="${Number(order.quantity || 1)}" required${waiting ? " disabled" : ""}></label><label data-crypto-price-label>GİRİŞ FİYATI ($)<input name="entryPrice" type="number" min="0.00000001" step="any" value="${order.entryPrice ?? ""}"${order.orderType === "MARKET" || waiting ? " disabled" : " required"}></label><label>EMİR TÜRÜ<select name="orderType"${waiting ? " disabled" : ""}><option value="MARKET"${order.orderType === "MARKET" ? " selected" : ""}>PİYASA</option><option value="LIMIT"${order.orderType === "LIMIT" ? " selected" : ""}>LİMİT</option></select></label><label>STOP<input name="stop" type="number" min="0.00000001" step="any" value="${order.stop ?? ""}"${waiting ? " disabled" : ""}></label><label>TP1<input name="target1" type="number" min="0.00000001" step="any" value="${order.target1 ?? ""}"${waiting ? " disabled" : ""}></label><label>TP2<input name="target2" type="number" min="0.00000001" step="any" value="${order.target2 ?? ""}"${waiting ? " disabled" : ""}></label><label>TP3<input name="target3" type="number" min="0.00000001" step="any" value="${order.target3 ?? ""}"${waiting ? " disabled" : ""}></label><div class="paper-order-form-actions">${waiting ? "<small>Limit fiyatına gelince sunucu tarafındaki işlem monitörü emri açar.</small>" : `<button type="submit" class="trading-button">AYARLARI KAYDET</button><button type="button" class="trading-button" data-crypto-paper-action="approve" data-crypto-decision-id="${escapeHtml(item.id)}">KÂĞIT EMRİ ONAYLA</button>`}<button type="button" class="trading-button danger" data-crypto-paper-action="reject" data-crypto-decision-id="${escapeHtml(item.id)}">REDDET</button><small>YALNIZCA KÂĞIT · Fiyat, miktar, emir türü, SL ve hedefler onaydan önce düzenlenebilir.</small></div></form></article>`;
   }).join("");
   setText("cryptoPendingStatus", `${pending.length} EMİR`);
   setText("cryptoManualOrderStatus", `${manualPending.length} EMİR`);
@@ -9207,6 +9250,39 @@ function renderCryptoPaperState(payload) {
   if (journal) journal.innerHTML = (paper.activity || []).length ? paper.activity.slice(0, 100).map(item => `<details><summary>${escapeHtml(item.type || "EVENT")} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</summary><p>${escapeHtml(item.message || "")}</p></details>`).join("") : '<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
   bindCryptoPaperActions();
   void refreshCryptoQuotes();
+}
+
+function renderCryptoKillSwitch(killSwitch = {}) {
+  const active = Boolean(killSwitch.active);
+  const status = document.getElementById("cryptoKillSwitchStatus");
+  const button = document.getElementById("cryptoKillSwitchToggle");
+  if (status) status.textContent = active ? "AKTİF · YALNIZ KRİPTO YENİ EMİRLER DURDURULDU" : "GÜVENLİ · YENİ KRİPTO KÂĞIT İŞLEMLER AÇIK";
+  if (!button) return;
+  button.textContent = active ? "KRİPTO DURDURMAYI KAPAT" : "KRİPTO DURDURMAYI ETKİNLEŞTİR";
+  button.classList.toggle("is-active", active);
+}
+
+function bindCryptoKillSwitch() {
+  const button = document.getElementById("cryptoKillSwitchToggle");
+  const passwordInput = document.getElementById("cryptoKillSwitchPassword");
+  if (!button || button.dataset.cryptoKillBound === "true") return;
+  button.dataset.cryptoKillBound = "true";
+  button.addEventListener("click", async () => {
+    const password = String(passwordInput?.value || "");
+    if (!password) return window.alert("Acil durdurma şifresini gir.");
+    const active = Boolean(latestCryptoPaperState?.killSwitch?.active);
+    const confirmed = window.confirm(active ? "Yalnız kripto emir takibini yeniden açmak istiyor musun?" : "Yalnız kripto açık pozisyonlar kapatılacak ve kripto bekleyen emirleri iptal edilecek. Devam edilsin mi?");
+    if (!confirmed) return;
+    button.disabled = true;
+    try {
+      const response = await fetch("/api/crypto/kill-switch", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({password, action:active ? "deactivate" : "activate"})});
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Kripto acil durdurma uygulanamadı.");
+      if (passwordInput) passwordInput.value = "";
+      renderCryptoPaperState(payload);
+    } catch (error) { window.alert(error.message); }
+    finally { button.disabled = false; }
+  });
 }
 
 function cryptoRangeStart() {
@@ -9683,6 +9759,7 @@ function bindTradingScannerControls() {
   bindKillSwitch();
   bindCryptoScannerControls();
   bindCryptoWorkspaceControls();
+  bindCryptoKillSwitch();
   void loadCryptoPaperState();
 
   if (
