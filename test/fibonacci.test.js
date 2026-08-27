@@ -132,6 +132,23 @@ test("the current open daily candle is excluded from the resistance input",()=>{
   assert.equal(afterBistClose.length,2);
   assert.equal(planBeforeBistClose.completedDailyCandleTime,new Date(history[0].time*1000).toISOString());
 });
+test("completed Binance daily candle is retained even when UTC close maps to current Istanbul day",()=>{
+  const now=Date.UTC(2026,7,27,12); // 15:00 Istanbul
+  // Binance 26 Ağustos UTC gününün kapanışı İstanbul'da 27 Ağustos 02:59'dur.
+  const completedCryptoCandle={time:Math.floor(Date.UTC(2026,7,26,23,59,59)/1000),open:20,high:21,low:19,close:20,volume:100};
+  assert.equal(fib.completedDailyHistory([completedCryptoCandle],now).length,0);
+  assert.equal(fib.completedDailyHistory([completedCryptoCandle],now,{market:"CRYPTO"}).length,1);
+});
+test("crypto uses the identical A-B-C levels when all daily candles are completed",()=>{
+  const history=descendingResistanceFixture();
+  const now=Date.UTC(2026,7,27,20);
+  const bist=fib.fibonacciPlan(history,now);
+  const crypto=fib.fibonacciPlan(history,now,{market:"CRYPTO"});
+  assert.deepEqual(
+    [crypto.pointA?.price,crypto.pointB?.price,crypto.pointC?.price,crypto.entryTriggerPrice,crypto.stopLoss,crypto.tp1,crypto.tp2,crypto.tp3],
+    [bist.pointA?.price,bist.pointB?.price,bist.pointC?.price,bist.entryTriggerPrice,bist.stopLoss,bist.tp1,bist.tp2,bist.tp3]
+  );
+});
 test("technical score is capped and not a probability",()=>{
   const history=Array.from({length:230},(_,i)=>({time:Date.UTC(2025,0,1+i)/1000,open:100+i*.1,high:101+i*.1,low:99+i*.1,close:100+i*.1,volume:5000000}));
   const result=fib.score(history,{valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"});
