@@ -114,8 +114,8 @@
   </button>
   <button
     type="button"
-    class="main-tab active"
-    data-tab="tradingTab"
+    class="main-tab"
+    data-tab="nasdaqTab"
   >
     NASDAQ
   </button>
@@ -2542,15 +2542,16 @@ Waiting for input...
 
   </section>
 
-</div>
-
   <!-- ==================================================
       NASDAQ  
   ================================================== -->
 
   <section
-    id="NASDAQ"
-    class="nasdaq-trading-tab"
+    id="nasdaqTab"
+    class="trading-tab nasdaq-trading-tab"
+    style="display:none;"
+    hidden
+    aria-hidden="true"
   >
 
 
@@ -3476,6 +3477,8 @@ Waiting for input...
 
 
   </section>
+
+</div>
 
   
 <!-- =====================================================
