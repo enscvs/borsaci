@@ -5014,7 +5014,7 @@
     },
     "nasdaqPaper": {
       "initialCapital": 5000,
-      "cash": 958.9,
+      "cash": 1865.2,
       "equity": 5000,
       "pnl": 0,
       "pnlPercent": 0,
@@ -5024,8 +5024,8 @@
           "decisionId": "1787821479538-ACGL",
           "symbol": "ACGL",
           "market": "NASDAQ",
-          "status": "OPEN",
-          "quantity": 9,
+          "status": "CLOSED",
+          "quantity": 0,
           "entry": 100.7,
           "current": 100.7,
           "stop": 95.27,
@@ -5036,7 +5036,9 @@
           "broker": {
             "submitted": false,
             "mode": "LOCAL_PAPER"
-          }
+          },
+          "closedAt": "2026-08-27T13:21:29.355Z",
+          "realizedPnl": 0
         },
         {
           "id": "nasdaq-pos-1787822979054-AAPL",
@@ -9573,6 +9575,27 @@
       ],
       "history": [
         {
+          "id": "nasdaq-pos-1787822985953-ACGL",
+          "decisionId": "1787821479538-ACGL",
+          "symbol": "ACGL",
+          "market": "NASDAQ",
+          "status": "CLOSED",
+          "quantity": 0,
+          "entry": 100.7,
+          "current": 100.7,
+          "stop": 95.27,
+          "target1": 109.46,
+          "target2": 112.79,
+          "target3": 117.03,
+          "openedAt": "2026-08-27T09:29:45.953Z",
+          "broker": {
+            "submitted": false,
+            "mode": "LOCAL_PAPER"
+          },
+          "closedAt": "2026-08-27T13:21:29.355Z",
+          "realizedPnl": 0
+        },
+        {
           "id": "nasdaq-1787836823251-ACGL-25d0447f",
           "symbol": "ACGL",
           "market": "NASDAQ",
@@ -10889,6 +10912,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T13:21:29.355Z",
+          "type": "NASDAQ_CLOSE",
+          "message": "ACGL NASDAQ pozisyonu MARKET ile kapatıldı."
+        },
         {
           "timestamp": "2026-08-27T13:21:19.657Z",
           "type": "NASDAQ_LIMIT_PENDING",
