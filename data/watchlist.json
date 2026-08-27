@@ -1688,6 +1688,111 @@
       ],
       "decisions": [
         {
+          "id": "crypto-1787808116929-TRACUSDT-c47f925d",
+          "symbol": "TRACUSDT",
+          "market": "CRYPTO",
+          "action": "BUY SETUP",
+          "status": "PENDING_APPROVAL",
+          "grade": "B / İZLE",
+          "paperOnly": true,
+          "timestamp": "2026-08-27T05:21:56.929Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": 0.25,
+          "target1": 0.54,
+          "target2": 0.61,
+          "target3": 0.71,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_TOO_FAR",
+            "pointA": {
+              "type": "LOW",
+              "index": 374,
+              "price": 0.15,
+              "date": "2026-03-05T23:59:59.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 448,
+              "price": 0.61,
+              "date": "2026-05-18T23:59:59.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 541,
+              "price": 0.2521,
+              "date": "2026-08-19T23:59:59.000Z"
+            },
+            "range": 0.46,
+            "retracementRatio": 0.778,
+            "entryTriggerPrice": 0.26,
+            "entryZoneLow": 0.26,
+            "entryZoneHigh": 0.27,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "POST_B_LAST_TWO_LOWER_HIGHS",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 531,
+                "price": 0.2827,
+                "date": "2026-08-09T23:59:59.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 538,
+                "price": 0.2742,
+                "date": "2026-08-16T23:59:59.000Z"
+              },
+              "slopePerBar": -0.001214,
+              "lastCompletedCandleTime": "2026-08-26T23:59:59.000Z",
+              "projectedPoint": {
+                "index": 548,
+                "date": "2026-08-26T23:59:59.000Z",
+                "price": 0.2621
+              },
+              "breakoutPrice": 0.2621,
+              "breakoutPriceAtLast": 0.2621,
+              "entryUpperRaw": 0.2699188571428571,
+              "entryUpperPrice": 0.27
+            },
+            "stopLoss": 0.25,
+            "tp1": 0.54,
+            "tp2": 0.61,
+            "tp3": 0.71,
+            "volumeConfirmation": "WEAK",
+            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-20T23:59:59.000Z",
+            "confirmationCandleClose": 0.27,
+            "entryPrice": 0.34
+          },
+          "indicators": {
+            "score": 63
+          },
+          "pendingOrder": {
+            "symbol": "TRACUSDT",
+            "quantity": 5882,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": 0.25,
+            "target1": 0.54,
+            "target2": 0.61,
+            "target3": 0.71,
+            "positionValue": null,
+            "actualRisk": null,
+            "paperOnly": true,
+            "source": "CRYPTO AI",
+            "createdAt": "2026-08-27T05:21:56.929Z",
+            "updatedAt": "2026-08-27T05:21:56.929Z"
+          }
+        },
+        {
           "id": "crypto-1787775277045-AVNTUSDT-351d5fa2",
           "symbol": "AVNTUSDT",
           "market": "CRYPTO",
@@ -3133,6 +3238,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T05:21:56.929Z",
+          "type": "CRYPTO_PENDING",
+          "message": "TRACUSDT kripto paper emri onay bekliyor."
+        },
         {
           "timestamp": "2026-08-27T05:20:50.725Z",
           "type": "CRYPTO_SCAN",
