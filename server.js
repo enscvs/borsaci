@@ -101,6 +101,13 @@ const BINANCE_PUBLIC_BASE_URLS = [
 ];
 let binanceActivePublicBaseUrl = null;
 
+// Bu anahtarlar yalnızca imzalı Spot hesap sorgusunda sunucu tarafında
+// kullanılır. Public piyasa verisi/fallback akışından özellikle ayrıdır.
+const BINANCE_API_KEY = String(process.env.BINANCE_API_KEY || "").trim();
+const BINANCE_API_SECRET = String(process.env.BINANCE_API_SECRET || "").trim();
+const BINANCE_SPOT_ACCOUNT_BASE_URL = "https://api.binance.com";
+const BINANCE_SPOT_ACCOUNT_RECV_WINDOW = 10000;
+
 // NASDAQ yalnızca Alpaca'nın server-side API'si üzerinden okunur. İstemciye
 // anahtar veya secret gönderilmez. Basic planda SIP tarihsel verisi yaklaşık
 // 15 dakika gecikmeli kullanılabildiğinden varsayılan bitiş zamanı geridedir.
@@ -7767,6 +7774,7 @@ if (
 
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
 if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/account") return handleCryptoSpotAccount(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/kill-switch") return handleCryptoKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
@@ -7838,6 +7846,141 @@ if (
   pathname === "/api/trading/paper/pending"
 ) {
   return handlePendingPaperOrders(req, res);
+}
+
+function createBinanceAccountError(code, message) {
+  const error = new Error(message);
+  error.code = code;
+  return error;
+}
+
+function binanceAccountErrorForStatus(status) {
+  if (status === 401 || status === 403) {
+    return createBinanceAccountError(
+      "BINANCE_AUTH_FAILED",
+      "Binance kimlik doğrulaması başarısız. Render API anahtarlarını kontrol edin."
+    );
+  }
+  if (status === 418 || status === 451) {
+    return createBinanceAccountError(
+      "BINANCE_NETWORK_RESTRICTED",
+      "Binance Spot hesabına bu sunucu konumundan erişilemiyor."
+    );
+  }
+  if (status === 429) {
+    return createBinanceAccountError(
+      "BINANCE_RATE_LIMITED",
+      "Binance istek limiti geçici olarak aşıldı."
+    );
+  }
+  return createBinanceAccountError(
+    "BINANCE_ACCOUNT_UNAVAILABLE",
+    "Binance Spot hesap bilgisi şu anda alınamadı."
+  );
+}
+
+function numberFromBinanceBalance(value) {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : 0;
+}
+
+async function fetchBinanceSpotAccount() {
+  if (!BINANCE_API_KEY || !BINANCE_API_SECRET) {
+    throw createBinanceAccountError(
+      "BINANCE_NOT_CONFIGURED",
+      "Binance API anahtarı veya secret Render ortamında tanımlı değil."
+    );
+  }
+
+  const params = new URLSearchParams({
+    recvWindow: String(BINANCE_SPOT_ACCOUNT_RECV_WINDOW),
+    timestamp: String(Date.now())
+  });
+  const query = params.toString();
+  const signature = crypto
+    .createHmac("sha256", BINANCE_API_SECRET)
+    .update(query)
+    .digest("hex");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const response = await fetch(
+      `${BINANCE_SPOT_ACCOUNT_BASE_URL}/api/v3/account?${query}&signature=${signature}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "X-MBX-APIKEY": BINANCE_API_KEY
+        },
+        signal: controller.signal
+      }
+    );
+
+    if (!response.ok) throw binanceAccountErrorForStatus(response.status);
+
+    const account = await response.json();
+    if (!Array.isArray(account?.balances)) {
+      throw createBinanceAccountError(
+        "BINANCE_ACCOUNT_INVALID_RESPONSE",
+        "Binance Spot hesap yanıtı doğrulanamadı."
+      );
+    }
+
+    const balances = account.balances
+      .map(balance => {
+        const free = numberFromBinanceBalance(balance?.free);
+        const locked = numberFromBinanceBalance(balance?.locked);
+        return {
+          asset: String(balance?.asset || "").toUpperCase(),
+          free,
+          locked,
+          total: free + locked
+        };
+      })
+      .filter(balance => balance.asset && balance.total > 0)
+      .sort((left, right) => left.asset.localeCompare(right.asset));
+
+    return {
+      accountType: String(account.accountType || "SPOT"),
+      canTrade: account.canTrade === true,
+      balances
+    };
+  } catch (error) {
+    if (String(error?.code || "").startsWith("BINANCE_")) throw error;
+    throw createBinanceAccountError(
+      "BINANCE_ACCOUNT_UNAVAILABLE",
+      "Binance Spot hesap bilgisi şu anda alınamadı."
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function handleCryptoSpotAccount(req, res) {
+  try {
+    const account = await fetchBinanceSpotAccount();
+    return sendJSON(res, 200, {
+      connected: true,
+      readOnly: true,
+      account: {
+        type: account.accountType,
+        canTrade: account.canTrade
+      },
+      balances: account.balances,
+      error: null
+    });
+  } catch (error) {
+    return sendJSON(res, 200, {
+      connected: false,
+      readOnly: true,
+      account: null,
+      balances: [],
+      error: {
+        code: String(error?.code || "BINANCE_ACCOUNT_UNAVAILABLE"),
+        message: String(error?.message || "Binance Spot hesap bilgisi şu anda alınamadı.")
+      }
+    });
+  }
 }
 
 async function fetchBinancePublicJson(path) {
