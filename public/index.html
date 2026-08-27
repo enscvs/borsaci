@@ -102,7 +102,7 @@
     class="main-tab active"
     data-tab="tradingTab"
   >
-    AI TRADING
+    BIST100
   </button>
 
   <button
@@ -110,9 +110,15 @@
     class="main-tab"
     data-tab="cryptoTab"
   >
-    KRİPTO AI TRADING
+    KRİPTO
   </button>
-
+  <button
+    type="button"
+    class="main-tab active"
+    data-tab="tradingTab"
+  >
+    NASDAQ
+  </button>
   <button
     type="button"
     class="main-tab"
@@ -1632,6 +1638,943 @@ Waiting for input...
 
 
   </section>
+
+  <!-- ==================================================
+      NASDAQ  
+  ================================================== -->
+
+  <section
+    id="NASDAQ"
+    class="nasdaq-trading-tab"
+  >
+
+
+    <!-- ==================================================
+         STATUS
+    ================================================== -->
+
+    <div class="trading-status-grid">
+
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          MOTOR
+        </span>
+
+        <strong class="status-online">
+          ● KÂĞIT
+        </strong>
+
+      </div>
+
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          PİYASA
+        </span>
+
+        <strong id="tradingMarketStatus">
+          BIST100
+        </strong>
+
+      </div>
+
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          MOTOR DURUMU
+        </span>
+
+        <strong id="tradingEngineStatus">
+          READY
+        </strong>
+
+      </div>
+
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          SON TARAMA
+        </span>
+
+        <strong id="lastScanTime">
+          --
+        </strong>
+
+      </div>
+
+      <div class="trading-stat">
+
+        <span class="trading-stat-label">
+          EMİR İZLEYİCİ
+        </span>
+
+        <strong id="paperMonitorStatus">
+          BAĞLANIYOR
+        </strong>
+
+      </div>
+
+
+    </div>
+
+
+    <!-- ==================================================
+         MARKET SCANNER
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          PİYASA TARAMASI
+        </span>
+
+        <span
+          class="panel-status"
+          id="scannerStatus"
+        >
+          HAZIR
+        </span>
+
+      </div>
+
+
+      <div class="scanner-controls">
+
+        <button
+          type="button"
+          id="startScannerBtn"
+          class="trading-button"
+        >
+          TARAMAYI BAŞLAT
+        </button>
+
+
+        <button
+          type="button"
+          id="stopScannerBtn"
+          class="trading-button danger"
+        >
+          DURDUR
+        </button>
+
+      </div>
+
+
+      <div
+        id="scannerResults"
+        class="scanner-results"
+      >
+
+        <div class="trading-empty">
+          Scanner henüz çalıştırılmadı.
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         AI DECISIONS
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          YAPAY ZEKA KARARLARI
+        </span>
+
+        <span class="panel-status">
+          CANLI
+        </span>
+
+      </div>
+
+
+      <div
+        id="aiDecisionFeed"
+        class="decision-feed"
+      >
+
+        <div class="trading-empty">
+          Henüz AI kararı yok.
+        </div>
+
+      </div>
+
+      <div id="aiDecisionDetail" class="decision-detail-panel">
+        Bir karar kartına tıklayarak detayları ve paper işlem seçeneklerini aç.
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         KARAR GRAFİĞİ
+    ================================================== -->
+
+    <section class="panel chart trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          KARAR GRAFİĞİ
+        </span>
+
+        <span
+          class="panel-status"
+          id="chartSymbol"
+        >
+          SEMBOL YOK
+        </span>
+
+      </div>
+
+
+      <div
+        class="chart-area"
+        id="chartArea"
+      >
+
+        <!-- Karar seçildiğinde A/B/C ve işlem seviyeleri bu grafikte çizilir. -->
+        <div
+          id="market_chart"
+          class="market-chart"
+          aria-label="BorsaCI karar grafiği"
+        ></div>
+
+        <div
+          id="chartEmpty"
+          class="chart-empty"
+          aria-live="polite"
+        ></div>
+
+        <!-- BorsaCI grafiği kullanılamazsa görünür kalan TradingView yedeği. -->
+        <div
+          id="tradingviewChartFallback"
+          class="tradingview-widget-container"
+          style="height:100%;width:100%"
+        >
+
+          <div
+            class="tradingview-widget-container__widget"
+            style="height:calc(100% - 32px);width:100%"
+          ></div>
+
+          <div class="tradingview-widget-copyright">
+
+            <a
+              href="https://tr.tradingview.com/symbols/USDTRY/?exchange=FX"
+              rel="noopener nofollow"
+              target="_blank"
+            >
+
+              <span class="blue-text">
+                Track all markets on TradingView
+              </span>
+
+            </a>
+
+          </div>
+
+          <script
+            type="text/javascript"
+            src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
+            async
+          >
+          {
+            "allow_symbol_change": true,
+            "calendar": false,
+            "details": false,
+            "hide_side_toolbar": true,
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "hide_volume": false,
+            "hotlist": false,
+            "interval": "240",
+            "locale": "tr",
+            "save_image": true,
+            "style": "1",
+            "symbol": "FX:USDTRY",
+            "theme": "dark",
+            "timezone": "Europe/Istanbul",
+            "backgroundColor": "#0F0F0F",
+            "gridColor": "rgba(242, 242, 242, 0.2)",
+            "watchlist": [],
+            "withdateranges": false,
+            "compareSymbols": [],
+            "studies": [],
+            "autosize": true
+          }
+          </script>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         SELECTED DECISION // TECHNICAL SCORE BREAKDOWN
+    ================================================== -->
+
+    <section
+      id="decisionScorePanel"
+      class="panel trading-panel decision-score-panel"
+      aria-live="polite"
+    >
+
+      <div class="panel-title">
+
+        <span>
+          TEKNİK PUAN DAĞILIMI
+        </span>
+
+        <span
+          class="panel-status"
+          id="decisionScoreSymbol"
+        >
+          KARAR YOK
+        </span>
+
+      </div>
+
+      <div
+        id="decisionScoreContent"
+        class="decision-score-content"
+      >
+        Bir AI kararına tıklayarak puanın nedenlerini burada gör.
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         SIGNAL HISTORY + PERFORMANCE
+    ================================================== -->
+
+    <div class="trading-two-column">
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>SİNYAL GEÇMİŞİ</span>
+          <span class="panel-status" id="signalHistoryStatus">0 KAYIT</span>
+        </div>
+
+        <div
+          id="signalHistory"
+          class="trading-log"
+        >
+          <div class="trading-empty">
+            İlk tarama sonrası sinyal geçmişi burada oluşur.
+          </div>
+        </div>
+
+        <div id="signalDetail" class="trading-empty">
+          Ayrıntıları görmek için bir geçmiş sinyaline tıkla.
+        </div>
+
+      </section>
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>PERFORMANS</span>
+          <span class="panel-status">KÂĞIT</span>
+        </div>
+
+        <div class="risk-grid">
+
+          <div>
+            <span>TOPLAM SİNYAL</span>
+            <strong id="performanceTotalSignals">0</strong>
+          </div>
+
+          <div>
+            <span>AKTİF KURULUM</span>
+            <strong id="performanceActiveSignals">0</strong>
+          </div>
+
+          <div>
+            <span>ORTALAMA GÜVEN</span>
+            <strong id="performanceAvgConfidence">--</strong>
+          </div>
+
+          <div>
+            <span>SONUÇLANAN İŞLEM</span>
+            <strong id="performanceResolved">0</strong>
+          </div>
+
+          <div>
+            <span>BAŞARI ORANI</span>
+            <strong id="performanceWinRate">--</strong>
+          </div>
+
+          <div>
+            <span>GERÇEKLEŞEN K/Z</span>
+            <strong id="performanceRealizedPnL">₺0.00</strong>
+          </div>
+
+        </div>
+
+        <div class="performance-filter">
+          <label>DÖNEM
+            <select id="performanceRange">
+              <option value="ALL">Tüm zamanlar</option>
+              <option value="1M">Son 1 ay</option>
+              <option value="3M">Son 3 ay</option>
+              <option value="6M">Son 6 ay</option>
+              <option value="CUSTOM">Özel tarih aralığı</option>
+            </select>
+          </label>
+          <label>BAŞLANGIÇ TARİHİ<input id="performanceStartDate" type="date"></label>
+          <label>BİTİŞ TARİHİ<input id="performanceEndDate" type="date"></label>
+          <span id="performanceRangeLabel" class="panel-status">TÜM ZAMANLAR</span>
+        </div>
+
+        <p
+          id="performanceNote"
+          class="trading-empty"
+        >
+          İşlem sonuçları, paper pozisyon açma/kapatma aşaması eklendiğinde ölçülecek.
+        </p>
+
+      </section>
+
+    </div>
+
+
+    <!-- ==================================================
+         PORTFOLIO + RISK
+    ================================================== -->
+
+    <div class="trading-two-column">
+
+
+      <!-- PORTFOLIO -->
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+
+          <span>
+            KÂĞIT PORTFÖY
+          </span>
+
+          <span class="panel-status">
+            KÂĞIT
+          </span>
+
+        </div>
+
+
+        <div class="portfolio-grid">
+
+
+          <div>
+
+            <span>
+              BAŞLANGIÇ SERMAYESİ
+            </span>
+
+            <strong id="paperInitialCapital">
+              ₺100,000
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              NAKİT
+            </span>
+
+            <strong id="paperCash">
+              ₺100,000
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              PORTFÖY DEĞERİ
+            </span>
+
+            <strong id="paperEquity">
+              ₺100,000
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              P&L
+            </span>
+
+            <strong id="paperPnL">
+              ₺0
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              P&L %
+            </span>
+
+            <strong id="paperPnLPct">
+              0.00%
+            </strong>
+
+          </div>
+
+
+          <div>
+
+            <span>
+              KAPATILAN İŞLEM
+            </span>
+
+            <strong id="paperPositionCount">
+              0
+            </strong>
+
+          </div>
+
+
+        </div>
+
+        <div id="paperCostSummary" class="paper-cost-summary">KOMİSYON: ‰1 · BIST FİYAT BANTI: ±10%</div>
+
+      </section>
+
+
+      <!-- RISK -->
+
+      <section class="panel trading-panel">
+
+        <div class="panel-title">
+          <span>RİSK MOTORU</span>
+          <span class="panel-status">DÜZENLENEBİLİR</span>
+        </div>
+
+        <div class="risk-grid">
+          <div><span>AZAMİ İŞLEM SAYISI</span><strong id="maxPositions">3</strong></div>
+          <div><span>HEDEF POZİSYON</span><strong id="targetPositionSize">31.00%</strong></div>
+          <div><span>NAKİT REZERVİ</span><strong id="cashReserve">7.00%</strong></div>
+          <div><span>STOP KURALI</span><strong id="stopRule">YZ KARARI</strong></div>
+        </div>
+
+        <form id="riskSettingsForm" class="risk-settings">
+          <label>SERMAYE KAYNAĞI
+            <select id="capitalSourceInput">
+              <option value="MANUAL">Manuel</option>
+              <option value="BROKER" disabled>Aracı kurum bakiyesi (yakında)</option>
+            </select>
+          </label>
+          <label>SERMAYE (₺)<input id="riskCapitalInput" type="number" min="1000" step="1000" value="100000"></label>
+          <label>HEDEF POZİSYON (%)<input id="maxPositionInput" type="number" min="1" step="1" value="31"></label>
+          <label>AZAMİ İŞLEM SAYISI<input id="maxPositionsInput" type="number" min="1" step="1" value="3"></label>
+          <div class="risk-settings-actions">
+            <button type="submit" class="trading-button">RİSK AYARLARINI UYGULA</button>
+            <output id="riskAllocationGauge" class="risk-allocation-gauge" aria-live="polite">93% TAHSİS</output>
+          </div>
+        </form>
+
+      </section>
+
+
+    </div>
+
+
+    <!-- ==================================================
+         PENDING ORDERS + MANUAL ORDER
+    ================================================== -->
+
+    <section class="panel trading-panel pending-paper-orders-panel">
+
+      <div class="panel-title">
+
+        <span>
+          BEKLEYEN EMİRLER
+        </span>
+
+        <span
+          class="panel-status"
+          id="pendingPaperOrderStatus"
+        >
+          0 EMİR
+        </span>
+
+      </div>
+
+      <div
+        id="pendingPaperOrders"
+        class="pending-paper-orders"
+        aria-live="polite"
+      >
+        <div class="trading-empty">
+          Bekleyen emir yok.
+        </div>
+      </div>
+
+      <div class="manual-paper-order-wrap">
+
+        <div class="manual-paper-order-intro">
+          <strong>MANUEL EMİR</strong>
+          <small>Kriterlerden bağımsız olarak manuel emir planı oluşturur; onaydan önce düzenlenebilir.</small>
+        </div>
+
+        <form
+          id="manualPaperOrderForm"
+          class="paper-order-form manual-paper-order-form"
+          novalidate
+        >
+          <label>
+            SEMBOL
+            <input
+              name="symbol"
+              type="text"
+              maxlength="12"
+              autocomplete="off"
+              autocapitalize="characters"
+              placeholder="ÖRN. ALARK"
+              required
+            >
+          </label>
+
+          <label>
+            LOT
+            <input
+              name="quantity"
+              type="number"
+              min="1"
+              step="1"
+              inputmode="numeric"
+              placeholder="100"
+              required
+            >
+          </label>
+
+          <label>
+            GİRİŞ FİYATI (₺)
+            <input
+              data-order-price-field
+              name="entryPrice"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="0.00"
+            >
+          </label>
+
+          <label>
+            EMİR TÜRÜ
+            <select name="orderType">
+              <option value="MARKET">PİYASA</option>
+              <option value="LIMIT">LİMİT</option>
+            </select>
+          </label>
+
+          <label>
+            STOP (İSTEĞE BAĞLI)
+            <input
+              name="stop"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP1 (OPTIONAL)
+            <input
+              name="target1"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP2 (OPTIONAL)
+            <input
+              name="target2"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <label>
+            TP3 (OPTIONAL)
+            <input
+              name="target3"
+              type="number"
+              min="0.01"
+              step="0.01"
+              inputmode="decimal"
+              placeholder="—"
+            >
+          </label>
+
+          <div class="paper-order-form-actions">
+            <button type="submit" class="trading-button">
+              MANUEL EMİR OLUŞTUR
+            </button>
+            <small>Manuel emir onaydan önce düzenlenebilir. Emir gerçekleştirme şu an paper ortamındadır.</small>
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- ==================================================
+         OPEN POSITIONS
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          AÇIK POZİSYONLAR
+        </span>
+
+        <span
+          class="panel-status"
+          id="openPositionStatus"
+        >
+          0 POZİSYON
+        </span>
+
+      </div>
+
+
+      <div class="position-table-wrapper">
+
+        <table class="position-table">
+
+          <thead>
+
+            <tr>
+
+              <th>
+                SEMBOL
+              </th>
+
+              <th>
+                YÖN
+              </th>
+
+              <th>
+                GİRİŞ
+              </th>
+
+              <th>
+                GÜNCEL
+              </th>
+
+              <th>
+                LOT
+              </th>
+
+              <th>
+                POZİSYON TL
+              </th>
+
+              <th>
+                SL
+              </th>
+
+              <th>
+                TP1
+              </th>
+
+              <th>
+                TP2
+              </th>
+
+              <th>
+                P&L
+              </th>
+
+              <th>
+                DURUM
+              </th>
+
+              <th>
+                İŞLEM
+              </th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody id="openPositions">
+
+            <tr>
+
+              <td
+                colspan="12"
+                class="table-empty"
+              >
+                Açık pozisyon yok
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <section id="manualOrderPanel" class="panel trading-panel manual-order-panel">
+      <div class="panel-title">
+        <span>MANUEL EMİR</span>
+        <span id="manualOrderStatus" class="panel-status">0 EMİR</span>
+      </div>
+      <div id="manualPendingOrders" class="pending-paper-orders manual-pending-orders"></div>
+      <details class="manual-order-create-panel">
+        <summary>YENİ MANUEL EMİR OLUŞTUR</summary>
+        <div id="manualOrderMount"></div>
+      </details>
+    </section>
+
+
+    <!-- ==================================================
+         ACTIVITY LOG
+    ================================================== -->
+
+    <section class="panel trading-panel">
+
+      <div class="panel-title">
+
+        <span>
+          İŞLEM HAREKETLERİ
+        </span>
+
+        <span class="panel-status">
+          KAYIT
+        </span>
+
+      </div>
+
+
+      <div
+        id="tradingActivity"
+        class="trading-log"
+      >
+
+        <div class="log-line">
+
+          <span class="log-time">
+            --:--:--
+          </span>
+
+          <span>
+            İşlem motoru başlatıldı.
+          </span>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <section class="panel trading-panel trade-journal-panel">
+      <div class="panel-title"><span>İŞLEM GÜNLÜĞÜ</span><span class="panel-status">DETAYLI</span></div>
+      <div id="tradeJournal" class="trade-journal"><div class="trading-empty">İşlem günlüğü bekleniyor.</div></div>
+    </section>
+
+
+    <!-- ==================================================
+         KILL SWITCH
+    ================================================== -->
+
+    <section class="kill-switch-panel" aria-label="Acil işlem durdurma">
+      <div class="kill-switch-heading">
+        <span class="kill-switch-icon">⚠</span>
+        <div>
+          <strong>ACİL DURDURMA</strong>
+          <small id="killSwitchStatus">GÜVENLİ · YENİ KÂĞIT İŞLEMLER AÇIK</small>
+        </div>
+      </div>
+
+      <p>
+        Tüm açık paper pozisyonlarını son alınabilen piyasa fiyatıyla kapatır ve yeni işlemleri durdurur.
+      </p>
+
+      <div class="kill-switch-controls">
+        <input
+          id="killSwitchPassword"
+          type="password"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="ACİL DURDURMA ŞİFRESİ"
+          aria-label="Acil durdurma şifresi"
+        >
+        <button
+          type="button"
+          id="killSwitchToggle"
+          class="kill-switch-button"
+        >
+          ACİL DURDURMAYI ETKİNLEŞTİR
+        </button>
+      </div>
+    </section>
+
+    <div class="logout-footer">
+      <button
+        type="button"
+        id="logoutButton"
+        class="logout-button"
+        hidden
+      >
+        ÇIKIŞ YAP
+      </button>
+    </div>
+
+
+  </section>
+
+
+
+  
 <section
     id="cryptoTab"
     class="trading-tab"
