@@ -2662,6 +2662,58 @@
       ],
       "signals": [
         {
+          "id": "crypto-signal-2026-08-27T11:10:10.659Z-XLMUSDT",
+          "symbol": "XLMUSDT",
+          "timestamp": "2026-08-27T11:10:10.659Z",
+          "score": 51,
+          "grade": "NÖTR",
+          "status": "NO_VALID_STRUCTURE",
+          "price": 0.18507,
+          "fibonacci": {
+            "valid": false,
+            "status": "NO_VALID_STRUCTURE",
+            "entryTriggerRatio": 0.027,
+            "entryUpperTrendlineBuffer": 0.03,
+            "confirmationTimeframe": "1d",
+            "completedDailyCandleTime": "2026-08-26T23:59:59.000Z",
+            "stopLossPercentBelowC": 2,
+            "pointA": null,
+            "pointB": null,
+            "pointC": null,
+            "range": null,
+            "retracementRatio": null,
+            "entryTriggerPrice": null,
+            "confirmationPassed": false,
+            "confirmationCandleTime": null,
+            "confirmationCandleClose": null,
+            "entryPrice": null,
+            "entryZoneLow": null,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": null,
+            "stopLoss": null,
+            "tp1": null,
+            "tp2": null,
+            "tp3": null,
+            "riskRewardTp1": null,
+            "riskRewardTp2": null,
+            "riskRewardTp3": null,
+            "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
+          },
+          "fallbackPlan": {
+            "method": "ATR_SUPPORT_RESISTANCE",
+            "entryPrice": 0.19,
+            "stopLoss": 0.15,
+            "tp1": 0.25,
+            "tp2": 0.29,
+            "tp3": 0.29,
+            "riskRewardTp1": 2,
+            "riskRewardTp2": 3,
+            "riskRewardTp3": 3,
+            "message": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
+          }
+        },
+        {
           "id": "crypto-signal-2026-08-27T08:17:48.491Z-1000REKTUSDT",
           "symbol": "1000REKTUSDT",
           "timestamp": "2026-08-27T08:17:48.491Z",
@@ -3306,6 +3358,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-27T11:10:10.659Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-27T08:17:48.491Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -3502,7 +3559,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-27T08:17:48.491Z",
+        "timestamp": "2026-08-27T11:10:10.659Z",
         "scanned": 100,
         "successful": 94,
         "results": [
@@ -3762,7 +3819,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-27T08:17:46.847Z",
+            "timestamp": "2026-08-27T11:10:09.356Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0,
@@ -4058,7 +4115,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-27T08:17:44.344Z",
+            "timestamp": "2026-08-27T11:10:07.160Z",
             "fallbackPlan": null,
             "price": 0.1069,
             "ema20": 0.09766091880338976,
@@ -4343,7 +4400,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-27T08:17:46.445Z",
+            "timestamp": "2026-08-27T11:10:09.061Z",
             "fallbackPlan": null,
             "price": 0.402,
             "ema20": 0.3914423344744754,
@@ -4647,7 +4704,7 @@
               "confirmationCandleClose": 0.27,
               "entryPrice": 0.34
             },
-            "timestamp": "2026-08-27T08:17:46.559Z",
+            "timestamp": "2026-08-27T11:10:08.561Z",
             "fallbackPlan": null,
             "price": 0.3397,
             "ema20": 0.30393086926451346,
@@ -4660,31 +4717,31 @@
             "turnover": 501.7369
           },
           {
-            "symbol": "1000REKTUSDT",
+            "symbol": "XLMUSDT",
             "validation": {
               "ok": true
             },
             "dataStatus": "OK",
-            "score": 53,
+            "score": 51,
             "grade": "NÖTR",
             "features": {
-              "price": 0.00012954,
-              "ema20": 0.0001225145147491198,
-              "ema50": 0.00011640053893226184,
-              "ema200": 0.0001810465989575175,
-              "ema20FiveDaysAgo": 0.00011804825137500351,
-              "rsi": 51.548587002672264,
-              "atr": 0.000028052602146406608,
-              "macd": 0.000002991082739970053,
-              "macdSignal": 0.0000029877091768751176,
-              "macdHistogram": 3.373563094935205e-9,
-              "previousHistogram": -3.112586207358346e-7,
-              "histogramThreeBack": -6.936478614983259e-8,
-              "volume": 2622462,
-              "averageVolume": 985785.5,
-              "volumeRatio": 2.660276500313709,
-              "turnover": 339.71372748000005,
-              "fiveDayReturn": 18.161087293624
+              "price": 0.18507,
+              "ema20": 0.17766831455859705,
+              "ema50": 0.1774811274492352,
+              "ema200": 0.18913012721029326,
+              "ema20FiveDaysAgo": 0.169379700713534,
+              "rsi": 56.09077377010925,
+              "atr": 0.012896191591030327,
+              "macd": 0.004751581170803459,
+              "macdSignal": 0.0015702266081151414,
+              "macdHistogram": 0.0031813545626883178,
+              "previousHistogram": 0.00398883246156102,
+              "histogramThreeBack": 0.005618545836377111,
+              "volume": 598992,
+              "averageVolume": 169472.9,
+              "volumeRatio": 3.5344411997434397,
+              "turnover": 110855.44944000001,
+              "fiveDayReturn": -8.485387924640253
             },
             "reasons": [
               "Fiyat EMA20 üzerinde",
@@ -4692,7 +4749,7 @@
               "EMA20 son 5 günde yükseliyor"
             ],
             "risks": [
-              "Son 5 günde aşırı yükseliş"
+              "MACD histogramı zayıflıyor"
             ],
             "scoreBreakdown": {
               "trend": {
@@ -4734,17 +4791,17 @@
                 ]
               },
               "momentum": {
-                "score": 20,
+                "score": 18,
                 "max": 25,
                 "items": [
                   {
                     "id": "rsi14",
                     "label": "RSI14",
-                    "points": 5,
+                    "points": 10,
                     "maxPoints": 10,
                     "passed": true,
-                    "partial": true,
-                    "detail": "RSI kabul edilebilir aralıkta"
+                    "partial": false,
+                    "detail": "RSI 52–65 aralığında"
                   },
                   {
                     "id": "macd_above_signal",
@@ -4757,9 +4814,9 @@
                   {
                     "id": "macd_histogram_strengthening",
                     "label": "MACD histogramı pozitif ve güçleniyor",
-                    "points": 7,
+                    "points": 0,
                     "maxPoints": 7,
-                    "passed": true,
+                    "passed": false,
                     "detail": ""
                   }
                 ]
@@ -4856,9 +4913,9 @@
                   {
                     "id": "five_day_runup",
                     "label": "Son 5 günde aşırı yükseliş",
-                    "points": -5,
+                    "points": 0,
                     "maxPoints": -5,
-                    "applied": true,
+                    "applied": false,
                     "detail": ""
                   },
                   {
@@ -4872,47 +4929,32 @@
                   {
                     "id": "weakening_macd_histogram",
                     "label": "MACD histogramı zayıflıyor",
-                    "points": 0,
+                    "points": -5,
                     "maxPoints": -5,
-                    "applied": false,
+                    "applied": true,
                     "detail": ""
                   }
                 ]
               },
-              "positiveTotal": 58,
-              "rawTotal": 53,
-              "total": 53,
+              "positiveTotal": 56,
+              "rawTotal": 51,
+              "total": 51,
               "maximum": 100,
               "capped": false
             },
             "fibonacci": {
               "valid": false,
-              "status": "INVALID",
+              "status": "NO_VALID_STRUCTURE",
               "entryTriggerRatio": 0.027,
               "entryUpperTrendlineBuffer": 0.03,
               "confirmationTimeframe": "1d",
               "completedDailyCandleTime": "2026-08-26T23:59:59.000Z",
               "stopLossPercentBelowC": 2,
-              "pointA": {
-                "type": "LOW",
-                "index": 116,
-                "price": 0.0001,
-                "date": "2025-11-17T23:59:59.000Z"
-              },
-              "pointB": {
-                "type": "HIGH",
-                "index": 126,
-                "price": 0.0005,
-                "date": "2025-11-27T23:59:59.000Z"
-              },
-              "pointC": {
-                "type": "LOW",
-                "index": 328,
-                "price": 0.00004001,
-                "date": "2026-06-17T23:59:59.000Z"
-              },
-              "range": 0,
-              "retracementRatio": 1.15,
+              "pointA": null,
+              "pointB": null,
+              "pointC": null,
+              "range": null,
+              "retracementRatio": null,
               "entryTriggerPrice": null,
               "confirmationPassed": false,
               "confirmationCandleTime": null,
@@ -4929,30 +4971,30 @@
               "riskRewardTp1": null,
               "riskRewardTp2": null,
               "riskRewardTp3": null,
-              "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
+              "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-27T08:17:46.754Z",
+            "timestamp": "2026-08-27T11:10:05.449Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
-              "entryPrice": 0,
-              "stopLoss": 0,
-              "tp1": 0,
-              "tp2": 0,
-              "tp3": 0,
+              "entryPrice": 0.19,
+              "stopLoss": 0.15,
+              "tp1": 0.25,
+              "tp2": 0.29,
+              "tp3": 0.29,
               "riskRewardTp1": 2,
               "riskRewardTp2": 3,
               "riskRewardTp3": 3,
               "message": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
             },
-            "price": 0.00012954,
-            "ema20": 0.0001225145147491198,
-            "ema50": 0.00011640053893226184,
-            "ema200": 0.0001810465989575175,
-            "rsi": 51.548587002672264,
-            "macd": 0.000002991082739970053,
-            "atr": 0.000028052602146406608,
-            "volumeRatio": 2.660276500313709,
-            "turnover": 339.71372748000005
+            "price": 0.18507,
+            "ema20": 0.17766831455859705,
+            "ema50": 0.1774811274492352,
+            "ema200": 0.18913012721029326,
+            "rsi": 56.09077377010925,
+            "macd": 0.004751581170803459,
+            "atr": 0.012896191591030327,
+            "volumeRatio": 3.5344411997434397,
+            "turnover": 110855.44944000001
           }
         ]
       },
