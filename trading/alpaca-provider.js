@@ -7,11 +7,13 @@
  */
 
 function isNasdaqTradableAsset(asset) {
+  const assetClass = String(asset?.asset_class || asset?.class || "").toLowerCase();
+  const isTradable = asset?.tradable === true || String(asset?.tradable || "").toLowerCase() === "true";
   return Boolean(
     asset &&
     String(asset.status || "").toLowerCase() === "active" &&
-    asset.tradable === true &&
-    String(asset.asset_class || "").toLowerCase() === "us_equity" &&
+    isTradable &&
+    assetClass === "us_equity" &&
     String(asset.exchange || "").toUpperCase() === "NASDAQ" &&
     /^[A-Z]{1,8}$/.test(String(asset.symbol || "").toUpperCase())
   );

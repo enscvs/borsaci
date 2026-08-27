@@ -10,6 +10,12 @@ test("only active tradable Nasdaq common stock assets enter the universe", () =>
   assert.equal(isNasdaqTradableAsset({symbol:"OTC", status:"active", tradable:true, asset_class:"us_equity", exchange:"OTC"}), false);
 });
 
+test("Alpaca asset class aliases and string tradable flags remain compatible", () => {
+  assert.equal(isNasdaqTradableAsset({
+    class: "us_equity", exchange: "NASDAQ", status: "active", tradable: "true", symbol: "MSFT",
+  }), true);
+});
+
 test("in-progress New York daily bar is excluded", () => {
   const now = Date.parse("2026-08-27T16:00:00Z");
   const bars = completedDailyBars([

@@ -7325,12 +7325,12 @@ function nasdaqSafeSymbol(value) {
 }
 
 async function fetchNasdaqUniverse() {
-  const assets = await alpacaJson("https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity");
+  const assets = await alpacaJson("https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity&exchange=NASDAQ");
   const symbols = (Array.isArray(assets) ? assets : [])
     .filter(isNasdaqTradableAsset)
     .map(asset => String(asset.symbol).toUpperCase())
     .sort((left, right) => left.localeCompare(right, "en"));
-  if (!symbols.length) throw new Error("Alpaca'dan aktif ve işlem yapılabilir NASDAQ hissesi alınamadı.");
+  if (!symbols.length) throw new Error("Alpaca NASDAQ varlık listesi boş döndü. API anahtarlarının Paper hesabına ait olduğunu ve Render'da tam kaydedildiğini kontrol edin.");
   return symbols.slice(0, NASDAQ_UNIVERSE_LIMIT);
 }
 
