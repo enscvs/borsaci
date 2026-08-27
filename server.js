@@ -3960,27 +3960,24 @@ async function saveTradingState(
   sha,
   container
 ) {
+  const buildWatchlist = (base = {}) => ({
+    ...base,
+    // Eşzamanlı bir scanner kaydı sırasında kullanıcının watchlist
+    // sembollerini eski bellek kopyasıyla geri alma.
+    symbols: Array.isArray(base?.symbols) ? base.symbols : [],
+    trading: normalizeTradingState(state),
+  });
 
-  const watchlist = {
-
-    ...(container || {}),
-
-    symbols:
-      Array.isArray(
-        container?.symbols
-      )
-        ? container.symbols
-        : [],
-
-    trading:
-      normalizeTradingState(state),
-
-  };
-
-  return await saveWatchlist(
-    watchlist,
-    sha
-  );
+  try {
+    return await saveWatchlist(buildWatchlist(container), sha);
+  } catch (error) {
+    // GitHub Contents API SHA'yi iyimser kilit olarak kullanır. Deploy,
+    // başka bir sekme veya arka plan görevi dosyayı arada güncellediyse
+    // son sürümü alıp bir kez daha kaydet; scanner bu nedenle çökmesin.
+    if (!/\b409\b|expected [a-f0-9]{40}/i.test(String(error?.message || ""))) throw error;
+    const latest = await getWatchlist();
+    return await saveWatchlist(buildWatchlist(latest.content), latest.sha);
+  }
 
 }
 
