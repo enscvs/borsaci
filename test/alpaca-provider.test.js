@@ -25,6 +25,14 @@ test("in-progress New York daily bar is excluded", () => {
   assert.deepEqual(bars.map(bar => bar.close), [11]);
 });
 
+test("Alpaca daily bars are normalized oldest to newest before validation", () => {
+  const bars = completedDailyBars([
+    {t:"2026-08-26T04:00:00Z", o:11, h:13, l:10, c:12, v:100},
+    {t:"2026-08-25T04:00:00Z", o:10, h:12, l:9, c:11, v:100},
+  ], Date.parse("2026-08-27T16:00:00Z"));
+  assert.deepEqual(bars.map(bar => bar.close), [11, 12]);
+});
+
 test("paper and live bases plus market and limit payloads are explicit", () => {
   assert.equal(alpacaTradingBase("paper"), "https://paper-api.alpaca.markets");
   assert.equal(alpacaTradingBase("live"), "https://api.alpaca.markets");

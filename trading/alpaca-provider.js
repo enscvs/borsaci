@@ -38,6 +38,9 @@ function completedDailyBars(rows, now = Date.now()) {
       candle.high >= Math.max(candle.open, candle.close, candle.low) &&
       candle.low <= Math.min(candle.open, candle.close, candle.high))
     .filter(candle => !currentSessionStillOpen || new Intl.DateTimeFormat("en-CA", dateOptions).format(new Date(candle.timestamp)) !== currentDay)
+    // Alpaca cevap sırası sayfalama ve feed'e göre değişebildiği için
+    // teknik motoru kaynağın doğal sırasına bağımlı bırakma.
+    .sort((left, right) => left.time - right.time)
     .map(({timestamp, ...candle}) => candle);
 }
 
