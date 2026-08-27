@@ -9182,10 +9182,11 @@ function renderCryptoDecisionCards(records) {
     const plan = fib.valid ? fib : (item.fallbackPlan || {});
     const entryLow = fib.valid ? fib.entryZoneLow : plan.entryPrice;
     const entryHigh = fib.valid ? fib.entryZoneHigh : plan.entryPrice;
-    return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK · ATR PLAN"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)} · SL: ${formatCryptoUsd(plan.stopLoss)} · TP1/2/3: ${formatCryptoUsd(plan.tp1)} / ${formatCryptoUsd(plan.tp2)} / ${formatCryptoUsd(plan.tp3)}</div><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">EMİR OLUŞTUR</button></article>`;
+    return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK · ATR PLAN"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)} · SL: ${formatCryptoUsd(plan.stopLoss)} · TP1/2/3: ${formatCryptoUsd(plan.tp1)} / ${formatCryptoUsd(plan.tp2)} / ${formatCryptoUsd(plan.tp3)}</div><button type="button" class="trading-button" data-crypto-live-action="prefill" data-crypto-decision-index="${index}">CANLI EMİR FORMUNA AKTAR</button></article>`;
   }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
   bindCryptoDecisionInteractions();
   bindCryptoPaperActions();
+  bindCryptoLiveDecisionActions();
 }
 
 function restoreCryptoSavedScan(paper) {
@@ -9614,8 +9615,9 @@ function renderCryptoDecisionDetail(item) {
   if (chart) renderCryptoDecisionChart(item);
   renderCryptoScoreBreakdown(item);
   const index = cryptoRenderedRecords.indexOf(item);
-  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)}</span><span>Stop: ${formatCryptoUsd(plan.stopLoss)}</span><span>TP1: ${formatCryptoUsd(plan.tp1)} · R/R ${plan.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(plan.tp2)} · R/R ${plan.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(plan.tp3)} · R/R ${plan.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.valid ? (fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR") : "FIBONACCI YAPISI YOK"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : (plan.message || "Geçerli Fibonacci yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.")))}</small>${index >= 0 ? `<br><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">BEKLEYEN KRİPTO EMRİ OLUŞTUR</button>` : ""}`;
+  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)}</span><span>Stop: ${formatCryptoUsd(plan.stopLoss)}</span><span>TP1: ${formatCryptoUsd(plan.tp1)} · R/R ${plan.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(plan.tp2)} · R/R ${plan.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(plan.tp3)} · R/R ${plan.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.valid ? (fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR") : "FIBONACCI YAPISI YOK"}</span></div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : (plan.message || "Geçerli Fibonacci yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.")))}</small>${index >= 0 ? `<br><button type="button" class="trading-button" data-crypto-live-action="prefill" data-crypto-decision-index="${index}">CANLI EMİR FORMUNA AKTAR</button>` : ""}`;
   bindCryptoPaperActions();
+  bindCryptoLiveDecisionActions();
 }
 
 function renderCryptoScanSummary(data, records) {
@@ -9640,6 +9642,200 @@ function bindCryptoDecisionInteractions() {
       if (item) renderCryptoDecisionDetail(item);
     });
   });
+}
+
+function cryptoLiveOrderForm() {
+  return document.getElementById("cryptoLiveOrderForm");
+}
+
+function renderCryptoSpotAccount(payload) {
+  const status = document.getElementById("cryptoSpotConnectionStatus");
+  const headerStatus = document.getElementById("cryptoSpotHeaderStatus");
+  const summary = document.getElementById("cryptoSpotAccountSummary");
+  const balances = document.getElementById("cryptoSpotBalances");
+  if (!payload?.connected) {
+    if (status) status.textContent = "BAĞLANTI HATASI";
+    if (headerStatus) headerStatus.textContent = "BAĞLANTI HATASI";
+    if (summary) summary.textContent = payload?.error?.message || "Binance Spot hesabına bağlanılamadı.";
+    if (balances) balances.innerHTML = "";
+    return;
+  }
+  const account = payload.account || {};
+  if (status) status.textContent = account.canTrade ? "SPOT HAZIR" : "İŞLEM YETKİSİ KAPALI";
+  if (headerStatus) headerStatus.textContent = account.canTrade ? "BAĞLI" : "YETKİ KAPALI";
+  if (summary) summary.textContent = `${escapeHtml(account.type || "SPOT")} · ${account.canTrade ? "Spot işlem yetkisi açık" : "API anahtarında Spot işlem yetkisi kapalı"}`;
+  const rows = Array.isArray(payload.balances) ? payload.balances : [];
+  if (balances) balances.innerHTML = rows.length
+    ? `<div class="crypto-spot-balance-grid">${rows.map(item => `<div><strong>${escapeHtml(item.asset)}</strong><span>Kullanılabilir: ${escapeHtml(String(item.free))}</span><span>Bloke: ${escapeHtml(String(item.locked))}</span></div>`).join("")}</div>`
+    : '<div class="trading-empty">Sıfırdan büyük Spot bakiye bulunamadı.</div>';
+}
+
+async function loadCryptoSpotAccount() {
+  const status = document.getElementById("cryptoSpotConnectionStatus");
+  if (status) status.textContent = "KONTROL EDİLİYOR";
+  try {
+    const response = await fetch("/api/trading/crypto/account", {cache: "no-store"});
+    const payload = await response.json();
+    renderCryptoSpotAccount(payload);
+    return payload;
+  } catch {
+    renderCryptoSpotAccount({connected: false, error: {message: "Binance Spot hesap bağlantısı kontrol edilemedi."}});
+    return null;
+  }
+}
+
+function renderCryptoSpotOpenOrders(payload) {
+  const status = document.getElementById("cryptoSpotOpenOrdersStatus");
+  const mount = document.getElementById("cryptoSpotOpenOrders");
+  if (!mount) return;
+  if (!payload?.connected) {
+    if (status) status.textContent = "BAĞLANTI HATASI";
+    mount.innerHTML = `<div class="trading-empty">${escapeHtml(payload?.error?.message || "Binance açık emirleri alınamadı.")}</div>`;
+    return;
+  }
+  const orders = Array.isArray(payload.orders) ? payload.orders : [];
+  if (status) status.textContent = `${orders.length} AÇIK EMİR`;
+  mount.innerHTML = orders.length ? orders.map(order => `<article class="pending-paper-order-card crypto-spot-order-card"><div class="pending-paper-order-head"><strong>${escapeHtml(order.symbol)} · ${escapeHtml(order.side)} · ${escapeHtml(order.type)}</strong><span class="pending-paper-order-badge">${escapeHtml(order.status)}</span></div><div class="decision-detail-grid"><span>Fiyat: ${escapeHtml(order.price)}</span><span>Miktar: ${escapeHtml(order.origQty)}</span><span>Gerçekleşen: ${escapeHtml(order.executedQty)}</span><span>Zaman: ${escapeHtml(new Date(order.transactTime).toLocaleString("tr-TR"))}</span></div><button type="button" class="trading-button danger" data-crypto-live-cancel data-crypto-symbol="${escapeHtml(order.symbol)}" data-crypto-order-id="${escapeHtml(order.orderId)}">EMRİ İPTAL ET</button></article>`).join("") : '<div class="trading-empty">Binance Spot hesabında açık emir yok.</div>';
+  bindCryptoSpotOrderCancelButtons();
+}
+
+async function loadCryptoSpotOpenOrders() {
+  try {
+    const response = await fetch("/api/trading/crypto/open-orders", {cache: "no-store"});
+    const payload = await response.json();
+    renderCryptoSpotOpenOrders(payload);
+    return payload;
+  } catch {
+    renderCryptoSpotOpenOrders({connected: false, error: {message: "Binance açık emirleri alınamadı."}});
+    return null;
+  }
+}
+
+async function refreshCryptoLivePrice() {
+  const form = cryptoLiveOrderForm();
+  const output = document.getElementById("cryptoLiveMarketPrice");
+  const symbol = String(form?.elements?.symbol?.value || "").trim().toUpperCase();
+  if (!output) return;
+  if (!/^[A-Z0-9]{5,20}$/.test(symbol)) {
+    output.textContent = "CANLI PİYASA FİYATI: GEÇERLİ PARİTE GİRİN";
+    return;
+  }
+  output.textContent = "CANLI PİYASA FİYATI: YÜKLENİYOR…";
+  try {
+    const response = await fetch(`/api/crypto/quotes?symbols=${encodeURIComponent(symbol)}`, {cache: "no-store"});
+    const payload = await response.json();
+    const quote = payload?.quotes?.[symbol];
+    if (!response.ok || !quote) throw new Error("Fiyat alınamadı.");
+    output.textContent = `CANLI PİYASA FİYATI: ${formatCryptoUsd(quote.price)}`;
+  } catch {
+    output.textContent = "CANLI PİYASA FİYATI: GEÇİCİ OLARAK ALINAMADI";
+  }
+}
+
+function syncCryptoLiveOrderType() {
+  const form = cryptoLiveOrderForm();
+  if (!form) return;
+  const isMarket = String(form.elements.orderType?.value || "").toUpperCase() === "MARKET";
+  const price = form.elements.price;
+  const label = document.querySelector("[data-crypto-live-price-label]");
+  if (price) {
+    price.disabled = isMarket;
+    price.required = !isMarket;
+    if (isMarket) price.value = "";
+  }
+  if (label) label.firstChild.textContent = isMarket ? "PİYASA FİYATI (USDT)" : "LİMİT FİYAT (USDT)";
+}
+
+function prefillCryptoLiveOrder(item) {
+  const form = cryptoLiveOrderForm();
+  if (!form || !item) return;
+  const fib = item.fibonacci || {};
+  const plan = fib.valid ? fib : (item.fallbackPlan || {});
+  const reference = Number(plan.entryPrice || fib.entryPrice || fib.entryZoneLow || item.price);
+  form.elements.symbol.value = String(item.symbol || "").toUpperCase();
+  form.elements.side.value = "BUY";
+  form.elements.orderType.value = "LIMIT";
+  form.elements.price.value = Number.isFinite(reference) && reference > 0 ? String(reference) : "";
+  form.elements.quantity.value = "";
+  const confirmation = document.getElementById("cryptoLiveOrderConfirm");
+  if (confirmation) confirmation.checked = false;
+  syncCryptoLiveOrderType();
+  void refreshCryptoLivePrice();
+  document.getElementById("cryptoLiveOrderPanel")?.scrollIntoView({behavior: "smooth", block: "center"});
+}
+
+function bindCryptoLiveDecisionActions() {
+  document.querySelectorAll("[data-crypto-live-action=\"prefill\"]").forEach(button => {
+    if (button.dataset.cryptoLiveBound === "true") return;
+    button.dataset.cryptoLiveBound = "true";
+    button.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const item = cryptoRenderedRecords[Number(button.dataset.cryptoDecisionIndex)];
+      if (item) prefillCryptoLiveOrder(item);
+    });
+  });
+}
+
+function bindCryptoSpotOrderCancelButtons() {
+  document.querySelectorAll("[data-crypto-live-cancel]").forEach(button => {
+    if (button.dataset.cryptoCancelBound === "true") return;
+    button.dataset.cryptoCancelBound = "true";
+    button.addEventListener("click", async () => {
+      const symbol = String(button.dataset.cryptoSymbol || "");
+      const orderId = String(button.dataset.cryptoOrderId || "");
+      if (!window.confirm(`${symbol} emrini Binance Spot'ta gerçekten iptal etmek istiyor musun?`)) return;
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/trading/crypto/order/cancel", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({symbol, orderId, confirm: true})});
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload?.error?.message || "Binance emri iptal edilemedi.");
+        await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount()]);
+      } catch (error) { window.alert(error.message); }
+      finally { button.disabled = false; }
+    });
+  });
+}
+
+function bindCryptoLiveTrading() {
+  const refresh = document.getElementById("refreshCryptoSpotAccount");
+  if (refresh && refresh.dataset.cryptoLiveBound !== "true") {
+    refresh.dataset.cryptoLiveBound = "true";
+    refresh.addEventListener("click", () => { void Promise.all([loadCryptoSpotAccount(), loadCryptoSpotOpenOrders()]); });
+  }
+  const form = cryptoLiveOrderForm();
+  if (!form || form.dataset.cryptoLiveBound === "true") return;
+  form.dataset.cryptoLiveBound = "true";
+  let quoteTimer = null;
+  form.elements.orderType?.addEventListener("change", syncCryptoLiveOrderType);
+  form.elements.symbol?.addEventListener("input", () => { window.clearTimeout(quoteTimer); quoteTimer = window.setTimeout(() => { void refreshCryptoLivePrice(); }, 350); });
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const result = document.getElementById("cryptoLiveOrderResult");
+    const data = Object.fromEntries(new FormData(form));
+    const isMarket = String(data.orderType || "").toUpperCase() === "MARKET";
+    if (isMarket) data.price = null;
+    data.confirm = document.getElementById("cryptoLiveOrderConfirm")?.checked === true;
+    if (!data.confirm) { window.alert("Gerçek emir için onay kutusunu işaretleyin."); return; }
+    const readable = `${String(data.symbol || "").toUpperCase()} · ${data.side === "SELL" ? "SAT" : "AL"} · ${isMarket ? "PİYASA" : `LİMİT ${data.price}`} · miktar ${data.quantity}`;
+    if (!window.confirm(`Bu gerçek Binance Spot emrini göndermek istiyor musun?\n\n${readable}`)) return;
+    const submit = document.getElementById("submitCryptoLiveOrder");
+    if (submit) { submit.disabled = true; submit.textContent = "BİNANCE’E GÖNDERİLİYOR…"; }
+    if (result) result.textContent = "Emir Binance’e gönderiliyor…";
+    try {
+      const response = await fetch("/api/trading/crypto/order", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)});
+      const payload = await response.json();
+      if (!response.ok || !payload.success) throw new Error(payload?.error?.message || "Binance emri gönderilemedi.");
+      const order = payload.order || {};
+      if (result) result.textContent = `EMİR KAYDEDİLDİ · ${order.symbol} · ${order.side} · ${order.type} · ${order.status} · ID ${order.orderId}`;
+      form.reset(); form.elements.symbol.value = order.symbol || "BTCUSDT"; form.elements.orderType.value = "MARKET"; form.elements.side.value = "BUY";
+      syncCryptoLiveOrderType(); void refreshCryptoLivePrice();
+      await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount()]);
+    } catch (error) { if (result) result.textContent = `EMİR GÖNDERİLEMEDİ · ${error.message}`; window.alert(error.message); }
+    finally { if (submit) { submit.disabled = false; submit.textContent = "BİNANCE’E GERÇEK EMİR GÖNDER"; } }
+  });
+  syncCryptoLiveOrderType();
+  void refreshCryptoLivePrice();
 }
 
 async function runCryptoScanner() {
@@ -9760,7 +9956,10 @@ function bindTradingScannerControls() {
   bindCryptoScannerControls();
   bindCryptoWorkspaceControls();
   bindCryptoKillSwitch();
+  bindCryptoLiveTrading();
   void loadCryptoPaperState();
+  void loadCryptoSpotAccount();
+  void loadCryptoSpotOpenOrders();
 
   if (
     scannerStopButton &&

@@ -782,7 +782,7 @@ Waiting for input...
       <div class="trading-stat">
 
         <span class="trading-stat-label">
-          EMİR İZLEYİCİ
+          SPOT HESABI
         </span>
 
         <strong id="paperMonitorStatus">
@@ -1669,7 +1669,7 @@ Waiting for input...
         </span>
 
         <strong class="status-online">
-          ● KÂĞIT
+          ● BINANCE SPOT
         </strong>
 
       </div>
@@ -1719,7 +1719,7 @@ Waiting for input...
           EMİR İZLEYİCİ
         </span>
 
-        <strong id="cryptoPaperMonitorStatus">
+        <strong id="cryptoSpotHeaderStatus">
           BAĞLANIYOR
         </strong>
 
@@ -2053,12 +2053,15 @@ Waiting for input...
           id="cryptoPerformanceNote"
           class="trading-empty"
         >
-          İşlem sonuçları, paper pozisyon açma/kapatma aşaması eklendiğinde ölçülecek.
+          Scanner sinyalleri ve canlı Binance Spot emirleri birbirinden ayrıdır; bu bölüm yalnızca tarama kaydını gösterir.
         </p>
 
       </section>
 
     </div>
+
+    <!-- Önceki kâğıt işlem kayıtları silinmez; yalnızca kripto canlı ekranından gizlenir. -->
+    <div id="cryptoPaperWorkspace" hidden aria-hidden="true">
 
 
     <!-- ==================================================
@@ -2544,6 +2547,53 @@ Waiting for input...
         <input id="cryptoKillSwitchPassword" type="password" inputmode="numeric" autocomplete="off" placeholder="ACİL DURDURMA ŞİFRESİ" aria-label="Kripto acil durdurma şifresi">
         <button type="button" id="cryptoKillSwitchToggle" class="kill-switch-button">KRİPTO DURDURMAYI ETKİNLEŞTİR</button>
       </div>
+    </section>
+
+    </div>
+
+    <section id="cryptoSpotAccountPanel" class="panel trading-panel crypto-spot-account-panel">
+      <div class="panel-title">
+        <span>BINANCE SPOT HESABI</span>
+        <span id="cryptoSpotConnectionStatus" class="panel-status">KONTROL EDİLİYOR</span>
+      </div>
+      <div id="cryptoSpotAccountSummary" class="crypto-spot-account-summary">
+        Binance hesabı bağlanıyor…
+      </div>
+      <div class="crypto-spot-account-actions">
+        <button type="button" id="refreshCryptoSpotAccount" class="trading-button">BAKİYELERİ YENİLE</button>
+        <small>Yalnız Spot bakiye kullanılır. Kaldıraç, vadeli işlem ve para çekme bu ekranda yoktur.</small>
+      </div>
+      <div id="cryptoSpotBalances" class="crypto-spot-balances" aria-live="polite"></div>
+    </section>
+
+    <section id="cryptoLiveOrderPanel" class="panel trading-panel crypto-live-order-panel">
+      <div class="panel-title">
+        <span>BINANCE SPOT CANLI EMİR</span>
+        <span class="panel-status danger-status">GERÇEK PARA</span>
+      </div>
+      <p class="crypto-live-order-warning">Bu form Binance Spot hesabına gerçek emir gönderir. Scanner yalnızca değerleri buraya aktarır; emir, aşağıdaki son onay olmadan gönderilmez.</p>
+      <form id="cryptoLiveOrderForm" class="paper-order-form crypto-live-order-form" novalidate>
+        <label>PARİTE<input name="symbol" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" value="BTCUSDT" placeholder="ÖRN. BTCUSDT" required></label>
+        <label>İŞLEM YÖNÜ<select name="side"><option value="BUY">AL</option><option value="SELL">SAT</option></select></label>
+        <label>EMİR TÜRÜ<select name="orderType"><option value="MARKET">PİYASA</option><option value="LIMIT">LİMİT</option></select></label>
+        <label>MİKTAR (BASE)<input name="quantity" type="number" min="0.00000001" step="any" inputmode="decimal" placeholder="0.001" required></label>
+        <label data-crypto-live-price-label>LİMİT FİYAT (USDT)<input name="price" type="number" min="0.00000001" step="any" inputmode="decimal" placeholder="Piyasa emrinde gerekmez"></label>
+        <div id="cryptoLiveMarketPrice" class="paper-order-live-price">CANLI PİYASA FİYATI: YÜKLENİYOR…</div>
+        <label class="crypto-live-confirm"><input id="cryptoLiveOrderConfirm" name="confirm" type="checkbox" value="true" required> Bu emrin gerçek Binance Spot hesabıma gönderileceğini anlıyorum.</label>
+        <div class="paper-order-form-actions">
+          <button type="submit" id="submitCryptoLiveOrder" class="trading-button danger">BİNANCE’E GERÇEK EMİR GÖNDER</button>
+          <small>Yalnız AL/SAT ile PİYASA/LİMİT emirleri desteklenir. Stop ve hedefler otomatik gerçek emir olarak gönderilmez.</small>
+        </div>
+      </form>
+      <div id="cryptoLiveOrderResult" class="crypto-live-order-result" aria-live="polite"></div>
+    </section>
+
+    <section id="cryptoSpotOpenOrdersPanel" class="panel trading-panel">
+      <div class="panel-title">
+        <span>BINANCE AÇIK EMİRLER</span>
+        <span id="cryptoSpotOpenOrdersStatus" class="panel-status">YÜKLENİYOR</span>
+      </div>
+      <div id="cryptoSpotOpenOrders" class="pending-paper-orders" aria-live="polite"><div class="trading-empty">Açık emirler yükleniyor…</div></div>
     </section>
 
 

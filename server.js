@@ -7775,6 +7775,9 @@ if (
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
 if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
 if (req.method === "GET" && pathname === "/api/trading/crypto/account") return handleCryptoSpotAccount(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/open-orders") return handleCryptoSpotOpenOrders(req, res);
+if (req.method === "POST" && pathname === "/api/trading/crypto/order") return handleCryptoSpotOrder(req, res);
+if (req.method === "POST" && pathname === "/api/trading/crypto/order/cancel") return handleCryptoSpotOrderCancel(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/kill-switch") return handleCryptoKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
@@ -7961,7 +7964,7 @@ async function handleCryptoSpotAccount(req, res) {
     const account = await fetchBinanceSpotAccount();
     return sendJSON(res, 200, {
       connected: true,
-      readOnly: true,
+      readOnly: false,
       account: {
         type: account.accountType,
         canTrade: account.canTrade
@@ -7972,7 +7975,7 @@ async function handleCryptoSpotAccount(req, res) {
   } catch (error) {
     return sendJSON(res, 200, {
       connected: false,
-      readOnly: true,
+      readOnly: false,
       account: null,
       balances: [],
       error: {
@@ -7980,6 +7983,227 @@ async function handleCryptoSpotAccount(req, res) {
         message: String(error?.message || "Binance Spot hesap bilgisi şu anda alınamadı.")
       }
     });
+  }
+}
+
+function normalizeBinanceDecimal(value, fieldName) {
+  const raw = String(value ?? "").trim();
+  if (!/^\d+(?:\.\d+)?$/.test(raw)) {
+    throw createBinanceAccountError("BINANCE_INVALID_ORDER", `${fieldName} geçerli bir pozitif sayı olmalı.`);
+  }
+  const numeric = Number(raw);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    throw createBinanceAccountError("BINANCE_INVALID_ORDER", `${fieldName} sıfırdan büyük olmalı.`);
+  }
+  return raw.replace(/^0+(?=\d)/, "").replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+}
+
+function binanceDecimalParts(value) {
+  const normalized = normalizeBinanceDecimal(value, "Değer");
+  const [whole, fraction = ""] = normalized.split(".");
+  return {digits: BigInt(`${whole}${fraction}`), scale: fraction.length};
+}
+
+function binanceStepMatches(value, step) {
+  const valueParts = binanceDecimalParts(value);
+  const stepParts = binanceDecimalParts(step);
+  const scale = Math.max(valueParts.scale, stepParts.scale);
+  const valueAtScale = valueParts.digits * (10n ** BigInt(scale - valueParts.scale));
+  const stepAtScale = stepParts.digits * (10n ** BigInt(scale - stepParts.scale));
+  return stepAtScale > 0n && valueAtScale % stepAtScale === 0n;
+}
+
+function numberFromBinanceFilter(filter, key) {
+  const value = Number(filter?.[key]);
+  return Number.isFinite(value) && value >= 0 ? value : null;
+}
+
+function safeBinanceOrderError(status) {
+  if (status === 400) {
+    return createBinanceAccountError("BINANCE_ORDER_REJECTED", "Binance emri reddetti. Miktar, fiyat adımı, minimum tutar ve bakiyeyi kontrol edin.");
+  }
+  return binanceAccountErrorForStatus(status);
+}
+
+async function fetchBinanceSpotPublic(pathname) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`${BINANCE_SPOT_ACCOUNT_BASE_URL}${pathname}`, {
+      headers: {Accept: "application/json"},
+      signal: controller.signal
+    });
+    if (!response.ok) throw safeBinanceOrderError(response.status);
+    return response.json();
+  } catch (error) {
+    if (String(error?.code || "").startsWith("BINANCE_")) throw error;
+    throw createBinanceAccountError("BINANCE_NETWORK_RESTRICTED", "Binance Spot servisine bu sunucudan erişilemiyor.");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function requestBinanceSpotSigned(method, pathname, params = {}) {
+  if (!BINANCE_API_KEY || !BINANCE_API_SECRET) {
+    throw createBinanceAccountError("BINANCE_NOT_CONFIGURED", "Binance API anahtarı veya secret Render ortamında tanımlı değil.");
+  }
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") search.set(key, String(value));
+  });
+  search.set("recvWindow", String(BINANCE_SPOT_ACCOUNT_RECV_WINDOW));
+  search.set("timestamp", String(Date.now()));
+  const query = search.toString();
+  const signature = crypto.createHmac("sha256", BINANCE_API_SECRET).update(query).digest("hex");
+  const signedQuery = `${query}&signature=${signature}`;
+  const normalizedMethod = String(method || "GET").toUpperCase();
+  const requestUrl = ["GET", "DELETE"].includes(normalizedMethod)
+    ? `${BINANCE_SPOT_ACCOUNT_BASE_URL}${pathname}?${signedQuery}`
+    : `${BINANCE_SPOT_ACCOUNT_BASE_URL}${pathname}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(requestUrl, {
+      method: normalizedMethod,
+      headers: {
+        Accept: "application/json",
+        "X-MBX-APIKEY": BINANCE_API_KEY,
+        ...(["GET", "DELETE"].includes(normalizedMethod) ? {} : {"Content-Type": "application/x-www-form-urlencoded"})
+      },
+      body: ["GET", "DELETE"].includes(normalizedMethod) ? undefined : signedQuery,
+      signal: controller.signal
+    });
+    if (!response.ok) throw safeBinanceOrderError(response.status);
+    return response.json();
+  } catch (error) {
+    if (String(error?.code || "").startsWith("BINANCE_")) throw error;
+    throw createBinanceAccountError("BINANCE_SPOT_UNAVAILABLE", "Binance Spot işlemi şu anda gerçekleştirilemedi.");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function getBinanceSpotSymbolRules(symbol) {
+  const normalizedSymbol = String(symbol || "").trim().toUpperCase();
+  if (!/^[A-Z0-9]{5,20}$/.test(normalizedSymbol)) {
+    throw createBinanceAccountError("BINANCE_INVALID_ORDER", "Geçerli bir Binance Spot paritesi girin.");
+  }
+  const payload = await fetchBinanceSpotPublic(`/api/v3/exchangeInfo?symbol=${encodeURIComponent(normalizedSymbol)}`);
+  const market = Array.isArray(payload?.symbols) ? payload.symbols[0] : null;
+  if (!market || market.symbol !== normalizedSymbol || market.status !== "TRADING" || market.isSpotTradingAllowed === false) {
+    throw createBinanceAccountError("BINANCE_SYMBOL_UNAVAILABLE", "Bu parite Binance Spot'ta işleme açık değil.");
+  }
+  const filters = Array.isArray(market.filters) ? market.filters : [];
+  const getFilter = type => filters.find(filter => filter?.filterType === type) || {};
+  return {
+    symbol: normalizedSymbol,
+    baseAsset: String(market.baseAsset || "").toUpperCase(),
+    quoteAsset: String(market.quoteAsset || "").toUpperCase(),
+    lotSize: getFilter("LOT_SIZE"),
+    marketLotSize: getFilter("MARKET_LOT_SIZE"),
+    priceFilter: getFilter("PRICE_FILTER"),
+    notionalFilter: getFilter("NOTIONAL").filterType ? getFilter("NOTIONAL") : getFilter("MIN_NOTIONAL")
+  };
+}
+
+function validateBinanceOrderRules({quantity, price, orderType, rules}) {
+  const quantityNumber = Number(quantity);
+  const lot = orderType === "MARKET" && numberFromBinanceFilter(rules.marketLotSize, "minQty") > 0
+    ? rules.marketLotSize
+    : rules.lotSize;
+  const minQty = numberFromBinanceFilter(lot, "minQty");
+  const maxQty = numberFromBinanceFilter(lot, "maxQty");
+  const stepSize = String(lot?.stepSize || "");
+  if (minQty !== null && quantityNumber < minQty) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Miktar Binance minimumu olan ${lot.minQty}'den düşük.`);
+  if (maxQty !== null && maxQty > 0 && quantityNumber > maxQty) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Miktar Binance maksimumunu aşıyor.`);
+  if (stepSize && Number(stepSize) > 0 && !binanceStepMatches(quantity, stepSize)) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Miktar ${stepSize} adımına uymuyor.`);
+  if (orderType === "LIMIT") {
+    const priceNumber = Number(price);
+    const minPrice = numberFromBinanceFilter(rules.priceFilter, "minPrice");
+    const maxPrice = numberFromBinanceFilter(rules.priceFilter, "maxPrice");
+    const tickSize = String(rules.priceFilter?.tickSize || "");
+    if (minPrice !== null && priceNumber < minPrice) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Limit fiyatı Binance minimumu olan ${rules.priceFilter.minPrice}'den düşük.`);
+    if (maxPrice !== null && maxPrice > 0 && priceNumber > maxPrice) throw createBinanceAccountError("BINANCE_INVALID_ORDER", "Limit fiyatı Binance maksimumunu aşıyor.");
+    if (tickSize && Number(tickSize) > 0 && !binanceStepMatches(price, tickSize)) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Limit fiyatı ${tickSize} fiyat adımına uymuyor.`);
+  }
+}
+
+function sanitizeBinanceOrder(order) {
+  return {
+    orderId: String(order?.orderId || ""),
+    clientOrderId: String(order?.clientOrderId || ""),
+    symbol: String(order?.symbol || "").toUpperCase(),
+    side: String(order?.side || "").toUpperCase(),
+    type: String(order?.type || "").toUpperCase(),
+    status: String(order?.status || ""),
+    price: String(order?.price || "0"),
+    origQty: String(order?.origQty || "0"),
+    executedQty: String(order?.executedQty || "0"),
+    cumulativeQuoteQty: String(order?.cummulativeQuoteQty || order?.cumulativeQuoteQty || "0"),
+    timeInForce: String(order?.timeInForce || ""),
+    transactTime: Number(order?.transactTime || order?.updateTime || Date.now()),
+    fills: Array.isArray(order?.fills) ? order.fills.map(fill => ({
+      price: String(fill?.price || "0"), qty: String(fill?.qty || "0"),
+      commission: String(fill?.commission || "0"), commissionAsset: String(fill?.commissionAsset || "")
+    })) : []
+  };
+}
+
+async function handleCryptoSpotOpenOrders(req, res) {
+  try {
+    const orders = await requestBinanceSpotSigned("GET", "/api/v3/openOrders");
+    return sendJSON(res, 200, {connected: true, orders: Array.isArray(orders) ? orders.map(sanitizeBinanceOrder) : []});
+  } catch (error) {
+    return sendJSON(res, 200, {connected: false, orders: [], error: {code: String(error?.code || "BINANCE_SPOT_UNAVAILABLE"), message: String(error?.message || "Açık emirler alınamadı.")}});
+  }
+}
+
+async function handleCryptoSpotOrder(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    if (input?.confirm !== true) throw createBinanceAccountError("BINANCE_CONFIRMATION_REQUIRED", "Gerçek emir için son onay gerekli.");
+    const side = String(input?.side || "").trim().toUpperCase();
+    const orderType = String(input?.orderType || "").trim().toUpperCase();
+    if (!["BUY", "SELL"].includes(side) || !["MARKET", "LIMIT"].includes(orderType)) throw createBinanceAccountError("BINANCE_INVALID_ORDER", "Yalnız Spot AL/SAT ve PİYASA/LİMİT emirleri desteklenir.");
+    const rules = await getBinanceSpotSymbolRules(input?.symbol);
+    const quantity = normalizeBinanceDecimal(input?.quantity, "Miktar");
+    const price = orderType === "LIMIT" ? normalizeBinanceDecimal(input?.price, "Limit fiyatı") : null;
+    validateBinanceOrderRules({quantity, price, orderType, rules});
+    const account = await fetchBinanceSpotAccount();
+    if (!account.canTrade) throw createBinanceAccountError("BINANCE_TRADING_DISABLED", "Bu Binance API anahtarında Spot işlem yetkisi açık değil.");
+    const pricePayload = await fetchBinanceSpotPublic(`/api/v3/ticker/price?symbol=${encodeURIComponent(rules.symbol)}`);
+    const referencePrice = orderType === "LIMIT" ? Number(price) : Number(pricePayload?.price);
+    if (!Number.isFinite(referencePrice) || referencePrice <= 0) throw createBinanceAccountError("BINANCE_PRICE_UNAVAILABLE", "Emir öncesi doğrulanmış Spot fiyat alınamadı.");
+    const notional = Number(quantity) * referencePrice;
+    const minNotional = numberFromBinanceFilter(rules.notionalFilter, "minNotional");
+    if (minNotional !== null && notional < minNotional) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Emir tutarı Binance minimumu olan ${rules.notionalFilter.minNotional}'den düşük.`);
+    const balance = account.balances.find(item => item.asset === (side === "BUY" ? rules.quoteAsset : rules.baseAsset));
+    const available = Number(balance?.free || 0);
+    const required = side === "BUY" ? notional * 1.002 : Number(quantity);
+    if (!Number.isFinite(available) || available + 1e-12 < required) throw createBinanceAccountError("BINANCE_INSUFFICIENT_BALANCE", side === "BUY" ? `${rules.quoteAsset} bakiyesi emir ve ücret payı için yeterli değil.` : `${rules.baseAsset} kullanılabilir bakiyesi yeterli değil.`);
+    const order = await requestBinanceSpotSigned("POST", "/api/v3/order", {
+      symbol: rules.symbol, side, type: orderType, quantity, price,
+      timeInForce: orderType === "LIMIT" ? "GTC" : undefined,
+      newOrderRespType: "FULL",
+      newClientOrderId: `borsaci${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`
+    });
+    return sendJSON(res, 201, {success: true, order: sanitizeBinanceOrder(order)});
+  } catch (error) {
+    return sendJSON(res, 400, {success: false, error: {code: String(error?.code || "BINANCE_ORDER_REJECTED"), message: String(error?.message || "Gerçek Binance emri gönderilemedi.")}});
+  }
+}
+
+async function handleCryptoSpotOrderCancel(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    if (input?.confirm !== true) throw createBinanceAccountError("BINANCE_CONFIRMATION_REQUIRED", "Emir iptali için son onay gerekli.");
+    const symbol = String(input?.symbol || "").trim().toUpperCase();
+    const orderId = String(input?.orderId || "").trim();
+    if (!/^[A-Z0-9]{5,20}$/.test(symbol) || !/^\d+$/.test(orderId)) throw createBinanceAccountError("BINANCE_INVALID_ORDER", "İptal edilecek emir bilgisi geçersiz.");
+    const order = await requestBinanceSpotSigned("DELETE", "/api/v3/order", {symbol, orderId});
+    return sendJSON(res, 200, {success: true, order: sanitizeBinanceOrder(order)});
+  } catch (error) {
+    return sendJSON(res, 400, {success: false, error: {code: String(error?.code || "BINANCE_ORDER_REJECTED"), message: String(error?.message || "Binance emri iptal edilemedi.")}});
   }
 }
 

@@ -3127,6 +3127,108 @@ textarea::placeholder {
   line-height: 1.5;
 }
 
+/* Kripto canlı Spot emir alanı: eski kâğıt işlem yüzeyi görünmez kalır. */
+#cryptoPaperWorkspace[hidden] { display: none !important; }
+
+.crypto-spot-account-summary,
+.crypto-live-order-warning,
+.crypto-live-order-result {
+  margin: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(84, 225, 145, .28);
+  background: rgba(10, 47, 23, .32);
+  color: #bde9c8;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.crypto-spot-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px;
+}
+
+.crypto-spot-account-actions small,
+.crypto-live-order-warning {
+  color: #aabcae;
+}
+
+.crypto-spot-balances {
+  margin: 10px;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid rgba(72, 255, 104, .18);
+}
+
+.crypto-spot-balance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+}
+
+.crypto-spot-balance-grid > div {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  padding: 10px;
+  border-right: 1px solid rgba(72, 255, 104, .14);
+  border-bottom: 1px solid rgba(72, 255, 104, .14);
+}
+
+.crypto-spot-balance-grid strong { color: #f1d486; }
+.crypto-spot-balance-grid span { color: #b9d8bf; font-size: 10px; }
+
+.crypto-live-order-panel {
+  border-color: rgba(255, 159, 80, .56);
+  box-shadow: inset 0 0 30px rgba(142, 64, 18, .08);
+}
+
+.crypto-live-order-panel .panel-title {
+  border-bottom-color: rgba(255, 159, 80, .34);
+}
+
+.danger-status {
+  color: #ffc09c !important;
+  border-color: rgba(255, 121, 94, .55) !important;
+}
+
+.crypto-live-order-warning {
+  border-color: rgba(255, 148, 84, .5);
+  background: rgba(105, 43, 18, .2);
+  color: #ffd5b5;
+}
+
+.crypto-live-confirm {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 167, 83, .35);
+  color: #ffdfba !important;
+  background: rgba(94, 46, 19, .14);
+  line-height: 1.45;
+}
+
+.crypto-live-confirm input { width: auto; margin-top: 2px; accent-color: #ff9e4f; }
+
+.crypto-live-order-panel .trading-button.danger {
+  border-color: rgba(255, 105, 79, .72);
+  color: #ffd8c9;
+  background: rgba(125, 35, 23, .27);
+}
+
+.crypto-live-order-result:empty { display: none; }
+.crypto-live-order-result { border-color: rgba(112, 181, 255, .35); color: #b9dcff; }
+.crypto-spot-order-card { margin: 8px; }
+
+@media (max-width: 620px) {
+  .crypto-spot-balance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crypto-live-order-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .crypto-live-order-panel .paper-order-form-actions { grid-column: 1 / -1; }
+}
+
 @media (max-width: 600px) {
   .decision-chart-status {
     line-height: 1.55;
