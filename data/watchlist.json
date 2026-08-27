@@ -4970,6 +4970,42 @@
       "positions": [],
       "decisions": [
         {
+          "id": "nasdaq-1787822972141-AAPL-c283342f",
+          "symbol": "AAPL",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "PENDING_APPROVAL",
+          "grade": "MANUEL",
+          "timestamp": "2026-08-27T09:29:32.141Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "fibonacci": null,
+          "indicators": {
+            "score": null
+          },
+          "pendingOrder": {
+            "symbol": "AAPL",
+            "quantity": 10,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": null,
+            "target1": null,
+            "target2": null,
+            "target3": null,
+            "paperOnly": true,
+            "source": "MANUAL",
+            "createdAt": "2026-08-27T09:29:32.141Z",
+            "updatedAt": "2026-08-27T09:29:32.141Z"
+          }
+        },
+        {
           "id": "nasdaq-1787821502938-ACOG-2837f147",
           "symbol": "ACOG",
           "market": "NASDAQ",
@@ -7705,6 +7741,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T09:29:32.141Z",
+          "type": "NASDAQ_PENDING",
+          "message": "AAPL NASDAQ emri onay bekliyor."
+        },
         {
           "timestamp": "2026-08-27T09:29:00.564Z",
           "type": "NASDAQ_REJECT",
