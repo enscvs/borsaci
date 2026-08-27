@@ -2794,6 +2794,75 @@ textarea::placeholder {
 #cryptoSignalHistory .signal-history-item small { grid-column: 1 / -1; color: #708c76; font-size: 9px; }
 #cryptoSignalHistory .signal-history-item:active { background: rgba(72, 255, 104, .08); }
 
+/* NASDAQ sekmesindeki kopyalanmış BIST kimlikleri JS ile ad alanına alınır.
+   Bu nedenle görünüm, sabit id yerine NASDAQ kapsayıcısından hedeflenir. */
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(91, 169, 255, .18);
+  background: transparent;
+  color: #bfd2df;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item:hover,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item:focus-visible {
+  background: rgba(91, 169, 255, .11);
+  outline: 1px solid rgba(125, 202, 255, .45);
+}
+
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item strong { color: #e1eef7; }
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item span { color: #9bbbcf; font-size: 10px; text-align: right; }
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item small { grid-column: 1 / -1; color: #7895a7; font-size: 9px; }
+
+#nasdaqTab [data-nasdaq-id="signalDetail"] {
+  margin: 8px 10px 10px;
+  min-height: 42px;
+  border: 1px solid rgba(91, 169, 255, .22);
+  background: rgba(9, 23, 31, .54);
+  color: #c8dde9;
+}
+
+#nasdaqTab [data-nasdaq-id="chartArea"] { background: #101922; }
+#nasdaqTab [data-nasdaq-id="chartEmpty"][hidden] { display: none; }
+
+#nasdaqTab .pending-paper-order-card {
+  min-width: 0;
+  overflow: hidden;
+}
+
+#nasdaqTab .paper-order-form {
+  min-width: 0;
+}
+
+#nasdaqTab .paper-order-form label,
+#nasdaqTab .paper-order-form input,
+#nasdaqTab .paper-order-form select {
+  min-width: 0;
+}
+
+#nasdaqTab .manual-order-create-panel {
+  margin: 12px;
+}
+
+#nasdaqTab .manual-paper-order-wrap {
+  margin: 0;
+}
+
+#nasdaqTab .paper-order-live-price {
+  color: #90d6ef;
+}
+
+@media (max-width: 680px) {
+  #nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item { font-size: 10px; }
+}
+
 @media (max-width: 680px) {
   .crypto-score-table { font-size: 9px; }
   .crypto-score-table th,

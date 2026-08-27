@@ -3775,6 +3775,7 @@ function createDefaultTradingState() {
       activity: [],
       scanner: {timestamp: null, scanned: 0, successful: 0, results: [], source: null},
       risk: {maxPositionPercent: 20, maxPositions: 5},
+      killSwitch: {active: false, activatedAt: null},
     },
 
     risk: {
@@ -3877,6 +3878,11 @@ function normalizeTradingState(
           : [],
       },
       risk: {...fallback.nasdaqPaper.risk, ...((value || {}).nasdaqPaper?.risk || {})},
+      killSwitch: {
+        ...fallback.nasdaqPaper.killSwitch,
+        ...((value || {}).nasdaqPaper?.killSwitch || {}),
+        active: Boolean((value || {}).nasdaqPaper?.killSwitch?.active),
+      },
     },
 
     risk: {
@@ -7452,11 +7458,65 @@ async function handleNasdaqQuotes(req,res) { const url=new URL(req.url,`http://$
 
 async function handleNasdaqRiskSettings(req,res) { try { const input=await readTradingRequest(req); const saved=await getTradingState(); const paper=saved.content.nasdaqPaper; const capital=Math.max(100,Number(input.capital)||Number(paper.initialCapital)||10000), allocation=Math.max(1,Number(input.maxPositionPercent)||Number(paper.risk?.maxPositionPercent)||20), maxPositions=Math.max(1,Math.floor(Number(input.maxPositions)||Number(paper.risk?.maxPositions)||5)); paper.cash=roundTradingValue(Number(paper.cash || 0)+capital-Number(paper.initialCapital || 0)); paper.initialCapital=capital; paper.risk={maxPositionPercent:allocation,maxPositions}; recalculateNasdaqPaper(paper); paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_RISK",message:"NASDAQ risk ayarları güncellendi."},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
 
-async function handleNasdaqPaperQueue(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, timestamp=new Date().toISOString(), candidate=nasdaqDecisionFromInput(input,timestamp); const manual=String(candidate.pendingOrder.source).toUpperCase()==="MANUAL"; const existing=(paper.decisions||[]).find(item=>item.status==="PENDING_APPROVAL"&&item.symbol===candidate.symbol&&(String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL")===manual); if(existing){Object.assign(existing,{entry:candidate.entry,stop:candidate.stop,target1:candidate.target1,target2:candidate.target2,target3:candidate.target3,pendingOrder:candidate.pendingOrder});}else paper.decisions=[candidate,...(paper.decisions||[])].slice(0,100); paper.activity=[{timestamp,type:"NASDAQ_PENDING",message:`${candidate.symbol} NASDAQ emri onay bekliyor.`},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,201,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
+async function handleNasdaqKillSwitch(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const expectedPassword = String(process.env.KILL_SWITCH_PASSWORD || "");
+    if (!expectedPassword) throw new Error("KILL_SWITCH_PASSWORD Render ortamında ayarlı değil.");
+    if (String(input.password || "") !== expectedPassword) throw new Error("Acil durdurma şifresi yanlış.");
+
+    const saved = await getTradingState();
+    const paper = saved.content.nasdaqPaper;
+    const timestamp = new Date().toISOString();
+    const activate = input.action === "activate";
+    paper.killSwitch = {active: activate, activatedAt: activate ? timestamp : null};
+
+    let closed = 0;
+    if (activate) {
+      for (const position of paper.positions || []) {
+        if (position.status !== "OPEN") continue;
+        let closePrice = Number(position.current) || Number(position.entry);
+        try {
+          const quote = await fetchNasdaqDailyClose(position.symbol);
+          if (Number.isFinite(Number(quote?.price)) && Number(quote.price) > 0) closePrice = Number(quote.price);
+        } catch {}
+        const proceeds = roundTradingValue(closePrice * Number(position.quantity || 0));
+        position.current = closePrice;
+        position.status = "CLOSED";
+        position.closedAt = timestamp;
+        position.realizedPnl = roundTradingValue((closePrice - Number(position.entry || 0)) * Number(position.quantity || 0));
+        paper.cash = roundTradingValue(Number(paper.cash || 0) + proceeds);
+        paper.history = [{...position}, ...(paper.history || [])].slice(0, 100);
+        closed += 1;
+      }
+      (paper.decisions || []).forEach(decision => {
+        if (decision.status === "PENDING_APPROVAL") {
+          decision.status = "CANCELLED";
+          decision.closedAt = timestamp;
+          paper.history = [{...decision}, ...(paper.history || [])].slice(0, 100);
+        }
+      });
+      recalculateNasdaqPaper(paper);
+    }
+
+    const message = activate
+      ? `NASDAQ ACİL DURDURMA: ${closed} NASDAQ pozisyon kapatıldı; yalnız NASDAQ bekleyen emirleri iptal edildi.`
+      : "NASDAQ acil durdurma kapatıldı; yalnız NASDAQ yeni emirleri yeniden açılabilir.";
+    paper.activity = [{timestamp, type:"NASDAQ_KILL_SWITCH", message}, ...(paper.activity || [])].slice(0, 100);
+    await saveTradingState(saved.content, saved.sha, saved.container);
+    void sendTelegramNotification(`${activate ? "🛑" : "🟢"} BORSACI ${message}`);
+    return sendJSON(res, 200, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  } catch (error) {
+    console.error("NASDAQ KILL SWITCH ERROR:", error.message);
+    return sendJSON(res, 400, {error:error.message});
+  }
+}
+
+async function handleNasdaqPaperQueue(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper; if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz."); const timestamp=new Date().toISOString(), candidate=nasdaqDecisionFromInput(input,timestamp); const manual=String(candidate.pendingOrder.source).toUpperCase()==="MANUAL"; const existing=(paper.decisions||[]).find(item=>item.status==="PENDING_APPROVAL"&&item.symbol===candidate.symbol&&(String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL")===manual); if(existing){Object.assign(existing,{entry:candidate.entry,stop:candidate.stop,target1:candidate.target1,target2:candidate.target2,target3:candidate.target3,pendingOrder:candidate.pendingOrder});}else paper.decisions=[candidate,...(paper.decisions||[])].slice(0,100); paper.activity=[{timestamp,type:"NASDAQ_PENDING",message:`${candidate.symbol} NASDAQ emri onay bekliyor.`},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,201,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
 
 async function handleNasdaqPaperUpdate(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez."); const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder}); decision.pendingOrder={...decision.pendingOrder,...order,updatedAt:new Date().toISOString(),editedAt:new Date().toISOString()}; decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice}; decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3; await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); }catch(error){return sendJSON(res,400,{error:error.message});} }
 
-async function handleNasdaqPaperApprove(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor."); const order=decision.pendingOrder, quote=await fetchNasdaqDailyClose(order.symbol), marketPrice=quote.price; if(order.orderType==="LIMIT"&&marketPrice>Number(order.entryPrice)) throw new Error(`${order.symbol} limit emri bekliyor: son tamamlanmış günlük fiyat $${marketPrice}, limit $${order.entryPrice}.`); const entry=order.orderType==="MARKET"?marketPrice:Math.min(marketPrice,Number(order.entryPrice)); if(order.stop!==null&&Number(order.stop)>=entry) throw new Error("Stop gerçekleşen girişin altında olmalı."); const cost=roundTradingValue(entry*Number(order.quantity)); if(cost>Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil."); const broker=await submitAlpacaPaperOrLiveOrder({...order,entryPrice:entry}); let position=(paper.positions||[]).find(item=>item.status==="OPEN"&&item.symbol===order.symbol); if(position){const total=Number(position.quantity)+Number(order.quantity);position.entry=roundTradingValue((Number(position.entry)*Number(position.quantity)+entry*Number(order.quantity))/total);position.quantity=total;position.current=marketPrice;}else{const max=Number(paper.risk?.maxPositions)||5;if((paper.positions||[]).filter(item=>item.status==="OPEN").length>=max)throw new Error(`En fazla ${max} açık NASDAQ pozisyonu olabilir.`);position={id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:Number(order.quantity),entry,current:marketPrice,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:new Date().toISOString(),broker};paper.positions=[position,...(paper.positions||[])];} paper.cash=roundTradingValue(Number(paper.cash)-cost);decision.status="OPEN";paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_OPEN",message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`},...(paper.activity||[])].slice(0,100);recalculateNasdaqPaper(paper);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
+async function handleNasdaqPaperApprove(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper; if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada emir onaylanamaz."); const decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor."); const order=decision.pendingOrder, quote=await fetchNasdaqDailyClose(order.symbol), marketPrice=quote.price; if(order.orderType==="LIMIT"&&marketPrice>Number(order.entryPrice)) throw new Error(`${order.symbol} limit emri bekliyor: son tamamlanmış günlük fiyat $${marketPrice}, limit $${order.entryPrice}.`); const entry=order.orderType==="MARKET"?marketPrice:Math.min(marketPrice,Number(order.entryPrice)); if(order.stop!==null&&Number(order.stop)>=entry) throw new Error("Stop gerçekleşen girişin altında olmalı."); const cost=roundTradingValue(entry*Number(order.quantity)); if(cost>Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil."); const broker=await submitAlpacaPaperOrLiveOrder({...order,entryPrice:entry}); let position=(paper.positions||[]).find(item=>item.status==="OPEN"&&item.symbol===order.symbol); if(position){const total=Number(position.quantity)+Number(order.quantity);position.entry=roundTradingValue((Number(position.entry)*Number(position.quantity)+entry*Number(order.quantity))/total);position.quantity=total;position.current=marketPrice;}else{const max=Number(paper.risk?.maxPositions)||5;if((paper.positions||[]).filter(item=>item.status==="OPEN").length>=max)throw new Error(`En fazla ${max} açık NASDAQ pozisyonu olabilir.`);position={id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:Number(order.quantity),entry,current:marketPrice,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:new Date().toISOString(),broker};paper.positions=[position,...(paper.positions||[])];} paper.cash=roundTradingValue(Number(paper.cash)-cost);decision.status="OPEN";paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_OPEN",message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`},...(paper.activity||[])].slice(0,100);recalculateNasdaqPaper(paper);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
 
 async function handleNasdaqPaperReject(req,res) { try { const input=await readTradingRequest(req),saved=await getTradingState(),paper=saved.content.nasdaqPaper,decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL");if(!decision)throw new Error("Bu NASDAQ emri artık onay beklemiyor.");decision.status="REJECTED";decision.closedAt=new Date().toISOString();paper.history=[decision,...(paper.history||[])].slice(0,100);paper.activity=[{timestamp:decision.closedAt,type:"NASDAQ_REJECT",message:`${decision.symbol} NASDAQ emri reddedildi.`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});}catch(error){return sendJSON(res,400,{error:error.message});} }
 
@@ -7633,6 +7693,7 @@ if (req.method === "GET" && pathname === "/api/nasdaq/scanner") return handleNas
 if (req.method === "GET" && pathname === "/api/nasdaq/state") return handleNasdaqState(req, res);
 if (req.method === "GET" && pathname === "/api/nasdaq/quotes") return handleNasdaqQuotes(req, res);
 if (req.method === "POST" && pathname === "/api/nasdaq/risk-settings") return handleNasdaqRiskSettings(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/kill-switch") return handleNasdaqKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return handleNasdaqPaperQueue(req, res);
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return handleNasdaqPaperUpdate(req, res);
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return handleNasdaqPaperApprove(req, res);
