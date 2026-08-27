@@ -3134,6 +3134,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-27T05:20:50.725Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-27T04:38:13.361Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -3310,7 +3315,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-27T04:38:13.361Z",
+        "timestamp": "2026-08-27T05:20:50.725Z",
         "scanned": 100,
         "successful": 94,
         "results": [
@@ -3541,32 +3546,17 @@
             },
             "fibonacci": {
               "valid": false,
-              "status": "INVALID",
+              "status": "NO_VALID_STRUCTURE",
               "entryTriggerRatio": 0.027,
               "entryUpperTrendlineBuffer": 0.03,
               "confirmationTimeframe": "1d",
               "completedDailyCandleTime": "2026-08-26T23:59:59.000Z",
               "stopLossPercentBelowC": 2,
-              "pointA": {
-                "type": "LOW",
-                "index": 470,
-                "price": 0.000055,
-                "date": "2026-06-09T23:59:59.000Z"
-              },
-              "pointB": {
-                "type": "HIGH",
-                "index": 496,
-                "price": 0.00012996,
-                "date": "2026-07-05T23:59:59.000Z"
-              },
-              "pointC": {
-                "type": "LOW",
-                "index": 510,
-                "price": 0.00004324,
-                "date": "2026-07-19T23:59:59.000Z"
-              },
-              "range": 0,
-              "retracementRatio": 1.1569,
+              "pointA": null,
+              "pointB": null,
+              "pointC": null,
+              "range": null,
+              "retracementRatio": null,
               "entryTriggerPrice": null,
               "confirmationPassed": false,
               "confirmationCandleTime": null,
@@ -3583,9 +3573,9 @@
               "riskRewardTp1": null,
               "riskRewardTp2": null,
               "riskRewardTp3": null,
-              "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
+              "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-27T04:38:11.520Z",
+            "timestamp": "2026-08-27T05:20:49.225Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0,
@@ -3840,9 +3830,9 @@
               "status": "ENTRY_RESISTANCE_UNAVAILABLE",
               "pointA": {
                 "type": "LOW",
-                "index": 294,
-                "price": 0.201,
-                "date": "2026-04-09T23:59:59.000Z"
+                "index": 227,
+                "price": 0.0987,
+                "date": "2026-02-01T23:59:59.000Z"
               },
               "pointB": {
                 "type": "HIGH",
@@ -3856,8 +3846,8 @@
                 "price": 0.2672,
                 "date": "2026-06-12T23:59:59.000Z"
               },
-              "range": 0.33,
-              "retracementRatio": 0.8006,
+              "range": 0.43,
+              "retracementRatio": 0.612,
               "entryTriggerPrice": 0.28,
               "entryZoneLow": 0.28,
               "entryZoneHigh": null,
@@ -3878,13 +3868,13 @@
                 "entryUpperPrice": null
               },
               "stopLoss": 0.26,
-              "tp1": 0.47,
-              "tp2": 0.53,
-              "tp3": 0.6,
+              "tp1": 0.54,
+              "tp2": 0.61,
+              "tp3": 0.7,
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-27T04:38:10.319Z",
+            "timestamp": "2026-08-27T05:20:48.224Z",
             "fallbackPlan": null,
             "price": 0.6899,
             "ema20": 0.42872619570140436,
@@ -4169,7 +4159,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-27T04:38:08.381Z",
+            "timestamp": "2026-08-27T05:20:46.133Z",
             "fallbackPlan": null,
             "price": 0.1069,
             "ema20": 0.09766091880338976,
@@ -4454,7 +4444,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-27T04:38:11.719Z",
+            "timestamp": "2026-08-27T05:20:48.824Z",
             "fallbackPlan": null,
             "price": 0.402,
             "ema20": 0.3914423344744754,
@@ -4702,9 +4692,9 @@
               },
               "pointB": {
                 "type": "HIGH",
-                "index": 385,
-                "price": 0.3897,
-                "date": "2026-03-16T23:59:59.000Z"
+                "index": 448,
+                "price": 0.61,
+                "date": "2026-05-18T23:59:59.000Z"
               },
               "pointC": {
                 "type": "LOW",
@@ -4712,8 +4702,8 @@
                 "price": 0.2521,
                 "date": "2026-08-19T23:59:59.000Z"
               },
-              "range": 0.24,
-              "retracementRatio": 0.5741,
+              "range": 0.46,
+              "retracementRatio": 0.778,
               "entryTriggerPrice": 0.26,
               "entryZoneLow": 0.26,
               "entryZoneHigh": 0.27,
@@ -4748,9 +4738,9 @@
                 "entryUpperPrice": 0.27
               },
               "stopLoss": 0.25,
-              "tp1": 0.4,
-              "tp2": 0.44,
-              "tp3": 0.49,
+              "tp1": 0.54,
+              "tp2": 0.61,
+              "tp3": 0.71,
               "volumeConfirmation": "WEAK",
               "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
               "confirmationPassed": true,
@@ -4758,7 +4748,7 @@
               "confirmationCandleClose": 0.27,
               "entryPrice": 0.34
             },
-            "timestamp": "2026-08-27T04:38:11.225Z",
+            "timestamp": "2026-08-27T05:20:48.625Z",
             "fallbackPlan": null,
             "price": 0.3397,
             "ema20": 0.30393086926451346,
