@@ -4970,6 +4970,90 @@
       "positions": [],
       "decisions": [
         {
+          "id": "nasdaq-1787821502938-ACOG-2837f147",
+          "symbol": "ACOG",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "PENDING_APPROVAL",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-27T09:05:02.938Z",
+          "entry": {
+            "low": 7.76,
+            "high": 7.76,
+            "reference": 7.76
+          },
+          "stop": 7.52,
+          "target1": 9.7,
+          "target2": 10.25,
+          "target3": 10.95,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 374,
+              "price": 5.425,
+              "date": "2026-05-13T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 413,
+              "price": 8.7,
+              "date": "2026-07-10T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 415,
+              "price": 7.675,
+              "date": "2026-07-14T04:00:00.000Z"
+            },
+            "range": 3.27,
+            "retracementRatio": 0.313,
+            "entryTriggerPrice": 7.76,
+            "entryZoneLow": 7.76,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-26T04:00:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 7.52,
+            "tp1": 9.7,
+            "tp2": 10.25,
+            "tp3": 10.95,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
+          },
+          "indicators": {
+            "score": 71
+          },
+          "pendingOrder": {
+            "symbol": "ACOG",
+            "quantity": 128,
+            "entryPrice": 7.76,
+            "orderType": "LIMIT",
+            "stop": 7.52,
+            "target1": 9.7,
+            "target2": 10.25,
+            "target3": 10.95,
+            "paperOnly": true,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-27T09:05:02.938Z",
+            "updatedAt": "2026-08-27T09:05:02.938Z"
+          }
+        },
+        {
           "id": "1787821479538-ACGL",
           "rank": 1,
           "symbol": "ACGL",
@@ -7535,6 +7619,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T09:05:02.938Z",
+          "type": "NASDAQ_PENDING",
+          "message": "ACOG NASDAQ emri onay bekliyor."
+        },
         {
           "timestamp": "2026-08-27T09:04:39.537Z",
           "type": "NASDAQ_SCAN",
