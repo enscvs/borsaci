@@ -2818,79 +2818,60 @@ Waiting for input...
   document.addEventListener(
     "DOMContentLoaded",
     () => {
+      const tabs = Array.from(document.querySelectorAll(".main-tab[data-tab]"));
+      const panels = Array.from(new Set(tabs.map(tab => tab.dataset.tab)))
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
 
-      const tabs =
-        document.querySelectorAll(
-          ".main-tab"
-        );
-
-      const terminalTab =
-        document.getElementById(
-          "terminalTab"
-        );
-
-      const tradingTab =
-        document.getElementById(
-          "tradingTab"
-        );
-
-      const cryptoTab =
-        document.getElementById(
-          "cryptoTab"
-        );
-
-
-      if (
-        !tabs.length ||
-        !terminalTab ||
-        !tradingTab ||
-        !cryptoTab
-      ) {
-
-        console.error(
-          "BORSACI: Tab sistemi başlatılamadı."
-        );
-
+      if (!tabs.length || !panels.length) {
+        console.error("BORSACI: Tab sistemi başlatılamadı.");
         return;
-
       }
 
+      const displayFor = panel => (
+        panel.dataset.tabDisplay ||
+        (panel.classList.contains("dashboard") ? "grid" : "block")
+      );
+
+      const activate = targetId => {
+        const targetPanel = document.getElementById(targetId);
+        const targetTab = tabs.find(tab => tab.dataset.tab === targetId);
+
+        // Bir düğmenin paneli yoksa BIST'e geri düşme. Bu, yanlış hedefli
+        // bir sekmenin mevcut sayfayı ikinci kez gösteriyor gibi görünmesini engeller.
+        if (!targetPanel || !targetTab) {
+          console.error(`BORSACI: Sekme paneli bulunamadı (${targetId || "bilinmiyor"}).`);
+          return false;
+        }
+
+        panels.forEach(panel => {
+          const isActive = panel === targetPanel;
+          panel.hidden = !isActive;
+          panel.style.display = isActive ? displayFor(panel) : "none";
+          panel.setAttribute("aria-hidden", String(!isActive));
+        });
+
+        tabs.forEach(tab => {
+          const isActive = tab === targetTab;
+          tab.classList.toggle("active", isActive);
+          tab.setAttribute("aria-selected", String(isActive));
+        });
+
+        return true;
+      };
 
       tabs.forEach(tab => {
-
-        tab.addEventListener(
-          "click",
-          () => {
-
-            const target =
-              tab.dataset.tab;
-
-
-            tabs.forEach(item => {
-
-              item.classList.remove(
-                "active"
-              );
-
-            });
-
-
-            tab.classList.add(
-              "active"
-            );
-
-
-            terminalTab.style.display = "none";
-            tradingTab.style.display = "none";
-            cryptoTab.style.display = "none";
-            if (target === "terminalTab") terminalTab.style.display = "grid";
-            else if (target === "cryptoTab") cryptoTab.style.display = "block";
-            else tradingTab.style.display = "block";
-
-          }
-        );
-
+        const targetId = tab.dataset.tab;
+        tab.setAttribute("aria-controls", targetId);
+        tab.addEventListener("click", () => activate(targetId));
       });
+
+      const initialTarget = tabs.find(tab => tab.classList.contains("active"))?.dataset.tab
+        || tabs[0].dataset.tab;
+      if (!activate(initialTarget)) {
+        const firstUsableTab = tabs.find(tab => document.getElementById(tab.dataset.tab));
+        if (firstUsableTab) activate(firstUsableTab.dataset.tab);
+      }
 
     }
   );
