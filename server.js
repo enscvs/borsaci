@@ -8342,9 +8342,26 @@ const answer =
       }
 /*
 ========================================================
-FAVICON
+BRAND ICONS
 ========================================================
 */
+
+if (
+  req.method === "GET" &&
+  pathname === "/borsaci-crescent-star.png"
+) {
+
+  return serveFile(
+    res,
+    path.join(
+      __dirname,
+      "public",
+      "borsaci-crescent-star.png"
+    ),
+    "image/png"
+  );
+
+}
 
 if (
   req.method === "GET" &&
