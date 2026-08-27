@@ -40,6 +40,14 @@ const timeMs = bar => { const raw = bar?.time ?? bar?.timestamp ?? bar?.date; if
 const iso = bar => bar !== null && bar !== undefined && finite(timeMs(bar)) ? new Date(timeMs(bar)).toISOString() : null;
 const average = values => values.length ? values.reduce((a,b) => a+b,0)/values.length : null;
 
+function structureWindow(options={}) {
+  if (String(options?.market || "BIST").toUpperCase() !== "CRYPTO") return CONFIG.pivot;
+  /* BIST haftada beş, spot kripto haftada yedi günlük mum üretir. Aynı
+   * takvimsel yapıyı erken kesmemek için yalnız zaman pencereleri ölçeklenir;
+   * pivot, geri çekilme, impuls ve Fibonacci kuralları aynıdır. */
+  return {...CONFIG.pivot, maxImpulseBars:90, maxCorrectionBars:105, maxStructureAgeBars:182};
+}
+
 function istanbulDateParts(value) {
   const timestamp = value instanceof Date ? value.getTime() : (typeof value === "object" ? timeMs(value) : Number(value));
   if (!Number.isFinite(timestamp)) return null;
@@ -235,7 +243,8 @@ function aggregateFourHour(hourly, now=Date.now()) {
   for(const bar of hourly||[]){const t=timeMs(bar);if(!finite(t)||t+3600000>now)continue;const p=Object.fromEntries(fmt.formatToParts(new Date(t)).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));const hour=Number(p.hour);if(hour<10||hour>=18)continue;const bucket=hour<14?"10-14":"14-18",key=`${p.year}-${p.month}-${p.day}-${bucket}`;const rows=groups.get(key)||[];rows.push({...bar,_time:t});groups.set(key,rows);}
   return [...groups.values()].filter(rows=>rows.length>=4).map(rows=>{rows.sort((a,b)=>a._time-b._time);return {time:rows.at(-1)._time,open:rows[0].open,high:Math.max(...rows.map(x=>x.high)),low:Math.min(...rows.map(x=>x.low)),close:rows.at(-1).close,volume:rows.reduce((s,x)=>s+(Number(x.volume)||0),0)};}).sort((a,b)=>a.time-b.time);
 }
-function findAbc(history) {
+function findAbc(history, options={}) {
+  const window=structureWindow(options);
   const pivots=pivotPoints(history); let best=null;
   const lows=pivots.filter(point=>point.type==="LOW");
   const highs=pivots.filter(point=>point.type==="HIGH");
@@ -250,7 +259,7 @@ function findAbc(history) {
     const B={...pivotHigh};
     const candidateAs=lows.filter(point=>
       point.index<B.index &&
-      point.index>=B.index-CONFIG.pivot.maxImpulseBars
+      point.index>=B.index-window.maxImpulseBars
     );
     if(!candidateAs.length) continue;
     // A, ana tepe öncesi hareketin gerçek başlangıç dibi olmalı.
@@ -259,8 +268,8 @@ function findAbc(history) {
     );
     const candidateCs=lows.filter(point=>
       point.index>B.index &&
-      point.index<=B.index+CONFIG.pivot.maxCorrectionBars &&
-      point.index>=history.length-1-CONFIG.pivot.maxStructureAgeBars &&
+      point.index<=B.index+window.maxCorrectionBars &&
+      point.index>=history.length-1-window.maxStructureAgeBars &&
       point.price>A.price
     );
     if(!candidateCs.length) continue;
@@ -279,10 +288,10 @@ function findAbc(history) {
     const impulsePercent=range/A.price;
     if(
       !finite(atr) ||
-      range<atr*CONFIG.pivot.minImpulseAtr ||
-      impulsePercent<CONFIG.pivot.minImpulsePercent ||
-      retracement<CONFIG.pivot.retracementMin ||
-      retracement>CONFIG.pivot.retracementMax
+      range<atr*window.minImpulseAtr ||
+      impulsePercent<window.minImpulsePercent ||
+      retracement<window.retracementMin ||
+      retracement>window.retracementMax
     ) continue;
     /*
      * Birden fazla geçerli dalga varsa, en yeni küçük zigzag yerine
@@ -308,7 +317,7 @@ function findAbc(history) {
 function fibonacciLevels(c, range, entry = c + range * CONFIG.fibonacci.entryTriggerRatio) { const stopLoss=c*(1-CONFIG.fibonacci.stopLossPercentBelowC/100),tp1=c+range*.618,tp2=c+range*.786,tp3=c+range; const risk=entry-stopLoss; return { entryTriggerPrice:c+range*CONFIG.fibonacci.entryTriggerRatio, stopLoss, tp1,tp2,tp3, riskRewardTp1:risk>0?(tp1-entry)/risk:null,riskRewardTp2:risk>0?(tp2-entry)/risk:null,riskRewardTp3:risk>0?(tp3-entry)/risk:null }; }
 function fibonacciPlan(rawDaily, now=Date.now(), options={}) {
   const daily=completedDailyHistory(rawDaily,now,options);
-  const abc=findAbc(daily);
+  const abc=findAbc(daily,options);
   const base={valid:false,status:"NO_VALID_STRUCTURE",entryTriggerRatio:CONFIG.fibonacci.entryTriggerRatio,entryUpperTrendlineBuffer:CONFIG.fibonacci.entryUpperTrendlineBuffer,confirmationTimeframe:"1d",completedDailyCandleTime:iso(daily.at(-1)),stopLossPercentBelowC:CONFIG.fibonacci.stopLossPercentBelowC,pointA:null,pointB:null,pointC:null,range:null,retracementRatio:null,entryTriggerPrice:null,confirmationPassed:false,confirmationCandleTime:null,confirmationCandleClose:null,entryPrice:null,entryZoneLow:null,entryZoneHigh:null,entryUpperSource:"NO_DESCENDING_DAILY_HIGH_TRENDLINE",descendingResistance:null,stopLoss:null,tp1:null,tp2:null,tp3:null,riskRewardTp1:null,riskRewardTp2:null,riskRewardTp3:null,invalidReason:"Geçerli Fibonacci A–B–C yapısı bulunamadı."};
   if(!abc)return base;
   let {A,B,C,range,retracement}=abc; let afterC=daily.slice(C.index+1);

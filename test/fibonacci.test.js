@@ -149,6 +149,19 @@ test("crypto uses the identical A-B-C levels when all daily candles are complete
     [bist.pointA?.price,bist.pointB?.price,bist.pointC?.price,bist.entryTriggerPrice,bist.stopLoss,bist.tp1,bist.tp2,bist.tp3]
   );
 });
+test("crypto applies the same rules with a 7/24 calendar window, not a coin-specific exception",()=>{
+  const start=Date.UTC(2025,0,1);
+  const history=Array.from({length:310},(_,i)=>{const base=.31+i*.00001;return {time:(start+i*86400000)/1000,open:base,high:base+.01,low:base-.01,close:base,volume:1000000};});
+  const set=(index,low,high)=>Object.assign(history[index],{open:(low+high)/2,close:(low+high)/2,low,high});
+  // 74 günlük impuls ve 93 günlük düzeltme, 7/24 kripto mumlarında aynı
+  // takvimsel yapıdır; BIST'in işlem günü penceresiyle erken elenmez.
+  set(130,.15,.17); set(204,.58,.61); set(297,.252,.27);
+  const crypto=fib.findAbc(history,{market:"CRYPTO"});
+  assert.equal(crypto.A.index,130);
+  assert.equal(crypto.B.index,204);
+  assert.equal(crypto.C.index,297);
+  assert.equal(crypto.B.price,.61);
+});
 test("technical score is capped and not a probability",()=>{
   const history=Array.from({length:230},(_,i)=>({time:Date.UTC(2025,0,1+i)/1000,open:100+i*.1,high:101+i*.1,low:99+i*.1,close:100+i*.1,volume:5000000}));
   const result=fib.score(history,{valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"});
