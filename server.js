@@ -9079,18 +9079,26 @@ server.listen(
     // Kripto ve NASDAQ limit emirleri, açık pozisyonların stop/hedefleri
     // tarayıcı açık olmasa da sunucuda izlenir. Yalnız durum değiştiğinde
     // kalıcı state yazılır; her kontrolde gereksiz GitHub kaydı oluşmaz.
+    // Zamanlayıcı içindeki bir başlatma hatası sunucunun tamamını
+    // sonlandırmamalıdır.
+    const triggerMarketPaperMonitor = source => {
+      if (typeof runMarketPaperMonitors !== "function") {
+        console.error(`MARKET PAPER MONITOR ${source} ERROR: monitor kullanılamıyor.`);
+        return;
+      }
+      Promise.resolve(runMarketPaperMonitors())
+        .catch(() => console.error(`MARKET PAPER MONITOR ${source} ERROR.`));
+    };
     setTimeout(
       () => {
-        runMarketPaperMonitors()
-          .catch(error => console.error("MARKET PAPER MONITOR START ERROR:", error.message));
+        triggerMarketPaperMonitor("START");
       },
       30000
     );
 
     setInterval(
       () => {
-        runMarketPaperMonitors()
-          .catch(error => console.error("MARKET PAPER MONITOR ERROR:", error.message));
+        triggerMarketPaperMonitor("CYCLE");
       },
       PAPER_MONITOR_INTERVAL_MS
     );
