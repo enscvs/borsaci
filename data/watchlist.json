@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 143078.52000000002,
-      "equity": 143078.52000000002,
+      "cash": 102558.44,
+      "equity": 143038.04,
       "pnl": 43195.80357443809,
       "pnlPercent": 43.19580357443809,
       "positions": [
+        {
+          "id": "paper-2026-08-27T18:42:10.186Z-SDTTR-9e02f30d",
+          "decisionId": "1787845693091-SDTTR",
+          "decisionIds": [
+            "1787845693091-SDTTR"
+          ],
+          "symbol": "SDTTR",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 1659,
+          "originalQuantity": 1659,
+          "entry": 24.4,
+          "entryCommission": 40.48,
+          "current": 24.4,
+          "stop": 18.03,
+          "target1": 24.88,
+          "target2": 26.64,
+          "target3": 28.88,
+          "status": "OPEN",
+          "openedAt": "2026-08-27T18:42:10.186Z",
+          "tp1Hit": false,
+          "realizedPnl": -40.48,
+          "pnl": -40.48
+        },
         {
           "id": "paper-2026-08-26T16:31:17.053Z-AHGAZ-63e32255",
           "decisionId": "1787761831810-AHGAZ",
@@ -12567,7 +12592,7 @@
         "rank": 1,
         "symbol": "SDTTR",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -12865,10 +12890,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-27T18:40:55.196Z",
           "expiresAt": "2026-08-28T18:40:55.196Z",
-          "overrideAt": "2026-08-27T18:41:18.295Z"
+          "overrideAt": "2026-08-27T18:41:18.295Z",
+          "openedAt": "2026-08-27T18:42:10.186Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -12889,8 +12915,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-27T18:41:18.295Z",
-          "updatedAt": "2026-08-27T18:42:06.190Z",
-          "editedAt": "2026-08-27T18:42:06.190Z"
+          "updatedAt": "2026-08-27T18:42:10.186Z",
+          "editedAt": "2026-08-27T18:42:06.190Z",
+          "commission": 40.48,
+          "totalCost": 40520.08,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-27T18:42:10.186Z"
         }
       },
       {
@@ -29046,6 +29076,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-27T18:42:10.186Z",
+        "type": "PAPER_APPROVED",
+        "message": "SDTTR paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-27T18:42:10.186Z",
+        "type": "PAPER_OPEN",
+        "message": "SDTTR scanner paper pozisyonu açıldı: 1659 lot · ₺40479.60 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-27T18:42:06.190Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "SDTTR bekleyen paper emri düzenlendi: 1659 lot · ₺24,40 · LIMIT."
@@ -29534,16 +29574,6 @@
         "timestamp": "2026-08-26T10:30:31.793Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "GESAN bekleyen paper emri düzenlendi: 173 lot · ₺89,20 · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T10:30:06.215Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:29:53.079Z",
-        "type": "CLOSED",
-        "message": "AHGAZ paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺8.80."
       }
     ],
     "scannerSnapshot": {
