@@ -4963,11 +4963,30 @@
     },
     "nasdaqPaper": {
       "initialCapital": 5000,
-      "cash": 1865.2,
+      "cash": 958.9,
       "equity": 5000,
       "pnl": 0,
       "pnlPercent": 0,
       "positions": [
+        {
+          "id": "nasdaq-pos-1787822985953-ACGL",
+          "decisionId": "1787821479538-ACGL",
+          "symbol": "ACGL",
+          "market": "NASDAQ",
+          "status": "OPEN",
+          "quantity": 9,
+          "entry": 100.7,
+          "current": 100.7,
+          "stop": 95.27,
+          "target1": 109.46,
+          "target2": 112.79,
+          "target3": 117.03,
+          "openedAt": "2026-08-27T09:29:45.953Z",
+          "broker": {
+            "submitted": false,
+            "mode": "LOCAL_PAPER"
+          }
+        },
         {
           "id": "nasdaq-pos-1787822979054-AAPL",
           "decisionId": "nasdaq-1787822972141-AAPL-c283342f",
@@ -5115,7 +5134,7 @@
           "rank": 1,
           "symbol": "ACGL",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "OPEN",
           "confidence": null,
           "entry": {
             "low": 97.75,
@@ -7761,6 +7780,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T09:29:45.953Z",
+          "type": "NASDAQ_OPEN",
+          "message": "ACGL NASDAQ LOCAL_PAPER pozisyonu açıldı."
+        },
         {
           "timestamp": "2026-08-27T09:29:39.054Z",
           "type": "NASDAQ_OPEN",
