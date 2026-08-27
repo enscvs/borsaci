@@ -7787,8 +7787,10 @@ if (req.method === "GET" && pathname === "/api/crypto/state") return handleCrypt
 if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
 if (req.method === "GET" && pathname === "/api/trading/crypto/account") return handleCryptoSpotAccount(req, res);
 if (req.method === "GET" && pathname === "/api/trading/crypto/open-orders") return handleCryptoSpotOpenOrders(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/recent-activity") return handleCryptoSpotRecentActivity(req, res);
 if (req.method === "POST" && pathname === "/api/trading/crypto/order") return handleCryptoSpotOrder(req, res);
 if (req.method === "POST" && pathname === "/api/trading/crypto/order/cancel") return handleCryptoSpotOrderCancel(req, res);
+if (req.method === "POST" && pathname === "/api/trading/crypto/kill-switch") return handleCryptoSpotKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/kill-switch") return handleCryptoKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
@@ -8183,12 +8185,63 @@ function sanitizeBinanceOrder(order) {
   };
 }
 
+function sanitizeBinanceTrade(trade) {
+  return {
+    id: String(trade?.id || ""),
+    orderId: String(trade?.orderId || ""),
+    symbol: String(trade?.symbol || "").toUpperCase(),
+    side: trade?.isBuyer === true ? "BUY" : "SELL",
+    price: String(trade?.price || "0"),
+    quantity: String(trade?.qty || "0"),
+    quoteQuantity: String(trade?.quoteQty || "0"),
+    commission: String(trade?.commission || "0"),
+    commissionAsset: String(trade?.commissionAsset || ""),
+    time: Number(trade?.time || Date.now()),
+    maker: trade?.isMaker === true
+  };
+}
+
+function cryptoSpotActivitySymbol(req) {
+  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+  const symbol = String(url.searchParams.get("symbol") || "BTCUSDT").trim().toUpperCase();
+  if (!/^[A-Z0-9]{5,20}$/.test(symbol)) {
+    throw createBinanceAccountError("BINANCE_INVALID_SYMBOL", "İşlem geçmişi için geçerli bir Spot paritesi girin.");
+  }
+  return symbol;
+}
+
 async function handleCryptoSpotOpenOrders(req, res) {
   try {
     const orders = await requestBinanceSpotSigned("GET", "/api/v3/openOrders");
     return sendJSON(res, 200, {connected: true, orders: Array.isArray(orders) ? orders.map(sanitizeBinanceOrder) : []});
   } catch (error) {
     return sendJSON(res, 200, {connected: false, orders: [], error: {code: String(error?.code || "BINANCE_SPOT_UNAVAILABLE"), message: String(error?.message || "Açık emirler alınamadı.")}});
+  }
+}
+
+async function handleCryptoSpotRecentActivity(req, res) {
+  try {
+    const symbol = cryptoSpotActivitySymbol(req);
+    const [orders, trades] = await Promise.all([
+      requestBinanceSpotSigned("GET", "/api/v3/allOrders", {symbol, limit: 20}),
+      requestBinanceSpotSigned("GET", "/api/v3/myTrades", {symbol, limit: 20})
+    ]);
+    return sendJSON(res, 200, {
+      connected: true,
+      symbol,
+      orders: Array.isArray(orders) ? orders.map(sanitizeBinanceOrder) : [],
+      trades: Array.isArray(trades) ? trades.map(sanitizeBinanceTrade) : []
+    });
+  } catch (error) {
+    return sendJSON(res, 200, {
+      connected: false,
+      orders: [],
+      trades: [],
+      error: {
+        code: String(error?.code || "BINANCE_SPOT_UNAVAILABLE"),
+        message: String(error?.message || "Binance işlem kaydı alınamadı.")
+      }
+    });
   }
 }
 
@@ -8238,6 +8291,49 @@ async function handleCryptoSpotOrderCancel(req, res) {
     return sendJSON(res, 200, {success: true, order: sanitizeBinanceOrder(order)});
   } catch (error) {
     return sendJSON(res, 400, {success: false, error: {code: String(error?.code || "BINANCE_ORDER_REJECTED"), message: String(error?.message || "Binance emri iptal edilemedi.")}});
+  }
+}
+
+async function handleCryptoSpotKillSwitch(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const expectedPassword = String(process.env.KILL_SWITCH_PASSWORD || "");
+    if (!expectedPassword) throw createBinanceAccountError("BINANCE_KILL_SWITCH_UNAVAILABLE", "Acil durdurma şifresi Render ortamında ayarlı değil.");
+    if (input?.confirm !== true) throw createBinanceAccountError("BINANCE_CONFIRMATION_REQUIRED", "Açık Spot emirlerini iptal etmek için son onay gerekli.");
+    if (String(input?.password || "") !== expectedPassword) throw createBinanceAccountError("BINANCE_KILL_SWITCH_PASSWORD_INVALID", "Acil durdurma şifresi yanlış.");
+
+    const openOrders = await requestBinanceSpotSigned("GET", "/api/v3/openOrders");
+    const cancelled = [];
+    const failed = [];
+    for (const order of Array.isArray(openOrders) ? openOrders : []) {
+      const symbol = String(order?.symbol || "").toUpperCase();
+      const orderId = String(order?.orderId || "");
+      if (!/^[A-Z0-9]{5,20}$/.test(symbol) || !/^\d+$/.test(orderId)) continue;
+      try {
+        const cancelledOrder = await requestBinanceSpotSigned("DELETE", "/api/v3/order", {symbol, orderId});
+        cancelled.push(sanitizeBinanceOrder(cancelledOrder));
+      } catch (error) {
+        failed.push({symbol, orderId, message: String(error?.message || "Emir iptal edilemedi.")});
+      }
+    }
+    return sendJSON(res, 200, {
+      success: failed.length === 0,
+      cancelled,
+      failed,
+      message: cancelled.length
+        ? `${cancelled.length} açık Binance Spot emri iptal edildi. Cüzdan bakiyeleri satılmadı.`
+        : "İptal edilecek açık Binance Spot emri bulunamadı. Cüzdan bakiyelerine dokunulmadı."
+    });
+  } catch (error) {
+    return sendJSON(res, 400, {
+      success: false,
+      cancelled: [],
+      failed: [],
+      error: {
+        code: String(error?.code || "BINANCE_KILL_SWITCH_FAILED"),
+        message: String(error?.message || "Binance Spot acil durdurma tamamlanamadı.")
+      }
+    });
   }
 }
 

@@ -9711,6 +9711,95 @@ async function loadCryptoSpotOpenOrders() {
   }
 }
 
+function formatCryptoSpotTimestamp(value) {
+  const timestamp = Number(value);
+  return Number.isFinite(timestamp) && timestamp > 0 ? new Date(timestamp).toLocaleString("tr-TR") : "—";
+}
+
+function renderCryptoSpotActivity(payload) {
+  const status = document.getElementById("cryptoSpotActivityStatus");
+  const mount = document.getElementById("cryptoSpotActivity");
+  if (!mount) return;
+  if (!payload?.connected) {
+    if (status) status.textContent = "BAĞLANTI HATASI";
+    mount.innerHTML = `<div class="trading-empty">${escapeHtml(payload?.error?.message || "Binance işlem kaydı alınamadı.")}</div>`;
+    return;
+  }
+  const orders = Array.isArray(payload.orders) ? payload.orders : [];
+  const trades = Array.isArray(payload.trades) ? payload.trades : [];
+  if (status) status.textContent = `${escapeHtml(payload.symbol || "SPOT")} · ${trades.length} İŞLEM`;
+  const orderRows = orders.length
+    ? orders.map(order => `<div class="crypto-spot-activity-row"><strong>${escapeHtml(order.side)} · ${escapeHtml(order.type)} · ${escapeHtml(order.status)}</strong><span>${escapeHtml(order.origQty)} @ ${escapeHtml(order.price)}</span><small>${escapeHtml(formatCryptoSpotTimestamp(order.transactTime))}</small></div>`).join("")
+    : '<div class="trading-empty">Bu parite için emir kaydı bulunamadı.</div>';
+  const tradeRows = trades.length
+    ? trades.map(trade => `<div class="crypto-spot-activity-row"><strong>${escapeHtml(trade.side)} · ${escapeHtml(trade.quantity)} @ ${escapeHtml(trade.price)}</strong><span>Toplam: ${escapeHtml(trade.quoteQuantity)} · Komisyon: ${escapeHtml(trade.commission)} ${escapeHtml(trade.commissionAsset)}</span><small>${escapeHtml(formatCryptoSpotTimestamp(trade.time))}</small></div>`).join("")
+    : '<div class="trading-empty">Bu parite için gerçekleşen işlem bulunamadı.</div>';
+  mount.innerHTML = `<section class="crypto-spot-activity-column"><h4>SON EMİRLER</h4><div class="crypto-spot-activity-list">${orderRows}</div></section><section class="crypto-spot-activity-column"><h4>SON GERÇEKLEŞENLER</h4><div class="crypto-spot-activity-list">${tradeRows}</div></section>`;
+}
+
+async function loadCryptoSpotActivity(symbol) {
+  const input = document.getElementById("cryptoSpotActivitySymbol");
+  const selectedSymbol = String(symbol || input?.value || "BTCUSDT").trim().toUpperCase();
+  if (input) input.value = selectedSymbol;
+  try {
+    const response = await fetch(`/api/trading/crypto/recent-activity?symbol=${encodeURIComponent(selectedSymbol)}`, {cache: "no-store"});
+    const payload = await response.json();
+    renderCryptoSpotActivity(payload);
+    return payload;
+  } catch {
+    renderCryptoSpotActivity({connected: false, error: {message: "Binance işlem kaydı alınamadı."}});
+    return null;
+  }
+}
+
+function bindCryptoSpotActivity() {
+  const button = document.getElementById("refreshCryptoSpotActivity");
+  const input = document.getElementById("cryptoSpotActivitySymbol");
+  if (button && button.dataset.cryptoSpotActivityBound !== "true") {
+    button.dataset.cryptoSpotActivityBound = "true";
+    button.addEventListener("click", () => { void loadCryptoSpotActivity(); });
+  }
+  if (input && input.dataset.cryptoSpotActivityBound !== "true") {
+    input.dataset.cryptoSpotActivityBound = "true";
+    input.addEventListener("change", () => { void loadCryptoSpotActivity(); });
+  }
+}
+
+function bindCryptoSpotKillSwitch() {
+  const button = document.getElementById("cryptoSpotKillSwitchButton");
+  if (!button || button.dataset.cryptoSpotKillBound === "true") return;
+  button.dataset.cryptoSpotKillBound = "true";
+  button.addEventListener("click", async () => {
+    const password = document.getElementById("cryptoSpotKillSwitchPassword")?.value || "";
+    const confirmed = document.getElementById("cryptoSpotKillSwitchConfirm")?.checked === true;
+    const result = document.getElementById("cryptoSpotKillSwitchResult");
+    if (!password) { window.alert("Acil durdurma şifresini girin."); return; }
+    if (!confirmed) { window.alert("Açık emirlerin iptali için onay kutusunu işaretleyin."); return; }
+    if (!window.confirm("Binance Spot hesabındaki açık emirler iptal edilecek. Cüzdan varlıkları SATILMAYACAK. Devam edilsin mi?")) return;
+    button.disabled = true;
+    button.textContent = "AÇIK EMİRLER İPTAL EDİLİYOR…";
+    if (result) result.textContent = "Binance Spot açık emirleri kontrol ediliyor…";
+    try {
+      const response = await fetch("/api/trading/crypto/kill-switch", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({password, confirm: true})});
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error?.message || "Binance Spot acil durdurma tamamlanamadı.");
+      const failed = Array.isArray(payload.failed) ? payload.failed : [];
+      if (result) result.textContent = `${payload.message || "Acil durdurma tamamlandı."}${failed.length ? ` ${failed.length} emir iptal edilemedi; açık emirleri kontrol edin.` : ""}`;
+      const passwordInput = document.getElementById("cryptoSpotKillSwitchPassword");
+      const confirmInput = document.getElementById("cryptoSpotKillSwitchConfirm");
+      if (passwordInput) passwordInput.value = "";
+      if (confirmInput) confirmInput.checked = false;
+      await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount(), loadCryptoSpotActivity()]);
+    } catch (error) {
+      if (result) result.textContent = `ACİL DURDURMA BAŞARISIZ · ${error.message}`;
+      window.alert(error.message);
+    } finally {
+      button.disabled = false;
+      button.textContent = "AÇIK EMİRLERİ ACİLEN İPTAL ET";
+    }
+  });
+}
+
 async function refreshCryptoLivePrice() {
   const form = cryptoLiveOrderForm();
   const output = document.getElementById("cryptoLiveMarketPrice");
@@ -9790,7 +9879,7 @@ function bindCryptoSpotOrderCancelButtons() {
         const response = await fetch("/api/trading/crypto/order/cancel", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({symbol, orderId, confirm: true})});
         const payload = await response.json();
         if (!response.ok || !payload.success) throw new Error(payload?.error?.message || "Binance emri iptal edilemedi.");
-        await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount()]);
+        await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount(), loadCryptoSpotActivity(symbol)]);
       } catch (error) { window.alert(error.message); }
       finally { button.disabled = false; }
     });
@@ -9801,7 +9890,7 @@ function bindCryptoLiveTrading() {
   const refresh = document.getElementById("refreshCryptoSpotAccount");
   if (refresh && refresh.dataset.cryptoLiveBound !== "true") {
     refresh.dataset.cryptoLiveBound = "true";
-    refresh.addEventListener("click", () => { void Promise.all([loadCryptoSpotAccount(), loadCryptoSpotOpenOrders()]); });
+    refresh.addEventListener("click", () => { void Promise.all([loadCryptoSpotAccount(), loadCryptoSpotOpenOrders(), loadCryptoSpotActivity()]); });
   }
   const form = cryptoLiveOrderForm();
   if (!form || form.dataset.cryptoLiveBound === "true") return;
@@ -9830,7 +9919,7 @@ function bindCryptoLiveTrading() {
       if (result) result.textContent = `EMİR KAYDEDİLDİ · ${order.symbol} · ${order.side} · ${order.type} · ${order.status} · ID ${order.orderId}`;
       form.reset(); form.elements.symbol.value = order.symbol || "BTCUSDT"; form.elements.orderType.value = "MARKET"; form.elements.side.value = "BUY";
       syncCryptoLiveOrderType(); void refreshCryptoLivePrice();
-      await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount()]);
+      await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount(), loadCryptoSpotActivity(order.symbol)]);
     } catch (error) { if (result) result.textContent = `EMİR GÖNDERİLEMEDİ · ${error.message}`; window.alert(error.message); }
     finally { if (submit) { submit.disabled = false; submit.textContent = "BİNANCE’E GERÇEK EMİR GÖNDER"; } }
   });
@@ -9957,9 +10046,12 @@ function bindTradingScannerControls() {
   bindCryptoWorkspaceControls();
   bindCryptoKillSwitch();
   bindCryptoLiveTrading();
+  bindCryptoSpotActivity();
+  bindCryptoSpotKillSwitch();
   void loadCryptoPaperState();
   void loadCryptoSpotAccount();
   void loadCryptoSpotOpenOrders();
+  void loadCryptoSpotActivity();
 
   if (
     scannerStopButton &&

@@ -2596,6 +2596,32 @@ Waiting for input...
       <div id="cryptoSpotOpenOrders" class="pending-paper-orders" aria-live="polite"><div class="trading-empty">Açık emirler yükleniyor…</div></div>
     </section>
 
+    <section id="cryptoSpotActivityPanel" class="panel trading-panel crypto-spot-activity-panel">
+      <div class="panel-title">
+        <span>BINANCE İŞLEM KAYDI</span>
+        <span id="cryptoSpotActivityStatus" class="panel-status">SEMBOL SEÇİN</span>
+      </div>
+      <div class="crypto-spot-activity-controls">
+        <label>PARİTE<input id="cryptoSpotActivitySymbol" type="text" maxlength="20" autocomplete="off" autocapitalize="characters" value="BTCUSDT" placeholder="ÖRN. BTCUSDT"></label>
+        <button type="button" id="refreshCryptoSpotActivity" class="trading-button">İŞLEM KAYDINI YENİLE</button>
+        <small>Son 20 emir ve gerçekleşen işlem seçili Binance Spot paritesinden alınır.</small>
+      </div>
+      <div id="cryptoSpotActivity" class="crypto-spot-activity-grid" aria-live="polite">
+        <div class="trading-empty">İşlem kaydını görmek için bir parite seçin.</div>
+      </div>
+    </section>
+
+    <section id="cryptoSpotKillSwitchPanel" class="kill-switch-panel crypto-spot-kill-switch-panel" aria-label="Binance Spot acil durdurma">
+      <div class="kill-switch-title"><strong>⚠ BINANCE SPOT ACİL DURDURMA</strong><span id="cryptoSpotKillSwitchStatus">AÇIK EMİRLER İZLENİYOR</span></div>
+      <p>Şifre ve son onay ile bu Binance Spot hesabındaki açık emirleri iptal eder. Cüzdandaki varlıklar piyasa emriyle satılmaz.</p>
+      <div class="crypto-spot-kill-switch-controls">
+        <input id="cryptoSpotKillSwitchPassword" type="password" autocomplete="current-password" placeholder="ACİL DURDURMA ŞİFRESİ">
+        <label class="crypto-live-confirm"><input id="cryptoSpotKillSwitchConfirm" type="checkbox"> Açık Binance Spot emirlerini iptal etmek istediğimi onaylıyorum.</label>
+        <button type="button" id="cryptoSpotKillSwitchButton" class="trading-button danger">AÇIK EMİRLERİ ACİLEN İPTAL ET</button>
+      </div>
+      <div id="cryptoSpotKillSwitchResult" class="crypto-live-order-result" aria-live="polite"></div>
+    </section>
+
 
     <div class="logout-footer" aria-label="Oturum işlemleri">
       <button type="button" class="logout-button" data-logout-button hidden>
