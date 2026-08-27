@@ -5064,7 +5064,7 @@
           "symbol": "ACGL",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_LIMIT",
           "grade": "A+ / GÜÇLÜ ADAY",
           "timestamp": "2026-08-27T13:21:10.850Z",
           "entry": {
@@ -5161,7 +5161,14 @@
             "paperOnly": true,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-27T13:21:10.850Z",
-            "updatedAt": "2026-08-27T13:21:10.850Z"
+            "updatedAt": "2026-08-27T13:21:19.657Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 100.7
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-27T13:21:19.657Z",
+            "lastMarketPrice": 100.7
           }
         },
         {
@@ -10882,6 +10889,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-27T13:21:19.657Z",
+          "type": "NASDAQ_LIMIT_PENDING",
+          "message": "ACGL limit alış emri $97.75 seviyesinde izleniyor."
+        },
         {
           "timestamp": "2026-08-27T13:21:10.850Z",
           "type": "NASDAQ_PENDING",
