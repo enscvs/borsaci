@@ -7512,7 +7512,31 @@ async function handleNasdaqKillSwitch(req, res) {
   }
 }
 
-async function handleNasdaqPaperQueue(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper; if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz."); const timestamp=new Date().toISOString(), candidate=nasdaqDecisionFromInput(input,timestamp); const manual=String(candidate.pendingOrder.source).toUpperCase()==="MANUAL"; const existing=(paper.decisions||[]).find(item=>item.status==="PENDING_APPROVAL"&&item.symbol===candidate.symbol&&(String(item.pendingOrder?.source||"").toUpperCase()==="MANUAL")===manual); if(existing){Object.assign(existing,{entry:candidate.entry,stop:candidate.stop,target1:candidate.target1,target2:candidate.target2,target3:candidate.target3,pendingOrder:candidate.pendingOrder});}else paper.decisions=[candidate,...(paper.decisions||[])].slice(0,100); paper.activity=[{timestamp,type:"NASDAQ_PENDING",message:`${candidate.symbol} NASDAQ emri onay bekliyor.`},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,201,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
+async function handleNasdaqPaperQueue(req,res) {
+  try {
+    const input = await readTradingRequest(req);
+    const saved = await getTradingState();
+    const paper = saved.content.nasdaqPaper;
+    if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
+
+    const timestamp = new Date().toISOString();
+    const candidate = nasdaqDecisionFromInput(input, timestamp);
+    const manual = String(candidate.pendingOrder.source).toUpperCase() === "MANUAL";
+    const isSameQueue = item => (String(item.pendingOrder?.source || "").toUpperCase() === "MANUAL") === manual;
+
+    // Her panel tek bir taslak emir gösterir. Yeni plan aynı paneldeki eski
+    // PENDING_APPROVAL kaydını tamamen değiştirir; onay/red geçmişi korunur.
+    paper.decisions = [
+      candidate,
+      ...(paper.decisions || []).filter(item => item.status !== "PENDING_APPROVAL" || !isSameQueue(item)),
+    ].slice(0, 100);
+    paper.activity = [{timestamp, type:"NASDAQ_PENDING", message:`${candidate.symbol} NASDAQ emri onay bekliyor.`}, ...(paper.activity || [])].slice(0,100);
+    await saveTradingState(saved.content, saved.sha, saved.container);
+    return sendJSON(res, 201, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  } catch(error) {
+    return sendJSON(res,400,{error:error.message});
+  }
+}
 
 async function handleNasdaqPaperUpdate(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez."); const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder}); decision.pendingOrder={...decision.pendingOrder,...order,updatedAt:new Date().toISOString(),editedAt:new Date().toISOString()}; decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice}; decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3; await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); }catch(error){return sendJSON(res,400,{error:error.message});} }
 
