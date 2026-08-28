@@ -9929,6 +9929,21 @@ function bindCryptoLiveTrading() {
   });
   syncCryptoLiveOrderType();
   void refreshCryptoLivePrice();
+  void loadCryptoLiveSafety();
+}
+
+async function loadCryptoLiveSafety() {
+  const mount = document.getElementById("cryptoLiveSafetyInfo");
+  if (!mount) return;
+  try {
+    const response = await fetch("/api/trading/crypto/safety", {cache: "no-store"});
+    const payload = await response.json();
+    if (!response.ok || !payload?.connected) throw new Error("Canlı Spot güvenlik politikası alınamadı.");
+    const policy = payload.policy || {};
+    mount.textContent = `SUNUCU KORUMASI · Son onay zorunlu · Emir üst sınırı ${Number(policy.maxOrderNotionalUsdt || 0).toLocaleString("tr-TR", {maximumFractionDigits: 2})} USDT · Limit sapması en fazla %${Number(policy.maxLimitDeviationPercent || 0).toLocaleString("tr-TR")} · Aynı emir ${Number(policy.duplicateWindowSeconds || 0)} sn içinde tekrar gönderilmez.`;
+  } catch {
+    mount.textContent = "CANLI EMİR KORUMASI SUNUCUDAN DOĞRULANAMADI. Emir göndermeden önce bağlantıyı kontrol edin.";
+  }
 }
 
 async function runCryptoScanner() {

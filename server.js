@@ -20,6 +20,11 @@ const {
   alpacaTradingBase,
   buildAlpacaOrderPayload,
 } = require("./trading/alpaca-provider");
+const {
+  liveSpotSafetyPolicy,
+  validateLiveSpotOrderSafety,
+  liveSpotOrderFingerprint,
+} = require("./trading/live-spot-safety");
 
 const precision = require("./precision/engine");
 
@@ -118,6 +123,8 @@ const BINANCE_SPOT_PRIVATE_BASE_URLS = [
 ];
 let binanceActiveSpotPrivateBaseUrl = null;
 const BINANCE_SPOT_ACCOUNT_RECV_WINDOW = 10000;
+const BINANCE_LIVE_SPOT_SAFETY = liveSpotSafetyPolicy();
+const recentBinanceLiveOrders = new Map();
 
 // NASDAQ yalnızca Alpaca'nın server-side API'si üzerinden okunur. İstemciye
 // anahtar veya secret gönderilmez. Basic planda SIP tarihsel verisi yaklaşık
@@ -7834,6 +7841,7 @@ if (
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
 if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
 if (req.method === "GET" && pathname === "/api/trading/crypto/account") return handleCryptoSpotAccount(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/safety") return handleCryptoSpotSafety(req, res);
 if (req.method === "GET" && pathname === "/api/trading/crypto/open-orders") return handleCryptoSpotOpenOrders(req, res);
 if (req.method === "GET" && pathname === "/api/trading/crypto/recent-activity") return handleCryptoSpotRecentActivity(req, res);
 if (req.method === "POST" && pathname === "/api/trading/crypto/order") return handleCryptoSpotOrder(req, res);
@@ -8029,6 +8037,30 @@ async function handleCryptoSpotAccount(req, res) {
         message: String(error?.message || "Binance Spot hesap bilgisi şu anda alınamadı.")
       }
     });
+  }
+}
+
+function cryptoSpotSafetyForClient() {
+  return {
+    finalConfirmationRequired: true,
+    maxOrderNotionalUsdt: BINANCE_LIVE_SPOT_SAFETY.maxOrderNotionalUsdt,
+    maxLimitDeviationPercent: BINANCE_LIVE_SPOT_SAFETY.maxLimitDeviationPercent,
+    duplicateWindowSeconds: Math.round(BINANCE_LIVE_SPOT_SAFETY.duplicateWindowMs / 1000)
+  };
+}
+
+async function handleCryptoSpotSafety(req, res) {
+  return sendJSON(res, 200, {connected: Boolean(BINANCE_API_KEY && BINANCE_API_SECRET), policy: cryptoSpotSafetyForClient()});
+}
+
+function assertNoRecentBinanceLiveDuplicate(fingerprint) {
+  const now = Date.now();
+  for (const [key, createdAt] of recentBinanceLiveOrders.entries()) {
+    if (now - createdAt > BINANCE_LIVE_SPOT_SAFETY.duplicateWindowMs) recentBinanceLiveOrders.delete(key);
+  }
+  const previous = recentBinanceLiveOrders.get(fingerprint);
+  if (previous && now - previous <= BINANCE_LIVE_SPOT_SAFETY.duplicateWindowMs) {
+    throw createBinanceAccountError("BINANCE_DUPLICATE_ORDER_BLOCKED", `Aynı canlı emir son ${Math.round(BINANCE_LIVE_SPOT_SAFETY.duplicateWindowMs / 1000)} saniye içinde zaten gönderildi. Binance açık emirleri ve işlem kaydını kontrol edin.`);
   }
 }
 
@@ -8307,9 +8339,17 @@ async function handleCryptoSpotOrder(req, res) {
     const account = await fetchBinanceSpotAccount();
     if (!account.canTrade) throw createBinanceAccountError("BINANCE_TRADING_DISABLED", "Bu Binance API anahtarında Spot işlem yetkisi açık değil.");
     const pricePayload = await fetchBinanceSpotPublic(`/api/v3/ticker/price?symbol=${encodeURIComponent(rules.symbol)}`);
-    const referencePrice = orderType === "LIMIT" ? Number(price) : Number(pricePayload?.price);
+    const referencePrice = Number(pricePayload?.price);
     if (!Number.isFinite(referencePrice) || referencePrice <= 0) throw createBinanceAccountError("BINANCE_PRICE_UNAVAILABLE", "Emir öncesi doğrulanmış Spot fiyat alınamadı.");
-    const notional = Number(quantity) * referencePrice;
+    let safety;
+    try {
+      safety = validateLiveSpotOrderSafety({orderType, quantity, limitPrice: price, referencePrice, policy: BINANCE_LIVE_SPOT_SAFETY});
+    } catch (error) {
+      throw createBinanceAccountError("BINANCE_LIVE_SAFETY_BLOCKED", error.message);
+    }
+    const fingerprint = liveSpotOrderFingerprint({symbol: rules.symbol, side, orderType, quantity, price});
+    assertNoRecentBinanceLiveDuplicate(fingerprint);
+    const notional = safety.notional;
     const minNotional = numberFromBinanceFilter(rules.notionalFilter, "minNotional");
     if (minNotional !== null && notional < minNotional) throw createBinanceAccountError("BINANCE_INVALID_ORDER", `Emir tutarı Binance minimumu olan ${rules.notionalFilter.minNotional}'den düşük.`);
     const balance = account.balances.find(item => item.asset === (side === "BUY" ? rules.quoteAsset : rules.baseAsset));
@@ -8322,7 +8362,8 @@ async function handleCryptoSpotOrder(req, res) {
       newOrderRespType: "FULL",
       newClientOrderId: `borsaci${Date.now().toString(36)}${crypto.randomBytes(3).toString("hex")}`
     });
-    return sendJSON(res, 201, {success: true, order: sanitizeBinanceOrder(order)});
+    recentBinanceLiveOrders.set(fingerprint, Date.now());
+    return sendJSON(res, 201, {success: true, order: sanitizeBinanceOrder(order), safety: {notional: safety.notional, marketPrice: safety.marketPrice, limitDeviationPercent: safety.deviationPercent}});
   } catch (error) {
     return sendJSON(res, 400, {success: false, error: {code: String(error?.code || "BINANCE_ORDER_REJECTED"), message: String(error?.message || "Gerçek Binance emri gönderilemedi.")}});
   }
