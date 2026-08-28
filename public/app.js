@@ -9661,7 +9661,11 @@ function renderCryptoSpotAccount(payload) {
   if (!payload?.connected) {
     if (status) status.textContent = "BAĞLANTI HATASI";
     if (headerStatus) headerStatus.textContent = "BAĞLANTI HATASI";
-    if (summary) summary.textContent = payload?.error?.message || "Binance Spot hesabına bağlanılamadı.";
+    if (summary) {
+      const error = payload?.error || {};
+      const code = String(error.code || "BINANCE_ACCOUNT_UNAVAILABLE").replace(/[^A-Z0-9_]/g, "");
+      summary.textContent = `${error.message || "Binance Spot hesabına bağlanılamadı."}${code ? ` · Kod: ${code}` : ""}`;
+    }
     if (balances) balances.innerHTML = "";
     return;
   }

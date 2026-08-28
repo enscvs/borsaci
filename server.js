@@ -123,6 +123,8 @@ const BINANCE_SPOT_PRIVATE_BASE_URLS = [
 ];
 let binanceActiveSpotPrivateBaseUrl = null;
 const BINANCE_SPOT_ACCOUNT_RECV_WINDOW = 10000;
+let binanceServerTimeOffsetMs = 0;
+let binanceServerTimeOffsetFetchedAt = 0;
 const BINANCE_LIVE_SPOT_SAFETY = liveSpotSafetyPolicy();
 const recentBinanceLiveOrders = new Map();
 
@@ -6083,6 +6085,11 @@ async function handleSystemHealth(req, res) {
     const state = saved.content || {};
     const cryptoPaper = state.cryptoPaper || {};
     const nasdaqPaper = state.nasdaqPaper || {};
+    // Güncel BIST scanner, mum serilerini şişirmeden scannerSnapshot içinde
+    // saklanır. Eski state.scanner alanı yalnız başına kontrol edilirse sağlık
+    // paneli tarama yapılmış olsa bile yanlışlıkla "Dikkat gerekiyor" der.
+    const bistScanner = state.scannerSnapshot || state.scanner || {};
+    const bistScanTimestamp = bistScanner.createdAt || bistScanner.timestamp || null;
     const aiProviderCount = [process.env.GROQ_API_KEY, process.env.GEMINI_API_KEY, process.env.MISTRAL_API_KEY]
       .filter(Boolean).length;
     const items = [
@@ -6090,7 +6097,7 @@ async function handleSystemHealth(req, res) {
       systemHealthItem("KALICI DURUM", Boolean(process.env.GITHUB_OWNER && process.env.GITHUB_REPO && process.env.GITHUB_TOKEN), "GitHub state deposu"),
       systemHealthItem("YZ SAĞLAYICILARI", aiProviderCount > 0, aiProviderCount ? `${aiProviderCount} sağlayıcı hazır` : "YZ anahtarı eksik"),
       systemHealthItem("TELEGRAM", Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && TELEGRAM_WEBHOOK_SECRET), TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && TELEGRAM_WEBHOOK_SECRET ? "Bildirim ve onay webhook'u" : "Bildirim yapılandırması eksik"),
-      systemHealthItem("BIST VERİSİ", Boolean(state.scanner?.timestamp), state.scanner?.timestamp ? `Son tarama: ${state.scanner.timestamp}` : "Henüz BIST taraması yok"),
+      systemHealthItem("BIST VERİSİ", Boolean(bistScanTimestamp), bistScanTimestamp ? `Son tarama: ${bistScanTimestamp}` : "Henüz BIST taraması yok"),
       systemHealthItem("BİNANCE", Boolean(BINANCE_API_KEY && BINANCE_API_SECRET), BINANCE_API_KEY && BINANCE_API_SECRET ? "Spot bağlantısı yapılandırıldı" : "Spot anahtarları eksik"),
       systemHealthItem("KRİPTO VERİSİ", Boolean(cryptoPaper.scanner?.timestamp), cryptoPaper.scanner?.timestamp ? `Son tarama: ${cryptoPaper.scanner.timestamp}` : "Henüz kripto taraması yok"),
       systemHealthItem("ALPACA", Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY ? `${ALPACA_DATA_FEED.toUpperCase()} günlük veri yapılandırıldı` : "Alpaca anahtarları eksik"),
@@ -7993,6 +8000,48 @@ function isBinanceRouteBlockedStatus(status) {
   return [418, 451, 502, 503, 504].includes(Number(status));
 }
 
+function binanceErrorForResponse(status, payload) {
+  const exchangeCode = Number(payload?.code);
+  let error;
+  if (exchangeCode === -1021) {
+    error = createBinanceAccountError(
+      "BINANCE_CLOCK_SKEW",
+      "Binance zaman doğrulaması geçici olarak başarısız oldu; bağlantı yeniden denenebilir."
+    );
+  } else if (exchangeCode === -2014 || exchangeCode === -2015) {
+    error = createBinanceAccountError(
+      "BINANCE_AUTH_FAILED",
+      "Binance kimlik doğrulaması başarısız. Render API anahtarlarını ve Spot yetkisini kontrol edin."
+    );
+  } else if (exchangeCode === -1003 || Number(status) === 429) {
+    error = createBinanceAccountError(
+      "BINANCE_RATE_LIMITED",
+      "Binance istek limiti geçici olarak aşıldı. Kısa süre sonra yeniden deneyin."
+    );
+  } else {
+    error = safeBinanceOrderError(status);
+  }
+  error.status = Number(status);
+  return error;
+}
+
+async function refreshBinanceServerTimeOffset(baseUrl) {
+  const now = Date.now();
+  if (now - binanceServerTimeOffsetFetchedAt < 5 * 60 * 1000) return;
+  try {
+    const response = await fetch(`${baseUrl}/api/v3/time`, {headers: {Accept: "application/json"}});
+    const payload = response.ok ? await response.json() : null;
+    const serverTime = Number(payload?.serverTime);
+    if (Number.isFinite(serverTime) && serverTime > 0) {
+      binanceServerTimeOffsetMs = serverTime - Date.now();
+      binanceServerTimeOffsetFetchedAt = Date.now();
+    }
+  } catch {
+    // Yerel saatle imzalama güvenli varsayılandır; bu yardımcı sorgunun
+    // başarısızlığı tek başına hesabı kullanılmaz hâle getirmez.
+  }
+}
+
 async function fetchBinanceSpotAccount() {
   if (!BINANCE_API_KEY || !BINANCE_API_SECRET) {
     throw createBinanceAccountError(
@@ -8169,12 +8218,13 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
   for (const baseUrl of binancePrivateBaseUrls()) {
     // Her alternatif endpoint denemesinde timestamp/signature yenilenir;
     // önceki ağ gecikmesi recvWindow'u geçersiz kılmamalıdır.
+    await refreshBinanceServerTimeOffset(baseUrl);
     const search = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") search.set(key, String(value));
     });
     search.set("recvWindow", String(BINANCE_SPOT_ACCOUNT_RECV_WINDOW));
-    search.set("timestamp", String(Date.now()));
+    search.set("timestamp", String(Date.now() + binanceServerTimeOffsetMs));
     const query = search.toString();
     const signature = crypto.createHmac("sha256", BINANCE_API_SECRET).update(query).digest("hex");
     const signedQuery = `${query}&signature=${signature}`;
@@ -8195,7 +8245,8 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
         signal: controller.signal
       });
       if (!response.ok) {
-        const error = safeBinanceOrderError(response.status);
+        const payload = await response.json().catch(() => null);
+        const error = binanceErrorForResponse(response.status, payload);
         if (error?.code === "BINANCE_NETWORK_RESTRICTED" || (isQueryRequest && isBinanceRouteBlockedStatus(response.status))) {
           lastError = error;
           continue;
