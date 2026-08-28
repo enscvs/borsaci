@@ -160,6 +160,11 @@ const NASDAQ_UNIVERSE_LIMIT = Math.max(50, Math.min(1200, Number(process.env.NAS
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
 const scannerJobs = new Map();
+// Bir market için manuel tarama ile saatlik worker aynı anda çalışırsa,
+// ikisi de aynı GitHub state dosyasını kaydetmeye çalışır. Bu yalnızca
+// çakışma değil küçük Render instance'ında bellek baskısı da yaratıyordu.
+// Kilit market bazlıdır: BIST'in taranması kripto/NASDAQ isteğini engellemez.
+const activeScannerMarkets = new Set();
 let paperMonitorRunning = false;
 let marketPaperMonitorRunning = false;
 let unifiedPositionMonitorRunning = false;
@@ -219,6 +224,17 @@ function updateScannerJob(jobId, progress, message, status = "RUNNING") {
   for (const [id, job] of scannerJobs) {
     if (Date.now() - new Date(job.updatedAt).getTime() > 10 * 60 * 1000) scannerJobs.delete(id);
   }
+}
+
+function acquireScannerExecution(market) {
+  const normalized = String(market || "").toUpperCase();
+  if (activeScannerMarkets.has(normalized)) return false;
+  activeScannerMarkets.add(normalized);
+  return true;
+}
+
+function releaseScannerExecution(market) {
+  activeScannerMarkets.delete(String(market || "").toUpperCase());
 }
 
 async function sendTelegramNotification(
@@ -4129,16 +4145,24 @@ async function saveTradingState(
     trading: normalizeTradingState(state),
   });
 
-  try {
-    return await saveWatchlist(buildWatchlist(container), sha);
-  } catch (error) {
-    // GitHub Contents API SHA'yi iyimser kilit olarak kullanır. Deploy,
-    // başka bir sekme veya arka plan görevi dosyayı arada güncellediyse
-    // son sürümü alıp bir kez daha kaydet; scanner bu nedenle çökmesin.
-    if (!/\b409\b|expected [a-f0-9]{40}/i.test(String(error?.message || ""))) throw error;
-    const latest = await getWatchlist();
-    return await saveWatchlist(buildWatchlist(latest.content), latest.sha);
+  let currentSha = sha;
+  let currentContainer = container;
+  let lastError = null;
+  // Scanner, 60 sn monitor ve kullanıcı arayüzü aynı GitHub dosyasına
+  // yazabilir. Contents API'nin SHA çakışmasını tek denemede taramayı
+  // düşürmek yerine güncel SHA ile birkaç kez güvenle yeniden deneriz.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return await saveWatchlist(buildWatchlist(currentContainer), currentSha);
+    } catch (error) {
+      lastError = error;
+      if (!/\b409\b|expected [a-f0-9]{40}/i.test(String(error?.message || ""))) throw error;
+      const latest = await getWatchlist();
+      currentSha = latest.sha;
+      currentContainer = latest.content;
+    }
   }
+  throw lastError || new Error("İşlem durumu kaydedilemedi.");
 
 }
 
@@ -7225,6 +7249,9 @@ SCANNER HANDLER
 */
 
 async function handleTradingScanner(req,res) {
+  if (!acquireScannerExecution("BIST")) {
+    return sendJSON(res, 409, {success:false, error:"BIST taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
+  }
   let jobId = "";
   try {
     const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);
@@ -7308,6 +7335,7 @@ async function handleTradingScanner(req,res) {
     updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
   } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
+  finally { releaseScannerExecution("BIST"); }
 }
 
 function handleTradingScannerStatus(req,res) {
@@ -7895,6 +7923,9 @@ async function handleNasdaqPaperClose(req, res) {
 }
 
 async function handleNasdaqScanner(req,res) {
+  if (!acquireScannerExecution("NASDAQ")) {
+    return sendJSON(res, 409, {success:false, error:"NASDAQ taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
+  }
   const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);const jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
   try {
     updateScannerJob(jobId,2,"Alpaca'dan aktif NASDAQ evreni alınıyor");const symbols=await fetchNasdaqUniverse();updateScannerJob(jobId,8,`${symbols.length} NASDAQ hissesi için günlük OHLCV alınıyor`);
@@ -7907,6 +7938,7 @@ async function handleNasdaqScanner(req,res) {
     const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik puanla ilk 5 aday için Fibonacci hesaplanıyor");const ranked=valid.slice(0,5).map(item=>{const fibonacci=fibonacciEngine.fibonacciPlan(item.history,Date.now(),{market:"NASDAQ"});const analysis=fibonacciEngine.score(item.history,fibonacci);const fallbackPlan=fibonacci.valid?null:fibonacciEngine.fallbackPlan(item.history,analysis.features);return {...item,...analysis,fibonacci,fallbackPlan,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};});
     updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};const selectedSymbols=new Set(decisions.map(item=>item.symbol));paper.decisions=[...decisions,...(paper.decisions||[]).filter(item=>!(item.status==="PENDING_APPROVAL"&&selectedSymbols.has(item.symbol)))].slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
   } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
+  finally { releaseScannerExecution("NASDAQ"); }
 }
 
 /* ========================================================
@@ -8120,6 +8152,12 @@ async function persistMonitorNotificationKeys(rows) {
 
 async function runUnifiedPositionMonitor() {
   if (unifiedPositionMonitorRunning) return {skipped:true, reason:"IN_FLIGHT"};
+  // Tarama sırasında GitHub state yazısı scanner'a aittir. Monitor bir
+  // dakika sonra tekrar çalışır; burada atlamak, uzun tarama sonunda 409
+  // yüzünden tüm scanner'ın hata vermesini önler.
+  if (activeScannerMarkets.size > 0) {
+    return {skipped:true, reason:"SCANNER_ACTIVE", markets:[...activeScannerMarkets]};
+  }
   unifiedPositionMonitorRunning = true;
   const startedAt = new Date().toISOString();
   const runtime = automationRuntimeStatus.monitor;
@@ -10032,6 +10070,9 @@ async function scanCryptoSymbol(symbol) {
 async function handleCryptoScanner(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const jobId = String(url.searchParams.get("jobId") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
+  if (!acquireScannerExecution("CRYPTO")) {
+    return sendJSON(res, 409, {success:false, error:"Kripto taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
+  }
   try {
     updateScannerJob(jobId, 3, "Binance hacim verisine göre en büyük 100 USDT paritesi seçiliyor");
     let cryptoSymbols;
@@ -10097,7 +10138,7 @@ async function handleCryptoScanner(req, res) {
   } catch (error) {
     updateScannerJob(jobId, 100, `Kripto tarama hatası: ${error.message}`, "ERROR");
     return sendJSON(res, 500, {success:false, error:error.message});
-  }
+  } finally { releaseScannerExecution("CRYPTO"); }
 }
 
 if (
