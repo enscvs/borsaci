@@ -104,6 +104,14 @@
 
   <button
     type="button"
+    class="main-tab"
+    data-tab="controlTab"
+  >
+    KONTROL
+  </button>
+
+  <button
+    type="button"
     class="main-tab active"
     data-tab="tradingTab"
   >
@@ -149,6 +157,31 @@
     show-hover
     theme="dark"
   ></tv-ticker-tape>
+
+  <!-- ==================================================
+       ORTAK KONTROL MERKEZİ
+  ================================================== -->
+  <main id="controlTab" class="control-center" hidden>
+    <section class="panel control-hero">
+      <div class="panel-title"><span>ORTAK KONTROL MERKEZİ</span><span id="controlCenterUpdated" class="panel-status">YÜKLENİYOR</span></div>
+      <div class="control-hero-content">
+        <div>
+          <strong>ÜÇ PİYASA · TEK GÖRÜNÜM</strong>
+          <p>BIST100, Kripto Spot ve NASDAQ çalışma alanlarının durumunu ayrı hesaplar üzerinden takip edin.</p>
+        </div>
+        <button type="button" id="refreshControlCenter" class="trading-button">DURUMLARI YENİLE</button>
+      </div>
+    </section>
+
+    <section id="controlMarketCards" class="control-market-cards" aria-live="polite">
+      <div class="trading-empty">Piyasa durumları alınıyor…</div>
+    </section>
+
+    <section class="panel control-activity-panel">
+      <div class="panel-title"><span>SON İŞLEM HAREKETLERİ</span><span class="panel-status">AYRI HESAPLAR</span></div>
+      <div id="controlRecentActivity" class="control-recent-activity"><div class="trading-empty">Hareket kaydı alınıyor…</div></div>
+    </section>
+  </main>
 
 
   <!-- ==================================================

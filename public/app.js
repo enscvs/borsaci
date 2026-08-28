@@ -53,6 +53,10 @@ let analysisRunning = false;
 let performanceState = null;
 let performanceRange = "ALL";
 
+/* Ortak kontrol merkezi yalnızca mevcut üç çalışma alanının durumlarını
+   bir araya getirir; piyasa state'lerini birbirine yazmaz. */
+let controlCenterRefreshInFlight = false;
+
 /* BUY SETUP eşiği backend karar politikasındaki eşikle aynı tutulur. */
 const BUY_SETUP_SCORE_THRESHOLD = 60;
 
@@ -10080,6 +10084,103 @@ function bindTradingScannerControls() {
 window.runTradingScanner =
   runTradingScanner;
 
+/* ======================================================
+   ORTAK KONTROL MERKEZİ
+====================================================== */
+
+function controlCenterMarketSummary(label, tabId, paper, currency, extraStatus = "") {
+  const positions = Array.isArray(paper?.positions) ? paper.positions.filter(item => item?.status === "OPEN") : [];
+  const pending = Array.isArray(paper?.pendingOrders)
+    ? paper.pendingOrders
+    : (Array.isArray(paper?.decisions) ? paper.decisions.filter(item => ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item?.status)) : []);
+  const activity = Array.isArray(paper?.activity) ? paper.activity : [];
+  const stopped = Boolean(paper?.killSwitch?.active);
+  const money = value => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "—";
+    return new Intl.NumberFormat("tr-TR", {style: "currency", currency, maximumFractionDigits: currency === "TRY" ? 2 : 2}).format(number);
+  };
+  return {
+    label,
+    tabId,
+    stopped,
+    activity,
+    html: `<article class="control-market-card${stopped ? " is-stopped" : ""}">
+      <header><strong>${escapeHtml(label)}</strong><span>${stopped ? "ACİL DURDURMA AKTİF" : (extraStatus || "HAZIR")}</span></header>
+      <div class="control-market-metrics">
+        <span><small>AÇIK POZİSYON</small>${positions.length}</span>
+        <span><small>BEKLEYEN EMİR</small>${pending.length}</span>
+        <span><small>PORTFÖY DEĞERİ</small>${money(paper?.equity)}</span>
+        <span><small>NAKİT</small>${money(paper?.cash)}</span>
+      </div>
+      <button type="button" class="trading-button" data-control-open="${escapeHtml(tabId)}">${escapeHtml(label)} ALANINI AÇ</button>
+    </article>`
+  };
+}
+
+function controlCenterTime(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleString("tr-TR", {hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit"});
+}
+
+async function loadControlCenter() {
+  if (controlCenterRefreshInFlight || !document.getElementById("controlTab")) return;
+  controlCenterRefreshInFlight = true;
+  const refreshedAt = document.getElementById("controlCenterUpdated");
+  const cards = document.getElementById("controlMarketCards");
+  const recent = document.getElementById("controlRecentActivity");
+  if (refreshedAt) refreshedAt.textContent = "YÜKLENİYOR";
+  try {
+    const [bistResult, cryptoResult, nasdaqResult] = await Promise.allSettled([
+      fetch("/api/trading/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("BIST state alınamadı"); return response.json(); }),
+      fetch("/api/crypto/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("Kripto state alınamadı"); return response.json(); }),
+      fetch("/api/nasdaq/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("NASDAQ state alınamadı"); return response.json(); })
+    ]);
+    const bist = bistResult.status === "fulfilled" ? bistResult.value : null;
+    const crypto = cryptoResult.status === "fulfilled" ? cryptoResult.value?.cryptoPaper : null;
+    const nasdaq = nasdaqResult.status === "fulfilled" ? nasdaqResult.value?.nasdaqPaper : null;
+    const summaries = [
+      controlCenterMarketSummary("BIST100", "tradingTab", bist?.paper, "TRY", bist ? "KAĞIT İŞLEM" : "BAĞLANTI HATASI"),
+      controlCenterMarketSummary("KRİPTO", "cryptoTab", crypto, "USD", crypto ? "SPOT / KAĞIT" : "BAĞLANTI HATASI"),
+      controlCenterMarketSummary("NASDAQ", "nasdaqTab", nasdaq, "USD", nasdaq ? "ALPACA / KAĞIT" : "BAĞLANTI HATASI")
+    ];
+    if (cards) cards.innerHTML = summaries.map(item => item.html).join("");
+    const activities = summaries.flatMap(summary => summary.activity.slice(0, 3).map(item => ({...item, market: summary.label})))
+      .sort((left, right) => String(right.timestamp || "").localeCompare(String(left.timestamp || "")))
+      .slice(0, 9);
+    if (recent) recent.innerHTML = activities.length
+      ? activities.map(item => `<article class="control-activity-item"><strong>${escapeHtml(item.market)} · ${escapeHtml(String(item.type || "HAREKET").replaceAll("_", " "))}</strong><span>${escapeHtml(item.message || "İşlem hareketi kaydedildi.")}</span><time>${controlCenterTime(item.timestamp)}</time></article>`).join("")
+      : '<div class="trading-empty">Henüz gösterilecek işlem hareketi yok.</div>';
+    if (refreshedAt) refreshedAt.textContent = `GÜNCELLENDİ · ${new Date().toLocaleTimeString("tr-TR", {hour: "2-digit", minute: "2-digit"})}`;
+  } catch (error) {
+    if (cards) cards.innerHTML = `<div class="trading-empty">Kontrol merkezi verileri alınamadı: ${escapeHtml(error.message || "bilinmeyen hata")}</div>`;
+    if (recent) recent.innerHTML = '<div class="trading-empty">İşlem hareketleri alınamadı.</div>';
+    if (refreshedAt) refreshedAt.textContent = "BAĞLANTI HATASI";
+  } finally {
+    controlCenterRefreshInFlight = false;
+  }
+}
+
+function bindControlCenter() {
+  const refresh = document.getElementById("refreshControlCenter");
+  if (refresh && !refresh.dataset.controlCenterBound) {
+    refresh.dataset.controlCenterBound = "true";
+    refresh.addEventListener("click", () => void loadControlCenter());
+  }
+  const cards = document.getElementById("controlMarketCards");
+  if (cards && !cards.dataset.controlCenterBound) {
+    cards.dataset.controlCenterBound = "true";
+    cards.addEventListener("click", event => {
+      const button = event.target.closest("[data-control-open]");
+      const tabId = button?.dataset.controlOpen;
+      if (!tabId) return;
+      document.querySelector(`.main-tab[data-tab="${tabId}"]`)?.click();
+    });
+  }
+  document.querySelector('.main-tab[data-tab="controlTab"]')?.addEventListener("click", () => void loadControlCenter());
+  void loadControlCenter();
+}
+
 
 async function startTradingWhenAuthenticated() {
   if (!window.borsaciAuth?.authenticated) {
@@ -10099,6 +10200,7 @@ async function startTradingWhenAuthenticated() {
   bindNasdaqWorkspaceControls();
   bindNasdaqKillSwitch();
   bindNasdaqLogout();
+  bindControlCenter();
   void loadNasdaqPaperState();
 }
 
