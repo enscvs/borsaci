@@ -8987,7 +8987,8 @@ let nasdaqQuoteTimer = null;
 
 function formatNasdaqUsd(value) {
   const number = Number(value);
-  if (!Number.isFinite(number) || number <= 0) return "—";
+  // P&L sıfır veya negatif olabilir; bunlar eksik veri değildir.
+  if (!Number.isFinite(number)) return "—";
   return new Intl.NumberFormat("tr-TR", {style:"currency", currency:"USD", maximumFractionDigits:number < 10 ? 4 : 2}).format(number);
 }
 function nasdaqText(name, value) { const element = ns(name); if (element) element.textContent = value; }
@@ -10220,6 +10221,11 @@ async function startTradingWhenAuthenticated() {
   bindTradingScannerControls();
   // NASDAQ controller BIST akışından bağımsız state/DOM alanını kullanır.
   placeNasdaqManualOrderForm();
+  // NASDAQ açık pozisyonlar ekranı eski istemci state'ini tekrar çizmek yerine
+  // düzenli olarak sunucudan son tamamlanmış günlük fiyatı ister.
+  if (!nasdaqQuoteTimer) {
+    nasdaqQuoteTimer = window.setInterval(() => { void loadNasdaqPaperState(); }, 30000);
+  }
   bindNasdaqWorkspaceControls();
   bindNasdaqKillSwitch();
   bindNasdaqLogout();

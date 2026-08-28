@@ -7532,7 +7532,32 @@ async function submitAlpacaPaperOrLiveOrder(order) {
   return {submitted:true,mode:ALPACA_TRADING_MODE.toUpperCase(),brokerOrderId:String(result?.id || "") || null,status:String(result?.status || "submitted")};
 }
 
-async function handleNasdaqState(req,res) { try { const saved=await getTradingState(); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,500,{error:error.message}); } }
+// Ekrandaki NASDAQ kâğıt pozisyonlarını son tamamlanmış günlük Alpaca
+// fiyatıyla işaretler. Bu işlem sadece GET cevabını günceller; GitHub state'i
+// yazılmaz ve hiçbir broker emri ya da pozisyonu değiştirilmez.
+async function refreshNasdaqDisplayPrices(paper) {
+  const positions = Array.isArray(paper?.positions)
+    ? paper.positions.filter(position => String(position?.status || "").toUpperCase() === "OPEN")
+    : [];
+  if (!positions.length) return;
+
+  await Promise.all(positions.map(async position => {
+    try {
+      const quote = await fetchNasdaqDailyClose(position.symbol);
+      const price = Number(quote?.price);
+      if (!Number.isFinite(price) || price <= 0) return;
+      position.current = roundTradingValue(price);
+      position.lastPriceAt = quote.asOf || new Date().toISOString();
+      position.priceSource = quote.source || "ALPACA_DAILY";
+    } catch {
+      // Bir sembolün fiyatı yoksa kayıtlı son fiyatı koru; diğer pozisyonlar
+      // yine de güncellenebilsin.
+    }
+  }));
+  recalculateNasdaqPaper(paper);
+}
+
+async function handleNasdaqState(req,res) { try { const saved=await getTradingState(); await refreshNasdaqDisplayPrices(saved.content.nasdaqPaper); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,500,{error:error.message}); } }
 async function handleNasdaqQuotes(req,res) { const url=new URL(req.url,`http://${req.headers.host || "localhost"}`); const symbols=[...new Set(String(url.searchParams.get("symbols") || "").split(",").map(value=>value.trim().toUpperCase()).filter(value=>/^[A-Z]{1,8}$/.test(value)).slice(0,30))]; const quotes={}; const unavailable=[]; await Promise.all(symbols.map(async symbol=>{try { quotes[symbol]=await fetchNasdaqDailyClose(symbol); } catch { unavailable.push(symbol); }})); return sendJSON(res,200,{quotes,unavailable}); }
 
 async function handleNasdaqRiskSettings(req,res) { try { const input=await readTradingRequest(req); const saved=await getTradingState(); const paper=saved.content.nasdaqPaper; const capital=Math.max(100,Number(input.capital)||Number(paper.initialCapital)||10000), allocation=Math.max(1,Number(input.maxPositionPercent)||Number(paper.risk?.maxPositionPercent)||20), maxPositions=Math.max(1,Math.floor(Number(input.maxPositions)||Number(paper.risk?.maxPositions)||5)); paper.cash=roundTradingValue(Number(paper.cash || 0)+capital-Number(paper.initialCapital || 0)); paper.initialCapital=capital; paper.risk={maxPositionPercent:allocation,maxPositions}; recalculateNasdaqPaper(paper); paper.activity=[{timestamp:new Date().toISOString(),type:"NASDAQ_RISK",message:"NASDAQ risk ayarları güncellendi."},...(paper.activity||[])].slice(0,100); await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); } catch(error) { return sendJSON(res,400,{error:error.message}); } }
