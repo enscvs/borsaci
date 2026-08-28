@@ -10129,12 +10129,15 @@ async function loadControlCenter() {
   const refreshedAt = document.getElementById("controlCenterUpdated");
   const cards = document.getElementById("controlMarketCards");
   const recent = document.getElementById("controlRecentActivity");
+  const healthGrid = document.getElementById("controlHealthGrid");
+  const healthStatus = document.getElementById("controlHealthStatus");
   if (refreshedAt) refreshedAt.textContent = "YÜKLENİYOR";
   try {
-    const [bistResult, cryptoResult, nasdaqResult] = await Promise.allSettled([
+    const [bistResult, cryptoResult, nasdaqResult, healthResult] = await Promise.allSettled([
       fetch("/api/trading/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("BIST state alınamadı"); return response.json(); }),
       fetch("/api/crypto/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("Kripto state alınamadı"); return response.json(); }),
-      fetch("/api/nasdaq/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("NASDAQ state alınamadı"); return response.json(); })
+      fetch("/api/nasdaq/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("NASDAQ state alınamadı"); return response.json(); }),
+      fetch("/api/system/health", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("Sağlık özeti alınamadı"); return response.json(); })
     ]);
     const bist = bistResult.status === "fulfilled" ? bistResult.value : null;
     const crypto = cryptoResult.status === "fulfilled" ? cryptoResult.value?.cryptoPaper : null;
@@ -10151,6 +10154,11 @@ async function loadControlCenter() {
     if (recent) recent.innerHTML = activities.length
       ? activities.map(item => `<article class="control-activity-item"><strong>${escapeHtml(item.market)} · ${escapeHtml(String(item.type || "HAREKET").replaceAll("_", " "))}</strong><span>${escapeHtml(item.message || "İşlem hareketi kaydedildi.")}</span><time>${controlCenterTime(item.timestamp)}</time></article>`).join("")
       : '<div class="trading-empty">Henüz gösterilecek işlem hareketi yok.</div>';
+    const health = healthResult.status === "fulfilled" ? healthResult.value : null;
+    if (healthGrid) healthGrid.innerHTML = Array.isArray(health?.items) && health.items.length
+      ? health.items.map(item => `<article class="control-health-item ${item.status === "READY" ? "" : "needs-attention"}"><strong>${escapeHtml(item.label || "SERVİS")}</strong><span>${item.status === "READY" ? "HAZIR" : "DİKKAT GEREKİYOR"}</span><small>${escapeHtml(item.detail || "")}</small></article>`).join("")
+      : '<div class="trading-empty">Sağlık özeti alınamadı.</div>';
+    if (healthStatus) healthStatus.textContent = health ? `${health.healthy}/${health.total} HAZIR` : "BAĞLANTI HATASI";
     if (refreshedAt) refreshedAt.textContent = `GÜNCELLENDİ · ${new Date().toLocaleTimeString("tr-TR", {hour: "2-digit", minute: "2-digit"})}`;
   } catch (error) {
     if (cards) cards.innerHTML = `<div class="trading-empty">Kontrol merkezi verileri alınamadı: ${escapeHtml(error.message || "bilinmeyen hata")}</div>`;

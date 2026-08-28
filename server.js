@@ -6056,6 +6056,52 @@ async function handleTradingState(
 
 }
 
+/*
+ * Sistem sağlık özeti yalnızca durum bilgisi döndürür. Anahtar, secret,
+ * oturum veya bakiye içermez; dış servislerde yan etki yaratacak bir istek
+ * yapmaz. Böylece kontrol ekranı güvenli biçimde Render yapılandırmasını ve
+ * son kalıcı çalışma durumunu gösterir.
+ */
+function systemHealthItem(label, ready, detail) {
+  return {
+    label,
+    status: ready ? "READY" : "NEEDS_ATTENTION",
+    detail: String(detail || ""),
+  };
+}
+
+async function handleSystemHealth(req, res) {
+  try {
+    const saved = await getTradingState();
+    const state = saved.content || {};
+    const cryptoPaper = state.cryptoPaper || {};
+    const nasdaqPaper = state.nasdaqPaper || {};
+    const aiProviderCount = [process.env.GROQ_API_KEY, process.env.GEMINI_API_KEY, process.env.MISTRAL_API_KEY]
+      .filter(Boolean).length;
+    const items = [
+      systemHealthItem("OTURUM GÜVENLİĞİ", Boolean(process.env.AUTH_PASSWORD_HASH && process.env.SESSION_SECRET), "Sunucu oturumu"),
+      systemHealthItem("KALICI DURUM", Boolean(process.env.GITHUB_OWNER && process.env.GITHUB_REPO && process.env.GITHUB_TOKEN), "GitHub state deposu"),
+      systemHealthItem("YZ SAĞLAYICILARI", aiProviderCount > 0, aiProviderCount ? `${aiProviderCount} sağlayıcı hazır` : "YZ anahtarı eksik"),
+      systemHealthItem("TELEGRAM", Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && TELEGRAM_WEBHOOK_SECRET), TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && TELEGRAM_WEBHOOK_SECRET ? "Bildirim ve onay webhook'u" : "Bildirim yapılandırması eksik"),
+      systemHealthItem("BIST VERİSİ", Boolean(state.scanner?.timestamp), state.scanner?.timestamp ? `Son tarama: ${state.scanner.timestamp}` : "Henüz BIST taraması yok"),
+      systemHealthItem("BİNANCE", Boolean(BINANCE_API_KEY && BINANCE_API_SECRET), BINANCE_API_KEY && BINANCE_API_SECRET ? "Spot bağlantısı yapılandırıldı" : "Spot anahtarları eksik"),
+      systemHealthItem("KRİPTO VERİSİ", Boolean(cryptoPaper.scanner?.timestamp), cryptoPaper.scanner?.timestamp ? `Son tarama: ${cryptoPaper.scanner.timestamp}` : "Henüz kripto taraması yok"),
+      systemHealthItem("ALPACA", Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY ? `${ALPACA_DATA_FEED.toUpperCase()} günlük veri yapılandırıldı` : "Alpaca anahtarları eksik"),
+      systemHealthItem("NASDAQ VERİSİ", Boolean(nasdaqPaper.scanner?.timestamp), nasdaqPaper.scanner?.timestamp ? `Son tarama: ${nasdaqPaper.scanner.timestamp}` : "Henüz NASDAQ taraması yok"),
+      systemHealthItem("BIST İZLEYİCİ", !paperMonitorStatus.lastError, paperMonitorStatus.lastFinishedAt ? `Son kontrol: ${paperMonitorStatus.lastFinishedAt}` : "İlk kontrol bekleniyor"),
+      systemHealthItem("PİYASA İZLEYİCİ", !marketPaperMonitorRunning, marketPaperMonitorRunning ? "Kontrol çalışıyor" : "Sonraki kontrolü bekliyor"),
+    ];
+    return sendJSON(res, 200, {
+      timestamp: new Date().toISOString(),
+      healthy: items.filter(item => item.status === "READY").length,
+      total: items.length,
+      items,
+    });
+  } catch (error) {
+    return sendJSON(res, 500, {error: "Sistem sağlık bilgisi alınamadı."});
+  }
+}
+
 
 /*
 ========================================================
@@ -7775,6 +7821,8 @@ if (
 ) {
   return handleTradingScannerStatus(req, res);
 }
+
+if (req.method === "GET" && pathname === "/api/system/health") return handleSystemHealth(req, res);
 
 if (
   req.method === "GET" &&
