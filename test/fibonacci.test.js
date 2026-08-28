@@ -11,16 +11,6 @@ test("ENJSA reference formulas use 2.70% trigger, 2% stop and extension targets"
   assert.ok(Math.abs(levels.tp2-159.48)<.1);
   assert.ok(Math.abs(levels.tp3-175.8)<.1);
 });
-test("four-hour aggregation does not accept an incomplete session bucket",()=>{
-  const day=Date.UTC(2026,0,5);
-  const hourly=[10,11,12].map((hour,i)=>({time:(day+hour*3600000)/1000,open:100+i,high:101+i,low:99+i,close:100+i,volume:100}));
-  assert.equal(fib.aggregateFourHour(hourly,day+20*3600000).length,0);
-});
-test("four-hour confirmation requires close above trigger, not merely a wick",()=>{
-  const trigger=101;
-  const wick={close:100.9,high:102};
-  assert.equal(wick.close>trigger,false);
-});
 test("ABC selection prefers the stronger structural impulse over a later local swing",()=>{
   const start=Date.UTC(2025,0,1);
   const history=Array.from({length:230},(_,i)=>{const base=16+i*.01;return {time:(start+i*86400000)/1000,open:base,high:base+.5,low:base-.5,close:base,volume:1000000};});

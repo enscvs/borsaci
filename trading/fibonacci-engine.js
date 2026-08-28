@@ -31,7 +31,7 @@ const CONFIG = Object.freeze({
     turnoverStrong: 500000000, turnoverMedium: 200000000, emaDistanceAtr: 1,
     overboughtRsi: 75, extendedEmaAtr: 2, fiveDayRunupPercent: 12
   },
-  data: { minDailyBars: 220, minFourHourCandles: 4 }
+  data: { minDailyBars: 220 }
 });
 
 const finite = value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
@@ -71,7 +71,7 @@ function completedDailyHistory(history, now=Date.now(), options={}) {
    * geçmiş mumlar ulaşır. Bu nedenle UTC kapanışı İstanbul saatinde ertesi
    * güne sarkmış olsa dahi yeniden BIST 18:15 filtresinden geçirilmez.
    */
-  if(market === "CRYPTO") {
+  if(market === "CRYPTO" || market === "NASDAQ") {
     while(completed.length && (!finite(timeMs(completed.at(-1))) || timeMs(completed.at(-1))>now)) completed.pop();
     return completed;
   }
@@ -237,11 +237,6 @@ function findDescendingHighTrendline(history, pointB, now=Date.now(), options={}
     entryUpperRaw,
     entryUpperPrice:round(entryUpperRaw)
   };
-}
-function aggregateFourHour(hourly, now=Date.now()) {
-  const fmt=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",hourCycle:"h23"}),groups=new Map();
-  for(const bar of hourly||[]){const t=timeMs(bar);if(!finite(t)||t+3600000>now)continue;const p=Object.fromEntries(fmt.formatToParts(new Date(t)).filter(x=>x.type!=="literal").map(x=>[x.type,x.value]));const hour=Number(p.hour);if(hour<10||hour>=18)continue;const bucket=hour<14?"10-14":"14-18",key=`${p.year}-${p.month}-${p.day}-${bucket}`;const rows=groups.get(key)||[];rows.push({...bar,_time:t});groups.set(key,rows);}
-  return [...groups.values()].filter(rows=>rows.length>=4).map(rows=>{rows.sort((a,b)=>a._time-b._time);return {time:rows.at(-1)._time,open:rows[0].open,high:Math.max(...rows.map(x=>x.high)),low:Math.min(...rows.map(x=>x.low)),close:rows.at(-1).close,volume:rows.reduce((s,x)=>s+(Number(x.volume)||0),0)};}).sort((a,b)=>a.time-b.time);
 }
 function findAbc(history, options={}) {
   const window=structureWindow(options);
@@ -443,4 +438,4 @@ function score(history, fib) {
   return {score:value,grade,features:f,reasons,risks,scoreBreakdown};
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
-module.exports={CONFIG,validateDaily,features,aggregateFourHour,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
+module.exports={CONFIG,validateDaily,features,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
