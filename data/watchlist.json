@@ -5122,7 +5122,7 @@
           "symbol": "ACGL",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_LIMIT",
+          "status": "REJECTED",
           "grade": "A+ / GÜÇLÜ ADAY",
           "timestamp": "2026-08-27T13:21:10.850Z",
           "entry": {
@@ -5227,7 +5227,8 @@
             "stage": "PENDING_LIMIT",
             "lastCheckedAt": "2026-08-27T13:21:19.657Z",
             "lastMarketPrice": 100.7
-          }
+          },
+          "closedAt": "2026-08-28T06:21:23.605Z"
         },
         {
           "id": "nasdaq-1787836823251-ACGL-25d0447f",
@@ -9631,6 +9632,119 @@
       ],
       "history": [
         {
+          "id": "nasdaq-1787836870850-ACGL-505f1a75",
+          "symbol": "ACGL",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "A+ / GÜÇLÜ ADAY",
+          "timestamp": "2026-08-27T13:21:10.850Z",
+          "entry": {
+            "low": 97.75,
+            "high": 97.75,
+            "reference": 97.75
+          },
+          "stop": 95.27,
+          "target1": 109.46,
+          "target2": 112.79,
+          "target3": 117.03,
+          "fibonacci": {
+            "valid": true,
+            "status": "ACTIVE",
+            "pointA": {
+              "type": "LOW",
+              "index": 573,
+              "price": 87.25,
+              "date": "2026-06-03T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 610,
+              "price": 107.07,
+              "date": "2026-07-28T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 622,
+              "price": 97.21,
+              "date": "2026-08-13T04:00:00.000Z"
+            },
+            "range": 19.82,
+            "retracementRatio": 0.4975,
+            "entryTriggerPrice": 97.75,
+            "entryZoneLow": 97.75,
+            "entryZoneHigh": 100.87,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 610,
+                "price": 107.07,
+                "date": "2026-07-28T04:00:00.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 625,
+                "price": 100.54,
+                "date": "2026-08-18T04:00:00.000Z"
+              },
+              "slopePerBar": -0.435333,
+              "lastCompletedCandleTime": "2026-08-26T04:00:00.000Z",
+              "projectedPoint": {
+                "index": 631,
+                "date": "2026-08-26T04:00:00.000Z",
+                "price": 97.928
+              },
+              "breakoutPrice": 97.928,
+              "breakoutPriceAtLast": 97.928,
+              "entryUpperRaw": 100.86584000000002,
+              "entryUpperPrice": 100.87
+            },
+            "stopLoss": 95.27,
+            "tp1": 109.46,
+            "tp2": 112.79,
+            "tp3": 117.03,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": null,
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-14T04:00:00.000Z",
+            "confirmationCandleClose": 98.69,
+            "entryPrice": 100.7,
+            "riskRewardTp1": 1.61,
+            "riskRewardTp2": 2.23,
+            "riskRewardTp3": 3.01
+          },
+          "indicators": {
+            "score": 90
+          },
+          "pendingOrder": {
+            "symbol": "ACGL",
+            "quantity": 10,
+            "entryPrice": 97.75,
+            "orderType": "LIMIT",
+            "stop": 95.27,
+            "target1": 109.46,
+            "target2": 112.79,
+            "target3": 117.03,
+            "paperOnly": true,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-27T13:21:10.850Z",
+            "updatedAt": "2026-08-27T13:21:19.657Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 100.7
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-27T13:21:19.657Z",
+            "lastMarketPrice": 100.7
+          },
+          "closedAt": "2026-08-28T06:21:23.605Z"
+        },
+        {
           "id": "nasdaq-pos-1787822985953-ACGL",
           "decisionId": "1787821479538-ACGL",
           "symbol": "ACGL",
@@ -10968,6 +11082,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-28T06:21:23.605Z",
+          "type": "NASDAQ_REJECT",
+          "message": "ACGL NASDAQ emri reddedildi."
+        },
         {
           "timestamp": "2026-08-27T13:21:29.355Z",
           "type": "NASDAQ_CLOSE",
