@@ -15887,11 +15887,6 @@
       ],
       "activity": [
         {
-          "timestamp": "2026-08-29T18:19:47.159Z",
-          "type": "NASDAQ_SCAN",
-          "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
-        },
-        {
           "timestamp": "2026-08-29T18:00:33.971Z",
           "type": "NASDAQ_BROKER_ENTRY_PENDING",
           "message": "AFRM Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
@@ -16078,7 +16073,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-29T18:19:47.159Z",
+        "timestamp": "2026-08-29T11:46:05.250Z",
         "scanned": 100,
         "successful": 99,
         "results": [
@@ -16392,9 +16387,9 @@
               "provider": "GROQ",
               "verdict": "INFO",
               "score": null,
-              "newsComment": "Affirm Avustralya'ya genişledi ve yeni başkan Michael Linford atandı; şirket tahminleri aştı, yönlendirmesini yükseltti ve hisseleri yükselişte.",
-              "expertComment": "Şirketin uluslararası genişlemesi ve güçlü çeyrek sonuçları, finansal hizmetler sektöründe olumlu bir ivme sinyali veriyor.",
-              "summary": "Affirm, Avustralya'da faaliyetlerini artırdı, kazanç tahminlerini aştı ve yönlendirmesini yükseltti; bu gelişmeler hisse fiyatının yükselmesine yol açtı."
+              "newsComment": "Affirm, Avustralya'da genişleme ve yeni başkan atamasıyla birlikte tahminleri aşarak yönlendirmesini artırdı; bu gelişmeler hisse fiyatını yükseltti.",
+              "expertComment": "Değerlemesinin tam olarak belirlenip belirlenmediği konusunda analist görüşleri belirsiz.",
+              "summary": "Affirm, Avustralya'da faaliyetlerini genişletti, Michael Linford başkan oldu ve kazanç tahminlerini aşarak yönlendirmesini yükseltti; hisse fiyatı bu haberlerle artış gösterdi."
             }
           },
           {
@@ -16704,9 +16699,9 @@
               "provider": "GROQ",
               "verdict": "INFO",
               "score": null,
-              "newsComment": "Fortinet, güvenlik sektöründeki genel yükselişle birlikte hisse fiyatı %12 artış gösterdi; Stanford Atletik takımıyla çok yıllı bir sponsorluk anlaşması imzalad",
-              "expertComment": "Güvenlik platformundaki ivme ve stratejik sponsorluk, Fortinet'in pazar konumunu güçlendiriyor ve yatırımcı ilgisini artırıyor.",
-              "summary": "Fortinet, güçlü kazanç sonrası hisse performansı, Stanford ile yeni sponsorluk ve teknik göstergelerde olumlu sinyallerle dikkat çekiyor."
+              "newsComment": "Fortinet, son kazanç raporundan bu yana %12 artış gösterdi, güvenlik platformu ivmesi ve 20 günlük hareketli ortalamanın üzerine çıkması yatırımcı ilgisini artı",
+              "expertComment": "",
+              "summary": "Fortinet, kazanç sonrası hisse fiyatında %12 artış yaşadı, güvenlik platformu momentumunu sürdürdü ve 20 günlük hareketli ortalamanın üzerine çıktı; ayrıca Stanford Üniversitesi il"
             }
           },
           {
@@ -16987,13 +16982,13 @@
             "volumeRatio": 1.1274157771957682,
             "turnover": 45183657.675,
             "aiReview": {
-              "available": true,
-              "provider": "GROQ",
+              "available": false,
+              "provider": "UNAVAILABLE",
               "verdict": "INFO",
               "score": null,
-              "newsComment": "Cadence Design Systems, AI ajanları pivotu sayesinde yönlendirmesini artırdı ve hisse %10,8 yükseldi; şirket AI ajanlarının çip tasarımını hızlandıracağını vurg",
-              "expertComment": "AI odaklı strateji, Cadence'in büyüme potansiyelini destekliyor; ancak yöneticinin hisse satışı, kısa vadeli dalgalanmalara işaret edebilir.",
-              "summary": "Cadence, AI ajanları üzerine yönlendirme artışı ve hisse yükselişiyle büyüme beklentilerini güçlendirirken, yöneticisinin hisse satışı dikkat gerektiriyor."
+              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
+              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
             }
           },
           {
@@ -18551,8 +18546,8 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-29T11:24:28.077Z",
-          "updatedAt": "2026-08-29T11:24:28.077Z",
-          "editedAt": null
+          "updatedAt": "2026-08-29T18:19:54.601Z",
+          "editedAt": "2026-08-29T18:19:54.601Z"
         }
       }
     ],
@@ -34991,6 +34986,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-29T18:19:54.601Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "DOHOL bekleyen paper emri düzenlendi: 1368 lot · ₺22,34 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-29T11:24:28.077Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "DOHOL kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -35484,11 +35484,6 @@
         "timestamp": "2026-08-26T10:47:17.841Z",
         "type": "PAPER_REJECTED",
         "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
-      },
-      {
-        "timestamp": "2026-08-26T10:47:10.631Z",
-        "type": "PAPER_REJECTED",
-        "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
       }
     ],
     "scannerSnapshot": {
