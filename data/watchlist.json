@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 102267.06,
-      "equity": 142746.66,
+      "cash": 67711.54,
+      "equity": 142712.14,
       "pnl": 43050.113574438095,
       "pnlPercent": 43.0501135744381,
       "positions": [
+        {
+          "id": "paper-2026-08-29T20:27:37.140Z-BINBN-d71e8942",
+          "decisionId": "1788035203228-BINBN",
+          "decisionIds": [
+            "1788035203228-BINBN"
+          ],
+          "symbol": "BINBN",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 185,
+          "originalQuantity": 185,
+          "entry": 186.6,
+          "entryCommission": 34.52,
+          "current": 186.6,
+          "stop": 161.9,
+          "target1": 215.44,
+          "target2": 229.1,
+          "target3": 246.5,
+          "status": "OPEN",
+          "openedAt": "2026-08-29T20:27:37.140Z",
+          "tp1Hit": false,
+          "realizedPnl": -34.52,
+          "pnl": -34.52
+        },
         {
           "id": "paper-2026-08-29T20:27:06.739Z-SDTTR-0aa7e48c",
           "decisionId": "1788028181152-SDTTR",
@@ -18016,7 +18041,7 @@
         "rank": 3,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -18314,10 +18339,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-29T20:26:43.228Z",
           "expiresAt": "2026-08-30T20:26:43.228Z",
-          "overrideAt": "2026-08-29T20:27:25.638Z"
+          "overrideAt": "2026-08-29T20:27:25.638Z",
+          "openedAt": "2026-08-29T20:27:37.140Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -18338,8 +18364,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-29T20:27:25.638Z",
-          "updatedAt": "2026-08-29T20:27:32.838Z",
-          "editedAt": "2026-08-29T20:27:32.838Z"
+          "updatedAt": "2026-08-29T20:27:37.140Z",
+          "editedAt": "2026-08-29T20:27:32.838Z",
+          "commission": 34.52,
+          "totalCost": 34555.52,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-29T20:27:37.140Z"
         }
       }
     ],
@@ -35595,6 +35625,16 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-29T20:27:37.140Z",
+        "type": "PAPER_APPROVED",
+        "message": "BINBN paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-29T20:27:37.140Z",
+        "type": "PAPER_OPEN",
+        "message": "BINBN scanner paper pozisyonu açıldı: 185 lot · ₺34521.00 · LIMIT."
+      },
+      {
         "timestamp": "2026-08-29T20:27:32.838Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "BINBN bekleyen paper emri düzenlendi: 185 lot · ₺186,60 · LIMIT."
@@ -36081,16 +36121,6 @@
       },
       {
         "timestamp": "2026-08-26T11:09:33.933Z",
-        "type": "PAPER_LIMIT_PENDING",
-        "message": "AHGAZ LIMIT emir bekliyor: son ₺35,90 · limit ₺35,40."
-      },
-      {
-        "timestamp": "2026-08-26T11:09:31.126Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,40 · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T11:09:23.530Z",
         "type": "PAPER_LIMIT_PENDING",
         "message": "AHGAZ LIMIT emir bekliyor: son ₺35,90 · limit ₺35,40."
       }
