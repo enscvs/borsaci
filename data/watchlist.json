@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 108442.04,
-      "equity": 142019.53999999998,
-      "pnl": 43155.32357443809,
-      "pnlPercent": 43.155323574438086,
+      "cash": 142928.52,
+      "equity": 142928.52,
+      "pnl": 43120.80357443809,
+      "pnlPercent": 43.120803574438085,
       "positions": [
         {
           "id": "paper-2026-08-28T06:22:50.801Z-BINBN-85c31774",
@@ -23,16 +23,18 @@
           "originalQuantity": 185,
           "entry": 186.6,
           "entryCommission": 34.52,
-          "current": 181.5,
+          "current": 186.6,
           "stop": 161.9,
           "target1": 215.44,
           "target2": 229.1,
           "target3": 246.5,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-28T06:22:50.801Z",
           "tp1Hit": false,
           "realizedPnl": -34.52,
-          "pnl": -943.499999999999
+          "pnl": -69.04,
+          "closedAt": "2026-08-29T07:31:11.623Z",
+          "closeReason": "MANUAL_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-27T18:42:10.186Z-SDTTR-9e02f30d",
@@ -14027,13 +14029,15 @@
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
         "timestamp": "2026-08-28T16:57:48.027Z"
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1787845693091-BINBN",
         "rank": 3,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -14331,10 +14335,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-28T06:24:37.902Z",
           "expiresAt": "2026-08-29T06:24:37.902Z",
-          "openedAt": "2026-08-28T06:22:50.801Z"
+          "openedAt": "2026-08-28T06:22:50.801Z",
+          "closedAt": "2026-08-29T07:31:11.623Z"
         },
         "currentScan": false,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
@@ -14360,10 +14365,10 @@
           "totalCost": 34555.52,
           "status": "APPROVED",
           "approvedAt": "2026-08-28T06:22:50.801Z"
-        }
-      }
-    ],
-    "history": [
+        },
+        "outcome": "MANUAL_MARKET_CLOSE",
+        "realizedPnL": -69.04
+      },
       {
         "id": "1787898277902-SDTTR",
         "rank": 1,
@@ -30376,59 +30381,6 @@
         "timestamp": "2026-08-21T23:53:27.423Z",
         "outcome": "MANUAL_CLOSE",
         "realizedPnL": 0
-      },
-      {
-        "id": "1787356407423-BINBN",
-        "rank": 2,
-        "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "CLOSED",
-        "confidence": 94,
-        "entry": {
-          "low": 180.98,
-          "high": 184.51,
-          "reference": 183.1
-        },
-        "stop": 172.5,
-        "target1": 204.29,
-        "target2": 214.89,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 10.6,
-          "quantity": 84,
-          "positionValue": 15380.4,
-          "actualRisk": 890.4,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 54.69,
-          "atr": 7.06,
-          "volatility": 3.86
-        },
-        "lifecycle": {
-          "stage": "CLOSED",
-          "createdAt": "2026-08-21T23:53:27.423Z",
-          "expiresAt": "2026-08-22T23:53:27.423Z",
-          "openedAt": "2026-08-21T23:53:27.795Z",
-          "closedAt": "2026-08-21T23:53:55.535Z"
-        },
-        "reason": "Trend, momentum, hacim ve volatilite filtreleri paper işlem adayı olarak uyumlu.",
-        "invalidation": "Stop seviyesi 172.5 altındaki kapanış.",
-        "timestamp": "2026-08-21T23:53:27.423Z",
-        "outcome": "MANUAL_CLOSE",
-        "realizedPnL": 0
       }
     ],
     "dailySummary": {
@@ -30447,8 +30399,8 @@
         "CRYPTO": {
           "snapshot": {
             "market": "CRYPTO",
-            "timestamp": "2026-08-29T07:00:00.254Z",
-            "sessionKey": "2026-08-29T07",
+            "timestamp": "2026-08-29T06:00:00.251Z",
+            "sessionKey": "2026-08-29T06",
             "scanned": 100,
             "successful": 92,
             "topCandidates": [
@@ -30494,7 +30446,7 @@
               }
             ]
           },
-          "lastSuccessAt": "2026-08-29T07:00:12.467Z",
+          "lastSuccessAt": "2026-08-29T06:00:12.104Z",
           "lastError": null,
           "lastErrorAt": null
         },
@@ -30513,6 +30465,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-29T07:31:11.623Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-69.04."
+      },
       {
         "timestamp": "2026-08-28T16:57:48.751Z",
         "type": "SCAN",
@@ -31007,11 +30964,6 @@
         "timestamp": "2026-08-26T10:46:20.704Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:37:56.502Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
       }
     ],
     "scannerSnapshot": {
