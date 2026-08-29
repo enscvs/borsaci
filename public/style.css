@@ -2330,6 +2330,14 @@ textarea::placeholder {
   gap: 12px;
 }
 
+.trading-two-column.performance-layout-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.performance-panel-full {
+  grid-column: 1 / -1;
+}
+
 
 /* =========================================================
    PORTFOLIO
@@ -2388,6 +2396,10 @@ textarea::placeholder {
   gap: 1px;
 
   background: #222;
+}
+
+.performance-panel-full .risk-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .risk-grid > div {
@@ -2816,6 +2828,10 @@ textarea::placeholder {
     grid-template-columns: 1fr;
   }
 
+  .performance-panel-full .risk-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .paper-order-form,
   .manual-paper-order-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2825,6 +2841,10 @@ textarea::placeholder {
 
 
 @media (max-width: 600px) {
+
+  .performance-panel-full .risk-grid {
+    grid-template-columns: 1fr;
+  }
 
   .main-tab {
     flex: 1;
@@ -3479,7 +3499,7 @@ textarea::placeholder {
 }
 
 .crypto-spot-kill-switch-controls .crypto-live-confirm { grid-column: auto; margin: 0; }
- 
+
 @media (max-width: 620px) {
   .crypto-spot-balance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .crypto-live-order-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
