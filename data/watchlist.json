@@ -17652,8 +17652,8 @@
         "id": "1788028181152-SDTTR",
         "rank": 1,
         "symbol": "SDTTR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -17951,15 +17951,33 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-29T19:39:16.909Z",
-          "expiresAt": "2026-08-30T19:39:16.909Z"
+          "stage": "PENDING_APPROVAL",
+          "createdAt": "2026-08-29T18:29:41.152Z",
+          "expiresAt": "2026-08-30T18:29:41.152Z",
+          "overrideAt": "2026-08-29T19:39:23.762Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T19:39:16.909Z",
-        "manualOverride": false
+        "timestamp": "2026-08-29T18:29:41.152Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "SDTTR",
+          "quantity": 1659,
+          "entryPrice": 24.4,
+          "orderType": "LIMIT",
+          "stop": 18.03,
+          "target1": 24.88,
+          "target2": 26.64,
+          "target3": 28.88,
+          "positionValue": 40479.6,
+          "actualRisk": 10567.83,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-29T19:39:23.762Z",
+          "updatedAt": "2026-08-29T19:39:23.762Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787845693091-ASTOR",
@@ -18271,9 +18289,9 @@
           "openedAt": "2026-08-29T18:51:28.669Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T19:39:16.909Z",
+        "timestamp": "2026-08-29T18:29:41.152Z",
         "manualOverride": true,
         "pendingOrder": {
           "symbol": "ASTOR",
@@ -18601,14 +18619,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-29T19:39:16.909Z",
-          "expiresAt": "2026-08-30T19:39:16.909Z"
+          "createdAt": "2026-08-29T18:29:41.152Z",
+          "expiresAt": "2026-08-30T18:29:41.152Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (161.9) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T19:39:16.909Z",
-        "manualOverride": false
+        "timestamp": "2026-08-29T18:29:41.152Z"
       }
     ],
     "history": [
@@ -35585,9 +35602,9 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T19:39:17.460Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) refreshed or generated."
+        "timestamp": "2026-08-29T19:39:23.762Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "SDTTR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
       },
       {
         "timestamp": "2026-08-29T18:51:28.669Z",
@@ -36089,7 +36106,7 @@
       "version": "daily-top-five-v6",
       "sessionKey": "2026-08-28",
       "riskKey": "100000|31|3",
-      "createdAt": "2026-08-29T19:39:16.910Z",
+      "createdAt": "2026-08-29T18:29:41.152Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -36367,7 +36384,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T19:39:13.861Z",
+          "timestamp": "2026-08-29T18:29:37.877Z",
           "fallbackPlan": null,
           "decision": "A+ / GÜÇLÜ ADAY",
           "price": 24.399999618530273,
@@ -36663,7 +36680,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T19:39:10.862Z",
+          "timestamp": "2026-08-29T18:29:35.168Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 349,
@@ -36959,7 +36976,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T19:39:10.858Z",
+          "timestamp": "2026-08-29T18:29:35.170Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 186.60000610351562,
@@ -37273,7 +37290,7 @@
             "confirmationCandleClose": 103.9,
             "entryPrice": 114
           },
-          "timestamp": "2026-08-29T19:39:12.161Z",
+          "timestamp": "2026-08-29T18:29:36.315Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 114,
@@ -37569,7 +37586,7 @@
             "volumeConfirmation": "WEAK",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T19:39:12.670Z",
+          "timestamp": "2026-08-29T18:29:37.667Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 46.560001373291016,
