@@ -4199,6 +4199,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-29T19:00:06.677Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-29T14:51:28.757Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -4440,9 +4445,9 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-29T14:51:28.757Z",
+        "timestamp": "2026-08-29T19:00:06.677Z",
         "scanned": 100,
-        "successful": 92,
+        "successful": 93,
         "results": [
           {
             "symbol": "ZILUSDT",
@@ -4715,7 +4720,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
             },
-            "timestamp": "2026-08-29T14:51:25.570Z",
+            "timestamp": "2026-08-29T19:00:03.589Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.01,
@@ -4725,7 +4730,7 @@
               "tp3": 0.02,
               "riskRewardTp1": 2,
               "riskRewardTp2": 3,
-              "riskRewardTp3": 3,
+              "riskRewardTp3": 4,
               "message": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
             },
             "price": 0.005422,
@@ -5012,7 +5017,7 @@
               "volumeConfirmation": "WEAK",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-29T14:51:25.363Z",
+            "timestamp": "2026-08-29T19:00:03.468Z",
             "fallbackPlan": null,
             "price": 0.3434,
             "ema20": 0.33683305331867996,
@@ -5298,7 +5303,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-29T14:51:24.059Z",
+            "timestamp": "2026-08-29T19:00:02.441Z",
             "fallbackPlan": null,
             "price": 4.422,
             "ema20": 4.048393481843211,
@@ -5583,17 +5588,17 @@
               "riskRewardTp3": null,
               "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
             },
-            "timestamp": "2026-08-29T14:51:24.358Z",
+            "timestamp": "2026-08-29T19:00:02.164Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.7,
               "stopLoss": 0.59,
               "tp1": 0.91,
               "tp2": 1.02,
-              "tp3": 1.02,
+              "tp3": 1.12,
               "riskRewardTp1": 2,
               "riskRewardTp2": 3,
-              "riskRewardTp3": 3,
+              "riskRewardTp3": 4,
               "message": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
             },
             "price": 0.6965,
@@ -5861,17 +5866,17 @@
               "riskRewardTp3": null,
               "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-29T14:51:25.452Z",
+            "timestamp": "2026-08-29T19:00:03.181Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.01,
               "stopLoss": 0.01,
               "tp1": 0.02,
               "tp2": 0.02,
-              "tp3": 0.02,
+              "tp3": 0.03,
               "riskRewardTp1": 2,
               "riskRewardTp2": 3,
-              "riskRewardTp3": 3,
+              "riskRewardTp3": 4,
               "message": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
             },
             "price": 0.01045,
@@ -18299,8 +18304,8 @@
         "id": "1788028181152-BINBN",
         "rank": 3,
         "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -18598,33 +18603,14 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "PENDING",
           "createdAt": "2026-08-29T18:29:41.152Z",
-          "expiresAt": "2026-08-30T18:29:41.152Z",
-          "overrideAt": "2026-08-29T18:58:33.368Z"
+          "expiresAt": "2026-08-30T18:29:41.152Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (161.9) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z",
-        "manualOverride": true,
-        "pendingOrder": {
-          "symbol": "BINBN",
-          "quantity": 185,
-          "entryPrice": 186.6,
-          "orderType": "LIMIT",
-          "stop": 161.9,
-          "target1": 215.44,
-          "target2": 229.1,
-          "target3": 246.5,
-          "positionValue": 34521,
-          "actualRisk": 4569.5,
-          "paperOnly": true,
-          "source": "SCANNER",
-          "createdAt": "2026-08-29T18:58:33.368Z",
-          "updatedAt": "2026-08-29T18:58:33.368Z",
-          "editedAt": null
-        }
+        "timestamp": "2026-08-29T18:29:41.152Z"
       }
     ],
     "history": [
@@ -35601,11 +35587,6 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T18:58:33.368Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "BINBN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
         "timestamp": "2026-08-29T18:51:28.669Z",
         "type": "PAPER_APPROVED",
         "message": "ASTOR paper işlemi SITE üzerinden onaylandı."
@@ -36099,6 +36080,11 @@
         "timestamp": "2026-08-26T10:48:52.441Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺0.00."
+      },
+      {
+        "timestamp": "2026-08-26T10:48:40.103Z",
+        "type": "PAPER_APPROVED",
+        "message": "ALARK paper işlemi SITE üzerinden onaylandı."
       }
     ],
     "scannerSnapshot": {
