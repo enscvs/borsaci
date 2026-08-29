@@ -3509,27 +3509,37 @@ async function getWatchlist() {
 
       const data = await response.json();
       lastSha = typeof data?.sha === "string" ? data.sha : lastSha;
-      // Contents API büyük dosyalarda (yaklaşık 1 MB ve üzeri) `content`
-      // alanını boş/none döndürebilir. Trading state büyüdüğünde bu, geçerli
-      // GitHub kaydını boş sanıp yerel yedeğe düşmemize yol açıyordu. SHA'yı
-      // yine Contents API'den alır, veriyi gerekli olduğunda raw endpoint'ten
-      // indiririz.
+      // Contents API yaklaşık 1 MB üzerindeki dosyalarda `content` alanını
+      // boş döndürebilir. Bu durumda /raw/main kullanmak tehlikelidir: Contents
+      // cevabındaki SHA yeni commit'e, raw CDN ise birkaç saniye önceki commit'e
+      // ait olabilir. State ile SHA'nın farklı commitlerden gelmesi eski paper
+      // pozisyonlarının yeniden dirilmesine ve pending decision ID'lerinin
+      // kaybolmasına yol açıyordu. Bu nedenle içeriği MUTLAKA aynı blob SHA'dan
+      // okuyoruz.
       let decoded = typeof data?.content === "string"
         ? Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf8").trim()
         : "";
       if (!decoded) {
-        const rawEndpoint = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/data/watchlist.json?_=${Date.now()}-${attempt}`;
-        const rawResponse = await fetch(rawEndpoint, {
+        if (!data?.sha) {
+          throw new Error("GitHub watchlist blob SHA alınamadı.");
+        }
+        const blobEndpoint = `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/git/blobs/${data.sha}`;
+        const blobResponse = await fetch(blobEndpoint, {
           headers: {
             "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+            "Accept": "application/vnd.github+json",
             "User-Agent": "BorsaCI",
             "Cache-Control": "no-cache",
           },
         });
-        if (!rawResponse.ok) {
-          throw new Error(`GitHub watchlist raw içeriği okunamadı: HTTP ${rawResponse.status}`);
+        if (!blobResponse.ok) {
+          throw new Error(`GitHub watchlist blob içeriği okunamadı: HTTP ${blobResponse.status}`);
         }
-        decoded = (await rawResponse.text()).trim();
+        const blob = await blobResponse.json();
+        if (String(blob?.encoding || "").toLowerCase() !== "base64" || typeof blob?.content !== "string") {
+          throw new Error("GitHub watchlist blob kodlaması geçersiz.");
+        }
+        decoded = Buffer.from(blob.content.replace(/\n/g, ""), "base64").toString("utf8").trim();
       }
       if (!decoded) {
         throw new Error("GitHub watchlist çözümlendikten sonra boş kaldı.");
@@ -3550,21 +3560,10 @@ async function getWatchlist() {
     }
   }
 
-  // The deployed repository copy is a known-valid last backup.  It keeps the
-  // application available until the next successful state save repairs the
-  // malformed remote document.  A remote SHA is retained so that repair is
-  // still an update, never a blind create.
-  try {
-    const backupPath = path.join(__dirname, "data", "watchlist.json");
-    const backup = JSON.parse(fs.readFileSync(backupPath, "utf8"));
-    if (!backup || typeof backup !== "object" || Array.isArray(backup)) {
-      throw new Error("Yerel watchlist yedeği geçersiz.");
-    }
-    console.error(`WATCHLIST RECOVERY: geçerli yerel yedek kullanıldı (${lastError?.message || "bilinmeyen hata"}).`);
-    return { content: backup, sha: lastSha, recovered: true };
-  } catch (backupError) {
-    throw new Error(`GitHub watchlist okunamadı ve yerel yedek yüklenemedi: ${backupError.message}`);
-  }
+  // Uzak state okunamadığında deploy paketindeki eski JSON'u güncel SHA ile
+  // geri yazmak veri kaybına yol açar. Geçici GitHub hatasında işlemi durdurmak,
+  // eski pozisyon/emir snapshot'ını canlı state'in üzerine yazmaktan güvenlidir.
+  throw new Error(`GitHub watchlist okunamadı: ${lastError?.message || "bilinmeyen hata"}`);
 
 }
 
@@ -3583,44 +3582,32 @@ async function saveWatchlist(
       )
     ).toString("base64");
 
-
-  let currentSha = sha;
-  let lastError = null;
   const endpoint =
     `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`;
 
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
-    const response = await fetch(endpoint, {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json",
-        "User-Agent": "BorsaCI",
-      },
-      body: JSON.stringify({ message: "Update watchlist", content, ...(currentSha ? { sha: currentSha } : {}) }),
-    });
+  const response = await fetch(endpoint, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+      "Accept": "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "BorsaCI",
+    },
+    body: JSON.stringify({
+      message: "Update watchlist",
+      content,
+      ...(sha ? {sha} : {}),
+    }),
+  });
 
-    if (response.ok) {
-      return await response.json();
-    }
-
-    const errorText = await response.text();
-    lastError = new Error(`GitHub watchlist kaydedilemedi: ${errorText}`);
-    if (response.status !== 409 || attempt === 4) {
-      throw lastError;
-    }
-
-    // Another worker wrote state first. Re-read the latest SHA and retry the
-    // same complete, already validated document instead of leaving a partial
-    // JSON blob behind.
-    const latest = await getWatchlist();
-    currentSha = latest.sha;
-    await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+  if (response.ok) {
+    return await response.json();
   }
 
-  throw lastError || new Error("GitHub watchlist kaydedilemedi.");
-
+  const errorText = await response.text();
+  const error = new Error(`GitHub watchlist kaydedilemedi: HTTP ${response.status}: ${errorText}`);
+  error.status = response.status;
+  throw error;
 }
 
 
@@ -4173,33 +4160,41 @@ async function saveTradingState(
   sha,
   container
 ) {
-  const buildWatchlist = (base = {}) => ({
+  const desired = normalizeTradingState(state);
+  const baseTrading = normalizeTradingState(container?.trading);
+  const allKeys = new Set([
+    ...Object.keys(baseTrading || {}),
+    ...Object.keys(desired || {}),
+  ]);
+  const changedKeys = [...allKeys].filter(key =>
+    JSON.stringify(baseTrading?.[key]) !== JSON.stringify(desired?.[key])
+  );
+
+  const buildWatchlist = (base = {}, trading = desired) => ({
     ...base,
-    // Eşzamanlı bir scanner kaydı sırasında kullanıcının watchlist
-    // sembollerini eski bellek kopyasıyla geri alma.
     symbols: Array.isArray(base?.symbols) ? base.symbols : [],
-    trading: normalizeTradingState(state),
+    trading,
   });
 
-  let currentSha = sha;
-  let currentContainer = container;
-  let lastError = null;
-  // Scanner, 60 sn monitor ve kullanıcı arayüzü aynı GitHub dosyasına
-  // yazabilir. Contents API'nin SHA çakışmasını tek denemede taramayı
-  // düşürmek yerine güncel SHA ile birkaç kez güvenle yeniden deneriz.
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    try {
-      return await saveWatchlist(buildWatchlist(currentContainer), currentSha);
-    } catch (error) {
-      lastError = error;
-      if (!/\b409\b|expected [a-f0-9]{40}/i.test(String(error?.message || ""))) throw error;
-      const latest = await getWatchlist();
-      currentSha = latest.sha;
-      currentContainer = latest.content;
-    }
-  }
-  throw lastError || new Error("İşlem durumu kaydedilemedi.");
+  try {
+    return await saveWatchlist(buildWatchlist(container), sha);
+  } catch (error) {
+    if (Number(error?.status) !== 409) throw error;
 
+    // Başka market/worker önce yazdıysa eski TAM snapshot'ı yeni SHA ile tekrar
+    // basmıyoruz. Son state'i yeniden okuyup yalnız bu mutasyonda gerçekten
+    // değişen üst seviye trading dallarını uygularız. Böylece örneğin NASDAQ
+    // yazımı BIST pending emrini veya BIST yazımı crypto state'ini geri alamaz.
+    const latest = await getWatchlist();
+    const mergedTrading = normalizeTradingState(latest.content?.trading);
+    for (const key of changedKeys) {
+      mergedTrading[key] = desired[key];
+    }
+    return await saveWatchlist(
+      buildWatchlist(latest.content, mergedTrading),
+      latest.sha
+    );
+  }
 }
 
 
@@ -4958,7 +4953,7 @@ async function recordAiDecisions(
     existing
       .filter(
         decision =>
-          ["PENDING", "PENDING_APPROVAL"].includes(decision?.status) &&
+          decision?.status === "PENDING" &&
           !isManualPaperDecision(decision) &&
           !incomingKeys.has(
             decisionFingerprint(decision)
@@ -5000,11 +4995,8 @@ async function recordAiDecisions(
             decisionFingerprint(decision)
           ) || existing.find(item =>
             item?.symbol === decision.symbol &&
-            item?.status === "OPEN" &&
-            !isManualPaperDecision(item) &&
-            state.paper.positions.some(position =>
-              position.decisionId === item.id && position.status === "OPEN"
-            )
+            ["PENDING_APPROVAL", "PENDING_LIMIT", "OPEN"].includes(item?.status) &&
+            !isManualPaperDecision(item)
           );
 
         if (!previous) {
@@ -5018,33 +5010,43 @@ async function recordAiDecisions(
               position.status === "OPEN"
           );
 
+        const queued = ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(previous.status);
         const next = {
           ...decision,
           id: previous.id,
           action:
-            hasOpenPosition
+            hasOpenPosition || queued
               ? previous.action
               : decision.action,
           status:
             hasOpenPosition
               ? "OPEN"
-              : decision.status,
+              : queued
+                ? previous.status
+                : decision.status,
           lifecycle:
             hasOpenPosition
               ? {
-                  ...(decision.lifecycle || {}),
+                  ...(previous.lifecycle || decision.lifecycle || {}),
                   stage: "OPEN",
                   openedAt:
                     previous.lifecycle?.openedAt ||
                     previous.timestamp ||
-                  now,
+                    now,
                 }
-              : decision.lifecycle,
-          // Aynı teknik plan tekrar tarandığında güncel AI içeriği gelir;
-          // fakat kullanıcı tarafından düzenlenmiş lot/fiyat/emir türü
-          // taslağı özellikle korunur.
+              : queued
+                ? {
+                    ...(decision.lifecycle || {}),
+                    ...(previous.lifecycle || {}),
+                    stage: previous.status,
+                  }
+                : decision.lifecycle,
+          manualOverride: Boolean(previous.manualOverride || decision.manualOverride),
+          // Onaya alınmış emir artık scanner taslağı değildir. Yeni tarama
+          // teknik kartı güncelleyebilir fakat lot/fiyat/order type ve karar ID'si
+          // kullanıcı onaylayana/reddedene kadar sabit kalır.
           pendingOrder:
-            previous.status === "PENDING_APPROVAL"
+            queued
               ? previous.pendingOrder
               : previous.pendingOrder || decision.pendingOrder,
         };
@@ -5073,12 +5075,21 @@ async function recordAiDecisions(
   const retainedManualDecisions = existing.filter(
     decision =>
       isManualPaperDecision(decision) &&
-      ["PENDING_APPROVAL", "OPEN"].includes(decision?.status) &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT", "OPEN"].includes(decision?.status) &&
       !state.decisions.some(next => next.id === decision.id)
   );
+  const nowMs = Date.parse(now);
+  const retainedQueuedDecisions = existing.filter(decision => {
+    if (isManualPaperDecision(decision)) return false;
+    if (!["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision?.status)) return false;
+    if (state.decisions.some(next => next.id === decision.id)) return false;
+    const expiresAt = Date.parse(decision?.lifecycle?.expiresAt || "");
+    return !Number.isFinite(expiresAt) || expiresAt > nowMs;
+  }).map(decision => ({...decision, currentScan: false}));
   state.decisions = [
     ...state.decisions,
     ...retainedOpenDecisions,
+    ...retainedQueuedDecisions,
     ...retainedManualDecisions,
   ];
 
@@ -5448,19 +5459,11 @@ if (!decisionId && !symbol) {
 const stateResult = await getTradingState();
 const state = stateResult.content;
 
-const decision =
-  (state.decisions || []).find(
-    item =>
-      item.id === decisionId &&
-      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
-      isPaperApprovableDecision(item)
-  ) ||
-  (state.decisions || []).find(
-    item =>
-      item.symbol === symbol &&
-      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
-      isPaperApprovableDecision(item)
-  );
+const decision = resolvePendingPaperDecision(state, {
+  decisionId,
+  orderId: input.orderId,
+  symbol,
+});
 
     if (
       !decision ||
@@ -5702,11 +5705,11 @@ async function handleKillSwitch(req, res) {
   }
 }
 
-async function approvePaperDecision(decisionId, source) {
+async function approvePaperDecision(decisionId, source, {orderId = "", symbol = ""} = {}) {
   const stateResult = await getTradingState();
   const state = stateResult.content;
-  const decision = (state.decisions || []).find(item => item.id === decisionId);
-  if (!decision || !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) {
+  const decision = resolvePendingPaperDecision(state, {decisionId, orderId, symbol});
+  if (!decision) {
     throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
   }
   const timestamp = new Date().toISOString();
@@ -5768,6 +5771,32 @@ function isPaperApprovableDecision(decision) {
     decision &&
     ["BUY SETUP", "MANUAL PAPER"].includes(decision.action)
   );
+}
+
+function resolvePendingPaperDecision(
+  state,
+  {decisionId = "", orderId = "", symbol = ""} = {}
+) {
+  const normalizedDecisionId = String(decisionId || "").trim();
+  const normalizedOrderId = String(orderId || "").trim();
+  const normalizedSymbol = String(symbol || "").trim().toUpperCase();
+  const pending = (Array.isArray(state?.decisions) ? state.decisions : []).filter(
+    item =>
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item?.status) &&
+      isPaperApprovableDecision(item)
+  );
+
+  const exactIds = new Set([normalizedDecisionId, normalizedOrderId].filter(Boolean));
+  if (exactIds.size) {
+    const exact = pending.find(item => exactIds.has(String(item?.id || "")));
+    if (exact) return exact;
+  }
+
+  if (!normalizedSymbol) return null;
+  const symbolMatches = pending.filter(
+    item => String(item?.symbol || "").trim().toUpperCase() === normalizedSymbol
+  );
+  return symbolMatches.length === 1 ? symbolMatches[0] : null;
 }
 
 
@@ -5933,11 +5962,11 @@ function tradingStateForClient(state) {
   };
 }
 
-async function rejectPaperDecision(decisionId, source) {
+async function rejectPaperDecision(decisionId, source, {orderId = "", symbol = ""} = {}) {
   const stateResult = await getTradingState();
   const state = stateResult.content;
-  const decision = (state.decisions || []).find(item => item.id === decisionId);
-  if (!decision || decision.status !== "PENDING_APPROVAL") {
+  const decision = resolvePendingPaperDecision(state, {decisionId, orderId, symbol});
+  if (!decision) {
     throw new Error("Bu paper işlem onay beklemiyor veya artık geçerli değil.");
   }
   const timestamp = new Date().toISOString();
@@ -5963,12 +5992,14 @@ async function handlePaperApproval(req, res) {
   try {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || input.orderId || "").trim();
-    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+    const orderId = String(input.orderId || "").trim();
+    const symbol = String(input.symbol || "").trim().toUpperCase();
+    if (!decisionId && !symbol) throw new Error("Karar kimliği veya sembol gerekli.");
     return sendJSON(
       res,
       200,
       tradingStateForClient(
-        await approvePaperDecision(decisionId, "SITE")
+        await approvePaperDecision(decisionId, "SITE", {orderId, symbol})
       )
     );
   } catch (error) {
@@ -5981,12 +6012,14 @@ async function handlePaperRejection(req, res) {
   try {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || input.orderId || "").trim();
-    if (!decisionId) throw new Error("Karar kimliği gerekli.");
+    const orderId = String(input.orderId || "").trim();
+    const symbol = String(input.symbol || "").trim().toUpperCase();
+    if (!decisionId && !symbol) throw new Error("Karar kimliği veya sembol gerekli.");
     return sendJSON(
       res,
       200,
       tradingStateForClient(
-        await rejectPaperDecision(decisionId, "SITE")
+        await rejectPaperDecision(decisionId, "SITE", {orderId, symbol})
       )
     );
   } catch (error) {
@@ -6023,9 +6056,9 @@ async function handleTelegramWebhook(req, res) {
   void (async () => {
     try {
       if (match[1] === "approve") {
-        await approvePaperDecision(match[2], "TELEGRAM");
+        await withTradingStateMutation("paper-telegram-approve", () => approvePaperDecision(match[2], "TELEGRAM"));
       } else {
-        await rejectPaperDecision(match[2], "TELEGRAM");
+        await withTradingStateMutation("paper-telegram-reject", () => rejectPaperDecision(match[2], "TELEGRAM"));
       }
     } catch (error) {
       console.error("TELEGRAM PAPER APPROVAL ERROR:", error.message);
@@ -10323,7 +10356,7 @@ if (
   req.method === "POST" &&
   pathname === "/api/trading/paper/decision/pending"
 ) {
-  return handleDecisionPendingOverride(req, res);
+  return withTradingStateMutation("paper-pending-override", () => handleDecisionPendingOverride(req, res));
 }
 
 if (
@@ -10333,7 +10366,7 @@ if (
     pathname === "/api/trading/paper/order/update"
   )
 ) {
-  return handlePendingPaperOrderUpdate(req, res);
+  return withTradingStateMutation("paper-order-update", () => handlePendingPaperOrderUpdate(req, res));
 }
 
 if (
@@ -10343,7 +10376,7 @@ if (
     pathname === "/api/trading/paper/order/manual"
   )
 ) {
-  return handleManualPaperOrder(req, res);
+  return withTradingStateMutation("paper-manual-order", () => handleManualPaperOrder(req, res));
 }
 
 if (
@@ -10353,14 +10386,14 @@ if (
     pathname === "/api/trading/paper/open"
   )
 ) {
-  return handlePaperApproval(req, res);
+  return withTradingStateMutation("paper-approval", () => handlePaperApproval(req, res));
 }
 
 if (
   req.method === "POST" &&
   pathname === "/api/trading/paper/reject"
 ) {
-  return handlePaperRejection(req, res);
+  return withTradingStateMutation("paper-rejection", () => handlePaperRejection(req, res));
 }
 
 if (
