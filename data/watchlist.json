@@ -13503,8 +13503,8 @@
         "id": "1787845693091-ASTOR",
         "rank": 2,
         "symbol": "ASTOR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 267.8,
@@ -13802,14 +13802,33 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z"
+          "expiresAt": "2026-08-29T16:57:48.027Z",
+          "overrideAt": "2026-08-29T10:00:23.304Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-28T16:57:48.027Z"
+        "timestamp": "2026-08-28T16:57:48.027Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "ASTOR",
+          "quantity": 115,
+          "entryPrice": 349,
+          "orderType": "LIMIT",
+          "stop": 257.25,
+          "target1": 383.84,
+          "target2": 416.83,
+          "target3": 458.85,
+          "positionValue": 40135,
+          "actualRisk": 10551.25,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-29T10:00:23.304Z",
+          "updatedAt": "2026-08-29T10:00:23.304Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787936268027-DOHOL",
@@ -30510,8 +30529,8 @@
         "CRYPTO": {
           "snapshot": {
             "market": "CRYPTO",
-            "timestamp": "2026-08-29T10:00:00.252Z",
-            "sessionKey": "2026-08-29T10",
+            "timestamp": "2026-08-29T08:00:00.254Z",
+            "sessionKey": "2026-08-29T08",
             "scanned": 100,
             "successful": 92,
             "topCandidates": [
@@ -30557,7 +30576,7 @@
               }
             ]
           },
-          "lastSuccessAt": "2026-08-29T10:00:13.033Z",
+          "lastSuccessAt": "2026-08-29T08:00:13.849Z",
           "lastError": null,
           "lastErrorAt": null
         },
@@ -30576,6 +30595,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-29T10:00:23.304Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "ASTOR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-08-29T07:31:11.623Z",
         "type": "CLOSED",
@@ -31070,11 +31094,6 @@
         "timestamp": "2026-08-26T10:47:10.631Z",
         "type": "PAPER_REJECTED",
         "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
-      },
-      {
-        "timestamp": "2026-08-26T10:46:20.704Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
       }
     ],
     "scannerSnapshot": {
