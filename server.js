@@ -45,6 +45,11 @@ const {
 const {
   createBistBroker,
 } = require("./trading/broker/bist-broker");
+const {
+  normalizeBinancePrivateGatewayUrl,
+  buildBinancePrivateGatewayUrl,
+  selectBinanceSignedRequestBases,
+} = require("./trading/binance-private-gateway");
 
 const precision = require("./precision/engine");
 
@@ -130,6 +135,9 @@ let binanceActivePublicBaseUrl = null;
 // kullanılır. Public piyasa verisi/fallback akışından özellikle ayrıdır.
 const BINANCE_API_KEY = String(process.env.BINANCE_API_KEY || "").trim();
 const BINANCE_API_SECRET = String(process.env.BINANCE_API_SECRET || "").trim();
+// Opsiyonel proxy: yalnız imzalı/private Spot çağrıları buradan geçer.
+// Public candle/scanner yolları bu ayardan etkilenmez.
+const BINANCE_PRIVATE_GATEWAY_URL = normalizeBinancePrivateGatewayUrl(process.env.BINANCE_PRIVATE_GATEWAY_URL);
 // İmzalı istekler public market-data aynalarına gönderilemez. Binance'in
 // Spot REST belgelerinde belirtilen resmi trading uçları arasında yalnızca
 // ağ engeli/rate-limit durumunda güvenli geri dönüş yapılır.
@@ -8502,14 +8510,33 @@ function binancePrivateBaseUrls() {
     : BINANCE_SPOT_PRIVATE_BASE_URLS;
 }
 
+function binanceSignedRequestBaseUrls() {
+  return selectBinanceSignedRequestBases({
+    gatewayUrl: BINANCE_PRIVATE_GATEWAY_URL,
+    activeBaseUrl: binanceActiveSpotPrivateBaseUrl,
+    fallbackBaseUrls: BINANCE_SPOT_PRIVATE_BASE_URLS,
+  });
+}
+
 function isBinanceRouteBlockedStatus(status) {
   return [418, 451, 502, 503, 504].includes(Number(status));
 }
 
 function binanceErrorForResponse(status, payload) {
+  const gatewayCode = String(payload?.code || "").toUpperCase();
   const exchangeCode = Number(payload?.code);
   let error;
-  if (exchangeCode === -1021) {
+  if (gatewayCode === "BINANCE_NETWORK_RESTRICTED") {
+    error = createBinanceAccountError("BINANCE_NETWORK_RESTRICTED", "Binance Spot hesabına gateway üzerinden şu anda erişilemiyor.");
+  } else if (gatewayCode === "BINANCE_AUTH_FAILED") {
+    error = createBinanceAccountError("BINANCE_AUTH_FAILED", "Binance kimlik doğrulaması başarısız. Render API anahtarlarını ve Spot yetkisini kontrol edin.");
+  } else if (gatewayCode === "BINANCE_CLOCK_SKEW") {
+    error = createBinanceAccountError("BINANCE_CLOCK_SKEW", "Binance zaman doğrulaması geçici olarak başarısız oldu; bağlantı yeniden denenebilir.");
+  } else if (gatewayCode === "BINANCE_RATE_LIMITED") {
+    error = createBinanceAccountError("BINANCE_RATE_LIMITED", "Binance istek limiti geçici olarak aşıldı. Kısa süre sonra yeniden deneyin.");
+  } else if (gatewayCode === "BINANCE_ACCOUNT_UNAVAILABLE") {
+    error = createBinanceAccountError("BINANCE_ACCOUNT_UNAVAILABLE", "Binance Spot hesap bilgisi şu anda alınamadı.");
+  } else if (exchangeCode === -1021) {
     error = createBinanceAccountError(
       "BINANCE_CLOCK_SKEW",
       "Binance zaman doğrulaması geçici olarak başarısız oldu; bağlantı yeniden denenebilir."
@@ -8685,6 +8712,8 @@ function safeBinanceOrderError(status) {
 
 async function fetchBinanceSpotPublic(pathname) {
   let lastError = null;
+  // Sembol kuralları gibi public doğrulamalar gateway'e gitmez; crypto
+  // scanner/candle akışı ve mevcut public fallback zinciri bundan bağımsızdır.
   for (const baseUrl of binancePrivateBaseUrls()) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -8721,7 +8750,9 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
   const normalizedMethod = String(method || "GET").toUpperCase();
   const isQueryRequest = ["GET", "DELETE"].includes(normalizedMethod);
   let lastError = null;
-  for (const baseUrl of binancePrivateBaseUrls()) {
+  // Gateway tanımlıysa yalnızca gateway denenir. Tanımlı değilse bugünkü
+  // Binance private endpoint fallback zinciri aynen korunur.
+  for (const baseUrl of binanceSignedRequestBaseUrls()) {
     // Her alternatif endpoint denemesinde timestamp/signature yenilenir;
     // önceki ağ gecikmesi recvWindow'u geçersiz kılmamalıdır.
     await refreshBinanceServerTimeOffset(baseUrl);
@@ -8734,9 +8765,10 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
     const query = search.toString();
     const signature = crypto.createHmac("sha256", BINANCE_API_SECRET).update(query).digest("hex");
     const signedQuery = `${query}&signature=${signature}`;
-    const requestUrl = isQueryRequest
-      ? `${baseUrl}${pathname}?${signedQuery}`
-      : `${baseUrl}${pathname}`;
+    const useGateway = Boolean(BINANCE_PRIVATE_GATEWAY_URL);
+    const requestUrl = useGateway
+      ? buildBinancePrivateGatewayUrl(baseUrl, pathname, isQueryRequest ? signedQuery : "")
+      : (isQueryRequest ? `${baseUrl}${pathname}?${signedQuery}` : `${baseUrl}${pathname}`);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
     try {
@@ -8759,7 +8791,7 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
         }
         throw error;
       }
-      binanceActiveSpotPrivateBaseUrl = baseUrl;
+      if (!useGateway) binanceActiveSpotPrivateBaseUrl = baseUrl;
       return response.json();
     } catch (error) {
       const retryable = error?.code === "BINANCE_NETWORK_RESTRICTED" || (isQueryRequest && isBinanceRouteBlockedStatus(error?.status));
