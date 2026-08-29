@@ -17624,8 +17624,8 @@
             }
           }
         ],
-        "decisions": [],
-        "source": "ALPACA_IEX_1DAY"
+        "source": "ALPACA_IEX_1DAY",
+        "decisions": []
       },
       "risk": {
         "maxPositionPercent": 20,
@@ -18301,7 +18301,7 @@
         "rank": 3,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -18599,10 +18599,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-29T18:29:41.152Z",
           "expiresAt": "2026-08-30T18:29:41.152Z",
-          "overrideAt": "2026-08-29T19:40:56.167Z"
+          "overrideAt": "2026-08-29T19:40:56.167Z",
+          "rejectedAt": "2026-08-29T20:02:59.558Z",
+          "rejectedBy": "SITE"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -18625,7 +18627,8 @@
           "createdAt": "2026-08-29T19:40:56.167Z",
           "updatedAt": "2026-08-29T19:40:56.167Z",
           "editedAt": null
-        }
+        },
+        "outcome": "USER_REJECTED"
       }
     ],
     "history": [
@@ -35602,6 +35605,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-29T20:02:59.558Z",
+        "type": "PAPER_REJECTED",
+        "message": "BINBN paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
         "timestamp": "2026-08-29T19:40:56.167Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "BINBN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -36095,11 +36103,6 @@
         "timestamp": "2026-08-26T11:07:56.894Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:48:52.441Z",
-        "type": "CLOSED",
-        "message": "ALARK paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺0.00."
       }
     ],
     "scannerSnapshot": {
