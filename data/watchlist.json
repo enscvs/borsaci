@@ -5856,25 +5856,25 @@
       "pnlPercent": 0,
       "positions": [
         {
-          "id": "nasdaq-broker-entry-1788025585698-AFRM",
-          "decisionId": "nasdaq-1788025186621-AFRM-db3bf0ba",
-          "symbol": "AFRM",
+          "id": "nasdaq-broker-entry-1788025593879-NVDA",
+          "decisionId": "nasdaq-1788023994646-NVDA-9a0da969",
+          "symbol": "NVDA",
           "market": "NASDAQ",
           "status": "PENDING_BROKER_ENTRY",
-          "quantity": 13,
-          "remainingQuantity": 13,
-          "plannedEntry": 72.06,
-          "current": 77.73,
-          "stop": 70.31,
-          "target1": 78.74,
-          "target2": 80.64,
-          "target3": 83.06,
-          "openedAt": "2026-08-29T17:46:25.413Z",
+          "quantity": 4,
+          "remainingQuantity": 4,
+          "plannedEntry": 208.42,
+          "current": 217.54,
+          "stop": 203.25,
+          "target1": 230.8,
+          "target2": 237.16,
+          "target3": 245.27,
+          "openedAt": "2026-08-29T17:46:33.599Z",
           "broker": {
             "submitted": true,
             "mode": "PAPER",
-            "brokerOrderId": "1589b3ee-0fac-4eed-b99b-2417173ab210",
-            "clientOrderId": "5bf8171b-8887-49da-ad1d-01ec3911ebdb",
+            "brokerOrderId": "52a55297-a9b2-4d71-b84d-1c8eec0833be",
+            "clientOrderId": "183407ee-33b2-4d02-a04f-2531930d2909",
             "status": "accepted",
             "filledQuantity": 0,
             "filledAveragePrice": 0
@@ -5927,7 +5927,7 @@
           "symbol": "AFRM",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "PENDING_APPROVAL",
           "grade": "A+ / GÜÇLÜ ADAY",
           "timestamp": "2026-08-29T17:39:46.621Z",
           "entry": {
@@ -6024,13 +6024,7 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T17:39:46.621Z",
-            "updatedAt": "2026-08-29T17:46:25.413Z",
-            "status": "PENDING_BROKER_ENTRY"
-          },
-          "lifecycle": {
-            "stage": "PENDING_BROKER_ENTRY",
-            "brokerOrderId": "1589b3ee-0fac-4eed-b99b-2417173ab210",
-            "lastCheckedAt": "2026-08-29T17:46:25.413Z"
+            "updatedAt": "2026-08-29T17:39:46.621Z"
           }
         },
         {
@@ -6038,7 +6032,7 @@
           "symbol": "NVDA",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_BROKER_ENTRY",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-29T17:19:54.646Z",
           "entry": {
@@ -6114,7 +6108,13 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T17:19:54.646Z",
-            "updatedAt": "2026-08-29T17:19:54.646Z"
+            "updatedAt": "2026-08-29T17:46:33.599Z",
+            "status": "PENDING_BROKER_ENTRY"
+          },
+          "lifecycle": {
+            "stage": "PENDING_BROKER_ENTRY",
+            "brokerOrderId": "52a55297-a9b2-4d71-b84d-1c8eec0833be",
+            "lastCheckedAt": "2026-08-29T17:46:33.599Z"
           }
         },
         {
@@ -15595,9 +15595,9 @@
       ],
       "activity": [
         {
-          "timestamp": "2026-08-29T17:46:25.413Z",
+          "timestamp": "2026-08-29T17:46:33.599Z",
           "type": "NASDAQ_BROKER_ENTRY_PENDING",
-          "message": "AFRM Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
+          "message": "NVDA Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
         },
         {
           "timestamp": "2026-08-29T17:39:46.621Z",
