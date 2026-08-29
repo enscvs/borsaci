@@ -9169,13 +9169,35 @@ function bindNasdaqLogout() {
   });
 }
 
+function cryptoPricePrecision(value) {
+  const number = Math.abs(Number(value));
+  if (!Number.isFinite(number) || number === 0) return 2;
+  // Binance Spot prices can have far more precision than BIST prices. Keep
+  // enough digits to distinguish the current price, entry, stop and targets
+  // without forcing every large-cap coin into a long decimal representation.
+  if (number < 0.000001) return 10;
+  if (number < 0.00001) return 9;
+  if (number < 0.0001) return 8;
+  if (number < 0.001) return 7;
+  if (number < 0.01) return 6;
+  if (number < 0.1) return 5;
+  if (number < 1) return 4;
+  if (number < 100) return 4;
+  return 2;
+}
+
+function cryptoChartPriceFormat(value) {
+  const precision = cryptoPricePrecision(value);
+  return { type: "price", precision, minMove: 10 ** -precision };
+}
+
 function formatCryptoUsd(value) {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) return "—";
   return new Intl.NumberFormat("tr-TR", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: number < 1 ? 6 : number < 100 ? 4 : 2,
+    maximumFractionDigits: cryptoPricePrecision(number),
   }).format(number);
 }
 
@@ -9539,6 +9561,10 @@ function renderCryptoDecisionChart(item) {
   try {
     if (cryptoMarketChart) cryptoMarketChart.remove();
     container.innerHTML = "";
+    const candles = (item.history || []).slice(-150).map(candle => ({
+      time: Number(candle.time), open: Number(candle.open), high: Number(candle.high), low: Number(candle.low), close: Number(candle.close),
+    })).filter(candle => Number.isFinite(candle.time) && [candle.open, candle.high, candle.low, candle.close].every(Number.isFinite));
+    const referencePrice = Number(item.price) || Number(candles.at(-1)?.close) || 1;
     cryptoMarketChart = LightweightCharts.createChart(container, {
       width: Math.max(280, container.clientWidth || 320), height: 300,
       layout: {background: {color: "#071008"}, textColor: "#b8d9c0"},
@@ -9549,10 +9575,8 @@ function renderCryptoDecisionChart(item) {
     cryptoCandleSeries = cryptoMarketChart.addSeries(LightweightCharts.CandlestickSeries, {
       upColor: "#42d392", downColor: "#f05b6b", borderVisible: false,
       wickUpColor: "#42d392", wickDownColor: "#f05b6b",
+      priceFormat: cryptoChartPriceFormat(referencePrice),
     });
-    const candles = (item.history || []).slice(-150).map(candle => ({
-      time: Number(candle.time), open: Number(candle.open), high: Number(candle.high), low: Number(candle.low), close: Number(candle.close),
-    })).filter(candle => Number.isFinite(candle.time) && [candle.open, candle.high, candle.low, candle.close].every(Number.isFinite));
     cryptoCandleSeries.setData(candles);
     const fib = item.fibonacci || {};
     const plan = fib.valid ? fib : (item.fallbackPlan || {});
