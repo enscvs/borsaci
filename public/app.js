@@ -9103,8 +9103,23 @@ function renderNasdaqPaperState(payload) {
 
 async function nasdaqRequest(endpoint, body = null) { const response=await fetch(endpoint,{method:body?"POST":"GET",headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined,cache:"no-store"});const payload=await response.json();if(!response.ok)throw new Error(payload?.error||"NASDAQ işlemi tamamlanamadı.");return payload; }
 function composeNasdaqAiRecords(records, decisions) {
-  const bySymbol = new Map((records || []).map(item => [item.symbol, item]));
-  return (decisions || []).slice(0, 3).map(decision => ({...(bySymbol.get(decision.symbol) || {}), ...decision, history: bySymbol.get(decision.symbol)?.history || decision.history}));
+  const sourceRecords = Array.isArray(records) ? records : [];
+  const bySymbol = new Map(sourceRecords.map(item => [item.symbol, item]));
+  const decisionList = Array.isArray(decisions) ? decisions : [];
+
+  // Scanner analiz kararları backend state'inde artık gerçek bekleyen emir gibi
+  // saklanmıyor. Canlı scanner cevabında karar listesi varsa onu birleştir;
+  // sayfa yenilemesinde yalnız scanner.results kaldıysa ilk 3 teknik adayı
+  // doğrudan kullan. Böylece NASDAQ kartları/geçmişi boşalmaz.
+  if (decisionList.length) {
+    return decisionList.slice(0, 3).map(decision => ({
+      ...(bySymbol.get(decision.symbol) || {}),
+      ...decision,
+      history: bySymbol.get(decision.symbol)?.history || decision.history,
+    }));
+  }
+
+  return sourceRecords.slice(0, 3);
 }
 async function loadNasdaqPaperState(){
   if(!nasdaqTab)return;
@@ -9184,8 +9199,6 @@ async function openNasdaqCloseDialog(position) {
 }
 
 function bindNasdaqInteractions(){nasdaqTab?.querySelectorAll("[data-nasdaq-decision-index],[data-nasdaq-history-index]").forEach(element=>{if(element.dataset.nasdaqDetailBound)return;element.dataset.nasdaqDetailBound="true";element.addEventListener("click",()=>{const historyIndex=element.dataset.nasdaqHistoryIndex;if(historyIndex!==undefined)return renderNasdaqHistoryDetail(Number(historyIndex));const item=nasdaqAiRecords[Number(element.dataset.nasdaqDecisionIndex)];if(item)renderNasdaqDetail(item);});});}
-Replace the existing `bindNasdaqPaperActions()` function in `public/app.js` with this exact function:
-
 function bindNasdaqPaperActions(){
   nasdaqTab?.querySelectorAll("[data-nasdaq-action]").forEach(button=>{
     if(button.dataset.nasdaqActionBound)return;
@@ -9205,25 +9218,34 @@ function bindNasdaqPaperActions(){
         }
 
         const decisionId=button.dataset.nasdaqDecisionId;
-        if(action==="approve"){
-          // Onay anındaki form değerlerini aynen backend'e gönder. Kullanıcı
-          // ayrıca "AYARLARI KAYDET" demek zorunda değildir; lot/fiyat/tür/SL/TP
-          // bu tek istekte normalize edilip aynı order olarak Alpaca'ya gider.
-          const card=button.closest("[data-nasdaq-pending-card]");
-          const form=card?.querySelector("[data-nasdaq-pending-form]");
-          const data=form?Object.fromEntries(new FormData(form)):{};
-          const orderType=String(data.orderType||form?.elements?.orderType?.value||"").toUpperCase();
-          if(orderType==="MARKET")data.entryPrice=null;
-          const payload=await nasdaqRequest("/api/nasdaq/paper/approve",{...data,decisionId});
-          renderNasdaqPaperState(payload);
+        const card=button.closest("[data-nasdaq-pending-card]");
+        const form=card?.querySelector("[data-nasdaq-pending-form]");
+
+        // Onay anında ekranda görünen değerler tek payload olarak gönderilir.
+        // Böylece AYARLARI KAYDET'e ayrıca basılmasa bile Alpaca'ya eski lot/fiyat gitmez.
+        if(action==="approve" && form){
+          const formData=Object.fromEntries(new FormData(form));
+          const orderType=String(formData.orderType||"LIMIT").toUpperCase();
+          const payload={
+            decisionId,
+            quantity:Number(formData.quantity),
+            entryPrice:orderType==="MARKET"?null:Number(formData.entryPrice),
+            orderType,
+            stop:formData.stop===""?null:Number(formData.stop),
+            target1:formData.target1===""?null:Number(formData.target1),
+            target2:formData.target2===""?null:Number(formData.target2),
+            target3:formData.target3===""?null:Number(formData.target3),
+          };
+          if(!Number.isFinite(payload.quantity)||payload.quantity<=0)throw new Error("Miktar geçersiz.");
+          if(orderType==="LIMIT"&&(!Number.isFinite(payload.entryPrice)||payload.entryPrice<=0))throw new Error("Limit fiyatı geçersiz.");
+          const data=await nasdaqRequest("/api/nasdaq/paper/approve",payload);
+          renderNasdaqPaperState(data);
           return;
         }
 
         const data=await nasdaqRequest(`/api/nasdaq/paper/${action}`,{decisionId});
         renderNasdaqPaperState(data);
-      }catch(error){
-        window.alert(error.message);
-      }
+      }catch(error){window.alert(error.message);}
     });
   });
 
@@ -9244,9 +9266,7 @@ function bindNasdaqPaperActions(){
         if(data.orderType==="MARKET")data.entryPrice=null;
         const payload=await nasdaqRequest("/api/nasdaq/paper/update",{...data,decisionId:card?.dataset.nasdaqDecisionId});
         renderNasdaqPaperState(payload);
-      }catch(error){
-        window.alert(error.message);
-      }
+      }catch(error){window.alert(error.message);}
     });
   });
 }
