@@ -4,36 +4,11 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 112336.84,
-      "equity": 142897.96,
+      "cash": 142928.52,
+      "equity": 142928.52,
       "pnl": 43120.80357443809,
       "pnlPercent": 43.120803574438085,
       "positions": [
-        {
-          "id": "paper-2026-08-29T18:20:39.734Z-DOHOL-b7b834e2",
-          "decisionId": "1787936268027-DOHOL",
-          "decisionIds": [
-            "1787936268027-DOHOL"
-          ],
-          "symbol": "DOHOL",
-          "source": "SCANNER",
-          "paperOnly": true,
-          "orderType": "LIMIT",
-          "quantity": 1368,
-          "originalQuantity": 1368,
-          "entry": 22.34,
-          "entryCommission": 30.56,
-          "current": 22.34,
-          "stop": 19.66,
-          "target1": 23.91,
-          "target2": 24.96,
-          "target3": 26.29,
-          "status": "OPEN",
-          "openedAt": "2026-08-29T18:20:39.734Z",
-          "tp1Hit": false,
-          "realizedPnl": -30.56,
-          "pnl": -30.56
-        },
         {
           "id": "paper-2026-08-28T06:22:50.801Z-BINBN-85c31774",
           "decisionId": "1787845693091-BINBN",
@@ -15912,6 +15887,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-29T18:21:04.801Z",
+          "type": "NASDAQ_SCAN",
+          "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
+        },
+        {
           "timestamp": "2026-08-29T18:00:33.971Z",
           "type": "NASDAQ_BROKER_ENTRY_PENDING",
           "message": "AFRM Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
@@ -16098,7 +16078,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-29T11:46:05.250Z",
+        "timestamp": "2026-08-29T18:21:04.801Z",
         "scanned": 100,
         "successful": 99,
         "results": [
@@ -16408,13 +16388,13 @@
             "volumeRatio": 4.365261113899973,
             "turnover": 66650610.88,
             "aiReview": {
-              "available": true,
-              "provider": "GROQ",
+              "available": false,
+              "provider": "UNAVAILABLE",
               "verdict": "INFO",
               "score": null,
-              "newsComment": "Affirm, Avustralya'da genişleme ve yeni başkan atamasıyla birlikte tahminleri aşarak yönlendirmesini artırdı; bu gelişmeler hisse fiyatını yükseltti.",
-              "expertComment": "Değerlemesinin tam olarak belirlenip belirlenmediği konusunda analist görüşleri belirsiz.",
-              "summary": "Affirm, Avustralya'da faaliyetlerini genişletti, Michael Linford başkan oldu ve kazanç tahminlerini aşarak yönlendirmesini yükseltti; hisse fiyatı bu haberlerle artış gösterdi."
+              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
+              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
             }
           },
           {
@@ -16720,13 +16700,13 @@
             "volumeRatio": 1.8275229026743467,
             "turnover": 53797144.8,
             "aiReview": {
-              "available": true,
-              "provider": "GROQ",
+              "available": false,
+              "provider": "UNAVAILABLE",
               "verdict": "INFO",
               "score": null,
-              "newsComment": "Fortinet, son kazanç raporundan bu yana %12 artış gösterdi, güvenlik platformu ivmesi ve 20 günlük hareketli ortalamanın üzerine çıkması yatırımcı ilgisini artı",
-              "expertComment": "",
-              "summary": "Fortinet, kazanç sonrası hisse fiyatında %12 artış yaşadı, güvenlik platformu momentumunu sürdürdü ve 20 günlük hareketli ortalamanın üzerine çıktı; ayrıca Stanford Üniversitesi il"
+              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
+              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
             }
           },
           {
@@ -18231,7 +18211,7 @@
         "rank": 3,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 20.23,
@@ -18547,11 +18527,10 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-28T16:57:48.027Z",
           "expiresAt": "2026-08-29T16:57:48.027Z",
-          "overrideAt": "2026-08-29T11:24:28.077Z",
-          "openedAt": "2026-08-29T18:20:39.734Z"
+          "overrideAt": "2026-08-29T11:24:28.077Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -18572,12 +18551,8 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-29T11:24:28.077Z",
-          "updatedAt": "2026-08-29T18:20:39.734Z",
-          "editedAt": null,
-          "commission": 30.56,
-          "totalCost": 30591.68,
-          "status": "APPROVED",
-          "approvedAt": "2026-08-29T18:20:39.734Z"
+          "updatedAt": "2026-08-29T11:24:28.077Z",
+          "editedAt": null
         }
       }
     ],
@@ -35016,16 +34991,6 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T18:20:39.734Z",
-        "type": "PAPER_APPROVED",
-        "message": "DOHOL paper işlemi SITE üzerinden onaylandı."
-      },
-      {
-        "timestamp": "2026-08-29T18:20:39.734Z",
-        "type": "PAPER_OPEN",
-        "message": "DOHOL scanner paper pozisyonu açıldı: 1368 lot · ₺30561.12 · LIMIT."
-      },
-      {
         "timestamp": "2026-08-29T11:24:28.077Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "DOHOL kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -35514,6 +35479,16 @@
         "timestamp": "2026-08-26T10:47:29.403Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
+      {
+        "timestamp": "2026-08-26T10:47:17.841Z",
+        "type": "PAPER_REJECTED",
+        "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
+        "timestamp": "2026-08-26T10:47:10.631Z",
+        "type": "PAPER_REJECTED",
+        "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
       }
     ],
     "scannerSnapshot": {
