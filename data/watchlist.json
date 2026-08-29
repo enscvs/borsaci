@@ -17624,6 +17624,7 @@
             }
           }
         ],
+        "decisions": [],
         "source": "ALPACA_IEX_1DAY"
       },
       "risk": {
@@ -17951,13 +17952,14 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-29T18:29:41.152Z",
-          "expiresAt": "2026-08-30T18:29:41.152Z"
+          "createdAt": "2026-08-29T19:39:16.909Z",
+          "expiresAt": "2026-08-30T19:39:16.909Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z"
+        "timestamp": "2026-08-29T19:39:16.909Z",
+        "manualOverride": false
       },
       {
         "id": "1787845693091-ASTOR",
@@ -18269,9 +18271,9 @@
           "openedAt": "2026-08-29T18:51:28.669Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z",
+        "timestamp": "2026-08-29T19:39:16.909Z",
         "manualOverride": true,
         "pendingOrder": {
           "symbol": "ASTOR",
@@ -18599,13 +18601,14 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-29T18:29:41.152Z",
-          "expiresAt": "2026-08-30T18:29:41.152Z"
+          "createdAt": "2026-08-29T19:39:16.909Z",
+          "expiresAt": "2026-08-30T19:39:16.909Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (161.9) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z"
+        "timestamp": "2026-08-29T19:39:16.909Z",
+        "manualOverride": false
       }
     ],
     "history": [
@@ -35582,6 +35585,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-29T19:39:17.460Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-29T18:51:28.669Z",
         "type": "PAPER_APPROVED",
         "message": "ASTOR paper işlemi SITE üzerinden onaylandı."
@@ -36075,18 +36083,13 @@
         "timestamp": "2026-08-26T10:48:52.441Z",
         "type": "CLOSED",
         "message": "ALARK paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺0.00."
-      },
-      {
-        "timestamp": "2026-08-26T10:48:40.103Z",
-        "type": "PAPER_APPROVED",
-        "message": "ALARK paper işlemi SITE üzerinden onaylandı."
       }
     ],
     "scannerSnapshot": {
       "version": "daily-top-five-v6",
       "sessionKey": "2026-08-28",
       "riskKey": "100000|31|3",
-      "createdAt": "2026-08-29T18:29:41.152Z",
+      "createdAt": "2026-08-29T19:39:16.910Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -36364,7 +36367,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:37.877Z",
+          "timestamp": "2026-08-29T19:39:13.861Z",
           "fallbackPlan": null,
           "decision": "A+ / GÜÇLÜ ADAY",
           "price": 24.399999618530273,
@@ -36660,7 +36663,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:35.168Z",
+          "timestamp": "2026-08-29T19:39:10.862Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 349,
@@ -36956,7 +36959,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:35.170Z",
+          "timestamp": "2026-08-29T19:39:10.858Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 186.60000610351562,
@@ -37270,7 +37273,7 @@
             "confirmationCandleClose": 103.9,
             "entryPrice": 114
           },
-          "timestamp": "2026-08-29T18:29:36.315Z",
+          "timestamp": "2026-08-29T19:39:12.161Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 114,
@@ -37566,7 +37569,7 @@
             "volumeConfirmation": "WEAK",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:37.667Z",
+          "timestamp": "2026-08-29T19:39:12.670Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 46.560001373291016,
