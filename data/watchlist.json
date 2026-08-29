@@ -4147,6 +4147,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-29T18:00:09.878Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-29T14:51:28.757Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -4388,7 +4393,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-29T14:51:28.757Z",
+        "timestamp": "2026-08-29T18:00:09.878Z",
         "scanned": 100,
         "successful": 92,
         "results": [
@@ -4663,7 +4668,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
             },
-            "timestamp": "2026-08-29T14:51:25.570Z",
+            "timestamp": "2026-08-29T18:00:06.682Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.01,
@@ -4960,7 +4965,7 @@
               "volumeConfirmation": "WEAK",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-29T14:51:25.363Z",
+            "timestamp": "2026-08-29T18:00:05.998Z",
             "fallbackPlan": null,
             "price": 0.3434,
             "ema20": 0.33683305331867996,
@@ -5246,7 +5251,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-29T14:51:24.059Z",
+            "timestamp": "2026-08-29T18:00:05.477Z",
             "fallbackPlan": null,
             "price": 4.422,
             "ema20": 4.048393481843211,
@@ -5531,7 +5536,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
             },
-            "timestamp": "2026-08-29T14:51:24.358Z",
+            "timestamp": "2026-08-29T18:00:04.977Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.7,
@@ -5809,7 +5814,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-29T14:51:25.452Z",
+            "timestamp": "2026-08-29T18:00:06.079Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.01,
@@ -5855,31 +5860,6 @@
       "pnl": 0,
       "pnlPercent": 0,
       "positions": [
-        {
-          "id": "nasdaq-broker-entry-1788026400439-AFRM",
-          "decisionId": "nasdaq-1788025186621-AFRM-db3bf0ba",
-          "symbol": "AFRM",
-          "market": "NASDAQ",
-          "status": "PENDING_BROKER_ENTRY",
-          "quantity": 13,
-          "remainingQuantity": 13,
-          "plannedEntry": 72.06,
-          "current": 77.73,
-          "stop": 70.31,
-          "target1": 78.74,
-          "target2": 80.64,
-          "target3": 83.06,
-          "openedAt": "2026-08-29T18:00:00.158Z",
-          "broker": {
-            "submitted": true,
-            "mode": "PAPER",
-            "brokerOrderId": "8df2be7b-612f-4633-9a58-4acaa6b88878",
-            "clientOrderId": "b1ae6fd1-d109-4dd8-bdff-e8c618d76777",
-            "status": "accepted",
-            "filledQuantity": 0,
-            "filledAveragePrice": 0
-          }
-        },
         {
           "id": "nasdaq-pos-1787822985953-ACGL",
           "decisionId": "1787821479538-ACGL",
@@ -6030,7 +6010,7 @@
           "symbol": "AFRM",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "PENDING_APPROVAL",
           "grade": "A+ / GÜÇLÜ ADAY",
           "timestamp": "2026-08-29T17:39:46.621Z",
           "entry": {
@@ -6127,13 +6107,7 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T17:39:46.621Z",
-            "updatedAt": "2026-08-29T18:00:00.158Z",
-            "status": "PENDING_BROKER_ENTRY"
-          },
-          "lifecycle": {
-            "stage": "PENDING_BROKER_ENTRY",
-            "brokerOrderId": "8df2be7b-612f-4633-9a58-4acaa6b88878",
-            "lastCheckedAt": "2026-08-29T18:00:00.158Z"
+            "updatedAt": "2026-08-29T17:39:46.621Z"
           }
         },
         {
@@ -15886,11 +15860,6 @@
         }
       ],
       "activity": [
-        {
-          "timestamp": "2026-08-29T18:00:00.158Z",
-          "type": "NASDAQ_BROKER_ENTRY_PENDING",
-          "message": "AFRM Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
-        },
         {
           "timestamp": "2026-08-29T17:57:20.878Z",
           "type": "NASDAQ_REJECT",
