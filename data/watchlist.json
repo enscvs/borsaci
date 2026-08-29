@@ -5898,96 +5898,109 @@
       ],
       "decisions": [
         {
-          "id": "nasdaq-1788011613154-NVDA-2af0ce7a",
-          "symbol": "NVDA",
+          "id": "nasdaq-1788023976949-AFRM-b8dab0cf",
+          "symbol": "AFRM",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "REJECTED",
-          "grade": "A / AL ADAYI",
-          "timestamp": "2026-08-29T13:53:33.153Z",
+          "status": "PENDING_APPROVAL",
+          "grade": "A+ / GÜÇLÜ ADAY",
+          "timestamp": "2026-08-29T17:19:36.949Z",
           "entry": {
-            "low": 208.42,
-            "high": 208.42,
-            "reference": 208.42
+            "low": 72.06,
+            "high": 72.06,
+            "reference": 72.06
           },
-          "stop": 203.25,
-          "target1": 230.8,
-          "target2": 237.16,
-          "target3": 245.27,
+          "stop": 70.31,
+          "target1": 78.74,
+          "target2": 80.64,
+          "target3": 83.06,
           "fibonacci": {
             "valid": true,
-            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "status": "TARGET_REACHED",
             "pointA": {
               "type": "LOW",
               "index": 21,
-              "price": 190.035,
+              "price": 69.66,
               "date": "2026-07-29T04:00:00.000Z"
             },
             "pointB": {
               "type": "HIGH",
-              "index": 34,
-              "price": 227.9,
-              "date": "2026-08-17T04:00:00.000Z"
+              "index": 26,
+              "price": 80.97,
+              "date": "2026-08-05T04:00:00.000Z"
             },
             "pointC": {
               "type": "LOW",
-              "index": 39,
-              "price": 207.4,
-              "date": "2026-08-24T04:00:00.000Z"
+              "index": 35,
+              "price": 71.75,
+              "date": "2026-08-18T04:00:00.000Z"
             },
-            "range": 37.87,
-            "retracementRatio": 0.5414,
-            "entryTriggerPrice": 208.42,
-            "entryZoneLow": 208.42,
-            "entryZoneHigh": null,
-            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "range": 11.31,
+            "retracementRatio": 0.8152,
+            "entryTriggerPrice": 72.06,
+            "entryZoneLow": 72.06,
+            "entryZoneHigh": 82.6,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
             "descendingResistance": {
-              "valid": false,
-              "available": false,
-              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
-              "anchor1": null,
-              "anchor2": null,
-              "slopePerBar": null,
+              "valid": true,
+              "available": true,
+              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 26,
+                "price": 80.97,
+                "date": "2026-08-05T04:00:00.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 33,
+                "price": 80.65,
+                "date": "2026-08-14T04:00:00.000Z"
+              },
+              "slopePerBar": -0.045714,
               "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
-              "projectedPoint": null,
-              "breakoutPrice": null,
-              "breakoutPriceAtLast": null,
-              "entryUpperRaw": null,
-              "entryUpperPrice": null
+              "projectedPoint": {
+                "index": 43,
+                "date": "2026-08-28T04:00:00.000Z",
+                "price": 80.1929
+              },
+              "breakoutPrice": 80.1929,
+              "breakoutPriceAtLast": 80.1929,
+              "entryUpperRaw": 82.59864285714288,
+              "entryUpperPrice": 82.6
             },
-            "stopLoss": 203.25,
-            "tp1": 230.8,
-            "tp2": 237.16,
-            "tp3": 245.27,
+            "stopLoss": 70.31,
+            "tp1": 78.74,
+            "tp2": 80.64,
+            "tp3": 83.06,
             "volumeConfirmation": "STRONG",
-            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+            "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-19T04:00:00.000Z",
+            "confirmationCandleClose": 77.33,
+            "entryPrice": 77.73,
+            "riskRewardTp1": 0.14,
+            "riskRewardTp2": 0.39,
+            "riskRewardTp3": 0.72
           },
           "indicators": {
-            "score": 73
+            "score": 83
           },
           "pendingOrder": {
-            "symbol": "NVDA",
-            "quantity": 4,
-            "entryPrice": 208.42,
+            "symbol": "AFRM",
+            "quantity": 13,
+            "entryPrice": 72.06,
             "orderType": "LIMIT",
-            "stop": 203.25,
-            "target1": 230.8,
-            "target2": 237.16,
-            "target3": 245.27,
-            "paperOnly": true,
+            "stop": 70.31,
+            "target1": 78.74,
+            "target2": 80.64,
+            "target3": 83.06,
+            "paperOnly": false,
             "source": "NASDAQ AI",
-            "createdAt": "2026-08-29T13:53:33.153Z",
-            "updatedAt": "2026-08-29T17:16:11.245Z",
-            "status": "PENDING_LIMIT",
-            "lastMarketPrice": 217.54
-          },
-          "lifecycle": {
-            "stage": "PENDING_LIMIT",
-            "lastCheckedAt": "2026-08-29T17:16:11.245Z",
-            "lastMarketPrice": 217.54
-          },
-          "closedAt": "2026-08-29T17:19:21.746Z"
+            "createdAt": "2026-08-29T17:19:36.949Z",
+            "updatedAt": "2026-08-29T17:19:36.949Z"
+          }
         },
         {
           "id": "1788003965250-AFRM",
@@ -13421,98 +13434,6 @@
       ],
       "history": [
         {
-          "id": "nasdaq-1788011613154-NVDA-2af0ce7a",
-          "symbol": "NVDA",
-          "market": "NASDAQ",
-          "action": "BUY SETUP",
-          "status": "REJECTED",
-          "grade": "A / AL ADAYI",
-          "timestamp": "2026-08-29T13:53:33.153Z",
-          "entry": {
-            "low": 208.42,
-            "high": 208.42,
-            "reference": 208.42
-          },
-          "stop": 203.25,
-          "target1": 230.8,
-          "target2": 237.16,
-          "target3": 245.27,
-          "fibonacci": {
-            "valid": true,
-            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
-            "pointA": {
-              "type": "LOW",
-              "index": 21,
-              "price": 190.035,
-              "date": "2026-07-29T04:00:00.000Z"
-            },
-            "pointB": {
-              "type": "HIGH",
-              "index": 34,
-              "price": 227.9,
-              "date": "2026-08-17T04:00:00.000Z"
-            },
-            "pointC": {
-              "type": "LOW",
-              "index": 39,
-              "price": 207.4,
-              "date": "2026-08-24T04:00:00.000Z"
-            },
-            "range": 37.87,
-            "retracementRatio": 0.5414,
-            "entryTriggerPrice": 208.42,
-            "entryZoneLow": 208.42,
-            "entryZoneHigh": null,
-            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-            "descendingResistance": {
-              "valid": false,
-              "available": false,
-              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
-              "anchor1": null,
-              "anchor2": null,
-              "slopePerBar": null,
-              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
-              "projectedPoint": null,
-              "breakoutPrice": null,
-              "breakoutPriceAtLast": null,
-              "entryUpperRaw": null,
-              "entryUpperPrice": null
-            },
-            "stopLoss": 203.25,
-            "tp1": 230.8,
-            "tp2": 237.16,
-            "tp3": 245.27,
-            "volumeConfirmation": "STRONG",
-            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
-          },
-          "indicators": {
-            "score": 73
-          },
-          "pendingOrder": {
-            "symbol": "NVDA",
-            "quantity": 4,
-            "entryPrice": 208.42,
-            "orderType": "LIMIT",
-            "stop": 203.25,
-            "target1": 230.8,
-            "target2": 237.16,
-            "target3": 245.27,
-            "paperOnly": true,
-            "source": "NASDAQ AI",
-            "createdAt": "2026-08-29T13:53:33.153Z",
-            "updatedAt": "2026-08-29T17:16:11.245Z",
-            "status": "PENDING_LIMIT",
-            "lastMarketPrice": 217.54
-          },
-          "lifecycle": {
-            "stage": "PENDING_LIMIT",
-            "lastCheckedAt": "2026-08-29T17:16:11.245Z",
-            "lastMarketPrice": 217.54
-          },
-          "closedAt": "2026-08-29T17:19:21.746Z"
-        },
-        {
           "id": "nasdaq-1787836870850-ACGL-505f1a75",
           "symbol": "ACGL",
           "market": "NASDAQ",
@@ -15559,9 +15480,9 @@
       ],
       "activity": [
         {
-          "timestamp": "2026-08-29T17:19:21.746Z",
-          "type": "NASDAQ_REJECT",
-          "message": "NVDA NASDAQ emri reddedildi."
+          "timestamp": "2026-08-29T17:19:36.949Z",
+          "type": "NASDAQ_PENDING",
+          "message": "AFRM NASDAQ emri onay bekliyor."
         },
         {
           "timestamp": "2026-08-29T17:16:11.245Z",
