@@ -6820,25 +6820,27 @@ async function approvePendingPaperOrder(
   form
 ) {
   const payload = readPaperOrderForm(form);
-  const state = await savePendingPaperOrder(form);
- const updatedDecision =
-  (state.state?.decisions || state.decisions || []).find(
-    item =>
-      item.symbol === payload.symbol &&
-      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status)
-  );
+  const saved = await savePendingPaperOrder(form);
+  const updatedDecision =
+    (saved.state?.decisions || []).find(
+      item =>
+        item.symbol === payload.symbol &&
+        ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status)
+    );
 
-const decisionId =
-  updatedDecision?.id ||
-  payload.decisionId;
-  if (!decisionId) {
+  const decisionId = updatedDecision?.id || payload.decisionId;
+  if (!decisionId && !payload.symbol) {
     throw new Error("Onay için karar kimliği bulunamadı.");
   }
 
   const response = await fetch("/api/trading/paper/approve", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({decisionId}),
+    body: JSON.stringify({
+      decisionId,
+      orderId: payload.orderId,
+      symbol: payload.symbol,
+    }),
   });
   const nextState = await readPaperOrderResponse(
     response,
@@ -6861,7 +6863,7 @@ async function rejectPendingPaperOrder(
   const response = await fetch("/api/trading/paper/reject", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({decisionId, orderId}),
+    body: JSON.stringify({decisionId, orderId, symbol: String(card?.dataset.symbol || "").trim().toUpperCase()}),
   });
   const state = await readPaperOrderResponse(
     response,
