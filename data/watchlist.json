@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 102198.01999999999,
-      "equity": 142677.62,
-      "pnl": 43015.5935744381,
-      "pnlPercent": 43.0155935744381,
+      "cash": 142637.13999999998,
+      "equity": 142637.13999999998,
+      "pnl": 42975.113574438095,
+      "pnlPercent": 42.9751135744381,
       "positions": [
         {
           "id": "paper-2026-08-29T20:27:37.140Z-BINBN-d71e8942",
@@ -55,11 +55,13 @@
           "target1": 24.88,
           "target2": 26.64,
           "target3": 28.88,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-29T20:27:06.739Z",
           "tp1Hit": false,
           "realizedPnl": -40.48,
-          "pnl": -40.48
+          "pnl": -80.96,
+          "closedAt": "2026-08-29T20:28:06.602Z",
+          "closeReason": "MANUAL_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-29T18:51:28.669Z-ASTOR-4858da7d",
@@ -17701,13 +17703,14 @@
       "active": false,
       "activatedAt": null
     },
-    "decisions": [
+    "decisions": [],
+    "history": [
       {
         "id": "1788028181152-SDTTR",
         "rank": 1,
         "symbol": "SDTTR",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -18005,11 +18008,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-29T18:29:41.152Z",
           "expiresAt": "2026-08-30T18:29:41.152Z",
           "overrideAt": "2026-08-29T20:15:20.974Z",
-          "openedAt": "2026-08-29T20:27:06.739Z"
+          "openedAt": "2026-08-29T20:27:06.739Z",
+          "closedAt": "2026-08-29T20:28:06.602Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
@@ -18036,10 +18040,10 @@
           "totalCost": 40520.08,
           "status": "APPROVED",
           "approvedAt": "2026-08-29T20:27:06.739Z"
-        }
-      }
-    ],
-    "history": [
+        },
+        "outcome": "MANUAL_MARKET_CLOSE",
+        "realizedPnL": -80.96
+      },
       {
         "id": "1788035203228-BINBN",
         "rank": 3,
@@ -35421,69 +35425,6 @@
         "invalidation": "Stop seviyesi 81.19 altındaki kapanış.",
         "timestamp": "2026-08-22T11:33:46.482Z",
         "outcome": "SUPERSEDED_BY_NEW_SCAN"
-      },
-      {
-        "id": "1787392436793-GESAN",
-        "rank": 3,
-        "symbol": "GESAN",
-        "action": "BUY SETUP",
-        "status": "CLOSED",
-        "confidence": 92,
-        "entry": {
-          "low": 85.78,
-          "high": 87.4,
-          "reference": 86.75
-        },
-        "stop": 81.89,
-        "target1": 96.47,
-        "target2": 101.33,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 4.86,
-          "quantity": 178,
-          "positionValue": 15441.5,
-          "actualRisk": 865.08,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 61.52,
-          "atr": 3.24,
-          "volatility": 3.73
-        },
-        "aiReview": {
-          "available": true,
-          "provider": "GROQ",
-          "score": 90,
-          "verdict": "APPROVE",
-          "summary": "Technical score 90, price above EMA20/50/200, RSI bullish, neutral news – approve.",
-          "chartComment": "Price surged to 86.75, highest of period, confirming bullish trend.",
-          "newsComment": "News items are unrelated, neutral impact.",
-          "technicalConfidence": 94
-        },
-        "lifecycle": {
-          "stage": "CLOSED",
-          "createdAt": "2026-08-22T09:54:59.628Z",
-          "expiresAt": "2026-08-23T09:54:59.628Z",
-          "openedAt": "2026-08-22T09:53:57.185Z",
-          "closedAt": "2026-08-22T09:57:17.313Z"
-        },
-        "reason": "Teknik trend, momentum, hacim ve volatilite filtreleri uyumlu. AI incelemesi onayladı (90/100): Technical score 90, price above EMA20/50/200, RSI bullish, neutral news – approve.",
-        "invalidation": "Stop seviyesi 81.89 altındaki kapanış.",
-        "timestamp": "2026-08-22T09:54:59.628Z",
-        "outcome": "MANUAL_CLOSE",
-        "realizedPnL": 0
       }
     ],
     "dailySummary": {
@@ -35568,6 +35509,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-29T20:28:06.602Z",
+        "type": "CLOSED",
+        "message": "SDTTR paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-80.96."
+      },
       {
         "timestamp": "2026-08-29T20:27:47.153Z",
         "type": "CLOSED",
@@ -36062,11 +36008,6 @@
         "timestamp": "2026-08-26T11:12:50.625Z",
         "type": "PAPER_LIMIT_PENDING",
         "message": "AHGAZ LIMIT emir bekliyor: son ₺35,94 · limit ₺35,40."
-      },
-      {
-        "timestamp": "2026-08-26T11:12:47.435Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,40 · LIMIT."
       }
     ],
     "scannerSnapshot": {
