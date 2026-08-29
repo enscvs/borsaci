@@ -8999,6 +8999,11 @@ let nasdaqScannerPollTimer = null;
 let nasdaqScannerRequestId = 0;
 let nasdaqMarketChart = null;
 let nasdaqQuoteTimer = null;
+// Tarama cevabındaki ayrıntılı günlük mumlar GitHub state'ine bilinçli olarak
+// yazılmaz. State yenilemesi bu yüzden yeni taramanın kart/grafiklerini eski,
+// history'siz kayıtlarla değiştirmemelidir.
+let nasdaqLocalScannerSnapshotActive = false;
+let nasdaqStateLoadGeneration = 0;
 
 function formatNasdaqUsd(value) {
   const number = Number(value);
@@ -9101,7 +9106,38 @@ function composeNasdaqAiRecords(records, decisions) {
   const bySymbol = new Map((records || []).map(item => [item.symbol, item]));
   return (decisions || []).slice(0, 3).map(decision => ({...(bySymbol.get(decision.symbol) || {}), ...decision, history: bySymbol.get(decision.symbol)?.history || decision.history}));
 }
-async function loadNasdaqPaperState(){if(!nasdaqTab)return;try{const data=await nasdaqRequest("/api/nasdaq/state");renderNasdaqPaperState(data);nasdaqRecords=Array.isArray(data.nasdaqPaper?.scanner?.results)?data.nasdaqPaper.scanner.results:[];nasdaqAiRecords=composeNasdaqAiRecords(nasdaqRecords,data.nasdaqPaper?.decisions);renderNasdaqDecisionCards(nasdaqAiRecords);if(nasdaqAiRecords[0])renderNasdaqDetail(nasdaqAiRecords[0]);}catch(error){const target=ns("scannerResults");if(target)target.innerHTML=`<div class="trading-empty">NASDAQ yapılandırması bekleniyor: ${escapeHtml(error.message)}</div>`;}}
+async function loadNasdaqPaperState(){
+  if(!nasdaqTab)return;
+  const generation=++nasdaqStateLoadGeneration;
+  try{
+    const data=await nasdaqRequest("/api/nasdaq/state");
+    // Manuel tarama bu istek sürerken tamamlanmış olabilir. Bu eski state
+    // cevabının yeni sonuçları geri almasına kesinlikle izin verme.
+    if(generation!==nasdaqStateLoadGeneration)return;
+    renderNasdaqPaperState(data);
+    // Sayfa açılışında son kalıcı özet gösterilebilir; kullanıcı aynı sayfada
+    // yeni tarama yaptıysa ayrıntılı mum/AI kartları sadece o taramanın
+    // snapshot'ından çizilir. Böylece 10-15 sn sonra eski sonuç dönmez.
+    if(nasdaqLocalScannerSnapshotActive)return;
+    nasdaqRecords=Array.isArray(data.nasdaqPaper?.scanner?.results)?data.nasdaqPaper.scanner.results:[];
+    nasdaqAiRecords=composeNasdaqAiRecords(nasdaqRecords,data.nasdaqPaper?.decisions);
+    renderNasdaqDecisionCards(nasdaqAiRecords);
+    if(nasdaqAiRecords[0])renderNasdaqDetail(nasdaqAiRecords[0]);
+  }catch(error){
+    const target=ns("scannerResults");
+    if(target)target.innerHTML=`<div class="trading-empty">NASDAQ yapılandırması bekleniyor: ${escapeHtml(error.message)}</div>`;
+  }
+}
+
+// Capture aşamasında çalışır; mevcut click handler API çağrısına başlamadan
+// önce eski state yenilemelerini geçersiz sayar.
+document.addEventListener("click", event => {
+  const start = ns("startScannerBtn");
+  if (start && (event.target === start || start.contains(event.target))) {
+    nasdaqLocalScannerSnapshotActive = true;
+    nasdaqStateLoadGeneration += 1;
+  }
+}, true);
 
 async function queueNasdaqDecision(item){const plan=nasdaqPlan(item);const entry=nasdaqEntry(item);if(!Number.isFinite(Number(entry.low))||!Number.isFinite(Number(plan.stopLoss))){throw new Error("Bu NASDAQ adayında doğrulanmış giriş ve stop seviyesi yok.");}const paper=latestNasdaqPaperState||{};const quantity=Math.max(1,Math.floor(Number(paper.initialCapital||10000)*Number(paper.risk?.maxPositionPercent||20)/100/Number(entry.low)));const data=await nasdaqRequest("/api/nasdaq/paper/queue",{symbol:item.symbol,quantity,entryPrice:entry.low,orderType:"LIMIT",stop:plan.stopLoss,target1:plan.tp1,target2:plan.tp2,target3:plan.tp3,score:item.score,grade:item.grade,fibonacci:item.fibonacci,source:"NASDAQ AI"});renderNasdaqPaperState(data);}
 
