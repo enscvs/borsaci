@@ -17652,8 +17652,8 @@
         "id": "1788028181152-SDTTR",
         "rank": 1,
         "symbol": "SDTTR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -17947,18 +17947,37 @@
           "score": null,
           "verdict": "INFO",
           "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-29T20:15:04.920Z",
-          "expiresAt": "2026-08-30T20:15:04.920Z"
+          "stage": "PENDING_APPROVAL",
+          "createdAt": "2026-08-29T18:29:41.152Z",
+          "expiresAt": "2026-08-30T18:29:41.152Z",
+          "overrideAt": "2026-08-29T20:15:20.974Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T20:15:04.920Z"
+        "timestamp": "2026-08-29T18:29:41.152Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "SDTTR",
+          "quantity": 1659,
+          "entryPrice": 24.4,
+          "orderType": "LIMIT",
+          "stop": 18.03,
+          "target1": 24.88,
+          "target2": 26.64,
+          "target3": 28.88,
+          "positionValue": 40479.6,
+          "actualRisk": 10567.83,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-29T20:15:20.974Z",
+          "updatedAt": "2026-08-29T20:15:20.974Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1787845693091-ASTOR",
@@ -18259,19 +18278,21 @@
           "score": null,
           "verdict": "INFO",
           "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
           "stage": "OPEN",
-          "createdAt": "2026-08-29T20:15:04.920Z",
-          "expiresAt": "2026-08-30T20:15:04.920Z",
+          "createdAt": "2026-08-29T18:29:41.152Z",
+          "expiresAt": "2026-08-30T18:29:41.152Z",
+          "overrideAt": "2026-08-29T18:39:03.123Z",
           "openedAt": "2026-08-29T18:51:28.669Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T20:15:04.920Z",
+        "timestamp": "2026-08-29T18:29:41.152Z",
+        "manualOverride": true,
         "pendingOrder": {
           "symbol": "ASTOR",
           "quantity": 115,
@@ -18295,11 +18316,11 @@
         }
       },
       {
-        "id": "1788034504920-BINBN",
+        "id": "1788028181152-BINBN",
         "rank": 3,
         "symbol": "BINBN",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -18593,18 +18614,40 @@
           "score": null,
           "verdict": "INFO",
           "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-          "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+          "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
-          "createdAt": "2026-08-29T20:15:04.920Z",
-          "expiresAt": "2026-08-30T20:15:04.920Z"
+          "stage": "REJECTED_BY_USER",
+          "createdAt": "2026-08-29T18:29:41.152Z",
+          "expiresAt": "2026-08-30T18:29:41.152Z",
+          "overrideAt": "2026-08-29T19:40:56.167Z",
+          "rejectedAt": "2026-08-29T20:02:59.558Z",
+          "rejectedBy": "SITE"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (161.9) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T20:15:04.920Z"
+        "timestamp": "2026-08-29T18:29:41.152Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "BINBN",
+          "quantity": 185,
+          "entryPrice": 186.6,
+          "orderType": "LIMIT",
+          "stop": 161.9,
+          "target1": 215.44,
+          "target2": 229.1,
+          "target3": 246.5,
+          "positionValue": 34521,
+          "actualRisk": 4569.5,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-29T19:40:56.167Z",
+          "updatedAt": "2026-08-29T19:40:56.167Z",
+          "editedAt": null
+        },
+        "outcome": "USER_REJECTED"
       }
     ],
     "history": [
@@ -35581,9 +35624,9 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T20:15:05.331Z",
-        "type": "SCAN",
-        "message": "3 active AI decision(s) refreshed or generated."
+        "timestamp": "2026-08-29T20:15:20.974Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "SDTTR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
       },
       {
         "timestamp": "2026-08-29T20:02:59.558Z",
@@ -36085,7 +36128,7 @@
       "version": "daily-top-five-v6",
       "sessionKey": "2026-08-28",
       "riskKey": "100000|31|3",
-      "createdAt": "2026-08-29T20:15:04.920Z",
+      "createdAt": "2026-08-29T18:29:41.152Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -36363,7 +36406,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T20:15:02.225Z",
+          "timestamp": "2026-08-29T18:29:37.877Z",
           "fallbackPlan": null,
           "decision": "A+ / GÜÇLÜ ADAY",
           "price": 24.399999618530273,
@@ -36381,8 +36424,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-            "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -36659,7 +36702,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T20:14:59.218Z",
+          "timestamp": "2026-08-29T18:29:35.168Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 349,
@@ -36677,8 +36720,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-            "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -36955,7 +36998,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T20:14:59.122Z",
+          "timestamp": "2026-08-29T18:29:35.170Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 186.60000610351562,
@@ -36973,8 +37016,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-            "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -37269,7 +37312,7 @@
             "confirmationCandleClose": 103.9,
             "entryPrice": 114
           },
-          "timestamp": "2026-08-29T20:14:59.826Z",
+          "timestamp": "2026-08-29T18:29:36.315Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 114,
@@ -37287,8 +37330,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-            "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         },
         {
@@ -37565,7 +37608,7 @@
             "volumeConfirmation": "WEAK",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T20:15:01.721Z",
+          "timestamp": "2026-08-29T18:29:37.667Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 46.560001373291016,
@@ -37583,8 +37626,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Mevcut haberler şirketle ilgili olmadığı için yorum yapılamaz.",
-            "summary": "Bu aday için doğrulanmış bir haber bulunmamaktadır."
+            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
+            "summary": "Doğrulanmış haber başlığı alınamadı."
           }
         }
       ]
