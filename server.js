@@ -3568,15 +3568,205 @@ async function getWatchlist() {
 }
 
 
+const WATCHLIST_RETENTION_MAX_BYTES = 1_000_000;
+const WATCHLIST_RETENTION_TARGET_BYTES = 750_000;
+const WATCHLIST_RETENTION_MIN_RECENT = 5;
+
+function watchlistStorageBytes(value) {
+  return Buffer.byteLength(
+    JSON.stringify(value, null, 2),
+    "utf8"
+  );
+}
+
+function retentionRecordTimestamp(item) {
+  const candidates = [
+    item?.closedAt,
+    item?.lifecycle?.closedAt,
+    item?.updatedAt,
+    item?.editedAt,
+    item?.openedAt,
+    item?.lifecycle?.openedAt,
+    item?.approvedAt,
+    item?.createdAt,
+    item?.timestamp,
+  ];
+
+  for (const value of candidates) {
+    const time = new Date(value || 0).getTime();
+    if (Number.isFinite(time) && time > 0) return time;
+  }
+
+  // Tarihsiz eski kayıtlar önce temizlenir.
+  return 0;
+}
+
+function nestedRetentionArray(root, path) {
+  let current = root;
+  for (const key of path) {
+    if (!current || typeof current !== "object") return null;
+    current = current[key];
+  }
+  return Array.isArray(current) ? current : null;
+}
+
+function retentionCandidates(root, definitions) {
+  const candidates = [];
+
+  for (const definition of definitions) {
+    const records = nestedRetentionArray(root, definition.path);
+    if (!records?.length) continue;
+
+    const eligible = records
+      .map((item, index) => ({
+        item,
+        index,
+        timestamp: retentionRecordTimestamp(item),
+      }))
+      .filter(entry => !definition.filter || definition.filter(entry.item));
+
+    // Her geçmiş dizisinde en az birkaç yeni kayıt kalsın. Açık/bekleyen
+    // emirler bu listelere zaten dahil edilmez; bu koruma yalnız geçmiş/log
+    // görünümünün tamamen sıfırlanmamasını sağlar.
+    const protectedIndexes = new Set(
+      [...eligible]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, Math.max(0, Number(definition.minKeep ?? WATCHLIST_RETENTION_MIN_RECENT)))
+        .map(entry => entry.index)
+    );
+
+    for (const entry of eligible) {
+      if (protectedIndexes.has(entry.index)) continue;
+      candidates.push({
+        ...entry,
+        path: definition.path,
+        label: definition.label,
+      });
+    }
+  }
+
+  return candidates.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function removeRetentionCandidate(root, candidate) {
+  const records = nestedRetentionArray(root, candidate.path);
+  if (!records) return false;
+
+  // Aynı obje referansı clone içinde korunur. Yine de olası primitive/eski
+  // kayıtlar için orijinal indeks güvenli geri dönüş olarak kullanılır.
+  let index = records.indexOf(candidate.item);
+  if (index < 0 && candidate.index >= 0 && candidate.index < records.length) {
+    index = candidate.index;
+  }
+  if (index < 0) return false;
+
+  records.splice(index, 1);
+  return true;
+}
+
+function pruneWatchlistHistoryForStorage(watchlist) {
+  const beforeBytes = watchlistStorageBytes(watchlist);
+  if (beforeBytes < WATCHLIST_RETENTION_MAX_BYTES) {
+    return watchlist;
+  }
+
+  // Çağıranın canlı state nesnesini değiştirmiyoruz. Sadece GitHub'a
+  // yazılacak snapshot küçültülür. Açık pozisyonlar, bekleyen emirler,
+  // güncel scanner sonucu, risk ve kill-switch state'i korunur.
+  const compact = JSON.parse(JSON.stringify(watchlist));
+
+  const historicalDefinitions = [
+    {path:["trading", "history"], label:"BIST_HISTORY"},
+    {path:["trading", "activity"], label:"BIST_ACTIVITY"},
+    {path:["trading", "automation", "monitor", "events"], label:"MONITOR_EVENTS"},
+    {path:["trading", "cryptoPaper", "history"], label:"CRYPTO_HISTORY"},
+    {path:["trading", "cryptoPaper", "signals"], label:"CRYPTO_SIGNALS"},
+    {path:["trading", "cryptoPaper", "activity"], label:"CRYPTO_ACTIVITY"},
+    {path:["trading", "cryptoLive", "history"], label:"CRYPTO_LIVE_HISTORY"},
+    {path:["trading", "cryptoLive", "activity"], label:"CRYPTO_LIVE_ACTIVITY"},
+    {path:["trading", "nasdaqPaper", "history"], label:"NASDAQ_HISTORY"},
+    {path:["trading", "nasdaqPaper", "signals"], label:"NASDAQ_SIGNALS"},
+    {path:["trading", "nasdaqPaper", "activity"], label:"NASDAQ_ACTIVITY"},
+  ];
+
+  // Önce yalnız kullanıcı arayüzünden kaldırdığımız geçmiş/sinyal/log
+  // kayıtlarını global zaman sırasına göre en eskiden başlayarak temizle.
+  // Böylece herhangi bir marketin açık/bekleyen state'i sırf dosya büyüdü
+  // diye kaybolmaz.
+  const candidates = retentionCandidates(compact, historicalDefinitions);
+  let removed = 0;
+  const removedByType = {};
+  let currentBytes = beforeBytes;
+
+  for (const candidate of candidates) {
+    if (currentBytes <= WATCHLIST_RETENTION_TARGET_BYTES) break;
+    if (!removeRetentionCandidate(compact, candidate)) continue;
+
+    removed += 1;
+    removedByType[candidate.label] = (removedByType[candidate.label] || 0) + 1;
+
+    // Her kayıtta 1 MB JSON'u yeniden stringify etmek yerine küçük gruplar
+    // halinde ölç. Hedef geçildiğinde son ölçüm kesin boyutu doğrular.
+    if (removed % 8 === 0) {
+      currentBytes = watchlistStorageBytes(compact);
+    }
+  }
+
+  currentBytes = watchlistStorageBytes(compact);
+
+  // Geçmiş/log kayıtlarının tamamına yakını temizlense bile dosya hedefin
+  // üzerindeyse yalnız KAPANMIŞ pozisyonlardan en eskileri ikinci aşamada
+  // budanabilir. OPEN veya broker/pending pozisyonlara asla dokunulmaz.
+  if (currentBytes > WATCHLIST_RETENTION_TARGET_BYTES) {
+    const closedPositionDefinitions = [
+      {path:["trading", "paper", "positions"], label:"BIST_CLOSED_POSITION", minKeep:10, filter:item => ["CLOSED", "STOPPED"].includes(String(item?.status || "").toUpperCase())},
+      {path:["trading", "cryptoPaper", "positions"], label:"CRYPTO_CLOSED_POSITION", minKeep:10, filter:item => ["CLOSED", "STOPPED"].includes(String(item?.status || "").toUpperCase())},
+      {path:["trading", "cryptoLive", "positions"], label:"CRYPTO_LIVE_CLOSED_POSITION", minKeep:10, filter:item => ["CLOSED", "STOPPED"].includes(String(item?.status || "").toUpperCase())},
+      {path:["trading", "nasdaqPaper", "positions"], label:"NASDAQ_CLOSED_POSITION", minKeep:10, filter:item => ["CLOSED", "STOPPED"].includes(String(item?.status || "").toUpperCase())},
+    ];
+
+    for (const candidate of retentionCandidates(compact, closedPositionDefinitions)) {
+      if (currentBytes <= WATCHLIST_RETENTION_TARGET_BYTES) break;
+      if (!removeRetentionCandidate(compact, candidate)) continue;
+      removed += 1;
+      removedByType[candidate.label] = (removedByType[candidate.label] || 0) + 1;
+      if (removed % 8 === 0) {
+        currentBytes = watchlistStorageBytes(compact);
+      }
+    }
+
+    currentBytes = watchlistStorageBytes(compact);
+  }
+
+  if (removed > 0) {
+    console.log(
+      `WATCHLIST RETENTION: ${beforeBytes} -> ${currentBytes} bytes; ${removed} eski kayıt silindi`,
+      removedByType
+    );
+  }
+
+  if (currentBytes > WATCHLIST_RETENTION_TARGET_BYTES) {
+    console.warn(
+      `WATCHLIST RETENTION WARNING: güvenli geçmiş kayıtları temizlendi ancak state ${currentBytes} byte; açık/bekleyen işlemler korunarak hedefin üzerinde bırakıldı.`
+    );
+  }
+
+  return compact;
+}
+
+
 async function saveWatchlist(
   watchlist,
   sha
 ) {
 
+  const retainedWatchlist =
+    pruneWatchlistHistoryForStorage(watchlist);
+
   const content =
     Buffer.from(
       JSON.stringify(
-        watchlist,
+        retainedWatchlist,
         null,
         2
       )
