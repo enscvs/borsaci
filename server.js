@@ -138,6 +138,10 @@ const BINANCE_API_SECRET = String(process.env.BINANCE_API_SECRET || "").trim();
 // Opsiyonel proxy: yalnız imzalı/private Spot çağrıları buradan geçer.
 // Public candle/scanner yolları bu ayardan etkilenmez.
 const BINANCE_PRIVATE_GATEWAY_URL = normalizeBinancePrivateGatewayUrl(process.env.BINANCE_PRIVATE_GATEWAY_URL);
+// Gateway kullanılırken Worker'ın yalnızca bu Render sunucusundan gelen
+// imzalı istekleri kabul etmesi için ayrı bir shared-secret kullanılır.
+// Binance anahtarı değildir ve tarayıcıya ya da loglara asla gönderilmez.
+const BINANCE_PRIVATE_GATEWAY_TOKEN = String(process.env.BINANCE_PRIVATE_GATEWAY_TOKEN || "").trim();
 // İmzalı istekler public market-data aynalarına gönderilemez. Binance'in
 // Spot REST belgelerinde belirtilen resmi trading uçları arasında yalnızca
 // ağ engeli/rate-limit durumunda güvenli geri dönüş yapılır.
@@ -8562,7 +8566,12 @@ async function refreshBinanceServerTimeOffset(baseUrl) {
   const now = Date.now();
   if (now - binanceServerTimeOffsetFetchedAt < 5 * 60 * 1000) return;
   try {
-    const response = await fetch(`${baseUrl}/api/v3/time`, {headers: {Accept: "application/json"}});
+    const response = await fetch(`${baseUrl}/api/v3/time`, {
+      headers: {
+        Accept: "application/json",
+        ...binancePrivateGatewayHeaders()
+      }
+    });
     const payload = response.ok ? await response.json() : null;
     const serverTime = Number(payload?.serverTime);
     if (Number.isFinite(serverTime) && serverTime > 0) {
@@ -8573,6 +8582,17 @@ async function refreshBinanceServerTimeOffset(baseUrl) {
     // Yerel saatle imzalama güvenli varsayılandır; bu yardımcı sorgunun
     // başarısızlığı tek başına hesabı kullanılmaz hâle getirmez.
   }
+}
+
+function binancePrivateGatewayHeaders() {
+  if (!BINANCE_PRIVATE_GATEWAY_URL) return {};
+  if (!BINANCE_PRIVATE_GATEWAY_TOKEN) {
+    throw createBinanceAccountError(
+      "BINANCE_GATEWAY_NOT_CONFIGURED",
+      "Binance private gateway token Render ortamında tanımlı değil."
+    );
+  }
+  return {"X-Borsaci-Gateway-Token": BINANCE_PRIVATE_GATEWAY_TOKEN};
 }
 
 async function fetchBinanceSpotAccount() {
@@ -8747,6 +8767,12 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
   if (!BINANCE_API_KEY || !BINANCE_API_SECRET) {
     throw createBinanceAccountError("BINANCE_NOT_CONFIGURED", "Binance API anahtarı veya secret Render ortamında tanımlı değil.");
   }
+  if (BINANCE_PRIVATE_GATEWAY_URL && !BINANCE_PRIVATE_GATEWAY_TOKEN) {
+    throw createBinanceAccountError(
+      "BINANCE_GATEWAY_NOT_CONFIGURED",
+      "Binance private gateway token Render ortamında tanımlı değil."
+    );
+  }
   const normalizedMethod = String(method || "GET").toUpperCase();
   const isQueryRequest = ["GET", "DELETE"].includes(normalizedMethod);
   let lastError = null;
@@ -8777,6 +8803,7 @@ async function requestBinanceSpotSigned(method, pathname, params = {}) {
         headers: {
           Accept: "application/json",
           "X-MBX-APIKEY": BINANCE_API_KEY,
+          ...binancePrivateGatewayHeaders(),
           ...(isQueryRequest ? {} : {"Content-Type": "application/x-www-form-urlencoded"})
         },
         body: isQueryRequest ? undefined : signedQuery,

@@ -60,9 +60,9 @@ With the default `false`, approvals create only local NASDAQ paper positions. Th
 
 ## Binance private Spot gateway (optional)
 
-Public crypto candles, prices and the scanner continue to use `BINANCE_PUBLIC_BASE_URLS`. If Render cannot reach Binance Global private Spot endpoints, set `BINANCE_PRIVATE_GATEWAY_URL` to a trusted HTTPS proxy base URL. Leave it empty to retain the direct Binance fallback behavior.
+Public crypto candles, prices and the scanner continue to use `BINANCE_PUBLIC_BASE_URLS`. If Render cannot reach Binance Global private Spot endpoints, set `BINANCE_PRIVATE_GATEWAY_URL` to a trusted HTTPS proxy base URL and set a long random `BINANCE_PRIVATE_GATEWAY_TOKEN`. Leave both empty to retain the direct Binance fallback behavior.
 
-The BorsaCI server still creates the HMAC signature and keeps `BINANCE_API_KEY` / `BINANCE_API_SECRET` server-side. The gateway receives the same Binance request shape: `GET`/`DELETE` requests keep the exact signed `/api/v3/...` query string, while `POST` requests use the exact signed form body and `X-MBX-APIKEY` header. It must forward only `/api/v3/*` to Binance Global without logging the API-key header or request body/query. It must also forward `GET /api/v3/time` for clock synchronization.
+The BorsaCI server still creates the HMAC signature and keeps `BINANCE_API_KEY` / `BINANCE_API_SECRET` server-side. The gateway receives the same Binance request shape: `GET`/`DELETE` requests keep the exact signed `/api/v3/...` query string, while `POST` requests use the exact signed form body and `X-MBX-APIKEY` header. It must forward only `/api/v3/*` to Binance Global without logging the API-key header or request body/query. It must also forward `GET /api/v3/time` for clock synchronization. Configure the same random value as Worker secret `BORSACI_GATEWAY_TOKEN`; the server sends it only as `X-Borsaci-Gateway-Token` to the gateway.
 
 
 ## Precision Engine
