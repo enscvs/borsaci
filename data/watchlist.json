@@ -6035,7 +6035,7 @@
           "symbol": "NVDA",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_LIMIT",
+          "status": "REJECTED",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-29T20:30:46.739Z",
           "entry": {
@@ -6119,7 +6119,8 @@
             "stage": "PENDING_LIMIT",
             "lastCheckedAt": "2026-08-29T20:30:59.814Z",
             "lastMarketPrice": 217.54
-          }
+          },
+          "closedAt": "2026-08-29T20:31:06.740Z"
         },
         {
           "id": "nasdaq-1788035379538-FTNT-f2223b5e",
@@ -15025,6 +15026,98 @@
       ],
       "history": [
         {
+          "id": "nasdaq-1788035446739-NVDA-54b212d1",
+          "symbol": "NVDA",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-29T20:30:46.739Z",
+          "entry": {
+            "low": 208.42,
+            "high": 208.42,
+            "reference": 208.42
+          },
+          "stop": 203.25,
+          "target1": 230.8,
+          "target2": 237.16,
+          "target3": 245.27,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 21,
+              "price": 190.035,
+              "date": "2026-07-29T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 34,
+              "price": 227.9,
+              "date": "2026-08-17T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 39,
+              "price": 207.4,
+              "date": "2026-08-24T04:00:00.000Z"
+            },
+            "range": 37.87,
+            "retracementRatio": 0.5414,
+            "entryTriggerPrice": 208.42,
+            "entryZoneLow": 208.42,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 203.25,
+            "tp1": 230.8,
+            "tp2": 237.16,
+            "tp3": 245.27,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+          },
+          "indicators": {
+            "score": 73
+          },
+          "pendingOrder": {
+            "symbol": "NVDA",
+            "quantity": 4,
+            "entryPrice": 208.42,
+            "orderType": "LIMIT",
+            "stop": 203.25,
+            "target1": 230.8,
+            "target2": 237.16,
+            "target3": 245.27,
+            "paperOnly": false,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-29T20:30:46.739Z",
+            "updatedAt": "2026-08-29T20:30:59.814Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 217.54
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-29T20:30:59.814Z",
+            "lastMarketPrice": 217.54
+          },
+          "closedAt": "2026-08-29T20:31:06.740Z"
+        },
+        {
           "id": "nasdaq-1788035379538-FTNT-f2223b5e",
           "symbol": "FTNT",
           "market": "NASDAQ",
@@ -17460,6 +17553,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-29T20:31:06.740Z",
+          "type": "NASDAQ_REJECT",
+          "message": "NVDA NASDAQ emri reddedildi."
+        },
         {
           "timestamp": "2026-08-29T20:30:59.814Z",
           "type": "NASDAQ_LIMIT_PENDING",
