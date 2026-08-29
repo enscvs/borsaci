@@ -5429,9 +5429,13 @@ async function sendPaperApprovalRequest(decision) {
   );
 }
 
-const decisionId = String(
-  input.decisionId || input.orderId || ""
-).trim();
+async function handlePendingPaperOrderUpdate(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+
+    const decisionId = String(
+      input.decisionId || input.orderId || ""
+    ).trim();
 
 const symbol = String(
   input.symbol || ""
