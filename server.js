@@ -5429,19 +5429,34 @@ async function sendPaperApprovalRequest(decision) {
   );
 }
 
+const decisionId = String(
+  input.decisionId || input.orderId || ""
+).trim();
 
-async function handlePendingPaperOrderUpdate(req, res) {
-  try {
-    const input = await readTradingRequest(req);
-    const decisionId = String(input.decisionId || input.orderId || "").trim();
+const symbol = String(
+  input.symbol || ""
+).trim().toUpperCase();
 
-    if (!decisionId) {
-      throw new Error("Bekleyen emir kimliği gerekli.");
-    }
+if (!decisionId && !symbol) {
+  throw new Error("Bekleyen emir kimliği veya sembol gerekli.");
+}
 
-    const stateResult = await getTradingState();
-    const state = stateResult.content;
-    const decision = (state.decisions || []).find(item => item.id === decisionId);
+const stateResult = await getTradingState();
+const state = stateResult.content;
+
+const decision =
+  (state.decisions || []).find(
+    item =>
+      item.id === decisionId &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
+      isPaperApprovableDecision(item)
+  ) ||
+  (state.decisions || []).find(
+    item =>
+      item.symbol === symbol &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
+      isPaperApprovableDecision(item)
+  );
 
     if (
       !decision ||
