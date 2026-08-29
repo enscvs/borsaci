@@ -5856,6 +5856,31 @@
       "pnlPercent": 0,
       "positions": [
         {
+          "id": "nasdaq-broker-entry-1788025585698-AFRM",
+          "decisionId": "nasdaq-1788025186621-AFRM-db3bf0ba",
+          "symbol": "AFRM",
+          "market": "NASDAQ",
+          "status": "PENDING_BROKER_ENTRY",
+          "quantity": 13,
+          "remainingQuantity": 13,
+          "plannedEntry": 72.06,
+          "current": 77.73,
+          "stop": 70.31,
+          "target1": 78.74,
+          "target2": 80.64,
+          "target3": 83.06,
+          "openedAt": "2026-08-29T17:46:25.413Z",
+          "broker": {
+            "submitted": true,
+            "mode": "PAPER",
+            "brokerOrderId": "1589b3ee-0fac-4eed-b99b-2417173ab210",
+            "clientOrderId": "5bf8171b-8887-49da-ad1d-01ec3911ebdb",
+            "status": "accepted",
+            "filledQuantity": 0,
+            "filledAveragePrice": 0
+          }
+        },
+        {
           "id": "nasdaq-pos-1787822985953-ACGL",
           "decisionId": "1787821479538-ACGL",
           "symbol": "ACGL",
@@ -5902,7 +5927,7 @@
           "symbol": "AFRM",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_BROKER_ENTRY",
           "grade": "A+ / GÜÇLÜ ADAY",
           "timestamp": "2026-08-29T17:39:46.621Z",
           "entry": {
@@ -5999,7 +6024,13 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T17:39:46.621Z",
-            "updatedAt": "2026-08-29T17:39:46.621Z"
+            "updatedAt": "2026-08-29T17:46:25.413Z",
+            "status": "PENDING_BROKER_ENTRY"
+          },
+          "lifecycle": {
+            "stage": "PENDING_BROKER_ENTRY",
+            "brokerOrderId": "1589b3ee-0fac-4eed-b99b-2417173ab210",
+            "lastCheckedAt": "2026-08-29T17:46:25.413Z"
           }
         },
         {
@@ -6009,7 +6040,7 @@
           "action": "BUY SETUP",
           "status": "PENDING_APPROVAL",
           "grade": "A / AL ADAYI",
-          "timestamp": "2026-08-29T17:46:15.024Z",
+          "timestamp": "2026-08-29T17:19:54.646Z",
           "entry": {
             "low": 208.42,
             "high": 208.42,
@@ -6083,11 +6114,7 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T17:19:54.646Z",
-            "updatedAt": "2026-08-29T17:46:15.024Z"
-          },
-          "lifecycle": {
-            "stage": "PENDING_APPROVAL",
-            "updatedAt": "2026-08-29T17:46:15.024Z"
+            "updatedAt": "2026-08-29T17:19:54.646Z"
           }
         },
         {
@@ -15568,9 +15595,9 @@
       ],
       "activity": [
         {
-          "timestamp": "2026-08-29T17:46:15.024Z",
-          "type": "NASDAQ_PENDING",
-          "message": "NVDA NASDAQ emri onay bekliyor."
+          "timestamp": "2026-08-29T17:46:25.413Z",
+          "type": "NASDAQ_BROKER_ENTRY_PENDING",
+          "message": "AFRM Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
         },
         {
           "timestamp": "2026-08-29T17:39:46.621Z",
