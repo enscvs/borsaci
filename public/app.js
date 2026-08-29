@@ -10400,7 +10400,7 @@ async function startTradingWhenAuthenticated() {
   // düzenli olarak sunucudan son tamamlanmış günlük fiyatı ister.
   if (!nasdaqQuoteTimer) {
     nasdaqQuoteTimer = window.setInterval(() => { void loadNasdaqPaperState(); }, 30000);
-  }
+  }   
   bindNasdaqWorkspaceControls();
   bindNasdaqKillSwitch();
   bindNasdaqLogout();
