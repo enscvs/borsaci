@@ -4147,6 +4147,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-29T18:19:24.285Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-29T14:51:28.757Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -4388,7 +4393,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-29T14:51:28.757Z",
+        "timestamp": "2026-08-29T18:19:24.285Z",
         "scanned": 100,
         "successful": 92,
         "results": [
@@ -4663,7 +4668,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
             },
-            "timestamp": "2026-08-29T14:51:25.570Z",
+            "timestamp": "2026-08-29T18:19:21.008Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.01,
@@ -4960,7 +4965,7 @@
               "volumeConfirmation": "WEAK",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-29T14:51:25.363Z",
+            "timestamp": "2026-08-29T18:19:20.803Z",
             "fallbackPlan": null,
             "price": 0.3434,
             "ema20": 0.33683305331867996,
@@ -5246,7 +5251,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-29T14:51:24.059Z",
+            "timestamp": "2026-08-29T18:19:19.112Z",
             "fallbackPlan": null,
             "price": 4.422,
             "ema20": 4.048393481843211,
@@ -5531,7 +5536,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Yeni C noktası A–B düzeltme sınırlarını bozdu."
             },
-            "timestamp": "2026-08-29T14:51:24.358Z",
+            "timestamp": "2026-08-29T18:19:19.097Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.7,
@@ -5809,7 +5814,7 @@
               "riskRewardTp3": null,
               "invalidReason": "Geçerli Fibonacci A–B–C yapısı bulunamadı."
             },
-            "timestamp": "2026-08-29T14:51:25.452Z",
+            "timestamp": "2026-08-29T18:19:20.105Z",
             "fallbackPlan": {
               "method": "ATR_SUPPORT_RESISTANCE",
               "entryPrice": 0.01,
@@ -17893,8 +17898,8 @@
         "id": "1787845693091-ASTOR",
         "rank": 2,
         "symbol": "ASTOR",
-        "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": null,
         "entry": {
           "low": 267.8,
@@ -18192,33 +18197,14 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "PENDING",
           "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z",
-          "overrideAt": "2026-08-29T18:19:02.701Z"
+          "expiresAt": "2026-08-29T16:57:48.027Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-28T16:57:48.027Z",
-        "manualOverride": true,
-        "pendingOrder": {
-          "symbol": "ASTOR",
-          "quantity": 115,
-          "entryPrice": 349,
-          "orderType": "LIMIT",
-          "stop": 257.25,
-          "target1": 383.84,
-          "target2": 416.83,
-          "target3": 458.85,
-          "positionValue": 40135,
-          "actualRisk": 10551.25,
-          "paperOnly": true,
-          "source": "SCANNER",
-          "createdAt": "2026-08-29T18:19:02.701Z",
-          "updatedAt": "2026-08-29T18:19:02.701Z",
-          "editedAt": null
-        }
+        "timestamp": "2026-08-28T16:57:48.027Z"
       },
       {
         "id": "1787936268027-DOHOL",
@@ -35005,11 +34991,6 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T18:19:02.701Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "ASTOR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
         "timestamp": "2026-08-29T11:24:28.077Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "DOHOL kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -35503,6 +35484,11 @@
         "timestamp": "2026-08-26T10:47:17.841Z",
         "type": "PAPER_REJECTED",
         "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
+      },
+      {
+        "timestamp": "2026-08-26T10:47:10.631Z",
+        "type": "PAPER_REJECTED",
+        "message": "AHGAZ paper işlem planı SITE üzerinden reddedildi."
       }
     ],
     "scannerSnapshot": {
