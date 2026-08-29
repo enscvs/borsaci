@@ -57,6 +57,9 @@ let performanceRange = "ALL";
    bir araya getirir; piyasa state'lerini birbirine yazmaz. */
 let controlCenterRefreshInFlight = false;
 
+/* Binance Spot açık emir alanı için son doğrulanmış sunucu cevabı. */
+let latestCryptoSpotOpenOrders = [];
+
 /* BUY SETUP eşiği backend karar politikasındaki eşikle aynı tutulur. */
 const BUY_SETUP_SCORE_THRESHOLD = 60;
 
@@ -9720,16 +9723,22 @@ async function loadCryptoSpotAccount() {
 function renderCryptoSpotOpenOrders(payload) {
   const status = document.getElementById("cryptoSpotOpenOrdersStatus");
   const mount = document.getElementById("cryptoSpotOpenOrders");
+  const cancelAll = document.getElementById("cancelAllCryptoSpotOrders");
   if (!mount) return;
   if (!payload?.connected) {
+    latestCryptoSpotOpenOrders = [];
     if (status) status.textContent = "BAĞLANTI HATASI";
+    if (cancelAll) cancelAll.disabled = true;
     mount.innerHTML = `<div class="trading-empty">${escapeHtml(payload?.error?.message || "Binance açık emirleri alınamadı.")}</div>`;
     return;
   }
   const orders = Array.isArray(payload.orders) ? payload.orders : [];
+  latestCryptoSpotOpenOrders = orders;
   if (status) status.textContent = `${orders.length} AÇIK EMİR`;
+  if (cancelAll) cancelAll.disabled = orders.length === 0;
   mount.innerHTML = orders.length ? orders.map(order => `<article class="pending-paper-order-card crypto-spot-order-card"><div class="pending-paper-order-head"><strong>${escapeHtml(order.symbol)} · ${escapeHtml(order.side)} · ${escapeHtml(order.type)}</strong><span class="pending-paper-order-badge">${escapeHtml(order.status)}</span></div><div class="decision-detail-grid"><span>Fiyat: ${escapeHtml(order.price)}</span><span>Miktar: ${escapeHtml(order.origQty)}</span><span>Gerçekleşen: ${escapeHtml(order.executedQty)}</span><span>Zaman: ${escapeHtml(new Date(order.transactTime).toLocaleString("tr-TR"))}</span></div><button type="button" class="trading-button danger" data-crypto-live-cancel data-crypto-symbol="${escapeHtml(order.symbol)}" data-crypto-order-id="${escapeHtml(order.orderId)}">EMRİ İPTAL ET</button></article>`).join("") : '<div class="trading-empty">Binance Spot hesabında açık emir yok.</div>';
   bindCryptoSpotOrderCancelButtons();
+  bindCryptoSpotCancelAllButton();
 }
 
 async function loadCryptoSpotOpenOrders() {
@@ -9909,13 +9918,46 @@ function bindCryptoSpotOrderCancelButtons() {
       if (!window.confirm(`${symbol} emrini Binance Spot'ta gerçekten iptal etmek istiyor musun?`)) return;
       button.disabled = true;
       try {
-        const response = await fetch("/api/trading/crypto/order/cancel", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({symbol, orderId, confirm: true})});
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload?.error?.message || "Binance emri iptal edilemedi.");
+        await cancelCryptoSpotOrder(symbol, orderId);
         await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount(), loadCryptoSpotActivity(symbol)]);
       } catch (error) { window.alert(error.message); }
       finally { button.disabled = false; }
     });
+  });
+}
+
+async function cancelCryptoSpotOrder(symbol, orderId) {
+  const response = await fetch("/api/trading/crypto/order/cancel", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({symbol, orderId, confirm: true}),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || !payload.success) {
+    throw new Error(payload?.error?.message || "Binance emri iptal edilemedi.");
+  }
+  return payload;
+}
+
+function bindCryptoSpotCancelAllButton() {
+  const button = document.getElementById("cancelAllCryptoSpotOrders");
+  if (!button || button.dataset.cryptoCancelAllBound === "true") return;
+  button.dataset.cryptoCancelAllBound = "true";
+  button.addEventListener("click", async () => {
+    const orders = latestCryptoSpotOpenOrders.slice();
+    if (!orders.length) return;
+    if (!window.confirm(`${orders.length} açık Binance Spot emrinin tamamı iptal edilecek. Devam edilsin mi?`)) return;
+    button.disabled = true;
+    const failures = [];
+    for (const order of orders) {
+      try {
+        await cancelCryptoSpotOrder(String(order.symbol || ""), String(order.orderId || ""));
+      } catch (error) {
+        failures.push(`${order.symbol || "EMİR"}: ${error.message || "iptal edilemedi"}`);
+      }
+    }
+    await Promise.all([loadCryptoSpotOpenOrders(), loadCryptoSpotAccount(), loadCryptoSpotActivity()]);
+    if (failures.length) window.alert(`Bazı emirler iptal edilemedi:\n${failures.join("\n")}`);
   });
 }
 
@@ -10133,7 +10175,11 @@ window.runTradingScanner =
 ====================================================== */
 
 function controlCenterMarketSummary(label, tabId, paper, currency, extraStatus = "") {
-  const positions = Array.isArray(paper?.positions) ? paper.positions.filter(item => item?.status === "OPEN") : [];
+  const positions = Array.isArray(paper?.positions) ? paper.positions.filter(item => {
+    const status = String(item?.status || "").toUpperCase();
+    const quantity = Number(item?.remainingQuantity ?? item?.quantity);
+    return status === "OPEN" && !item?.closedAt && (!Number.isFinite(quantity) || quantity > 0);
+  }) : [];
   const pending = Array.isArray(paper?.pendingOrders)
     ? paper.pendingOrders
     : (Array.isArray(paper?.decisions) ? paper.decisions.filter(item => ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item?.status)) : []);
@@ -10177,11 +10223,16 @@ async function loadControlCenter() {
   const healthStatus = document.getElementById("controlHealthStatus");
   if (refreshedAt) refreshedAt.textContent = "YÜKLENİYOR";
   try {
+    const cacheKey = `_=${Date.now()}`;
+    const readFreshJson = (path, message) => fetch(`${path}${path.includes("?") ? "&" : "?"}${cacheKey}`, {
+      cache: "no-store",
+      headers: {"Cache-Control": "no-cache, no-store, max-age=0"},
+    }).then(async response => { if (!response.ok) throw new Error(message); return response.json(); });
     const [bistResult, cryptoResult, nasdaqResult, healthResult] = await Promise.allSettled([
-      fetch("/api/trading/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("BIST state alınamadı"); return response.json(); }),
-      fetch("/api/crypto/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("Kripto state alınamadı"); return response.json(); }),
-      fetch("/api/nasdaq/state", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("NASDAQ state alınamadı"); return response.json(); }),
-      fetch("/api/system/health", {cache: "no-store"}).then(async response => { if (!response.ok) throw new Error("Sağlık özeti alınamadı"); return response.json(); })
+      readFreshJson("/api/trading/state", "BIST state alınamadı"),
+      readFreshJson("/api/crypto/state", "Kripto state alınamadı"),
+      readFreshJson("/api/nasdaq/state", "NASDAQ state alınamadı"),
+      readFreshJson("/api/system/health", "Sağlık özeti alınamadı")
     ]);
     const bist = bistResult.status === "fulfilled" ? bistResult.value : null;
     const crypto = cryptoResult.status === "fulfilled" ? cryptoResult.value?.cryptoPaper : null;

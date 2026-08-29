@@ -5986,6 +5986,7 @@ async function handleTelegramWebhook(req, res) {
 
 async function handlePaperClose(req, res) {
   try {
+    return await withTradingStateMutation("paper-close", async () => {
     const input = await readTradingRequest(req);
     const decisionId = String(input.decisionId || "").trim();
     const positionId = String(input.positionId || "").trim();
@@ -6046,6 +6047,7 @@ async function handlePaperClose(req, res) {
     await saveTradingState(state, stateResult.sha, stateResult.container);
     void sendTelegramNotification(notification.message);
     return sendJSON(res, 200, tradingStateForClient(state));
+    });
   } catch (error) {
     console.error("PAPER CLOSE ERROR:", error.message);
     return sendJSON(res, 400, {error: error.message});
