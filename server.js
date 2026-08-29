@@ -3969,6 +3969,24 @@ function createDefaultTradingState() {
 }
 
 
+function sanitizeNasdaqStoredDecisions(decisions) {
+  return (Array.isArray(decisions) ? decisions : []).filter(decision => {
+    const status = String(decision?.status || "").toUpperCase();
+    const source = String(decision?.pendingOrder?.source || decision?.source || "").toUpperCase();
+
+    // Eski NASDAQ scanner sürümleri ilk 3 adayı yanlışlıkla gerçek bekleyen
+    // emir gibi PENDING_APPROVAL + source=SCANNER olarak state'e yazıyordu.
+    // Bunlar kullanıcı tarafından oluşturulmuş emir değildir ve scanner her
+    // çalıştığında AFRM vb. hayalet emirlerin yeniden görünmesine neden olur.
+    if (["PENDING_APPROVAL", "PENDING_LIMIT"].includes(status) && source === "SCANNER") {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+
 function normalizeTradingState(
   value
 ) {
@@ -4041,7 +4059,7 @@ function normalizeTradingState(
       ...fallback.nasdaqPaper,
       ...((value || {}).nasdaqPaper || {}),
       positions: Array.isArray((value || {}).nasdaqPaper?.positions) ? (value || {}).nasdaqPaper.positions : [],
-      decisions: Array.isArray((value || {}).nasdaqPaper?.decisions) ? (value || {}).nasdaqPaper.decisions : [],
+      decisions: sanitizeNasdaqStoredDecisions((value || {}).nasdaqPaper?.decisions),
       history: Array.isArray((value || {}).nasdaqPaper?.history) ? (value || {}).nasdaqPaper.history : [],
       signals: Array.isArray((value || {}).nasdaqPaper?.signals) ? (value || {}).nasdaqPaper.signals : [],
       activity: Array.isArray((value || {}).nasdaqPaper?.activity) ? (value || {}).nasdaqPaper.activity : [],
@@ -7255,6 +7273,8 @@ async function handleNasdaqPaperQueue(req,res) {
     const paper = saved.content.nasdaqPaper;
     if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
 
+    paper.decisions = sanitizeNasdaqStoredDecisions(paper.decisions);
+
     const timestamp = new Date().toISOString();
     const candidate = nasdaqDecisionFromInput(input, timestamp);
     const source = String(candidate.pendingOrder?.source || "NASDAQ AI").toUpperCase();
@@ -7315,13 +7335,29 @@ async function handleNasdaqPaperQueue(req,res) {
   }
 }
 
-async function handleNasdaqPaperUpdate(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez."); const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder}); decision.pendingOrder={...decision.pendingOrder,...order,updatedAt:new Date().toISOString(),editedAt:new Date().toISOString()}; decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice}; decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3; await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); }catch(error){return sendJSON(res,400,{error:error.message});} }
+async function handleNasdaqPaperUpdate(req,res) {
+  try {
+    const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper;
+    paper.decisions = sanitizeNasdaqStoredDecisions(paper.decisions);
+    const decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL");
+    if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez.");
+    const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder});
+    const timestamp=new Date().toISOString();
+    decision.pendingOrder={...decision.pendingOrder,...order,source:decision.pendingOrder?.source||"NASDAQ AI",updatedAt:timestamp,editedAt:timestamp};
+    decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice};
+    decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3;
+    paper.activity=[{timestamp,type:"NASDAQ_ORDER_EDITED",message:`${decision.symbol} emir taslağı kaydedildi: ${Number(order.quantity)} adet · ${order.orderType}${order.orderType === "LIMIT" ? ` · $${Number(order.entryPrice)}` : ""}.`},...(paper.activity||[])].slice(0,100);
+    await saveTradingState(saved.content,saved.sha,saved.container);
+    return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  }catch(error){return sendJSON(res,400,{error:error.message});}
+}
 
 async function handleNasdaqPaperApprove(req, res) {
   try {
     const input = await readTradingRequest(req);
     const saved = await getTradingState();
     const paper = saved.content.nasdaqPaper;
+    paper.decisions = sanitizeNasdaqStoredDecisions(paper.decisions);
     if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada emir onaylanamaz.");
 
     const decisionId = String(input.decisionId || "");
@@ -7366,6 +7402,15 @@ async function handleNasdaqPaperApprove(req, res) {
       });
     }
 
+    const hasInlineOverride = ["quantity","entryPrice","orderType","stop","target1","target2","target3"].some(key => Object.prototype.hasOwnProperty.call(input, key));
+    if (hasInlineOverride && decision.status === "PENDING_APPROVAL") {
+      const normalized = normalizeNasdaqPaperOrder({...input, symbol:decision.symbol}, {existing:decision.pendingOrder});
+      const editedAt = new Date().toISOString();
+      decision.pendingOrder = {...decision.pendingOrder, ...normalized, source:decision.pendingOrder?.source || "NASDAQ AI", updatedAt:editedAt, editedAt};
+      decision.entry={low:normalized.entryPrice,high:normalized.entryPrice,reference:normalized.entryPrice};
+      decision.stop=normalized.stop;decision.target1=normalized.target1;decision.target2=normalized.target2;decision.target3=normalized.target3;
+    }
+
     const order = decision.pendingOrder;
     if (!order) {
       return sendJSON(res, 409, {
@@ -7404,6 +7449,7 @@ async function handleNasdaqPaperApprove(req, res) {
     const plannedCost = roundTradingValue(plannedEntry * Number(order.quantity));
     if (plannedCost > Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil.");
 
+    paper.activity=[{timestamp,type:"NASDAQ_BROKER_SUBMIT",message:`${order.symbol} Alpaca'ya gönderiliyor: ${Number(order.quantity)} adet · ${order.orderType}${order.orderType === "LIMIT" ? ` · $${Number(order.entryPrice)}` : ""}.`},...(paper.activity||[])].slice(0,100);
     const broker = await submitAlpacaPaperOrLiveOrder(order);
     const liveBrokerOrder = Boolean(broker.submitted);
     const brokerFilled = liveBrokerOrder && String(broker.status || "").toLowerCase() === "filled" && Number(broker.filledQuantity || 0) + 1e-12 >= Number(order.quantity);
@@ -7556,7 +7602,9 @@ async function handleNasdaqScanner(req,res) {
     const compareNasdaqCandidate=(left,right)=>Number(right.score||0)-Number(left.score||0)||left.symbol.localeCompare(right.symbol,"en");
     for(let index=0;index<symbols.length;index+=20){const group=symbols.slice(index,index+20);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history,{minDailyBars:40});if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
     const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik puanla ilk 5 aday için Fibonacci hesaplanıyor");const ranked=valid.slice(0,5).map(item=>{const fibonacci=fibonacciEngine.fibonacciPlan(item.history,Date.now(),{market:"NASDAQ"});const analysis=fibonacciEngine.score(item.history,fibonacci);const fallbackPlan=fibonacci.valid?null:fibonacciEngine.fallbackPlan(item.history,analysis.features);return {...item,...analysis,fibonacci,fallbackPlan,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};});
-    updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};const selectedSymbols=new Set(decisions.map(item=>item.symbol));paper.decisions=[...decisions,...(paper.decisions||[]).filter(item=>!(item.status==="PENDING_APPROVAL"&&selectedSymbols.has(item.symbol)))].slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
+    updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};// Scanner kararları yalnız aday/analiz verisidir; kullanıcı "BEKLEYEN NASDAQ EMRİ OLUŞTUR" demeden gerçek emir kuyruğuna yazılmaz.
+    // Mevcut kullanıcı taslakları, düzenlenmiş lot/fiyatlar ve broker yaşam döngüsü tarama tarafından ASLA ezilmez.
+    paper.decisions=sanitizeNasdaqStoredDecisions(paper.decisions).slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
   } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
   finally { releaseScannerExecution("NASDAQ"); }
 }
