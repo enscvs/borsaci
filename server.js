@@ -7306,13 +7306,64 @@ async function handleNasdaqPaperApprove(req, res) {
     const saved = await getTradingState();
     const paper = saved.content.nasdaqPaper;
     if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada emir onaylanamaz.");
-    const decision = (paper.decisions || []).find(item => item.id === String(input.decisionId || "") && item.status === "PENDING_APPROVAL");
-    if (!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor.");
+
+    const decisionId = String(input.decisionId || "");
+    const decision = (paper.decisions || []).find(item => item.id === decisionId);
+    if (!decision) {
+      return sendJSON(res, 409, {
+        error: "Bu NASDAQ emri mevcut state içinde bulunamadı. Emir listesi yenilenmeli.",
+        code: "NASDAQ_DECISION_STALE",
+        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+      });
+    }
+
+    // Onay butonunun çift tıklanması / gecikmeli ikinci HTTP isteği broker'a
+    // ikinci bir emir göndermemeli. Zaten broker'a geçmiş ya da açılmış karar
+    // mevcut state ile idempotent şekilde cevaplanır.
+    if (["PENDING_BROKER_ENTRY", "OPEN"].includes(decision.status)) {
+      return sendJSON(res, decision.status === "PENDING_BROKER_ENTRY" ? 202 : 200, {
+        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+        alreadyProcessed: true,
+      });
+    }
+
+    // Lokal paper LIMIT emri bir kez onaylandıktan sonra PENDING_LIMIT olur.
+    // Aynı onayın tekrar gelmesi yeni işlem üretmez. Alpaca açıksa ise eski
+    // sürümün hatalı biçimde bıraktığı PENDING_LIMIT kaydı broker'a gönderilebilsin.
+    if (decision.status === "PENDING_LIMIT" && !ALPACA_TRADING_ENABLED) {
+      return sendJSON(res, 200, {
+        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+        alreadyProcessed: true,
+      });
+    }
+
+    if (!["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) {
+      return sendJSON(res, 409, {
+        error: "Bu NASDAQ emri artık onaylanabilir durumda değil.",
+        code: "NASDAQ_DECISION_NOT_APPROVABLE",
+        status: decision.status,
+        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+      });
+    }
+
     const order = decision.pendingOrder;
+    if (!order) {
+      return sendJSON(res, 409, {
+        error: "NASDAQ emir taslağı bulunamadı. Emir listesi yenilenmeli.",
+        code: "NASDAQ_ORDER_DRAFT_MISSING",
+        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+      });
+    }
+
     const quote = await fetchNasdaqDailyClose(order.symbol);
     const marketPrice = Number(quote.price);
     const timestamp = new Date().toISOString();
-    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
+
+    // Bu bekletme yalnız LOCAL PAPER simülasyonuna aittir. Alpaca gerçek/paper
+    // broker LIMIT emrini piyasanın altında olsa da hemen kabul edip kendi
+    // order book yaşam döngüsünde bekletir. Broker açıkken burada PENDING_LIMIT'e
+    // çevirmek emrin Alpaca'ya hiç gönderilmemesine neden oluyordu.
+    if (!ALPACA_TRADING_ENABLED && order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
       decision.status = "PENDING_LIMIT";
       decision.pendingOrder = {...order, status:"PENDING_LIMIT", lastMarketPrice:marketPrice, updatedAt:timestamp};
       decision.lifecycle = {...(decision.lifecycle || {}), stage:"PENDING_LIMIT", lastCheckedAt:timestamp, lastMarketPrice:marketPrice};
@@ -7320,11 +7371,20 @@ async function handleNasdaqPaperApprove(req, res) {
       await saveTradingState(saved.content, saved.sha, saved.container);
       return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
     }
-    const entry = order.orderType === "MARKET" ? marketPrice : Math.min(marketPrice, Number(order.entryPrice));
-    if (order.stop !== null && Number(order.stop) >= entry) throw new Error("Stop gerçekleşen girişin altında olmalı.");
-    const plannedCost = roundTradingValue(entry * Number(order.quantity));
+
+    // Lokal paper'da LIMIT fiyatı gelirse gerçekleşme fiyatı piyasa/limitin
+    // düşük olanıdır. Alpaca'da ise kullanıcının onayladığı LIMIT fiyatı aynen
+    // broker'a gönderilir; server bunu piyasa fiyatına dönüştürmez.
+    const localEntry = order.orderType === "MARKET" ? marketPrice : Math.min(marketPrice, Number(order.entryPrice));
+    const plannedEntry = ALPACA_TRADING_ENABLED && order.orderType === "LIMIT"
+      ? Number(order.entryPrice)
+      : localEntry;
+
+    if (order.stop !== null && Number(order.stop) >= plannedEntry) throw new Error("Stop gerçekleşen girişin altında olmalı.");
+    const plannedCost = roundTradingValue(plannedEntry * Number(order.quantity));
     if (plannedCost > Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil.");
-    const broker = await submitAlpacaPaperOrLiveOrder({...order, entryPrice:entry});
+
+    const broker = await submitAlpacaPaperOrLiveOrder(order);
     const liveBrokerOrder = Boolean(broker.submitted);
     const brokerFilled = liveBrokerOrder && String(broker.status || "").toLowerCase() === "filled" && Number(broker.filledQuantity || 0) + 1e-12 >= Number(order.quantity);
 
@@ -7332,6 +7392,16 @@ async function handleNasdaqPaperApprove(req, res) {
     // Yerel portföyü açık pozisyon gibi göstermeden önce broker tarafında
     // `filled` doğrulamasını bekleriz; 60 sn monitör bu kaydı daha sonra açar.
     if (liveBrokerOrder && !brokerFilled) {
+      const existingPendingPosition = (paper.positions || []).find(position =>
+        position.decisionId === decision.id && position.status === "PENDING_BROKER_ENTRY"
+      );
+      if (existingPendingPosition) {
+        return sendJSON(res, 202, {
+          nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+          alreadyProcessed: true,
+        });
+      }
+
       const pendingPosition = {
         id:`nasdaq-broker-entry-${Date.now()}-${order.symbol}`,
         decisionId:decision.id,
@@ -7340,7 +7410,7 @@ async function handleNasdaqPaperApprove(req, res) {
         status:"PENDING_BROKER_ENTRY",
         quantity:Number(order.quantity),
         remainingQuantity:Number(order.quantity),
-        plannedEntry:entry,
+        plannedEntry,
         current:marketPrice,
         stop:order.stop,
         target1:order.target1,
@@ -7351,6 +7421,7 @@ async function handleNasdaqPaperApprove(req, res) {
       };
       paper.positions = [pendingPosition, ...(paper.positions || [])];
       decision.status = "PENDING_BROKER_ENTRY";
+      decision.pendingOrder = {...order, status:"PENDING_BROKER_ENTRY", updatedAt:timestamp};
       decision.lifecycle = {...(decision.lifecycle || {}), stage:"PENDING_BROKER_ENTRY", brokerOrderId:broker.brokerOrderId, lastCheckedAt:timestamp};
       paper.activity = [{timestamp, type:"NASDAQ_BROKER_ENTRY_PENDING", message:`${order.symbol} Alpaca emri gönderildi; broker fill doğrulaması bekleniyor.`}, ...(paper.activity || [])].slice(0,100);
       await saveTradingState(saved.content,saved.sha,saved.container);
@@ -7358,7 +7429,7 @@ async function handleNasdaqPaperApprove(req, res) {
     }
 
     const executedQuantity = brokerFilled ? Number(broker.filledQuantity) : Number(order.quantity);
-    const executedEntry = brokerFilled && Number(broker.filledAveragePrice) > 0 ? Number(broker.filledAveragePrice) : entry;
+    const executedEntry = brokerFilled && Number(broker.filledAveragePrice) > 0 ? Number(broker.filledAveragePrice) : localEntry;
     const cost = roundTradingValue(executedEntry * executedQuantity);
     let position = (paper.positions || []).find(item => item.status === "OPEN" && item.symbol === order.symbol);
     if (position) {
@@ -7373,6 +7444,7 @@ async function handleNasdaqPaperApprove(req, res) {
     }
     paper.cash = roundTradingValue(Number(paper.cash) - cost);
     decision.status = "OPEN";
+    decision.pendingOrder = {...order, status:"OPEN", updatedAt:timestamp};
     paper.activity = [{timestamp, type:"NASDAQ_OPEN", message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`}, ...(paper.activity || [])].slice(0,100);
     recalculateNasdaqPaper(paper);
     await saveTradingState(saved.content,saved.sha,saved.container);
