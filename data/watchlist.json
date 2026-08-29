@@ -5442,6 +5442,11 @@
         "activatedAt": null
       }
     },
+    "cryptoLive": {
+      "positions": [],
+      "activity": [],
+      "history": []
+    },
     "nasdaqPaper": {
       "initialCapital": 5000,
       "cash": 1865.2,
@@ -13373,13 +13378,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z"
+          "createdAt": "2026-08-29T05:36:04.226Z",
+          "expiresAt": "2026-08-30T05:36:04.226Z"
         },
         "currentScan": true,
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Fibonacci teyidi oluşmadan bu alternatif seviyeler işlem emri üretmez.",
-        "timestamp": "2026-08-28T16:57:48.027Z"
+        "timestamp": "2026-08-29T05:36:04.226Z"
       },
       {
         "id": "1787845693091-ASTOR",
@@ -13685,13 +13690,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z"
+          "createdAt": "2026-08-29T05:36:04.227Z",
+          "expiresAt": "2026-08-30T05:36:04.227Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-28T16:57:48.027Z"
+        "timestamp": "2026-08-29T05:36:04.227Z"
       },
       {
         "id": "1787936268027-DOHOL",
@@ -14015,13 +14020,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z"
+          "createdAt": "2026-08-29T05:36:04.227Z",
+          "expiresAt": "2026-08-30T05:36:04.227Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-28T16:57:48.027Z"
+        "timestamp": "2026-08-29T05:36:04.227Z"
       },
       {
         "id": "1787845693091-BINBN",
@@ -30431,7 +30436,40 @@
       "reservedAt": "2026-08-27T15:48:48.900Z",
       "snapshotCreatedAt": "2026-08-27T15:48:13.091Z"
     },
+    "automation": {
+      "scanner": {
+        "BIST": {
+          "snapshot": null,
+          "lastSuccessAt": null,
+          "lastError": null,
+          "lastErrorAt": null
+        },
+        "CRYPTO": {
+          "snapshot": null,
+          "lastSuccessAt": null,
+          "lastError": null,
+          "lastErrorAt": null
+        },
+        "NASDAQ": {
+          "snapshot": null,
+          "lastSuccessAt": null,
+          "lastError": null,
+          "lastErrorAt": null
+        }
+      },
+      "monitor": {
+        "events": [],
+        "lastSuccessAt": null,
+        "lastError": null,
+        "lastErrorAt": null
+      }
+    },
     "activity": [
+      {
+        "timestamp": "2026-08-29T05:36:06.104Z",
+        "type": "SCAN",
+        "message": "4 active AI decision(s) refreshed or generated."
+      },
       {
         "timestamp": "2026-08-28T16:57:48.751Z",
         "type": "SCAN",
@@ -30926,11 +30964,6 @@
         "timestamp": "2026-08-26T10:46:20.704Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "GESAN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:37:56.502Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
       }
     ],
     "scannerSnapshot": {
