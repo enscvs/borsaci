@@ -6821,7 +6821,16 @@ async function approvePendingPaperOrder(
 ) {
   const payload = readPaperOrderForm(form);
   const state = await savePendingPaperOrder(form);
-  const decisionId = payload.decisionId || state.payload?.decisionId;
+ const updatedDecision =
+  (state.state?.decisions || state.decisions || []).find(
+    item =>
+      item.symbol === payload.symbol &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status)
+  );
+
+const decisionId =
+  updatedDecision?.id ||
+  payload.decisionId;
   if (!decisionId) {
     throw new Error("Onay için karar kimliği bulunamadı.");
   }
