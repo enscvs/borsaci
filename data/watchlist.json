@@ -6035,7 +6035,7 @@
           "symbol": "NVDA",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_LIMIT",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-29T20:30:46.739Z",
           "entry": {
@@ -6111,7 +6111,14 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T20:30:46.739Z",
-            "updatedAt": "2026-08-29T20:30:46.739Z"
+            "updatedAt": "2026-08-29T20:30:59.814Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 217.54
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-29T20:30:59.814Z",
+            "lastMarketPrice": 217.54
           }
         },
         {
@@ -17453,6 +17460,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-29T20:30:59.814Z",
+          "type": "NASDAQ_LIMIT_PENDING",
+          "message": "NVDA limit alış emri $208.42 seviyesinde izleniyor."
+        },
         {
           "timestamp": "2026-08-29T20:30:46.739Z",
           "type": "NASDAQ_PENDING",
