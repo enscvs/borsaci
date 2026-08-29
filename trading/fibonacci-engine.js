@@ -339,8 +339,28 @@ function fibonacciPlan(rawDaily, now=Date.now(), options={}) {
   return {...fields,status:"ACTIVE",confirmationPassed:true,confirmationCandleTime:iso(confirm),confirmationCandleClose:round(confirm.close),entryPrice:round(entry),riskRewardTp1:round((fields.tp1-entry)/risk,2),riskRewardTp2:round((fields.tp2-entry)/risk,2),riskRewardTp3:round((fields.tp3-entry)/risk,2)};
 }
 function fallbackPlan(history, f) {
-  const support=Math.min(...history.slice(-20).map(x=>x.low)), entry=f.price, stop=support-f.atr*.15, risk=entry-stop, resistance=Math.max(...history.slice(-60,-1).map(x=>x.high));
-  return { method:"ATR_SUPPORT_RESISTANCE",entryPrice:round(entry),stopLoss:round(stop),tp1:round(entry+risk*2),tp2:round(entry+risk*3),tp3:round(Math.max(resistance,entry+risk*3)),riskRewardTp1:round(2),riskRewardTp2:round(3),riskRewardTp3:round((Math.max(resistance,entry+risk*3)-entry)/risk,2),message:"Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı." };
+  const support = Math.min(...history.slice(-20).map(x => x.low));
+  const entry = f.price;
+  const stop = support - f.atr * 0.15;
+  const risk = entry - stop;
+  const resistance = Math.max(...history.slice(-60, -1).map(x => x.high));
+
+  const tp1 = entry + risk * 2;
+  const tp2 = entry + risk * 3;
+  const tp3 = Math.max(resistance, entry + risk * 4);
+
+  return {
+    method: "ATR_SUPPORT_RESISTANCE",
+    entryPrice: round(entry),
+    stopLoss: round(stop),
+    tp1: round(tp1),
+    tp2: round(tp2),
+    tp3: round(tp3),
+    riskRewardTp1: round(2),
+    riskRewardTp2: round(3),
+    riskRewardTp3: round((tp3 - entry) / risk, 2),
+    message: "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
+  };
 }
 function score(history, fib) {
   const f=features(history), c=CONFIG.scoring;
