@@ -43,9 +43,6 @@ const {
   createAlpacaBroker,
 } = require("./trading/broker/alpaca-broker");
 const {
-  createBistBroker,
-} = require("./trading/broker/bist-broker");
-const {
   normalizeBinancePrivateGatewayUrl,
   buildBinancePrivateGatewayUrl,
   selectBinanceSignedRequestBases,
@@ -2056,7 +2053,6 @@ console.log("🔥 MCP CONNECT BAŞARILI");
 }
 
 
-/*
 /*
 ========================================================
 AI ANALYZE
@@ -4604,25 +4600,6 @@ async function openPaperPositionForDecision(
   return position;
 }
 
-async function openEligiblePaperPositions(
-  state,
-  timestamp
-) {
-  const opened = [];
-  const eligible = (state.decisions || [])
-    .filter(decision => decision.action === "BUY SETUP" && decision.status === "PENDING")
-    .sort((a,b) => Number(b.indicators?.score || 0) - Number(a.indicators?.score || 0))
-    .slice(0, 3);
-  for (const decision of eligible) {
-    try {
-      opened.push(await openPaperPositionForDecision(state, decision, timestamp));
-    } catch (error) {
-      console.warn("PAPER AUTO OPEN SKIPPED:", error.message);
-    }
-  }
-  return opened;
-}
-
 function closeMonitoredPaperPosition(
   state,
   position,
@@ -6203,7 +6180,6 @@ const BIST100_SYMBOLS = [
 /* v5: 60 puan BUY SETUP eşiği ve bekleyen paper emir metadatası. */
 const SCANNER_SNAPSHOT_VERSION = "daily-top-five-v6";
 const PAPER_COMMISSION_RATE = 0.001;
-const BIST_DAILY_PRICE_LIMIT = 0.10;
 
 function istanbulClock(now = new Date()) {
   const parts = Object.fromEntries(
@@ -6291,576 +6267,6 @@ function canReuseScannerSnapshot(snapshot, riskSettings) {
     Array.isArray(snapshot?.results) &&
     snapshot.results.length === 5
   );
-}
-
-
-/*
---------------------------------------------------------
-INDICATORS
---------------------------------------------------------
-*/
-
-function sma(values, period) {
-
-  if (!Array.isArray(values) || values.length < period) {
-    return null;
-  }
-
-  const slice =
-    values.slice(values.length - period);
-
-  return (
-    slice.reduce(
-      (sum, value) => sum + value,
-      0
-    ) / period
-  );
-}
-
-
-function ema(values, period) {
-
-  if (
-    !Array.isArray(values) ||
-    values.length < period
-  ) {
-    return null;
-  }
-
-  const multiplier =
-    2 / (period + 1);
-
-  let result =
-    sma(values.slice(0, period), period);
-
-  if (result === null) {
-    return null;
-  }
-
-  for (
-    let i = period;
-    i < values.length;
-    i++
-  ) {
-
-    result =
-      (
-        values[i] - result
-      ) *
-        multiplier +
-      result;
-
-  }
-
-  return result;
-}
-
-
-function calculateRSI(
-  closes,
-  period = 14
-) {
-
-  if (
-    !Array.isArray(closes) ||
-    closes.length <= period
-  ) {
-    return null;
-  }
-
-  let gains = 0;
-  let losses = 0;
-
-  for (
-    let i = 1;
-    i <= period;
-    i++
-  ) {
-
-    const change =
-      closes[i] -
-      closes[i - 1];
-
-    if (change >= 0) {
-      gains += change;
-    } else {
-      losses -= change;
-    }
-
-  }
-
-  let averageGain =
-    gains / period;
-
-  let averageLoss =
-    losses / period;
-
-  for (
-    let i = period + 1;
-    i < closes.length;
-    i++
-  ) {
-
-    const change =
-      closes[i] -
-      closes[i - 1];
-
-    const gain =
-      change > 0
-        ? change
-        : 0;
-
-    const loss =
-      change < 0
-        ? -change
-        : 0;
-
-    averageGain =
-      (
-        averageGain *
-          (period - 1) +
-        gain
-      ) / period;
-
-    averageLoss =
-      (
-        averageLoss *
-          (period - 1) +
-        loss
-      ) / period;
-
-  }
-
-  if (averageLoss === 0) {
-    return 100;
-  }
-
-  const rs =
-    averageGain /
-    averageLoss;
-
-  return (
-    100 -
-    100 / (1 + rs)
-  );
-
-}
-
-
-function calculateATR(
-  history,
-  period = 14
-) {
-
-  if (
-    !Array.isArray(history) ||
-    history.length <= period
-  ) {
-    return null;
-  }
-
-  const trueRanges = [];
-
-  for (
-    let i = 1;
-    i < history.length;
-    i++
-  ) {
-
-    const current =
-      history[i];
-
-    const previous =
-      history[i - 1];
-
-    const tr =
-      Math.max(
-        current.high - current.low,
-        Math.abs(
-          current.high -
-          previous.close
-        ),
-        Math.abs(
-          current.low -
-          previous.close
-        )
-      );
-
-    trueRanges.push(tr);
-
-  }
-
-  return sma(
-    trueRanges,
-    period
-  );
-
-}
-
-
-/*
---------------------------------------------------------
-MACD
---------------------------------------------------------
-*/
-
-function calculateMACD(
-  closes
-) {
-
-  const ema12 =
-    ema(closes, 12);
-
-  const ema26 =
-    ema(closes, 26);
-
-  if (
-    ema12 === null ||
-    ema26 === null
-  ) {
-    return null;
-  }
-
-  const macd =
-    ema12 - ema26;
-
-  return macd;
-}
-
-
-/*
---------------------------------------------------------
-SCORE
---------------------------------------------------------
-*/
-
-function calculateScannerScore(
-  history
-) {
-
-  const closes =
-    history.map(
-      item => item.close
-    );
-
-  const volumes =
-    history.map(
-      item => item.volume || 0
-    );
-
-  const price =
-    closes[closes.length - 1];
-
-  const ema20 =
-    ema(closes, 20);
-
-  const ema50 =
-    ema(closes, 50);
-
-  const ema200 =
-    ema(closes, 200);
-
-  const rsi =
-    calculateRSI(closes, 14);
-
-  const atr =
-    calculateATR(history, 14);
-
-  const macd =
-    calculateMACD(closes);
-
-  const averageVolume =
-    sma(volumes, 20);
-
-  const latestVolume =
-    volumes[volumes.length - 1];
-
-  /*
-   * Scanner yalnızca pozitif ve hesaplanabilir fiyat
-   * serileriyle karar üretir. Piyasa kapalıyken gelen
-   * 0 fiyatı burada fail-closed olarak elenir.
-   */
-  if (
-    ![
-      price,
-      ema20,
-      ema50,
-      ema200,
-      rsi,
-      atr,
-    ].every(
-      value =>
-        Number.isFinite(value) &&
-        value > 0
-    )
-  ) {
-    return null;
-  }
-
-  let score = 0;
-
-  const signals = [];
-
-  /*
-  TREND
-  */
-
-  if (
-    ema20 !== null &&
-    price > ema20
-  ) {
-
-    score += 15;
-
-    signals.push(
-      "Price > EMA20"
-    );
-
-  }
-
-  if (
-    ema50 !== null &&
-    price > ema50
-  ) {
-
-    score += 10;
-
-    signals.push(
-      "Price > EMA50"
-    );
-
-  }
-
-  if (
-    ema200 !== null &&
-    price > ema200
-  ) {
-
-    score += 15;
-
-    signals.push(
-      "Price > EMA200"
-    );
-
-  }
-
-
-  /*
-  EMA STRUCTURE
-  */
-
-  if (
-    ema20 !== null &&
-    ema50 !== null &&
-    ema20 > ema50
-  ) {
-
-    score += 10;
-
-    signals.push(
-      "EMA20 > EMA50"
-    );
-
-  }
-
-
-  /*
-  RSI
-  */
-
-  if (
-    rsi !== null &&
-    rsi >= 50 &&
-    rsi <= 70
-  ) {
-
-    score += 15;
-
-    signals.push(
-      "RSI bullish"
-    );
-
-  } else if (
-    rsi !== null &&
-    rsi > 70
-  ) {
-
-    score += 5;
-
-    signals.push(
-      "RSI overbought"
-    );
-
-  }
-
-
-  /*
-  MACD
-  */
-
-  if (
-    macd !== null &&
-    macd > 0
-  ) {
-
-    score += 10;
-
-    signals.push(
-      "MACD positive"
-    );
-
-  }
-
-
-  /*
-  VOLUME
-  */
-
-  if (
-    averageVolume &&
-    latestVolume >
-      averageVolume * 1.2
-  ) {
-
-    score += 15;
-
-    signals.push(
-      "Volume expansion"
-    );
-
-  } else if (
-    averageVolume &&
-    latestVolume >
-      averageVolume
-  ) {
-
-    score += 7;
-
-    signals.push(
-      "Volume above average"
-    );
-
-  }
-
-
-  /*
-  CAP SCORE
-  */
-
-  score =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        score
-      )
-    );
-
-
-  let decision =
-    "WATCH";
-
-  if (score >= 80) {
-    decision = "BUY SETUP";
-  } else if (score >= 65) {
-    decision = "WATCH";
-  } else {
-    decision = "NEUTRAL";
-  }
-
-
-  /*
-  ATR BASED RISK LEVEL
-  */
-
-  let volatility =
-    null;
-
-  if (
-    atr !== null &&
-    price > 0
-  ) {
-
-    volatility =
-      (
-        atr /
-        price
-      ) * 100;
-
-  }
-
-
-  return {
-
-    price,
-    ema20,
-    ema50,
-    ema200,
-    rsi,
-    macd,
-    atr,
-    volume: latestVolume,
-    averageVolume,
-
-    volatility,
-
-    score,
-    decision,
-
-    signals
-
-  };
-
-}
-
-
-/*
---------------------------------------------------------
-SCAN ONE SYMBOL
---------------------------------------------------------
-*/
-
-function buildTradingChartContext(
-  history
-) {
-  const recent =
-    (history || []).slice(-12);
-
-  const closes =
-    recent.map(item => Number(item.close));
-
-  const first =
-    closes[0] || 0;
-
-  const last =
-    closes.at(-1) || 0;
-
-  const highest =
-    Math.max(...recent.map(item => Number(item.high) || 0));
-
-  const lowest =
-    Math.min(...recent.map(item => Number(item.low) || Infinity));
-
-  return {
-    return12d:
-      first > 0
-        ? roundTradingValue(
-            (last - first) / first * 100
-          )
-        : null,
-    range12d:
-      last > 0 && Number.isFinite(lowest)
-        ? roundTradingValue(
-            (highest - lowest) / last * 100
-          )
-        : null,
-    candles: recent.map(item => ({
-      close: roundTradingValue(item.close),
-      high: roundTradingValue(item.high),
-      low: roundTradingValue(item.low),
-      volume: Number(item.volume) || 0,
-    })),
-  };
 }
 
 
@@ -7711,7 +7117,7 @@ function settleNasdaqManualExit(paper, position, price, quantity, timestamp, {re
   const realized = roundTradingValue((executionPrice - Number(before.entry || 0)) * sold);
   const type = live ? `NASDAQ_BROKER_${reason}_FILLED` : `NASDAQ_${reason}`;
   const message = `${position.symbol} NASDAQ ${reason === "KILL_SWITCH" ? "acil durdurma" : "manuel"} ${String(orderType).toUpperCase()} satış emri ${sold} hisse için $${roundTradingValue(executionPrice)} ile gerçekleşti.`;
-  if (!closeMonitoredPaperPosition(paper, position, executionPrice, timestamp, type, message, sold)) return false;
+  if (!closeMonitoredMarketPosition(paper, position, executionPrice, timestamp, type, message, sold)) return false;
   position.remainingQuantity = Math.max(0, Number(before.remainingQuantity ?? before.quantity ?? 0) - sold);
   position.realizedPnl = roundTradingValue(Number(before.realizedPnl || 0) + realized);
   position.monitor = {...(position.monitor || {}), pendingManualExit:null, lastManualExitAt:timestamp, lastManualExitPrice:executionPrice};
@@ -7851,16 +7257,40 @@ async function handleNasdaqPaperQueue(req,res) {
 
     const timestamp = new Date().toISOString();
     const candidate = nasdaqDecisionFromInput(input, timestamp);
-    const manual = String(candidate.pendingOrder.source).toUpperCase() === "MANUAL";
-    const isSameQueue = item => (String(item.pendingOrder?.source || "").toUpperCase() === "MANUAL") === manual;
+    const source = String(candidate.pendingOrder?.source || "NASDAQ AI").toUpperCase();
+    const existing = (paper.decisions || []).find(item =>
+      item.symbol === candidate.symbol &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
+      String(item.pendingOrder?.source || "NASDAQ AI").toUpperCase() === source
+    );
 
-    // Her panel tek bir taslak emir gösterir. Yeni plan aynı paneldeki eski
-    // PENDING_APPROVAL kaydını tamamen değiştirir; onay/red geçmişi korunur.
-    paper.decisions = [
-      candidate,
-      ...(paper.decisions || []).filter(item => !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) || !isSameQueue(item)),
-    ].slice(0, 100);
-    paper.activity = [{timestamp, type:"NASDAQ_PENDING", message:`${candidate.symbol} NASDAQ emri onay bekliyor.`}, ...(paper.activity || [])].slice(0,100);
+    // Aynı sembol/kaynak için taslak yeniden oluşturulursa decisionId sabit kalır.
+    // Böylece arayüzde açık duran onay kartı backend state yenilenince yetim kalmaz.
+    // Farklı sembollerin bekleyen emirleri ise birbirini silmez.
+    if (existing) {
+      existing.action = candidate.action;
+      existing.status = "PENDING_APPROVAL";
+      existing.grade = candidate.grade;
+      existing.timestamp = timestamp;
+      existing.entry = candidate.entry;
+      existing.stop = candidate.stop;
+      existing.target1 = candidate.target1;
+      existing.target2 = candidate.target2;
+      existing.target3 = candidate.target3;
+      existing.fibonacci = candidate.fibonacci;
+      existing.indicators = candidate.indicators;
+      existing.pendingOrder = {
+        ...candidate.pendingOrder,
+        createdAt: existing.pendingOrder?.createdAt || existing.timestamp || timestamp,
+        updatedAt: timestamp,
+      };
+      existing.lifecycle = {...(existing.lifecycle || {}), stage:"PENDING_APPROVAL", updatedAt:timestamp};
+    } else {
+      paper.decisions = [candidate, ...(paper.decisions || [])].slice(0, 100);
+    }
+
+    const queued = existing || candidate;
+    paper.activity = [{timestamp, type:"NASDAQ_PENDING", message:`${queued.symbol} NASDAQ emri onay bekliyor.`}, ...(paper.activity || [])].slice(0,100);
     await saveTradingState(saved.content, saved.sha, saved.container);
     return sendJSON(res, 201, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
   } catch(error) {
@@ -9703,7 +9133,7 @@ async function handleCryptoPaperClose(req, res) {
   } catch (error) { return sendJSON(res, 400, {error: error.message}); }
 }
 
-function closeMonitoredPaperPosition(paper, position, price, timestamp, type, message, quantity = Number(position.quantity || 0), roundQuantity = value => value) {
+function closeMonitoredMarketPosition(paper, position, price, timestamp, type, message, quantity = Number(position.quantity || 0), roundQuantity = value => value) {
   const sold = roundQuantity(quantity);
   if (!Number.isFinite(sold) || sold <= 0) return false;
   const proceeds = roundTradingValue(price * sold);
@@ -9762,7 +9192,7 @@ async function monitorCryptoPaperTrading(paper, timestamp) {
       : event.type === "TP2"
         ? `${position.symbol} kripto TP2 hedefiyle kalan miktar kapatıldı.`
         : `${position.symbol} kripto stop seviyesiyle kalan miktar kapatıldı.`;
-    const executed = closeMonitoredPaperPosition(paper, position, price, timestamp, label, message, event.closeQuantity, roundCryptoValue);
+    const executed = closeMonitoredMarketPosition(paper, position, price, timestamp, label, message, event.closeQuantity, roundCryptoValue);
     if (!executed) continue;
     Object.assign(position, applyConfirmedMonitorEvent(before, event, {timestamp}));
     changed = true;
@@ -9975,7 +9405,7 @@ function settleNasdaqMonitorEvent(paper, position, before, event, price, timesta
     : event.type === "TP2"
       ? `${position.symbol} NASDAQ TP2 hedefiyle kalan miktar kapatıldı. Gerçekleşen P&L: $${realized}.`
       : `${position.symbol} NASDAQ stop seviyesiyle kalan miktar kapatıldı. Gerçekleşen P&L: $${realized}.`;
-  if (!closeMonitoredPaperPosition(paper, position, executionPrice, timestamp, label, message, event.closeQuantity)) return false;
+  if (!closeMonitoredMarketPosition(paper, position, executionPrice, timestamp, label, message, event.closeQuantity)) return false;
   Object.assign(position, applyConfirmedMonitorEvent(before, event, {timestamp}));
   position.current = executionPrice;
   position.realizedPnl = roundTradingValue(Number(before.realizedPnl || 0) + realized);
