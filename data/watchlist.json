@@ -17957,9 +17957,9 @@
           "overrideAt": "2026-08-29T20:15:20.974Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z",
+        "timestamp": "2026-08-29T20:26:43.228Z",
         "manualOverride": true,
         "pendingOrder": {
           "symbol": "SDTTR",
@@ -18289,9 +18289,9 @@
           "openedAt": "2026-08-29T18:51:28.669Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z",
+        "timestamp": "2026-08-29T20:26:43.228Z",
         "manualOverride": true,
         "pendingOrder": {
           "symbol": "ASTOR",
@@ -18316,11 +18316,11 @@
         }
       },
       {
-        "id": "1788028181152-BINBN",
+        "id": "1788035203228-BINBN",
         "rank": 3,
         "symbol": "BINBN",
-        "action": "BUY SETUP",
-        "status": "REJECTED_BY_USER",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -18618,36 +18618,14 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "REJECTED_BY_USER",
-          "createdAt": "2026-08-29T18:29:41.152Z",
-          "expiresAt": "2026-08-30T18:29:41.152Z",
-          "overrideAt": "2026-08-29T19:40:56.167Z",
-          "rejectedAt": "2026-08-29T20:02:59.558Z",
-          "rejectedBy": "SITE"
+          "stage": "PENDING",
+          "createdAt": "2026-08-29T20:26:43.228Z",
+          "expiresAt": "2026-08-30T20:26:43.228Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (161.9) planı geçersiz kılar.",
-        "timestamp": "2026-08-29T18:29:41.152Z",
-        "manualOverride": true,
-        "pendingOrder": {
-          "symbol": "BINBN",
-          "quantity": 185,
-          "entryPrice": 186.6,
-          "orderType": "LIMIT",
-          "stop": 161.9,
-          "target1": 215.44,
-          "target2": 229.1,
-          "target3": 246.5,
-          "positionValue": 34521,
-          "actualRisk": 4569.5,
-          "paperOnly": true,
-          "source": "SCANNER",
-          "createdAt": "2026-08-29T19:40:56.167Z",
-          "updatedAt": "2026-08-29T19:40:56.167Z",
-          "editedAt": null
-        },
-        "outcome": "USER_REJECTED"
+        "timestamp": "2026-08-29T20:26:43.228Z"
       }
     ],
     "history": [
@@ -35624,6 +35602,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-29T20:26:44.645Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-29T20:15:20.974Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "SDTTR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
@@ -36117,18 +36100,13 @@
         "timestamp": "2026-08-26T11:08:11.404Z",
         "type": "PAPER_OPEN",
         "message": "GESAN scanner paper pozisyonu açıldı: 173 lot · ₺15604.60 · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T11:08:08.428Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "GESAN bekleyen paper emri düzenlendi: 173 lot · ₺90,20 · LIMIT."
       }
     ],
     "scannerSnapshot": {
       "version": "daily-top-five-v6",
       "sessionKey": "2026-08-28",
       "riskKey": "100000|31|3",
-      "createdAt": "2026-08-29T18:29:41.152Z",
+      "createdAt": "2026-08-29T20:26:43.229Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -36406,7 +36384,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:37.877Z",
+          "timestamp": "2026-08-29T20:26:39.938Z",
           "fallbackPlan": null,
           "decision": "A+ / GÜÇLÜ ADAY",
           "price": 24.399999618530273,
@@ -36702,7 +36680,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:35.168Z",
+          "timestamp": "2026-08-29T20:26:36.945Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 349,
@@ -36998,7 +36976,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:35.170Z",
+          "timestamp": "2026-08-29T20:26:37.145Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 186.60000610351562,
@@ -37312,7 +37290,7 @@
             "confirmationCandleClose": 103.9,
             "entryPrice": 114
           },
-          "timestamp": "2026-08-29T18:29:36.315Z",
+          "timestamp": "2026-08-29T20:26:38.247Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 114,
@@ -37608,7 +37586,7 @@
             "volumeConfirmation": "WEAK",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-29T18:29:37.667Z",
+          "timestamp": "2026-08-29T20:26:39.047Z",
           "fallbackPlan": null,
           "decision": "A / AL ADAYI",
           "price": 46.560001373291016,
