@@ -3467,51 +3467,72 @@ GITHUB WATCHLIST
 */
 
 async function getWatchlist() {
+  const endpoint =
+    `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`;
+  let lastError = null;
+  let lastSha = null;
 
-  const response = await fetch(
-    `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`,
-    {
-      headers: {
-        "Authorization":
-          `Bearer ${process.env.GITHUB_TOKEN}`,
+  // GitHub Contents API occasionally returns a partially written blob while a
+  // concurrent state update is being committed.  Never let that one bad read
+  // take down the scanner, monitors, or the authenticated UI.
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(`${endpoint}?ref=main&_=${Date.now()}-${attempt}`, {
+        headers: {
+          "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+          "Accept": "application/vnd.github+json",
+          "User-Agent": "BorsaCI",
+          "Cache-Control": "no-cache",
+        },
+      });
 
-        "Accept":
-          "application/vnd.github+json",
+      if (!response.ok) {
+        throw new Error(`GitHub watchlist okunamadı: HTTP ${response.status}`);
+      }
 
-        "User-Agent":
-          "BorsaCI",
-      },
+      const data = await response.json();
+      lastSha = typeof data?.sha === "string" ? data.sha : lastSha;
+      if (typeof data?.content !== "string" || !data.content.trim()) {
+        throw new Error("GitHub watchlist içeriği boş döndü.");
+      }
+
+      const decoded = Buffer.from(data.content.replace(/\n/g, ""), "base64")
+        .toString("utf8")
+        .trim();
+      if (!decoded) {
+        throw new Error("GitHub watchlist çözümlendikten sonra boş kaldı.");
+      }
+
+      const parsed = JSON.parse(decoded);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        throw new Error("GitHub watchlist kökü geçerli bir nesne değil.");
+      }
+
+      return { content: parsed, sha: data.sha, recovered: false };
+    } catch (error) {
+      lastError = error;
+      console.error(`WATCHLIST READ RETRY ${attempt}/3: ${error.message}`);
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+      }
     }
-  );
-
-
-  if (!response.ok) {
-
-    throw new Error(
-      `GitHub watchlist okunamadı: HTTP ${response.status}`
-    );
-
   }
 
-
-  const data =
-    await response.json();
-
-
-  const content =
-    Buffer.from(
-      data.content.replace(/\n/g, ""),
-      "base64"
-    ).toString("utf8");
-
-
-  return {
-    content:
-      JSON.parse(content),
-
-    sha:
-      data.sha,
-  };
+  // The deployed repository copy is a known-valid last backup.  It keeps the
+  // application available until the next successful state save repairs the
+  // malformed remote document.  A remote SHA is retained so that repair is
+  // still an update, never a blind create.
+  try {
+    const backupPath = path.join(__dirname, "data", "watchlist.json");
+    const backup = JSON.parse(fs.readFileSync(backupPath, "utf8"));
+    if (!backup || typeof backup !== "object" || Array.isArray(backup)) {
+      throw new Error("Yerel watchlist yedeği geçersiz.");
+    }
+    console.error(`WATCHLIST RECOVERY: geçerli yerel yedek kullanıldı (${lastError?.message || "bilinmeyen hata"}).`);
+    return { content: backup, sha: lastSha, recovered: true };
+  } catch (backupError) {
+    throw new Error(`GitHub watchlist okunamadı ve yerel yedek yüklenemedi: ${backupError.message}`);
+  }
 
 }
 
@@ -3531,59 +3552,42 @@ async function saveWatchlist(
     ).toString("base64");
 
 
-  const response =
-    await fetch(
-      `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`,
-      {
+  let currentSha = sha;
+  let lastError = null;
+  const endpoint =
+    `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`;
 
-        method:
-          "PUT",
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    const response = await fetch(endpoint, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "BorsaCI",
+      },
+      body: JSON.stringify({ message: "Update watchlist", content, ...(currentSha ? { sha: currentSha } : {}) }),
+    });
 
-        headers: {
+    if (response.ok) {
+      return await response.json();
+    }
 
-          "Authorization":
-            `Bearer ${process.env.GITHUB_TOKEN}`,
+    const errorText = await response.text();
+    lastError = new Error(`GitHub watchlist kaydedilemedi: ${errorText}`);
+    if (response.status !== 409 || attempt === 4) {
+      throw lastError;
+    }
 
-          "Accept":
-            "application/vnd.github+json",
-
-          "Content-Type":
-            "application/json",
-
-          "User-Agent":
-            "BorsaCI",
-
-        },
-
-        body:
-          JSON.stringify({
-
-            message:
-              "Update watchlist",
-
-            content,
-
-            sha,
-
-          }),
-
-      }
-    );
-
-
-  if (!response.ok) {
-
-    const errorText =
-      await response.text();
-
-    throw new Error(
-      `GitHub watchlist kaydedilemedi: ${errorText}`
-    );
-
+    // Another worker wrote state first. Re-read the latest SHA and retry the
+    // same complete, already validated document instead of leaving a partial
+    // JSON blob behind.
+    const latest = await getWatchlist();
+    currentSha = latest.sha;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 150));
   }
 
-
-  return await response.json();
+  throw lastError || new Error("GitHub watchlist kaydedilemedi.");
 
 }
 
