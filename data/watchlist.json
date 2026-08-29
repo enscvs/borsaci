@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 67711.54,
-      "equity": 142712.14,
-      "pnl": 43050.113574438095,
-      "pnlPercent": 43.0501135744381,
+      "cash": 102198.01999999999,
+      "equity": 142677.62,
+      "pnl": 43015.5935744381,
+      "pnlPercent": 43.0155935744381,
       "positions": [
         {
           "id": "paper-2026-08-29T20:27:37.140Z-BINBN-d71e8942",
@@ -28,11 +28,13 @@
           "target1": 215.44,
           "target2": 229.1,
           "target3": 246.5,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-29T20:27:37.140Z",
           "tp1Hit": false,
           "realizedPnl": -34.52,
-          "pnl": -34.52
+          "pnl": -69.04,
+          "closedAt": "2026-08-29T20:27:47.153Z",
+          "closeReason": "MANUAL_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-29T20:27:06.739Z-SDTTR-0aa7e48c",
@@ -18035,13 +18037,15 @@
           "status": "APPROVED",
           "approvedAt": "2026-08-29T20:27:06.739Z"
         }
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1788035203228-BINBN",
         "rank": 3,
         "symbol": "BINBN",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 167.4,
@@ -18339,11 +18343,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-29T20:26:43.228Z",
           "expiresAt": "2026-08-30T20:26:43.228Z",
           "overrideAt": "2026-08-29T20:27:25.638Z",
-          "openedAt": "2026-08-29T20:27:37.140Z"
+          "openedAt": "2026-08-29T20:27:37.140Z",
+          "closedAt": "2026-08-29T20:27:47.153Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -18370,10 +18375,10 @@
           "totalCost": 34555.52,
           "status": "APPROVED",
           "approvedAt": "2026-08-29T20:27:37.140Z"
-        }
-      }
-    ],
-    "history": [
+        },
+        "outcome": "MANUAL_MARKET_CLOSE",
+        "realizedPnL": -69.04
+      },
       {
         "id": "1787845693091-ASTOR",
         "rank": 2,
@@ -35479,67 +35484,6 @@
         "timestamp": "2026-08-22T09:54:59.628Z",
         "outcome": "MANUAL_CLOSE",
         "realizedPnL": 0
-      },
-      {
-        "id": "1787390937941-ALARK",
-        "rank": 1,
-        "symbol": "ALARK",
-        "action": "WATCH",
-        "status": "EXPIRED",
-        "confidence": 94,
-        "entry": {
-          "low": 106.4,
-          "high": 108.57,
-          "reference": 107.7
-        },
-        "stop": 101.19,
-        "target1": 120.72,
-        "target2": 127.23,
-        "riskReward": "1:2.0",
-        "riskPlan": {
-          "capital": 50000,
-          "targetPositionValue": 15500,
-          "reservePercent": 7,
-          "stopDistance": 6.51,
-          "quantity": 143,
-          "positionValue": 15401.1,
-          "actualRisk": 930.93,
-          "maxPositionPercent": 31,
-          "maxPositions": 3
-        },
-        "filters": {
-          "trend": true,
-          "rsi": true,
-          "volume": true,
-          "momentum": true,
-          "volatility": true
-        },
-        "indicators": {
-          "score": 90,
-          "rsi": 55.36,
-          "atr": 4.34,
-          "volatility": 4.03
-        },
-        "aiReview": {
-          "available": false,
-          "provider": "UNAVAILABLE",
-          "score": null,
-          "verdict": "WATCH",
-          "summary": "AI değerlendirmesi alınamadı; otomatik işlem kapalı tutuldu. GROQ: 400 property 'timeout' is unsupported | GEMINI: 400 status code (no body) | MISTRAL: 422 status code (no body)",
-          "chartComment": "",
-          "newsComment": "",
-          "technicalConfidence": 94
-        },
-        "lifecycle": {
-          "stage": "EXPIRED",
-          "createdAt": "2026-08-22T09:51:19.996Z",
-          "expiresAt": "2026-08-23T09:51:19.996Z",
-          "closedAt": "2026-08-22T09:53:57.185Z"
-        },
-        "reason": "Teknik setup uygun; doğrulanmış AI değerlendirmesi olmadığı için otomatik işlem bekletildi.",
-        "invalidation": "Stop seviyesi 101.19 altındaki kapanış.",
-        "timestamp": "2026-08-22T09:51:19.996Z",
-        "outcome": "SUPERSEDED_BY_NEW_SCAN"
       }
     ],
     "dailySummary": {
@@ -35624,6 +35568,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-29T20:27:47.153Z",
+        "type": "CLOSED",
+        "message": "BINBN paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-69.04."
+      },
       {
         "timestamp": "2026-08-29T20:27:37.140Z",
         "type": "PAPER_APPROVED",
@@ -36118,11 +36067,6 @@
         "timestamp": "2026-08-26T11:12:47.435Z",
         "type": "PAPER_ORDER_EDITED",
         "message": "AHGAZ bekleyen paper emri düzenlendi: 440 lot · ₺35,40 · LIMIT."
-      },
-      {
-        "timestamp": "2026-08-26T11:09:33.933Z",
-        "type": "PAPER_LIMIT_PENDING",
-        "message": "AHGAZ LIMIT emir bekliyor: son ₺35,90 · limit ₺35,40."
       }
     ],
     "scannerSnapshot": {
