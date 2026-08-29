@@ -7258,16 +7258,35 @@ async function handleNasdaqPaperQueue(req,res) {
     const timestamp = new Date().toISOString();
     const candidate = nasdaqDecisionFromInput(input, timestamp);
     const source = String(candidate.pendingOrder?.source || "NASDAQ AI").toUpperCase();
+    const sameSource = item => String(item.pendingOrder?.source || item.source || "NASDAQ AI").toUpperCase() === source;
+    const isDraft = item => ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item?.status);
     const existing = (paper.decisions || []).find(item =>
       item.symbol === candidate.symbol &&
-      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
-      String(item.pendingOrder?.source || "NASDAQ AI").toUpperCase() === source
+      isDraft(item) &&
+      sameSource(item)
     );
 
-    // Aynı sembol/kaynak için taslak yeniden oluşturulursa decisionId sabit kalır.
-    // Böylece arayüzde açık duran onay kartı backend state yenilenince yetim kalmaz.
-    // Farklı sembollerin bekleyen emirleri ise birbirini silmez.
+    // Arayüz her AI/MANUEL panelinde tek aktif taslak gösteriyor. Kullanıcı
+    // başka sembolü seçtiğinde eski taslak görünürde kalmamalı; geçmişe
+    // SUPERSEDED olarak taşınır. Broker'a gönderilmiş/açılmış kararlar korunur.
+    const superseded = (paper.decisions || []).filter(item =>
+      item !== existing &&
+      isDraft(item) &&
+      sameSource(item)
+    );
+    if (superseded.length) {
+      paper.history = superseded.map(item => ({
+        ...item,
+        status: "SUPERSEDED",
+        closedAt: timestamp,
+      })).concat(paper.history || []).slice(0, 100);
+    }
+
+    // Aynı sembol yeniden kuyruğa alınırsa decisionId korunur; farklı sembol
+    // seçilirse yeni karar aktif panelin en başına taşınır.
+    const queued = existing || candidate;
     if (existing) {
+      const createdAt = existing.pendingOrder?.createdAt || existing.lifecycle?.createdAt || existing.timestamp || timestamp;
       existing.action = candidate.action;
       existing.status = "PENDING_APPROVAL";
       existing.grade = candidate.grade;
@@ -7279,17 +7298,15 @@ async function handleNasdaqPaperQueue(req,res) {
       existing.target3 = candidate.target3;
       existing.fibonacci = candidate.fibonacci;
       existing.indicators = candidate.indicators;
-      existing.pendingOrder = {
-        ...candidate.pendingOrder,
-        createdAt: existing.pendingOrder?.createdAt || existing.timestamp || timestamp,
-        updatedAt: timestamp,
-      };
-      existing.lifecycle = {...(existing.lifecycle || {}), stage:"PENDING_APPROVAL", updatedAt:timestamp};
-    } else {
-      paper.decisions = [candidate, ...(paper.decisions || [])].slice(0, 100);
+      existing.pendingOrder = {...candidate.pendingOrder, createdAt, updatedAt:timestamp};
+      existing.lifecycle = {...(existing.lifecycle || {}), stage:"PENDING_APPROVAL", createdAt, updatedAt:timestamp};
     }
 
-    const queued = existing || candidate;
+    paper.decisions = [
+      queued,
+      ...(paper.decisions || []).filter(item => item !== queued && !superseded.includes(item)),
+    ].slice(0, 100);
+
     paper.activity = [{timestamp, type:"NASDAQ_PENDING", message:`${queued.symbol} NASDAQ emri onay bekliyor.`}, ...(paper.activity || [])].slice(0,100);
     await saveTradingState(saved.content, saved.sha, saved.container);
     return sendJSON(res, 201, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
@@ -7310,10 +7327,13 @@ async function handleNasdaqPaperApprove(req, res) {
     const decisionId = String(input.decisionId || "");
     const decision = (paper.decisions || []).find(item => item.id === decisionId);
     if (!decision) {
-      return sendJSON(res, 409, {
-        error: "Bu NASDAQ emri mevcut state içinde bulunamadı. Emir listesi yenilenmeli.",
-        code: "NASDAQ_DECISION_STALE",
+      // Tarayıcı eski bir kartın decisionId'sini taşıyorsa hata modalında
+      // takılı kalmak yerine güncel state'i döndür. Frontend başarılı cevabı
+      // yeniden render eder ve yetim kart otomatik kaybolur.
+      return sendJSON(res, 200, {
         nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+        staleDecision: true,
+        code: "NASDAQ_DECISION_STALE",
       });
     }
 
@@ -7338,11 +7358,11 @@ async function handleNasdaqPaperApprove(req, res) {
     }
 
     if (!["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status)) {
-      return sendJSON(res, 409, {
-        error: "Bu NASDAQ emri artık onaylanabilir durumda değil.",
+      return sendJSON(res, 200, {
+        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
+        alreadyProcessed: true,
         code: "NASDAQ_DECISION_NOT_APPROVABLE",
         status: decision.status,
-        nasdaqPaper: nasdaqPaperStateForClient(saved.content),
       });
     }
 
@@ -7991,13 +8011,13 @@ if (req.method === "POST" && pathname === "/api/crypto/paper/close") return hand
 if (req.method === "GET" && pathname === "/api/nasdaq/scanner") return handleNasdaqScanner(req, res);
 if (req.method === "GET" && pathname === "/api/nasdaq/state") return handleNasdaqState(req, res);
 if (req.method === "GET" && pathname === "/api/nasdaq/quotes") return handleNasdaqQuotes(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/risk-settings") return handleNasdaqRiskSettings(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/kill-switch") return handleNasdaqKillSwitch(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return handleNasdaqPaperQueue(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return handleNasdaqPaperUpdate(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return handleNasdaqPaperApprove(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return handleNasdaqPaperReject(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return handleNasdaqPaperClose(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/risk-settings") return withTradingStateMutation("nasdaq-risk-settings", () => handleNasdaqRiskSettings(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/kill-switch") return withTradingStateMutation("nasdaq-kill-switch", () => handleNasdaqKillSwitch(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return withTradingStateMutation("nasdaq-paper-queue", () => handleNasdaqPaperQueue(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return withTradingStateMutation("nasdaq-paper-update", () => handleNasdaqPaperUpdate(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return withTradingStateMutation("nasdaq-paper-approve", () => handleNasdaqPaperApprove(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return withTradingStateMutation("nasdaq-paper-reject", () => handleNasdaqPaperReject(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return withTradingStateMutation("nasdaq-paper-close", () => handleNasdaqPaperClose(req, res));
 
 if (
   req.method === "GET" &&
