@@ -5774,6 +5774,11 @@ let scannerRunning = false;
 let scannerAbortController = null;
 let scannerRequestId = 0;
 let scannerProgressTimer = null;
+// Bir progress isteği ağda beklerken tarama tamamlanabilir. Sadece
+// requestId kontrolü yeterli değildir; aynı tarama için bekleyen eski poll
+// dönüşü sonuç kartlarını tekrar ezebilir. Bu sayaç her durdurmada o eski
+// dönüşleri geçersiz kılar.
+let scannerProgressGeneration = 0;
 let paperMonitorUiState = null;
 let paperMonitorRefreshTimer = null;
 let paperMonitorCountdownTimer = null;
@@ -5813,17 +5818,21 @@ function translateTradingStatus(value) {
 }
 
 function stopScannerProgress() {
+  scannerProgressGeneration += 1;
   if (scannerProgressTimer) clearInterval(scannerProgressTimer);
   scannerProgressTimer = null;
 }
 
 function startScannerProgress(jobId, requestId) {
   stopScannerProgress();
+  const generation = ++scannerProgressGeneration;
   const poll=async()=>{
     try {
       const response=await fetch(`/api/trading/scanner/status?jobId=${encodeURIComponent(jobId)}`,{cache:"no-store"});
       const job=await response.json();
-      if (requestId !== scannerRequestId) return stopScannerProgress();
+      // Tarama sonucu ekrana basıldıktan veya kullanıcı durdurduktan sonra
+      // geç gelen poll, eski progress/snapshot görünümünü geri getiremez.
+      if (requestId !== scannerRequestId || generation !== scannerProgressGeneration) return;
       renderScannerProgress(job.progress,job.message,job.status);
       if (job.status === "COMPLETE" || job.status === "ERROR") stopScannerProgress();
     } catch { /* Ana scanner isteği sonucu hatayı gösterecek. */ }
@@ -8491,6 +8500,9 @@ async function runTradingScanner() {
             String(risk.maxPositionPercent),
           maxPositions:
             String(risk.maxPositions),
+          // Kullanıcı "Taramayı Başlat" dediğinde eski kapanış snapshot'ı
+          // döndürülmez; yeni tarama sonucunun arayüzde kalıcı kalması gerekir.
+          force: "1",
           jobId,
         }
       );

@@ -7279,11 +7279,15 @@ async function handleTradingScanner(req,res) {
   try {
     const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);
     const riskSettings={capital:url.searchParams.get("capital"),maxPositionPercent:url.searchParams.get("maxPositionPercent"),maxPositions:url.searchParams.get("maxPositions")};
+    // Otomasyon piyasa kapalıyken son tamamlanmış günlük snapshot'ı
+    // kullanabilir. Kullanıcının başlattığı tarama ise hiçbir zaman eski
+    // snapshot'ı geri döndürmez.
+    const forceRefresh=url.searchParams.get("force")==="1";
     jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
     updateScannerJob(jobId,2,"Teknik tarama başlatıldı");
     const existingStateResult=await getTradingState();
     const existingState=existingStateResult.content;
-    if(canReuseScannerSnapshot(existingState.scannerSnapshot,riskSettings)){
+    if(!forceRefresh && canReuseScannerSnapshot(existingState.scannerSnapshot,riskSettings)){
       const snapshot=existingState.scannerSnapshot;
       // Piyasa kapalıyken günlük mumları yeniden indirmeyiz; ancak eski
       // sürümden kalmış karar kartlarını aynen döndürmek de yanlış seçim
@@ -7354,7 +7358,10 @@ async function handleTradingScanner(req,res) {
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
     updateScannerJob(jobId,96,"Uygun Fibonacci kurulumları kaydediliyor");
     const snapshot=createScannerSnapshot(ranked,riskSettings,scanned,valid.length);
-    const state=await recordAiDecisions(decisions,snapshot);
+    // Scanner sonucu state'e tek sıralı olarak yazılır. Böylece eşzamanlı
+    // monitor veya başka bir kullanıcı işlemi eski karar kümesini yeniden
+    // kaydedip yeni taramanın üstüne yazamaz.
+    const state=await withTradingStateMutation("bist-scanner-commit",()=>recordAiDecisions(decisions,snapshot));
     updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
   } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
