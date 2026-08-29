@@ -131,8 +131,9 @@ function macd(values) {
   const signal=emaSeries(line.map(v=>v??0),9),hist=line.map((v,i)=>finite(v)&&finite(signal[i])?v-signal[i]:null);
   return { line, signal, hist };
 }
-function validateDaily(history) {
-  if (!Array.isArray(history) || history.length < CONFIG.data.minDailyBars) return { ok:false, code:"INSUFFICIENT_DAILY_DATA", message:"VERİ YETERSİZ: en az 220 tamamlanmış günlük mum gerekli." };
+function validateDaily(history, options={}) {
+  const minDailyBars = Math.max(20, Number(options?.minDailyBars) || CONFIG.data.minDailyBars);
+  if (!Array.isArray(history) || history.length < minDailyBars) return { ok:false, code:"INSUFFICIENT_DAILY_DATA", message:`VERİ YETERSİZ: en az ${minDailyBars} tamamlanmış günlük mum gerekli.` };
   for(let i=0;i<history.length;i+=1){const b=history[i];if(!finite(timeMs(b))||![b.open,b.high,b.low,b.close,b.volume].every(finite)||b.open<=0||b.low<=0||b.high<Math.max(b.open,b.close,b.low)||b.low>Math.min(b.open,b.close,b.high)){return {ok:false,code:"INVALID_DAILY_OHLCV",message:"VERİ YETERSİZ: günlük OHLCV tutarsız."};}if(i&&timeMs(b)<=timeMs(history[i-1]))return {ok:false,code:"NON_CHRONOLOGICAL_DAILY_DATA",message:"VERİ YETERSİZ: mum sırası geçersiz."};}
   return { ok:true };
 }

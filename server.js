@@ -167,7 +167,12 @@ const ALPACA_DATA_BASE_URL = "https://data.alpaca.markets";
 const ALPACA_TRADING_MODE = String(process.env.ALPACA_TRADING_MODE || "paper").toLowerCase() === "live" ? "live" : "paper";
 const ALPACA_TRADING_ENABLED = String(process.env.ALPACA_TRADING_ENABLED || "false").toLowerCase() === "true";
 const ALPACA_DATA_FEED = String(process.env.ALPACA_DATA_FEED || "sip").toLowerCase() === "iex" ? "iex" : "sip";
-const NASDAQ_UNIVERSE_LIMIT = Math.max(50, Math.min(1200, Number(process.env.NASDAQ_UNIVERSE_LIMIT) || 300));
+// NASDAQ taraması önce alfabetik olarak kesilmez. Aktif evrenin önceki
+// tamamlanmış günlük mumundaki dolar hacmine göre en likit semboller seçilir;
+// yalnız bu küçük evren için teknik geçmiş indirilir. Bu hem A/B/... yanlılığını
+// hem de Render belleğinde binlerce uzun fiyat serisi tutmayı önler.
+const NASDAQ_UNIVERSE_LIMIT = Math.max(20, Math.min(100, Number(process.env.NASDAQ_UNIVERSE_LIMIT) || 50));
+const NASDAQ_HISTORY_DAYS = Math.max(45, Math.min(90, Number(process.env.NASDAQ_HISTORY_DAYS) || 62));
 
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
@@ -7391,6 +7396,37 @@ function nasdaqSafeSymbol(value) {
   return symbol;
 }
 
+function nasdaqPreviousDailyBar(snapshot) {
+  const bar = snapshot?.prevDailyBar || snapshot?.prev_daily_bar || null;
+  const close = Number(bar?.c ?? bar?.close);
+  const volume = Number(bar?.v ?? bar?.volume);
+  return Number.isFinite(close) && close > 0 && Number.isFinite(volume) && volume > 0
+    ? { close, volume, dollarVolume: close * volume }
+    : null;
+}
+
+async function fetchNasdaqLiquiditySnapshots(symbols, feed) {
+  const ranked = [];
+  const chunks = [];
+  for (let index = 0; index < symbols.length; index += 100) chunks.push(symbols.slice(index, index + 100));
+  // Dört küçük istek paralel ilerler; cevaplarda yalnız sembol + dolar hacmi
+  // tutulur, ham snapshot/seri bellekte biriktirilmez.
+  for (let index = 0; index < chunks.length; index += 4) {
+    const batch = chunks.slice(index, index + 4);
+    const responses = await Promise.all(batch.map(async group => {
+      const query = new URLSearchParams({ symbols: group.join(","), feed });
+      return alpacaJson(`${ALPACA_DATA_BASE_URL}/v2/stocks/snapshots?${query.toString()}`);
+    }));
+    for (const payload of responses) {
+      for (const [symbol, snapshot] of Object.entries(payload || {})) {
+        const previous = nasdaqPreviousDailyBar(snapshot);
+        if (previous) ranked.push({ symbol: String(symbol).toUpperCase(), ...previous });
+      }
+    }
+  }
+  return ranked;
+}
+
 async function fetchNasdaqUniverse() {
   const assets = await alpacaJson("https://paper-api.alpaca.markets/v2/assets?status=active&asset_class=us_equity&exchange=NASDAQ");
   const symbols = (Array.isArray(assets) ? assets : [])
@@ -7398,7 +7434,24 @@ async function fetchNasdaqUniverse() {
     .map(asset => String(asset.symbol).toUpperCase())
     .sort((left, right) => left.localeCompare(right, "en"));
   if (!symbols.length) throw new Error("Alpaca NASDAQ varlık listesi boş döndü. API anahtarlarının Paper hesabına ait olduğunu ve Render'da tam kaydedildiğini kontrol edin.");
-  return symbols.slice(0, NASDAQ_UNIVERSE_LIMIT);
+  let ranked = [];
+  let feedUsed = ALPACA_DATA_FEED;
+  try {
+    ranked = await fetchNasdaqLiquiditySnapshots(symbols, feedUsed);
+  } catch (error) {
+    if (ALPACA_DATA_FEED !== "sip") throw error;
+    // Ücretsiz hesaplarda SIP snapshot yetkisi bulunmayabilir. Aynı önceki
+    // günlük mum verisini IEX'ten alır; intraday günlük mum kullanılmaz.
+    feedUsed = "iex";
+    ranked = await fetchNasdaqLiquiditySnapshots(symbols, feedUsed);
+  }
+  if (!ranked.length) throw new Error("NASDAQ likidite verisi alınamadı. Alpaca günlük snapshot erişimini kontrol edin.");
+  ranked.sort((left, right) => Number(right.dollarVolume) - Number(left.dollarVolume) || left.symbol.localeCompare(right.symbol, "en"));
+  return {
+    symbols: ranked.slice(0, NASDAQ_UNIVERSE_LIMIT).map(item => item.symbol),
+    totalAssets: symbols.length,
+    liquidityFeed: feedUsed,
+  };
 }
 
 function alpacaHistoricalEnd() {
@@ -7411,7 +7464,9 @@ async function fetchNasdaqBars(symbols, feed = ALPACA_DATA_FEED) {
   const barsBySymbol = new Map((symbols || []).map(symbol => [symbol, []]));
   let pageToken = null;
   const end = alpacaHistoricalEnd();
-  const start = new Date(Date.now() - 920 * 24 * 60 * 60 * 1000).toISOString();
+  // NASDAQ teknik/Fibonacci penceresi iki takvim ayıyla sınırlıdır. Açık gün
+  // mumu completedDailyBars tarafından ayrıca atılır.
+  const start = new Date(Date.now() - NASDAQ_HISTORY_DAYS * 24 * 60 * 60 * 1000).toISOString();
   do {
     const query = new URLSearchParams({symbols: symbols.join(","), timeframe:"1Day", start, end, limit:"10000", feed});
     if (pageToken) query.set("page_token", pageToken);
@@ -7946,13 +8001,16 @@ async function handleNasdaqScanner(req,res) {
   }
   const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);const jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
   try {
-    updateScannerJob(jobId,2,"Alpaca'dan aktif NASDAQ evreni alınıyor");const symbols=await fetchNasdaqUniverse();updateScannerJob(jobId,8,`${symbols.length} NASDAQ hissesi için günlük OHLCV alınıyor`);
-    // 300 sembolün iki yıllık mumlarını bellekte biriktirmek Render'ın
-    // küçük instance'ında yeniden başlatmaya yol açıyordu. Her partide
-    // yalnız teknik olarak ilk 12 adayı koruyoruz; sonuç yine ilk 5'tir.
+    updateScannerJob(jobId,2,"Alpaca'dan aktif NASDAQ evreni ve günlük likidite alınıyor");
+    const nasdaqUniverse=await fetchNasdaqUniverse();
+    const symbols=nasdaqUniverse.symbols;
+    updateScannerJob(jobId,8,`${nasdaqUniverse.totalAssets} aktif hisseden likiditeye göre seçilen ${symbols.length} NASDAQ hissesi için iki aylık günlük OHLCV alınıyor`);
+    // Likidite ön filtresinden geçen 50 sembolün iki aylık mumları işlenir.
+    // Her partide yalnız teknik olarak ilk 12 aday bellekte tutulur; sonuç
+    // yine ilk 5'tir.
     const shortlist=[];let successful=0;let feedUsed=ALPACA_DATA_FEED;
     const compareNasdaqCandidate=(left,right)=>Number(right.score||0)-Number(left.score||0)||left.symbol.localeCompare(right.symbol,"en");
-    for(let index=0;index<symbols.length;index+=20){const group=symbols.slice(index,index+20);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history);if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
+    for(let index=0;index<symbols.length;index+=20){const group=symbols.slice(index,index+20);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history,{minDailyBars:40});if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
     const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik puanla ilk 5 aday için Fibonacci hesaplanıyor");const ranked=valid.slice(0,5).map(item=>{const fibonacci=fibonacciEngine.fibonacciPlan(item.history,Date.now(),{market:"NASDAQ"});const analysis=fibonacciEngine.score(item.history,fibonacci);const fallbackPlan=fibonacci.valid?null:fibonacciEngine.fallbackPlan(item.history,analysis.features);return {...item,...analysis,fibonacci,fallbackPlan,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};});
     updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};const selectedSymbols=new Set(decisions.map(item=>item.symbol));paper.decisions=[...decisions,...(paper.decisions||[]).filter(item=>!(item.status==="PENDING_APPROVAL"&&selectedSymbols.has(item.symbol)))].slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
   } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}

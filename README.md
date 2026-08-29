@@ -52,7 +52,8 @@ Add these Render environment variables before using the NASDAQ scanner:
 - `ALPACA_API_KEY_ID`
 - `ALPACA_API_SECRET_KEY`
 - `ALPACA_DATA_FEED=sip` (the app labels an IEX fallback when SIP is unavailable)
-- `NASDAQ_UNIVERSE_LIMIT=300` (optional, allowed range 50–1200)
+- `NASDAQ_UNIVERSE_LIMIT=50` (optional, allowed range 20–100; aktif NASDAQ evreni önce önceki tamamlanmış günlük mumdaki dolar hacmine göre sıralanır)
+- `NASDAQ_HISTORY_DAYS=62` (optional, allowed range 45–90; NASDAQ teknik/Fibonacci analizi için yaklaşık iki aylık günlük pencere)
 - `ALPACA_TRADING_MODE=paper`
 - `ALPACA_TRADING_ENABLED=false`
 
