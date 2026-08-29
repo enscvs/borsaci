@@ -13491,13 +13491,13 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z"
+          "createdAt": "2026-08-29T09:59:46.244Z",
+          "expiresAt": "2026-08-30T09:59:46.244Z"
         },
         "currentScan": true,
         "reason": "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.",
         "invalidation": "Fibonacci teyidi oluşmadan bu alternatif seviyeler işlem emri üretmez.",
-        "timestamp": "2026-08-28T16:57:48.027Z"
+        "timestamp": "2026-08-29T09:59:46.244Z"
       },
       {
         "id": "1787845693091-ASTOR",
@@ -13803,20 +13803,20 @@
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z"
+          "createdAt": "2026-08-29T09:59:46.244Z",
+          "expiresAt": "2026-08-30T09:59:46.244Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-08-28T16:57:48.027Z"
+        "timestamp": "2026-08-29T09:59:46.244Z"
       },
       {
         "id": "1787936268027-DOHOL",
         "rank": 3,
         "symbol": "DOHOL",
-        "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "action": "WATCH",
+        "status": "PENDING",
         "confidence": null,
         "entry": {
           "low": 20.23,
@@ -14132,33 +14132,14 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
-          "createdAt": "2026-08-28T16:57:48.027Z",
-          "expiresAt": "2026-08-29T16:57:48.027Z",
-          "overrideAt": "2026-08-29T09:55:26.946Z"
+          "stage": "PENDING",
+          "createdAt": "2026-08-29T09:59:46.244Z",
+          "expiresAt": "2026-08-30T09:59:46.244Z"
         },
         "currentScan": true,
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (19.66) planı geçersiz kılar.",
-        "timestamp": "2026-08-28T16:57:48.027Z",
-        "manualOverride": true,
-        "pendingOrder": {
-          "symbol": "DOHOL",
-          "quantity": 1368,
-          "entryPrice": 22.34,
-          "orderType": "LIMIT",
-          "stop": 19.66,
-          "target1": 23.91,
-          "target2": 24.96,
-          "target3": 26.29,
-          "positionValue": 30561.12,
-          "actualRisk": 3666.24,
-          "paperOnly": true,
-          "source": "SCANNER",
-          "createdAt": "2026-08-29T09:55:26.946Z",
-          "updatedAt": "2026-08-29T09:55:26.946Z",
-          "editedAt": null
-        }
+        "timestamp": "2026-08-29T09:59:46.244Z"
       }
     ],
     "history": [
@@ -30596,9 +30577,9 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T09:55:26.946Z",
-        "type": "AI_DECISION_MANUAL_PENDING",
-        "message": "DOHOL kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+        "timestamp": "2026-08-29T09:59:48.076Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
       },
       {
         "timestamp": "2026-08-29T07:31:11.623Z",
