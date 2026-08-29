@@ -3509,13 +3509,28 @@ async function getWatchlist() {
 
       const data = await response.json();
       lastSha = typeof data?.sha === "string" ? data.sha : lastSha;
-      if (typeof data?.content !== "string" || !data.content.trim()) {
-        throw new Error("GitHub watchlist içeriği boş döndü.");
+      // Contents API büyük dosyalarda (yaklaşık 1 MB ve üzeri) `content`
+      // alanını boş/none döndürebilir. Trading state büyüdüğünde bu, geçerli
+      // GitHub kaydını boş sanıp yerel yedeğe düşmemize yol açıyordu. SHA'yı
+      // yine Contents API'den alır, veriyi gerekli olduğunda raw endpoint'ten
+      // indiririz.
+      let decoded = typeof data?.content === "string"
+        ? Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf8").trim()
+        : "";
+      if (!decoded) {
+        const rawEndpoint = `https://raw.githubusercontent.com/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/main/data/watchlist.json?_=${Date.now()}-${attempt}`;
+        const rawResponse = await fetch(rawEndpoint, {
+          headers: {
+            "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+            "User-Agent": "BorsaCI",
+            "Cache-Control": "no-cache",
+          },
+        });
+        if (!rawResponse.ok) {
+          throw new Error(`GitHub watchlist raw içeriği okunamadı: HTTP ${rawResponse.status}`);
+        }
+        decoded = (await rawResponse.text()).trim();
       }
-
-      const decoded = Buffer.from(data.content.replace(/\n/g, ""), "base64")
-        .toString("utf8")
-        .trim();
       if (!decoded) {
         throw new Error("GitHub watchlist çözümlendikten sonra boş kaldı.");
       }
