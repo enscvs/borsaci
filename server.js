@@ -3573,6 +3573,7 @@ async function saveWatchlist(
   watchlist,
   sha
 ) {
+
   const content =
     Buffer.from(
       JSON.stringify(
@@ -3582,70 +3583,45 @@ async function saveWatchlist(
       )
     ).toString("base64");
 
+
+  let currentSha = sha;
+  let lastError = null;
   const endpoint =
     `https://api.github.com/repos/${process.env.GITHUB_OWNER}/${process.env.GITHUB_REPO}/contents/data/watchlist.json`;
 
-  const response = await fetch(endpoint, {
-    method: "PUT",
-    headers: {
-      "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
-      "Accept": "application/vnd.github+json",
-      "Content-Type": "application/json",
-      "User-Agent": "BorsaCI",
-    },
-    body: JSON.stringify({
-      message: "Update watchlist",
-      content,
-      ...(sha ? {sha} : {}),
-    }),
-  });
+  for (let attempt = 1; attempt <= 4; attempt += 1) {
+    const response = await fetch(endpoint, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${process.env.GITHUB_TOKEN}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+        "User-Agent": "BorsaCI",
+      },
+      body: JSON.stringify({ message: "Update watchlist", content, ...(currentSha ? { sha: currentSha } : {}) }),
+    });
 
-  if (response.ok) {
-    return await response.json();
-  }
-
-  const errorText = await response.text();
-  // 409 burada stale tam dokümanı yeni SHA ile tekrar yazılarak çözülmez.
-  // Çağıran katman güncel içeriği yeniden okuyup kendi değişikliğini merge eder;
-  // aksi halde başka piyasanın eşzamanlı state güncellemesi sessizce ezilebilir.
-  throw new Error(
-    `GitHub watchlist kaydedilemedi (HTTP ${response.status}): ${errorText}`
-  );
-}
-
-
-function isWatchlistConflict(error) {
-  return /HTTP\s+409|expected [a-f0-9]{40}|sha.*match/i.test(
-    String(error?.message || "")
-  );
-}
-
-
-async function mutateWatchlistSymbols(mutator) {
-  let lastError = null;
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const result = await getWatchlist();
-    const currentSymbols = Array.isArray(result.content?.symbols)
-      ? [...result.content.symbols]
-      : [];
-    const nextSymbols = mutator(currentSymbols);
-    const watchlist = {
-      ...result.content,
-      symbols: Array.isArray(nextSymbols) ? nextSymbols : currentSymbols,
-    };
-
-    try {
-      await saveWatchlist(watchlist, result.sha);
-      return watchlist;
-    } catch (error) {
-      lastError = error;
-      if (!isWatchlistConflict(error) || attempt === 3) throw error;
-      await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 100));
+    if (response.ok) {
+      return await response.json();
     }
-  }
-  throw lastError || new Error("Watchlist güncellenemedi.");
-}
 
+    const errorText = await response.text();
+    lastError = new Error(`GitHub watchlist kaydedilemedi: ${errorText}`);
+    if (response.status !== 409 || attempt === 4) {
+      throw lastError;
+    }
+
+    // Another worker wrote state first. Re-read the latest SHA and retry the
+    // same complete, already validated document instead of leaving a partial
+    // JSON blob behind.
+    const latest = await getWatchlist();
+    currentSha = latest.sha;
+    await new Promise((resolve) => setTimeout(resolve, attempt * 150));
+  }
+
+  throw lastError || new Error("GitHub watchlist kaydedilemedi.");
+
+}
 
 
 async function handleWatchlist(
@@ -3726,15 +3702,40 @@ async function handleWatchlist(
       }
 
 
-      const watchlist =
-        await mutateWatchlistSymbols(
-          symbols => {
-            if (!symbols.includes(symbol)) {
-              symbols.push(symbol);
-            }
-            return symbols;
-          }
-        );
+      const result =
+        await getWatchlist();
+
+
+      const symbols =
+        Array.isArray(
+          result.content.symbols
+        )
+          ? result.content.symbols
+          : [];
+
+
+      if (
+        !symbols.includes(symbol)
+      ) {
+
+        symbols.push(symbol);
+
+      }
+
+
+      const watchlist = {
+
+        ...result.content,
+
+        symbols,
+
+      };
+
+
+      await saveWatchlist(
+        watchlist,
+        result.sha
+      );
 
 
       return sendJSON(
@@ -3779,13 +3780,39 @@ async function handleWatchlist(
       }
 
 
-      const watchlist =
-        await mutateWatchlistSymbols(
-          symbols =>
-            symbols.filter(
-              item => item !== symbol
-            )
+      const result =
+        await getWatchlist();
+
+
+      const symbols =
+        Array.isArray(
+          result.content.symbols
+        )
+          ? result.content.symbols
+          : [];
+
+
+      const updatedSymbols =
+        symbols.filter(
+          item =>
+            item !== symbol
         );
+
+
+      const watchlist = {
+
+        ...result.content,
+
+        symbols:
+          updatedSymbols,
+
+      };
+
+
+      await saveWatchlist(
+        watchlist,
+        result.sha
+      );
 
 
       return sendJSON(
@@ -3889,7 +3916,7 @@ function createDefaultTradingState() {
       history: [],
       signals: [],
       activity: [],
-      scanner: {timestamp: null, scanned: 0, successful: 0, results: [], decisions: [], source: null},
+      scanner: {timestamp: null, scanned: 0, successful: 0, results: [], source: null},
       risk: {maxPositionPercent: 20, maxPositions: 5},
       killSwitch: {active: false, activatedAt: null},
     },
@@ -4028,9 +4055,6 @@ function normalizeTradingState(
         results: Array.isArray((value || {}).nasdaqPaper?.scanner?.results)
           ? (value || {}).nasdaqPaper.scanner.results
           : [],
-        decisions: Array.isArray((value || {}).nasdaqPaper?.scanner?.decisions)
-          ? (value || {}).nasdaqPaper.scanner.decisions
-          : [],
       },
       risk: {...fallback.nasdaqPaper.risk, ...((value || {}).nasdaqPaper?.risk || {})},
       killSwitch: {
@@ -4144,169 +4168,39 @@ async function getTradingState() {
 }
 
 
-function sameTradingValue(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right);
-}
-
-
-function isPlainTradingObject(value) {
-  return Boolean(
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value)
-  );
-}
-
-
-function mergeConcurrentTradingValue(base, desired, latest) {
-  // Bu işlem alanı hiç değiştirmediyse eşzamanlı yazanın en güncel değeri kalır.
-  if (sameTradingValue(desired, base)) return latest;
-  // Diğer writer bu alanı değiştirmediyse bu işlemin değeri güvenle yazılır.
-  if (sameTradingValue(latest, base)) return desired;
-
-  // Karar/pozisyon/sinyal gibi id taşıyan diziler aynı anda değiştiğinde tüm
-  // diziyi atomik kabul etmek yerine kayıt bazında birleştir. Bu özellikle
-  // scanner yeni aday yazarken kullanıcının aynı anda emir düzenlemesini korur.
-  if (Array.isArray(base) && Array.isArray(desired) && Array.isArray(latest)) {
-    const hasOnlyKeyedObjects = values =>
-      values.every(item =>
-        isPlainTradingObject(item) &&
-        String(item.id || "").trim()
-      );
-
-    if (
-      hasOnlyKeyedObjects(base) &&
-      hasOnlyKeyedObjects(desired) &&
-      hasOnlyKeyedObjects(latest)
-    ) {
-      const baseMap = new Map(base.map(item => [String(item.id), item]));
-      const desiredMap = new Map(desired.map(item => [String(item.id), item]));
-      const latestMap = new Map(latest.map(item => [String(item.id), item]));
-      const order = [
-        ...desired.map(item => String(item.id)),
-        ...latest.map(item => String(item.id)).filter(id => !desiredMap.has(id)),
-      ];
-      const merged = [];
-
-      for (const id of order) {
-        const baseHas = baseMap.has(id);
-        const desiredHas = desiredMap.has(id);
-        const latestHas = latestMap.has(id);
-
-        // Bu işlem base'de bulunan kaydı sildiyse silme işlemi kazanır.
-        if (baseHas && !desiredHas) continue;
-
-        // Eşzamanlı writer kaydı sildi, bu işlem ise hiç değiştirmediyse
-        // silinmiş kaydı geri getirme. Bu işlem kaydı değiştirdiyse kendi
-        // güncel kaydı korunur.
-        if (baseHas && desiredHas && !latestHas) {
-          if (sameTradingValue(desiredMap.get(id), baseMap.get(id))) continue;
-          merged.push(desiredMap.get(id));
-          continue;
-        }
-
-        if (!desiredHas && latestHas) {
-          merged.push(latestMap.get(id));
-          continue;
-        }
-
-        if (desiredHas && !latestHas) {
-          merged.push(desiredMap.get(id));
-          continue;
-        }
-
-        if (desiredHas && latestHas) {
-          merged.push(
-            mergeConcurrentTradingValue(
-              baseMap.get(id),
-              desiredMap.get(id),
-              latestMap.get(id)
-            )
-          );
-        }
-      }
-
-      return merged;
-    }
-  }
-
-  // Farklı alt alanlar eşzamanlı değiştiyse nesne seviyesinde birleştir.
-  // Aynı atomik alan/dizi iki tarafta da değiştiyse mevcut işlemin değeri
-  // tercih edilir; sessizce ilgisiz market state'ini geri almak engellenir.
-  if (
-    isPlainTradingObject(base) &&
-    isPlainTradingObject(desired) &&
-    isPlainTradingObject(latest)
-  ) {
-    const merged = {};
-    const keys = new Set([
-      ...Object.keys(base),
-      ...Object.keys(desired),
-      ...Object.keys(latest),
-    ]);
-    for (const key of keys) {
-      merged[key] = mergeConcurrentTradingValue(
-        base[key],
-        desired[key],
-        latest[key]
-      );
-    }
-    return merged;
-  }
-
-  return desired;
-}
-
-
 async function saveTradingState(
   state,
   sha,
   container
 ) {
-  let desiredState = normalizeTradingState(state);
-  let baseState = normalizeTradingState(container?.trading);
-  let currentSha = sha;
-  let currentContainer = container || {};
-  let lastError = null;
-
   const buildWatchlist = (base = {}) => ({
     ...base,
-    // Watchlist sembolleri her retry'da en güncel GitHub dokümanından gelir.
+    // Eşzamanlı bir scanner kaydı sırasında kullanıcının watchlist
+    // sembollerini eski bellek kopyasıyla geri alma.
     symbols: Array.isArray(base?.symbols) ? base.symbols : [],
-    trading: desiredState,
+    trading: normalizeTradingState(state),
   });
 
-  // Scanner, monitor ve kullanıcı işlemleri aynı GitHub JSON'una yazıyor.
-  // SHA çakışmasında eski tam state'i yeni SHA ile tekrar basmak başka marketin
-  // değişikliğini geri alıyordu. Burada yalnız bu işlemin base'e göre gerçekten
-  // değiştirdiği alanları son state üzerine üç-yollu olarak uygularız.
+  let currentSha = sha;
+  let currentContainer = container;
+  let lastError = null;
+  // Scanner, 60 sn monitor ve kullanıcı arayüzü aynı GitHub dosyasına
+  // yazabilir. Contents API'nin SHA çakışmasını tek denemede taramayı
+  // düşürmek yerine güncel SHA ile birkaç kez güvenle yeniden deneriz.
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
-      return await saveWatchlist(
-        buildWatchlist(currentContainer),
-        currentSha
-      );
+      return await saveWatchlist(buildWatchlist(currentContainer), currentSha);
     } catch (error) {
       lastError = error;
-      if (!isWatchlistConflict(error) || attempt === 3) throw error;
-
+      if (!/\b409\b|expected [a-f0-9]{40}/i.test(String(error?.message || ""))) throw error;
       const latest = await getWatchlist();
-      const latestState = normalizeTradingState(latest.content?.trading);
-      desiredState = mergeConcurrentTradingValue(
-        baseState,
-        desiredState,
-        latestState
-      );
-      baseState = latestState;
       currentSha = latest.sha;
       currentContainer = latest.content;
-      await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 100));
     }
   }
-
   throw lastError || new Error("İşlem durumu kaydedilemedi.");
-}
 
+}
 
 
 function roundTradingValue(
@@ -4417,17 +4311,6 @@ function decisionFingerprint(
   ].join("|");
 
 }
-
-function isCommittedPendingPaperDecision(decision) {
-  if (!decision || isManualPaperDecision(decision)) return false;
-  if (decision.status === "PENDING_LIMIT") return true;
-  if (decision.status !== "PENDING_APPROVAL") return false;
-  return Boolean(
-    decision.manualOverride === true ||
-    decision.pendingOrder?.editedAt
-  );
-}
-
 
 function addTradingActivity(
   state,
@@ -5071,24 +4954,12 @@ async function recordAiDecisions(
       )
     );
 
-  const incomingSymbols =
-    new Set(
-      incoming
-        .map(decision => String(decision?.symbol || "").trim().toUpperCase())
-        .filter(Boolean)
-    );
-
   const archived =
     existing
       .filter(
         decision =>
           ["PENDING", "PENDING_APPROVAL"].includes(decision?.status) &&
           !isManualPaperDecision(decision) &&
-          !isCommittedPendingPaperDecision(decision) &&
-          !(
-            decision?.status === "PENDING_APPROVAL" &&
-            incomingSymbols.has(String(decision?.symbol || "").trim().toUpperCase())
-          ) &&
           !incomingKeys.has(
             decisionFingerprint(decision)
           )
@@ -5124,15 +4995,7 @@ async function recordAiDecisions(
         // Aynı sembolde açık pozisyon varsa Fibonacci seviyeleri tarama
         // arasında değişse bile ikinci bir karar kartı üretme. Açık planın
         // kimliği korunur; yeni teknik sırası yalnızca bu karta yansır.
-        const previousQueued =
-          existing.find(item =>
-            item?.symbol === decision.symbol &&
-            ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item?.status) &&
-            !isManualPaperDecision(item)
-          );
-
         const previous =
-          previousQueued ||
           existingByFingerprint.get(
             decisionFingerprint(decision)
           ) || existing.find(item =>
@@ -5155,48 +5018,33 @@ async function recordAiDecisions(
               position.status === "OPEN"
           );
 
-        const hasQueuedOrder =
-          ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(previous.status);
-
         const next = {
           ...decision,
           id: previous.id,
           action:
-            hasOpenPosition || hasQueuedOrder
+            hasOpenPosition
               ? previous.action
               : decision.action,
           status:
             hasOpenPosition
               ? "OPEN"
-              : hasQueuedOrder
-                ? previous.status
-                : decision.status,
+              : decision.status,
           lifecycle:
             hasOpenPosition
               ? {
                   ...(decision.lifecycle || {}),
-                  ...(previous.lifecycle || {}),
                   stage: "OPEN",
                   openedAt:
                     previous.lifecycle?.openedAt ||
                     previous.timestamp ||
-                    now,
+                  now,
                 }
-              : hasQueuedOrder
-                ? {
-                    ...(decision.lifecycle || {}),
-                    ...(previous.lifecycle || {}),
-                    stage: previous.status,
-                    refreshedAt: now,
-                  }
-                : decision.lifecycle,
-          manualOverride:
-            previous.manualOverride === true ||
-            decision.manualOverride === true,
-          // Kullanıcının onay kuyruğuna aldığı veya LIMIT olarak beklettiği
-          // taslak scanner yenilendi diye kimlik/status değiştirmez.
+              : decision.lifecycle,
+          // Aynı teknik plan tekrar tarandığında güncel AI içeriği gelir;
+          // fakat kullanıcı tarafından düzenlenmiş lot/fiyat/emir türü
+          // taslağı özellikle korunur.
           pendingOrder:
-            hasQueuedOrder
+            previous.status === "PENDING_APPROVAL"
               ? previous.pendingOrder
               : previous.pendingOrder || decision.pendingOrder,
         };
@@ -5222,22 +5070,15 @@ async function recordAiDecisions(
   // Manuel paper emirleri scanner kriterine bağlı değildir. Yeni scanner
   // snapshot'ı bunları expire/replace etmez; kullanıcı onaylayana,
   // reddedene veya işlem kapanana kadar yaşarlar.
-  const retainedCommittedDecisions = existing.filter(
-    decision =>
-      isCommittedPendingPaperDecision(decision) &&
-      !state.decisions.some(next => next.id === decision.id)
-  ).map(decision => ({...decision, currentScan: false}));
-
   const retainedManualDecisions = existing.filter(
     decision =>
       isManualPaperDecision(decision) &&
-      ["PENDING_APPROVAL", "PENDING_LIMIT", "OPEN"].includes(decision?.status) &&
+      ["PENDING_APPROVAL", "OPEN"].includes(decision?.status) &&
       !state.decisions.some(next => next.id === decision.id)
   );
   state.decisions = [
     ...state.decisions,
     ...retainedOpenDecisions,
-    ...retainedCommittedDecisions,
     ...retainedManualDecisions,
   ];
 
@@ -5591,15 +5432,35 @@ async function sendPaperApprovalRequest(decision) {
 async function handlePendingPaperOrderUpdate(req, res) {
   try {
     const input = await readTradingRequest(req);
-    const decisionId = String(input.decisionId || input.orderId || "").trim();
 
-    if (!decisionId) {
-      throw new Error("Bekleyen emir kimliği gerekli.");
-    }
+    const decisionId = String(
+      input.decisionId || input.orderId || ""
+    ).trim();
 
-    const stateResult = await getTradingState();
-    const state = stateResult.content;
-    const decision = (state.decisions || []).find(item => item.id === decisionId);
+const symbol = String(
+  input.symbol || ""
+).trim().toUpperCase();
+
+if (!decisionId && !symbol) {
+  throw new Error("Bekleyen emir kimliği veya sembol gerekli.");
+}
+
+const stateResult = await getTradingState();
+const state = stateResult.content;
+
+const decision =
+  (state.decisions || []).find(
+    item =>
+      item.id === decisionId &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
+      isPaperApprovableDecision(item)
+  ) ||
+  (state.decisions || []).find(
+    item =>
+      item.symbol === symbol &&
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
+      isPaperApprovableDecision(item)
+  );
 
     if (
       !decision ||
@@ -5658,7 +5519,6 @@ async function handlePendingPaperOrderUpdate(req, res) {
     return sendJSON(res, 400, {error: error.message});
   }
 }
-
 
 async function handleTradingRiskSettings(req, res) {
   try {
@@ -7737,20 +7597,7 @@ async function evaluateNasdaqCandidatesWithAi(candidates) {
 
 function nasdaqPaperStateForClient(state) {
   const paper = state.nasdaqPaper || createDefaultTradingState().nasdaqPaper;
-  return {
-    ...paper,
-    broker: {
-      configured: Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY),
-      mode: ALPACA_TRADING_MODE.toUpperCase(),
-      orderSubmissionEnabled: ALPACA_TRADING_ENABLED,
-      dataFeed: ALPACA_DATA_FEED.toUpperCase(),
-    },
-    // Alpaca accepted/new emri henüz pozisyon değildir; fakat arayüzden
-    // kaybolmaması için broker dolumu bekleyen kayıt da görünür kalır.
-    positions: (paper.positions || []).filter(position =>
-      ["OPEN", "PENDING_BROKER_ENTRY"].includes(position.status)
-    ),
-  };
+  return {...paper, broker:{configured:Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), mode:ALPACA_TRADING_MODE.toUpperCase(), orderSubmissionEnabled:ALPACA_TRADING_ENABLED, dataFeed:ALPACA_DATA_FEED.toUpperCase()}, positions:(paper.positions || []).filter(position => position.status === "OPEN")};
 }
 
 function recalculateNasdaqPaper(paper) {
@@ -7883,7 +7730,7 @@ function settleNasdaqManualExit(paper, position, price, quantity, timestamp, {re
   const realized = roundTradingValue((executionPrice - Number(before.entry || 0)) * sold);
   const type = live ? `NASDAQ_BROKER_${reason}_FILLED` : `NASDAQ_${reason}`;
   const message = `${position.symbol} NASDAQ ${reason === "KILL_SWITCH" ? "acil durdurma" : "manuel"} ${String(orderType).toUpperCase()} satış emri ${sold} hisse için $${roundTradingValue(executionPrice)} ile gerçekleşti.`;
-  if (!closeMonitoredMarketPosition(paper, position, executionPrice, timestamp, type, message, sold)) return false;
+  if (!closeMonitoredPaperPosition(paper, position, executionPrice, timestamp, type, message, sold)) return false;
   position.remainingQuantity = Math.max(0, Number(before.remainingQuantity ?? before.quantity ?? 0) - sold);
   position.realizedPnl = roundTradingValue(Number(before.realizedPnl || 0) + realized);
   position.monitor = {...(position.monitor || {}), pendingManualExit:null, lastManualExitAt:timestamp, lastManualExitPrice:executionPrice};
@@ -8014,62 +7861,31 @@ async function handleNasdaqKillSwitch(req, res) {
   }
 }
 
-async function handleNasdaqPaperQueue(req, res) {
+async function handleNasdaqPaperQueue(req,res) {
   try {
     const input = await readTradingRequest(req);
     const saved = await getTradingState();
     const paper = saved.content.nasdaqPaper;
-    if (paper.killSwitch?.active) {
-      throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
-    }
+    if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
 
     const timestamp = new Date().toISOString();
     const candidate = nasdaqDecisionFromInput(input, timestamp);
     const manual = String(candidate.pendingOrder.source).toUpperCase() === "MANUAL";
-    const isSameQueue = item =>
-      (String(item.pendingOrder?.source || "").toUpperCase() === "MANUAL") === manual;
+    const isSameQueue = item => (String(item.pendingOrder?.source || "").toUpperCase() === "MANUAL") === manual;
 
-    const sameQueueActive = (paper.decisions || []).filter(item =>
-      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) &&
-      isSameQueue(item)
-    );
-
-    // Onaylanmış bir LIMIT emri artık taslak değildir. Yeni aday yaratmak
-    // mevcut aktif emri sessizce yok etmemeli; önce kullanıcı reddetmelidir.
-    if (sameQueueActive.some(item => item.status === "PENDING_LIMIT")) {
-      throw new Error("Bu NASDAQ panelinde zaten onaylanmış bir LIMIT emir bekliyor. Önce mevcut emri reddedin.");
-    }
-
-    const superseded = sameQueueActive.filter(item => item.status === "PENDING_APPROVAL");
-    if (superseded.length) {
-      paper.history = superseded.map(item => ({
-        ...item,
-        status: "SUPERSEDED",
-        closedAt: timestamp,
-      })).concat(paper.history || []).slice(0, 100);
-    }
-
+    // Her panel tek bir taslak emir gösterir. Yeni plan aynı paneldeki eski
+    // PENDING_APPROVAL kaydını tamamen değiştirir; onay/red geçmişi korunur.
     paper.decisions = [
       candidate,
-      ...(paper.decisions || []).filter(item => !superseded.includes(item)),
+      ...(paper.decisions || []).filter(item => !["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status) || !isSameQueue(item)),
     ].slice(0, 100);
-
-    paper.activity = [
-      {
-        timestamp,
-        type: "NASDAQ_PENDING",
-        message: `${candidate.symbol} NASDAQ emri onay bekliyor.`,
-      },
-      ...(paper.activity || []),
-    ].slice(0, 100);
-
+    paper.activity = [{timestamp, type:"NASDAQ_PENDING", message:`${candidate.symbol} NASDAQ emri onay bekliyor.`}, ...(paper.activity || [])].slice(0,100);
     await saveTradingState(saved.content, saved.sha, saved.container);
-    return sendJSON(res, 201, {nasdaqPaper: nasdaqPaperStateForClient(saved.content)});
-  } catch (error) {
-    return sendJSON(res, 400, {error: error.message});
+    return sendJSON(res, 201, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  } catch(error) {
+    return sendJSON(res,400,{error:error.message});
   }
 }
-
 
 async function handleNasdaqPaperUpdate(req,res) { try { const input=await readTradingRequest(req), saved=await getTradingState(), paper=saved.content.nasdaqPaper, decision=(paper.decisions||[]).find(item=>item.id===String(input.decisionId||"")&&item.status==="PENDING_APPROVAL"); if(!decision) throw new Error("Bu NASDAQ emri artık düzenlenemez."); const order=normalizeNasdaqPaperOrder({...input,symbol:decision.symbol},{existing:decision.pendingOrder}); decision.pendingOrder={...decision.pendingOrder,...order,updatedAt:new Date().toISOString(),editedAt:new Date().toISOString()}; decision.entry={low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice}; decision.stop=order.stop;decision.target1=order.target1;decision.target2=order.target2;decision.target3=order.target3; await saveTradingState(saved.content,saved.sha,saved.container); return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)}); }catch(error){return sendJSON(res,400,{error:error.message});} }
 
@@ -8085,10 +7901,7 @@ async function handleNasdaqPaperApprove(req, res) {
     const quote = await fetchNasdaqDailyClose(order.symbol);
     const marketPrice = Number(quote.price);
     const timestamp = new Date().toISOString();
-    // Alpaca emir hattı açıksa LIMIT emri yerelde bekletme; broker'a gönder ve
-    // gerçek accepted/new/filled yaşam döngüsünü PENDING_BROKER_ENTRY ile izle.
-    // Yerel PENDING_LIMIT yalnız Alpaca emir gönderimi kapalıyken kullanılır.
-    if (!ALPACA_TRADING_ENABLED && order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
+    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
       decision.status = "PENDING_LIMIT";
       decision.pendingOrder = {...order, status:"PENDING_LIMIT", lastMarketPrice:marketPrice, updatedAt:timestamp};
       decision.lifecycle = {...(decision.lifecycle || {}), stage:"PENDING_LIMIT", lastCheckedAt:timestamp, lastMarketPrice:marketPrice};
@@ -8223,194 +8036,26 @@ async function handleNasdaqPaperClose(req, res) {
   }
 }
 
-async function handleNasdaqScanner(req, res) {
+async function handleNasdaqScanner(req,res) {
   if (!acquireScannerExecution("NASDAQ")) {
-    return sendJSON(res, 409, {
-      success: false,
-      error: "NASDAQ taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin.",
-    });
+    return sendJSON(res, 409, {success:false, error:"NASDAQ taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
   }
-
-  const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-  const jobId = String(url.searchParams.get("jobId") || "")
-    .replace(/[^a-zA-Z0-9_-]/g, "")
-    .slice(0, 80);
-
+  const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);const jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
   try {
-    updateScannerJob(jobId, 2, "Alpaca'dan aktif NASDAQ evreni ve günlük likidite alınıyor");
-    const nasdaqUniverse = await fetchNasdaqUniverse();
-    const symbols = nasdaqUniverse.symbols;
-
-    updateScannerJob(
-      jobId,
-      8,
-      `${nasdaqUniverse.totalAssets} aktif hisseden likiditeye göre seçilen ${symbols.length} NASDAQ hissesi için iki aylık günlük OHLCV alınıyor`
-    );
-
-    // Bellekte yalnız teknik olarak en iyi küçük aday havuzu tutulur.
-    // Tam OHLCV dizileri kalıcı state'e yazılmaz.
-    const shortlist = [];
-    let successful = 0;
-    let feedUsed = ALPACA_DATA_FEED;
-    const compareNasdaqCandidate = (left, right) =>
-      Number(right.score || 0) - Number(left.score || 0) ||
-      left.symbol.localeCompare(right.symbol, "en");
-
-    for (let index = 0; index < symbols.length; index += 20) {
-      const group = symbols.slice(index, index + 20);
-      const batch = await fetchNasdaqBarsWithFallback(group);
-      feedUsed = batch.feed;
-
-      for (const symbol of group) {
-        const history = batch.barsBySymbol.get(symbol) || [];
-        const validation = fibonacciEngine.validateDaily(history, {minDailyBars: 40});
-        if (!validation.ok) continue;
-
-        successful += 1;
-        const baseFib = {
-          valid: false,
-          status: "NO_VALID_STRUCTURE",
-          riskRewardTp2: null,
-          riskRewardTp3: null,
-          volumeConfirmation: "WEAK",
-        };
-        shortlist.push({
-          symbol,
-          history,
-          validation,
-          dataStatus: "OK",
-          ...fibonacciEngine.score(history, baseFib),
-          fibonacci: baseFib,
-        });
-        shortlist.sort(compareNasdaqCandidate);
-        if (shortlist.length > 12) shortlist.length = 12;
-      }
-
-      updateScannerJob(
-        jobId,
-        10 + Math.round(62 * Math.min(index + group.length, symbols.length) / symbols.length),
-        `${Math.min(index + group.length, symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`
-      );
-    }
-
-    const valid = shortlist.sort(compareNasdaqCandidate);
-    updateScannerJob(jobId, 75, "Teknik puanla ilk 5 aday için Fibonacci hesaplanıyor");
-
-    const ranked = valid.slice(0, 5).map(item => {
-      const fibonacci = fibonacciEngine.fibonacciPlan(item.history, Date.now(), {market: "NASDAQ"});
-      const analysis = fibonacciEngine.score(item.history, fibonacci);
-      const fallbackPlan = fibonacci.valid
-        ? null
-        : fibonacciEngine.fallbackPlan(item.history, analysis.features);
-      return {
-        ...item,
-        ...analysis,
-        fibonacci,
-        fallbackPlan,
-        price: analysis.features.price,
-        ema20: analysis.features.ema20,
-        ema50: analysis.features.ema50,
-        ema200: analysis.features.ema200,
-        rsi: analysis.features.rsi,
-        macd: analysis.features.macd,
-        atr: analysis.features.atr,
-        volumeRatio: analysis.features.volumeRatio,
-        turnover: analysis.features.turnover,
-      };
-    });
-
-    updateScannerJob(jobId, 86, "İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");
-    const ai = await evaluateNasdaqCandidatesWithAi(ranked.slice(0, 3));
-    const enriched = ranked.map(item => ({
-      ...item,
-      aiReview: ai.get(item.symbol) || {
-        available: false,
-        provider: "UNAVAILABLE",
-        summary: "Doğrulanmış haber başlığı alınamadı.",
-      },
-    }));
-
-    const saved = await getTradingState();
-    const paper = saved.content.nasdaqPaper;
-    const timestamp = new Date().toISOString();
-    const decisions = createAiDecisions(enriched, {
-      ...paper.risk,
-      capital: paper.initialCapital,
-    });
-
-    const signals = enriched.map(item => ({
-      id: `nasdaq-signal-${timestamp}-${item.symbol}`,
-      symbol: item.symbol,
-      timestamp,
-      score: Number(item.score || 0),
-      grade: item.grade || "KARAR",
-      status: item.fibonacci?.status || "NO_VALID_STRUCTURE",
-      price: item.price,
-      fibonacci: item.fibonacci || null,
-      fallbackPlan: item.fallbackPlan || null,
-    }));
-
-    const existingSignalKeys = new Set(
-      (paper.signals || []).map(item => `${item.symbol}:${String(item.timestamp || "").slice(0, 10)}`)
-    );
-    paper.signals = [
-      ...signals.filter(item => !existingSignalKeys.has(`${item.symbol}:${timestamp.slice(0, 10)}`)),
-      ...(paper.signals || []),
-    ].slice(0, 200);
-
-    // Scanner kararları emir kuyruğu değildir. Önceki sürümde aynı diziye
-    // yazıldıkları için hayalet PENDING_APPROVAL kartları ve stale decisionId
-    // oluşabiliyordu. Tarama özeti artık scanner altında ayrı tutulur.
-    paper.scanner = {
-      timestamp,
-      scanned: symbols.length,
-      successful,
-      results: enriched.map(item => {
-        const {history, ...rest} = item;
-        return rest;
-      }),
-      decisions,
-      source: `ALPACA_${String(feedUsed).toUpperCase()}_1DAY`,
-    };
-
-    // Eski sürümden kalmış, gerçekten kullanıcı tarafından kuyruğa alınmamış
-    // SCANNER taslaklarını temizle. Açık/broker/limit yaşam döngülerine dokunma.
-    paper.decisions = (paper.decisions || []).filter(item => {
-      const source = String(item?.pendingOrder?.source || "").toUpperCase();
-      const status = String(item?.status || "").toUpperCase();
-      return !(source === "SCANNER" && ["PENDING", "PENDING_APPROVAL"].includes(status));
-    }).slice(0, 100);
-
-    paper.activity = [
-      {
-        timestamp,
-        type: "NASDAQ_SCAN",
-        message: `${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`,
-      },
-      ...(paper.activity || []),
-    ].slice(0, 100);
-
-    await saveTradingState(saved.content, saved.sha, saved.container);
-    updateScannerJob(jobId, 100, "NASDAQ taraması tamamlandı", "COMPLETE");
-
-    return sendJSON(res, 200, {
-      success: true,
-      timestamp,
-      scanned: symbols.length,
-      successful,
-      results: enriched,
-      decisions,
-      paper: nasdaqPaperStateForClient(saved.content),
-      nasdaqPaper: nasdaqPaperStateForClient(saved.content),
-      source: `ALPACA_${String(feedUsed).toUpperCase()}_1DAY`,
-    });
-  } catch (error) {
-    updateScannerJob(jobId, 100, `NASDAQ tarama hatası: ${error.message}`, "ERROR");
-    console.error("NASDAQ SCANNER:", String(error.message || "error").slice(0, 240));
-    return sendJSON(res, 500, {success: false, error: error.message});
-  } finally {
-    releaseScannerExecution("NASDAQ");
-  }
+    updateScannerJob(jobId,2,"Alpaca'dan aktif NASDAQ evreni ve günlük likidite alınıyor");
+    const nasdaqUniverse=await fetchNasdaqUniverse();
+    const symbols=nasdaqUniverse.symbols;
+    updateScannerJob(jobId,8,`${nasdaqUniverse.totalAssets} aktif hisseden likiditeye göre seçilen ${symbols.length} NASDAQ hissesi için iki aylık günlük OHLCV alınıyor`);
+    // Likidite ön filtresinden geçen 50 sembolün iki aylık mumları işlenir.
+    // Her partide yalnız teknik olarak ilk 12 aday bellekte tutulur; sonuç
+    // yine ilk 5'tir.
+    const shortlist=[];let successful=0;let feedUsed=ALPACA_DATA_FEED;
+    const compareNasdaqCandidate=(left,right)=>Number(right.score||0)-Number(left.score||0)||left.symbol.localeCompare(right.symbol,"en");
+    for(let index=0;index<symbols.length;index+=20){const group=symbols.slice(index,index+20);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history,{minDailyBars:40});if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
+    const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik puanla ilk 5 aday için Fibonacci hesaplanıyor");const ranked=valid.slice(0,5).map(item=>{const fibonacci=fibonacciEngine.fibonacciPlan(item.history,Date.now(),{market:"NASDAQ"});const analysis=fibonacciEngine.score(item.history,fibonacci);const fallbackPlan=fibonacci.valid?null:fibonacciEngine.fallbackPlan(item.history,analysis.features);return {...item,...analysis,fibonacci,fallbackPlan,price:analysis.features.price,ema20:analysis.features.ema20,ema50:analysis.features.ema50,ema200:analysis.features.ema200,rsi:analysis.features.rsi,macd:analysis.features.macd,atr:analysis.features.atr,volumeRatio:analysis.features.volumeRatio,turnover:analysis.features.turnover};});
+    updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};const selectedSymbols=new Set(decisions.map(item=>item.symbol));paper.decisions=[...decisions,...(paper.decisions||[]).filter(item=>!(item.status==="PENDING_APPROVAL"&&selectedSymbols.has(item.symbol)))].slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
+  } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
+  finally { releaseScannerExecution("NASDAQ"); }
 }
 
 /* ========================================================
@@ -9944,18 +9589,13 @@ async function handleCryptoPaperQueue(req, res) {
     const candidate = cryptoPaperDecisionFromInput(input, paper, timestamp);
     const isManual = String(candidate.pendingOrder?.source || "").toUpperCase() === "MANUAL";
 
-    // YZ ve manuel panellerin her biri yalnız bir aktif TASLAK taşır.
-    // Onaylanıp PENDING_LIMIT olmuş emir artık taslak değildir ve yeni aday
-    // oluşturulurken sessizce değiştirilemez / geçmişe atılamaz.
-    const sameQueueActive = (paper.decisions || []).filter(decision =>
+    // YZ ve manuel panellerin her biri yalnız bir aktif taslak taşır.
+    // Yeni coin planı geldiğinde aynı paneldeki eski taslak geçmişe aktarılır.
+    const superseded = (paper.decisions || []).filter(decision =>
       ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status) &&
-      (String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL") === isManual
+      (String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL") === isManual &&
+      decision.symbol !== candidate.symbol
     );
-    if (sameQueueActive.some(decision => decision.status === "PENDING_LIMIT")) {
-      throw new Error("Bu kripto panelinde zaten onaylanmış bir LIMIT emir bekliyor. Önce mevcut emri reddedin.");
-    }
-
-    const superseded = sameQueueActive.filter(decision => decision.status === "PENDING_APPROVAL");
     if (superseded.length) {
       paper.history = superseded.map(decision => ({
         ...decision,
@@ -9964,8 +9604,15 @@ async function handleCryptoPaperQueue(req, res) {
       })).concat(paper.history || []).slice(0, 100);
       paper.decisions = paper.decisions.filter(decision => !superseded.includes(decision));
     }
-
-    paper.decisions = [candidate, ...(paper.decisions || [])].slice(0, 100);
+    const existing = paper.decisions.find(decision =>
+      ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(decision.status) &&
+      decision.symbol === candidate.symbol &&
+      (String(decision.pendingOrder?.source || decision.source || "").toUpperCase() === "MANUAL") === isManual
+    );
+    if (existing) {
+      existing.pendingOrder = candidate.pendingOrder;
+      existing.entry = candidate.entry; existing.stop = candidate.stop; existing.target1 = candidate.target1; existing.target2 = candidate.target2; existing.target3 = candidate.target3;
+    } else paper.decisions = [candidate, ...paper.decisions].slice(0, 100);
     paper.activity = [{timestamp, type: "CRYPTO_PENDING", message: `${candidate.symbol} kripto paper emri onay bekliyor.`}, ...paper.activity].slice(0, 100);
     await saveTradingState(state, stateResult.sha, stateResult.container);
     return sendJSON(res, 201, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
@@ -10027,14 +9674,11 @@ async function handleCryptoPaperApprove(req, res) {
     if (position) {
       const combined = Number(position.quantity) + Number(order.quantity);
       position.entry = roundCryptoValue((Number(position.entry) * Number(position.quantity) + entry * Number(order.quantity)) / combined);
-      position.quantity = combined;
-      position.remainingQuantity = combined;
-      position.originalQuantity = roundCryptoValue(Number(position.originalQuantity || 0) + Number(order.quantity));
-      position.current = marketPrice;
+      position.quantity = combined; position.current = marketPrice;
     } else {
       const max = Math.max(1, Number(paper.risk?.maxPositions) || 5);
       if (paper.positions.filter(value => value.status === "OPEN").length >= max) throw new Error(`En fazla ${max} açık kripto pozisyonu olabilir.`);
-      position = {id: `crypto-pos-${Date.now()}-${order.symbol}`, decisionId: decision.id, symbol: order.symbol, market: "CRYPTO", status: "OPEN", quantity: Number(order.quantity), remainingQuantity: Number(order.quantity), originalQuantity: Number(order.quantity), entry, current: marketPrice, stop: order.stop, target1: order.target1, target2: order.target2, target3: order.target3, openedAt: new Date().toISOString(), paperOnly: true};
+      position = {id: `crypto-pos-${Date.now()}-${order.symbol}`, decisionId: decision.id, symbol: order.symbol, market: "CRYPTO", status: "OPEN", quantity: Number(order.quantity), entry, current: marketPrice, stop: order.stop, target1: order.target1, target2: order.target2, target3: order.target3, openedAt: new Date().toISOString(), paperOnly: true};
       paper.positions = [position, ...paper.positions];
     }
     paper.cash = roundTradingValue(Number(paper.cash) - cost); decision.status = "OPEN";
@@ -10070,22 +9714,15 @@ async function handleCryptoPaperClose(req, res) {
     if (orderType === "LIMIT" && marketPrice < limitPrice) throw new Error(`${position.symbol} limit satış bekliyor: son fiyat $${marketPrice}, limit $${limitPrice}.`);
     const price = orderType === "LIMIT" ? Math.max(marketPrice, limitPrice) : marketPrice;
     const proceeds = roundTradingValue(price * quantity); paper.cash = roundTradingValue(Number(paper.cash) + proceeds);
-    position.quantity = roundCryptoValue(Number(position.quantity) - quantity);
-    position.remainingQuantity = position.quantity;
-    position.current = price;
+    position.quantity = roundCryptoValue(Number(position.quantity) - quantity); position.current = price;
     const realizedPnl = roundTradingValue((price - Number(position.entry)) * quantity);
-    position.realizedPnl = roundTradingValue(Number(position.realizedPnl || 0) + realizedPnl);
-    if (position.quantity <= 0) {
-      position.status = "CLOSED";
-      position.closedAt = new Date().toISOString();
-      paper.history = [{...position}, ...paper.history].slice(0, 100);
-    }
+    if (position.quantity <= 0) { position.status = "CLOSED"; position.closedAt = new Date().toISOString(); position.realizedPnl = realizedPnl; paper.history = [{...position}, ...paper.history].slice(0, 100); }
     paper.activity = [{timestamp: new Date().toISOString(), type: "CRYPTO_CLOSE", message: `${position.symbol} kripto paper pozisyonu ${orderType} ile kapatıldı.`}, ...paper.activity].slice(0, 100);
     recalculateCryptoPaper(paper); await saveTradingState(state, stateResult.sha, stateResult.container); return sendJSON(res, 200, {paperOnly: true, cryptoPaper: cryptoPaperStateForClient(state)});
   } catch (error) { return sendJSON(res, 400, {error: error.message}); }
 }
 
-function closeMonitoredMarketPosition(paper, position, price, timestamp, type, message, quantity = Number(position.quantity || 0), roundQuantity = value => value) {
+function closeMonitoredPaperPosition(paper, position, price, timestamp, type, message, quantity = Number(position.quantity || 0), roundQuantity = value => value) {
   const sold = roundQuantity(quantity);
   if (!Number.isFinite(sold) || sold <= 0) return false;
   const proceeds = roundTradingValue(price * sold);
@@ -10120,11 +9757,9 @@ async function monitorCryptoPaperTrading(paper, timestamp) {
       const total = Number(position.quantity) + Number(order.quantity);
       position.entry = roundCryptoValue((Number(position.entry) * Number(position.quantity) + price * Number(order.quantity)) / total);
       position.quantity = total;
-      position.remainingQuantity = total;
-      position.originalQuantity = roundCryptoValue(Number(position.originalQuantity || 0) + Number(order.quantity));
       position.current = price;
     } else {
-      position = {id:`crypto-pos-${Date.now()}-${order.symbol}`, decisionId:decision.id, symbol:order.symbol, market:"CRYPTO", status:"OPEN", quantity:Number(order.quantity), remainingQuantity:Number(order.quantity), originalQuantity:Number(order.quantity), entry:price, current:price, stop:order.stop, target1:order.target1, target2:order.target2, target3:order.target3, openedAt:timestamp, paperOnly:true};
+      position = {id:`crypto-pos-${Date.now()}-${order.symbol}`, decisionId:decision.id, symbol:order.symbol, market:"CRYPTO", status:"OPEN", quantity:Number(order.quantity), entry:price, current:price, stop:order.stop, target1:order.target1, target2:order.target2, target3:order.target3, openedAt:timestamp, paperOnly:true};
       paper.positions = [position, ...(paper.positions || [])];
     }
     paper.cash = roundTradingValue(Number(paper.cash) - cost);
@@ -10146,32 +9781,9 @@ async function monitorCryptoPaperTrading(paper, timestamp) {
       : event.type === "TP2"
         ? `${position.symbol} kripto TP2 hedefiyle kalan miktar kapatıldı.`
         : `${position.symbol} kripto stop seviyesiyle kalan miktar kapatıldı.`;
-    const realized = roundTradingValue(
-      (price - Number(before.entry || 0)) * Number(event.closeQuantity || 0)
-    );
-    const executed = closeMonitoredMarketPosition(
-      paper,
-      position,
-      price,
-      timestamp,
-      label,
-      message,
-      event.closeQuantity,
-      roundCryptoValue
-    );
+    const executed = closeMonitoredPaperPosition(paper, position, price, timestamp, label, message, event.closeQuantity, roundCryptoValue);
     if (!executed) continue;
     Object.assign(position, applyConfirmedMonitorEvent(before, event, {timestamp}));
-    position.current = price;
-    position.realizedPnl = roundTradingValue(
-      Number(before.realizedPnl || 0) + realized
-    );
-    if (
-      position.status === "CLOSED" &&
-      Array.isArray(paper.history) &&
-      paper.history[0]?.id === position.id
-    ) {
-      paper.history[0] = {...position};
-    }
     changed = true;
   }
   if (changed) recalculateCryptoPaper(paper);
@@ -10382,7 +9994,7 @@ function settleNasdaqMonitorEvent(paper, position, before, event, price, timesta
     : event.type === "TP2"
       ? `${position.symbol} NASDAQ TP2 hedefiyle kalan miktar kapatıldı. Gerçekleşen P&L: $${realized}.`
       : `${position.symbol} NASDAQ stop seviyesiyle kalan miktar kapatıldı. Gerçekleşen P&L: $${realized}.`;
-  if (!closeMonitoredMarketPosition(paper, position, executionPrice, timestamp, label, message, event.closeQuantity)) return false;
+  if (!closeMonitoredPaperPosition(paper, position, executionPrice, timestamp, label, message, event.closeQuantity)) return false;
   Object.assign(position, applyConfirmedMonitorEvent(before, event, {timestamp}));
   position.current = executionPrice;
   position.realizedPnl = roundTradingValue(Number(before.realizedPnl || 0) + realized);
