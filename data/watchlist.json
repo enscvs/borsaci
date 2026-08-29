@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 142928.52,
-      "equity": 142928.52,
+      "cash": 112336.84,
+      "equity": 142897.96,
       "pnl": 43120.80357443809,
       "pnlPercent": 43.120803574438085,
       "positions": [
+        {
+          "id": "paper-2026-08-29T18:23:07.717Z-DOHOL-b7d4f4b2",
+          "decisionId": "1787936268027-DOHOL",
+          "decisionIds": [
+            "1787936268027-DOHOL"
+          ],
+          "symbol": "DOHOL",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 1368,
+          "originalQuantity": 1368,
+          "entry": 22.34,
+          "entryCommission": 30.56,
+          "current": 22.34,
+          "stop": 19.66,
+          "target1": 23.91,
+          "target2": 24.96,
+          "target3": 26.29,
+          "status": "OPEN",
+          "openedAt": "2026-08-29T18:23:07.717Z",
+          "tp1Hit": false,
+          "realizedPnl": -30.56,
+          "pnl": -30.56
+        },
         {
           "id": "paper-2026-08-28T06:22:50.801Z-BINBN-85c31774",
           "decisionId": "1787845693091-BINBN",
@@ -18206,7 +18231,7 @@
         "rank": 3,
         "symbol": "DOHOL",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 20.23,
@@ -18522,10 +18547,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-28T16:57:48.027Z",
           "expiresAt": "2026-08-29T16:57:48.027Z",
-          "overrideAt": "2026-08-29T11:24:28.077Z"
+          "overrideAt": "2026-08-29T11:24:28.077Z",
+          "openedAt": "2026-08-29T18:23:07.717Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -18546,8 +18572,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-29T11:24:28.077Z",
-          "updatedAt": "2026-08-29T18:23:04.613Z",
-          "editedAt": "2026-08-29T18:23:04.613Z"
+          "updatedAt": "2026-08-29T18:23:07.717Z",
+          "editedAt": null,
+          "commission": 30.56,
+          "totalCost": 30591.68,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-29T18:23:07.717Z"
         }
       }
     ],
@@ -34986,9 +35016,14 @@
     },
     "activity": [
       {
-        "timestamp": "2026-08-29T18:23:04.613Z",
-        "type": "PAPER_ORDER_EDITED",
-        "message": "DOHOL bekleyen paper emri düzenlendi: 1368 lot · ₺22,34 · LIMIT."
+        "timestamp": "2026-08-29T18:23:07.717Z",
+        "type": "PAPER_APPROVED",
+        "message": "DOHOL paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-29T18:23:07.717Z",
+        "type": "PAPER_OPEN",
+        "message": "DOHOL scanner paper pozisyonu açıldı: 1368 lot · ₺30561.12 · LIMIT."
       },
       {
         "timestamp": "2026-08-29T11:24:28.077Z",
@@ -35479,11 +35514,6 @@
         "timestamp": "2026-08-26T10:47:29.403Z",
         "type": "AI_DECISION_MANUAL_PENDING",
         "message": "AHGAZ kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
-      },
-      {
-        "timestamp": "2026-08-26T10:47:17.841Z",
-        "type": "PAPER_REJECTED",
-        "message": "GESAN paper işlem planı SITE üzerinden reddedildi."
       }
     ],
     "scannerSnapshot": {
