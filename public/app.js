@@ -9257,6 +9257,7 @@ function renderCryptoPaperState(payload) {
   const riskMax = document.getElementById("cryptoRiskMaxInput"); if (riskMax) riskMax.value = Number(paper.risk?.maxPositions || 5);
   renderCryptoRiskGauge();
   const allPending = (paper.decisions || []).filter(item => ["PENDING_APPROVAL", "PENDING_LIMIT"].includes(item.status));
+  renderCryptoLegacyPendingPlans(allPending);
   const pending = allPending.filter(item => String(item.pendingOrder?.source || item.source || "").toUpperCase() !== "MANUAL");
   const manualPending = allPending.filter(item => String(item.pendingOrder?.source || item.source || "").toUpperCase() === "MANUAL");
   const pendingMount = document.getElementById("cryptoPendingOrders");
@@ -9281,6 +9282,44 @@ function renderCryptoPaperState(payload) {
   if (journal) journal.innerHTML = (paper.activity || []).length ? paper.activity.slice(0, 100).map(item => `<details><summary>${escapeHtml(item.type || "EVENT")} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</summary><p>${escapeHtml(item.message || "")}</p></details>`).join("") : '<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
   bindCryptoPaperActions();
   void refreshCryptoQuotes();
+}
+
+function renderCryptoLegacyPendingPlans(items = []) {
+  const status = document.getElementById("cryptoPaperPendingPlanStatus");
+  const mount = document.getElementById("cryptoPaperPendingPlanOrders");
+  if (!mount) return;
+  const plans = Array.isArray(items) ? items : [];
+  if (status) status.textContent = `${plans.length} PLAN`;
+  if (!plans.length) {
+    mount.innerHTML = '<div class="trading-empty">Kontrol paneline sayılacak bekleyen kripto kâğıt planı yok.</div>';
+    return;
+  }
+  mount.innerHTML = plans.map(item => {
+    const order = item.pendingOrder || {};
+    const source = String(order.source || item.source || "KRİPTO PLANI").toUpperCase();
+    const stage = item.status === "PENDING_LIMIT" ? "LİMİT PLAN" : "ONAY BEKLİYOR";
+    return `<article class="pending-paper-order-card crypto-paper-pending-plan-card"><div class="pending-paper-order-head"><strong>${escapeHtml(item.symbol || "KRİPTO")} · ${escapeHtml(source)}</strong><span class="pending-paper-order-badge">${stage}</span></div><div class="decision-detail-grid"><span>Tür: ${escapeHtml(order.orderType || "MARKET")}</span><span>Miktar: ${escapeHtml(String(order.quantity ?? "—"))}</span><span>Planlanan fiyat: ${formatCryptoUsd(order.entryPrice)}</span></div><button type="button" class="trading-button danger" data-crypto-legacy-plan-cancel data-crypto-decision-id="${escapeHtml(item.id)}">PLANI İPTAL ET</button></article>`;
+  }).join("");
+  document.querySelectorAll("[data-crypto-legacy-plan-cancel]").forEach(button => {
+    if (button.dataset.cryptoLegacyCancelBound === "true") return;
+    button.dataset.cryptoLegacyCancelBound = "true";
+    button.addEventListener("click", async () => {
+      const decisionId = button.dataset.cryptoDecisionId;
+      if (!decisionId || !window.confirm("Bu kâğıt plan iptal edilsin mi? Binance'e gerçek emir gönderilmez veya iptal edilmez.")) return;
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/crypto/paper/reject", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({decisionId})});
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload?.error || "Bekleyen kripto planı iptal edilemedi.");
+        renderCryptoPaperState(payload);
+        await loadControlCenter();
+      } catch (error) {
+        window.alert(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
 }
 
 function renderCryptoKillSwitch(killSwitch = {}) {

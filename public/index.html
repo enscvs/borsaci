@@ -2637,6 +2637,16 @@ Waiting for input...
         <button type="button" id="cancelAllCryptoSpotOrders" class="trading-button danger" disabled>TÜM AÇIK EMİRLERİ İPTAL ET</button>
         <small>Her emir kartından tek tek de iptal edebilirsiniz.</small>
       </div>
+      <div class="crypto-paper-pending-bridge" aria-live="polite">
+        <div class="crypto-paper-pending-bridge-head">
+          <strong>BEKLEYEN KÂĞIT PLANLAR</strong>
+          <span id="cryptoPaperPendingPlanStatus" class="panel-status">YÜKLENİYOR</span>
+        </div>
+        <div id="cryptoPaperPendingPlanOrders" class="pending-paper-orders">
+          <div class="trading-empty">Bekleyen kâğıt planlar kontrol ediliyor…</div>
+        </div>
+        <small>Bu kayıtlar Binance'e gönderilmemiş eski kâğıt/plan emirleridir. İptal etmek, yalnızca kontrol panelindeki bekleyen emir kaydını kaldırır.</small>
+      </div>
     </section>
 
     <section id="cryptoSpotActivityPanel" class="panel trading-panel crypto-spot-activity-panel">
@@ -3886,7 +3896,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260829-control-and-orders"
+  src="/app.js?v=20260829-crypto-plan-cancel"
   defer
 ></script>
 
