@@ -6035,7 +6035,7 @@
           "symbol": "FTNT",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_LIMIT",
           "grade": "A+ / GÜÇLÜ ADAY",
           "timestamp": "2026-08-29T20:29:39.538Z",
           "entry": {
@@ -6129,7 +6129,14 @@
             "paperOnly": false,
             "source": "NASDAQ AI",
             "createdAt": "2026-08-29T20:29:39.538Z",
-            "updatedAt": "2026-08-29T20:29:39.538Z"
+            "updatedAt": "2026-08-29T20:29:48.130Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 165.97
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-29T20:29:48.130Z",
+            "lastMarketPrice": 165.97
           }
         },
         {
@@ -17251,6 +17258,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-29T20:29:48.130Z",
+          "type": "NASDAQ_LIMIT_PENDING",
+          "message": "FTNT limit alış emri $149.09 seviyesinde izleniyor."
+        },
         {
           "timestamp": "2026-08-29T20:29:39.538Z",
           "type": "NASDAQ_PENDING",
