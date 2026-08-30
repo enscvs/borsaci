@@ -18738,8 +18738,8 @@
         "id": "1788068980674-SDTTR",
         "rank": 1,
         "symbol": "SDTTR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -19037,14 +19037,33 @@
           "summary": "Şu anda SDTTR için güvenilir haber verisi yoktur."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-30T05:49:40.674Z",
-          "expiresAt": "2026-08-31T05:49:40.674Z"
+          "expiresAt": "2026-08-31T05:49:40.674Z",
+          "overrideAt": "2026-08-30T05:50:06.851Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-30T05:49:40.674Z"
+        "timestamp": "2026-08-30T05:49:40.674Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "SDTTR",
+          "quantity": 1659,
+          "entryPrice": 24.4,
+          "orderType": "LIMIT",
+          "stop": 18.03,
+          "target1": 24.88,
+          "target2": 26.64,
+          "target3": 28.88,
+          "positionValue": 40479.6,
+          "actualRisk": 10567.83,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-30T05:50:06.851Z",
+          "updatedAt": "2026-08-30T05:50:06.851Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1788036226189-ASTOR",
@@ -22756,6 +22775,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T05:50:06.851Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "SDTTR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-08-30T05:49:41.349Z",
         "type": "SCAN",
