@@ -367,6 +367,10 @@ function fallbackPlan(history, f) {
     message: "Geçerli Fibonacci A–B–C yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı."
   };
 }
+function technicalGrade(value) {
+  const scoreValue=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+  return scoreValue>=80?"A+ / GÜÇLÜ ADAY":scoreValue>=60?"A / AL ADAYI":scoreValue>=50?"NÖTR":"ZAYIF";
+}
 function score(history, fib) {
   const f=features(history), c=CONFIG.scoring;
   const reasons=[],risks=[];
@@ -448,7 +452,7 @@ function score(history, fib) {
   const positiveTotal=trend.score+momentum.score+volumeLiquidity.score+entryQuality.score;
   const rawTotal=positiveTotal+penalties.score;
   const value=Math.max(0,Math.min(100,Math.round(rawTotal)));
-  const grade=value>=80?"A+ / GÜÇLÜ ADAY":value>=65?"A / AL ADAYI":value>=60?"B / İZLE":value>=50?"NÖTR":"ZAYIF";
+  const grade=technicalGrade(value);
   const scoreBreakdown={
     trend,
     momentum,
@@ -464,5 +468,21 @@ function score(history, fib) {
   return {score:value,grade,features:f,reasons,risks,scoreBreakdown};
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
-module.exports={CONFIG,validateDaily,features,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
+function rankCandidatesWithFibonacci(candidates, now=Date.now(), options={}, limits={}) {
+  const limit=Math.max(1,Math.floor(Number(limits.limit)||5));
+  const shortlistLimit=Math.max(limit,Math.floor(Number(limits.shortlistLimit)||12));
+  return (Array.isArray(candidates)?candidates:[])
+    .slice()
+    .sort((left,right)=>Number(right.score||0)-Number(left.score||0)||String(left.symbol||"").localeCompare(String(right.symbol||""),"en"))
+    .slice(0,shortlistLimit)
+    .map(item=>{
+      const fibonacci=fibonacciPlan(item.history,now,options);
+      const analysis=score(item.history,fibonacci);
+      const informationalFallback=fibonacci.valid?null:fallbackPlan(item.history,analysis.features);
+      return {...item,...analysis,fibonacci,fallbackPlan:informationalFallback};
+    })
+    .sort((left,right)=>Number(right.score||0)-Number(left.score||0)||String(left.symbol||"").localeCompare(String(right.symbol||""),"en"))
+    .slice(0,limit);
+}
+module.exports={CONFIG,validateDaily,features,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,technicalGrade,score,rankCandidatesWithFibonacci,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
 
