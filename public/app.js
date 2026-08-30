@@ -8617,12 +8617,14 @@ function nasdaqPendingCard(decision) {
 function renderNasdaqBrokerControls(paper) {
   const mount = ns("pendingPaperOrders");
   if (!mount) return;
-  mount.querySelectorAll("[data-nasdaq-broker-cancel],[data-nasdaq-protection-enable]").forEach(button => button.closest("article")?.remove());
+  mount.querySelectorAll("[data-nasdaq-broker-cancel],[data-nasdaq-protection-enable],[data-nasdaq-reconcile-warning]").forEach(node => (node.matches("article") ? node : node.closest("article"))?.remove());
   const pending = Array.isArray(paper?.brokerPendingEntries) ? paper.brokerPendingEntries : [];
   const unprotected = (paper?.positions || []).filter(position => position.status === "OPEN" && position.broker?.protectionSuppressed);
+  const discrepant = (paper?.positions || []).filter(position => position.status === "OPEN" && position.broker?.brokerDiscrepancy);
   const cards = [
     ...pending.map(position => `<article class="pending-paper-order-card" data-filled-quantity="${Number(position.broker?.filledQuantity || 0)}"><div class="pending-paper-order-head"><strong>${escapeHtml(position.symbol)} · ALPACA</strong><span class="pending-paper-order-badge">BROKER GERÇEKLEŞMESİ BEKLENİYOR</span></div>${orderFillProgressMarkup(position.quantity, position.broker?.filledQuantity || 0, {digits:0})}<div class="decision-detail-grid"><span>İstenen: ${Number(position.quantity || 0)}</span><span>Gerçekleşen: ${Number(position.broker?.filledQuantity || 0)}</span><span>Broker durumu: ${escapeHtml(position.broker?.status || "accepted")}</span><span>Emir ID: ${escapeHtml(position.broker?.brokerOrderId || "—")}</span></div><button type="button" class="trading-button danger" data-nasdaq-broker-cancel="${escapeHtml(position.id)}">ALPACA EMRİNİ İPTAL ET</button></article>`),
     ...unprotected.map(position => `<article class="pending-paper-order-card"><div class="pending-paper-order-head"><strong>${escapeHtml(position.symbol)} · KORUMASIZ</strong><span class="pending-paper-order-badge">STOP DEVRE DIŞI</span></div><p>Alpaca stop emri dışarıdan iptal edildi. Pozisyon otomatik stop koruması olmadan açık.</p><button type="button" class="trading-button success" data-nasdaq-protection-enable="${escapeHtml(position.id)}">STOP KORUMASINI YENİDEN ETKİNLEŞTİR</button></article>`),
+    ...discrepant.map(position => `<article class="pending-paper-order-card" data-nasdaq-reconcile-warning><div class="pending-paper-order-head"><strong>${escapeHtml(position.symbol)} · UZLAŞTIRMA UYARISI</strong><span class="pending-paper-order-badge">BROKER EŞLEŞMESİ YOK</span></div><p>${escapeHtml(position.broker?.brokerDiscrepancy)}</p><small>Güvenlik nedeniyle yerel pozisyon otomatik kapatılmadı; Alpaca hesabını kontrol edin.</small></article>`),
   ];
   if (cards.length) mount.insertAdjacentHTML("beforeend", cards.join(""));
   mount.querySelectorAll("[data-nasdaq-broker-cancel]").forEach(button => button.addEventListener("click", async () => {
@@ -8634,8 +8636,37 @@ function renderNasdaqBrokerControls(paper) {
   }, {once:true}));
 }
 
+function ensureNasdaqBrokerReconcileControl(paper) {
+  let box = ns("brokerReconcileBox");
+  if (!box) {
+    const anchor = ns("paperCostSummary");
+    if (!anchor) return;
+    box = document.createElement("div");
+    box.id = "brokerReconcileBox";
+    box.className = "paper-cost-summary";
+    box.innerHTML = `<button type="button" class="trading-button" data-nasdaq-broker-reconcile>BROKER İLE UZLAŞTIR</button><span data-nasdaq-broker-reconcile-status>Henüz elle uzlaştırılmadı.</span>`;
+    anchor.insertAdjacentElement("afterend", box);
+    box.querySelector("[data-nasdaq-broker-reconcile]")?.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      const status = box.querySelector("[data-nasdaq-broker-reconcile-status]");
+      button.disabled = true;
+      if (status) status.textContent = "Alpaca BorsaCI emirleri uzlaştırılıyor…";
+      try {
+        const payload = await nasdaqRequest("/api/nasdaq/broker/reconcile", {});
+        renderNasdaqPaperState(payload);
+        const summary = payload.reconciliation || {};
+        if (status) status.textContent = `${Number(summary.discovered || 0)} keşfedildi · ${Number(summary.linked || 0)} bağlandı · ${Number(summary.updated || 0)} güncellendi`;
+      } catch (error) { if (status) status.textContent = `Uzlaştırma hatası: ${error.message}`; window.alert(error.message); }
+      finally { button.disabled = false; }
+    });
+  }
+  const summary = paper?.brokerReconciliation;
+  const status = box.querySelector("[data-nasdaq-broker-reconcile-status]");
+  if (summary && status) status.textContent = `${nasdaqLocalTime(summary.timestamp)} · ${Number(summary.discovered || 0)} keşif · ${Number(summary.linked || 0)} bağlantı · ${Number(summary.updated || 0)} güncelleme`;
+}
+
 function renderNasdaqPaperState(payload) {
-  const paper=payload?.nasdaqPaper || payload || {}; latestNasdaqPaperState=paper; queueMicrotask(()=>renderNasdaqBrokerControls(paper));
+  const paper=payload?.nasdaqPaper || payload || {}; latestNasdaqPaperState=paper; queueMicrotask(()=>{renderNasdaqBrokerControls(paper);ensureNasdaqBrokerReconcileControl(paper);});
   nasdaqText("paperInitialCapital",formatNasdaqUsd(paper.initialCapital));nasdaqText("paperCash",formatNasdaqUsd(paper.cash));nasdaqText("paperEquity",formatNasdaqUsd(paper.equity));nasdaqText("paperPnL",formatNasdaqUsd(paper.pnl));nasdaqText("paperPnLPct",Number.isFinite(Number(paper.pnlPercent))?`${Number(paper.pnlPercent).toFixed(2)}%`:"—");nasdaqText("paperPositionCount",String((paper.history||[]).filter(item=>item.status==="CLOSED").length));nasdaqText("paperCostSummary",`ALPACA · ${paper.broker?.dataFeed || "SIP"} GÜNLÜK VERİ · ${paper.broker?.mode || "PAPER"} ${paper.broker?.orderSubmissionEnabled ? "EMİR HATTI AÇIK" : "KÂĞIT MOD"} · 60 SN İŞLEM MONİTÖRÜ`);
   nasdaqText("maxPositions",String(paper.risk?.maxPositions || 5));nasdaqText("targetPositionSize",`${Number(paper.risk?.maxPositionPercent || 20).toFixed(0)}%`);nasdaqText("cashReserve",`${Math.max(0,100-Number(paper.risk?.maxPositionPercent||20)*Number(paper.risk?.maxPositions||5)).toFixed(0)}%`);nasdaqText("stopRule","YZ KARARI");
   const allocation=ns("maxPositionInput"), max=ns("maxPositionsInput"), capital=ns("riskCapitalInput"); if(allocation)allocation.value=Number(paper.risk?.maxPositionPercent || 20);if(max)max.value=Number(paper.risk?.maxPositions || 5);if(capital)capital.value=Number(paper.initialCapital || 10000); const gauge=ns("riskAllocationGauge");if(gauge){const total=Number(allocation?.value||0)*Number(max?.value||0);gauge.textContent=`${total}% TAHSİS`;gauge.classList.toggle("risk-overallocated",total>100);}
