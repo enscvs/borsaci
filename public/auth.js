@@ -6,7 +6,6 @@
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
   var legacyMode = false;
   var legacyTabsBound = false;
-  var debugLines = [];
 
   window.borsaciAuth = {};
   Object.defineProperty(window.borsaciAuth, "authenticated", {
@@ -31,64 +30,9 @@
     return Array.prototype.slice.call(list || []);
   }
 
-  function debugBox() {
-    if (!legacyMode) return null;
-    var box = document.getElementById("legacyDebugBox");
-    if (box) return box;
-    box = document.createElement("div");
-    box.id = "legacyDebugBox";
-    box.style.position = "fixed";
-    box.style.left = "4px";
-    box.style.right = "4px";
-    box.style.bottom = "4px";
-    box.style.zIndex = "2147483647";
-    box.style.maxHeight = "42vh";
-    box.style.overflow = "auto";
-    box.style.padding = "8px";
-    box.style.border = "1px solid #ff5555";
-    box.style.background = "rgba(20,0,0,.96)";
-    box.style.color = "#ffb0b0";
-    box.style.font = "10px/1.35 monospace";
-    box.style.whiteSpace = "pre-wrap";
-    box.style.wordBreak = "break-word";
-    if (document.body) document.body.appendChild(box);
-    return box;
-  }
-
-  function debug(message) {
-    if (!legacyMode) return;
-    debugLines.push(String(message || ""));
-    if (debugLines.length > 14) debugLines.shift();
-    var box = debugBox();
-    if (box) box.textContent = "LEGACY DEBUG\n" + debugLines.join("\n");
-  }
-
+  function debug() {}
   window.borsaciLegacyDebug = debug;
-
-  if (legacyMode) {
-    window.onerror = function (message, source, lineno, colno, error) {
-      var details = "JS ERROR: " + String(message || (error && error.message) || "unknown");
-      if (source) details += "\n" + source;
-      if (lineno) details += ":" + lineno + (colno ? ":" + colno : "");
-      debug(details);
-      return false;
-    };
-
-    if (window.addEventListener) {
-      window.addEventListener("unhandledrejection", function (event) {
-        var reason = event && event.reason;
-        debug("PROMISE ERROR: " + String(reason && reason.message ? reason.message : reason || "unknown"));
-      }, false);
-    }
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", function () {
-        debug("AUTH LEGACY: OK");
-      }, false);
-    } else {
-      debug("AUTH LEGACY: OK");
-    }
-  }
+  window.__borsaciLegacyDebug = debug;
 
   function showLoginError(message) {
     var element = document.getElementById("authMessage");
@@ -115,7 +59,6 @@
       event.initEvent("borsaci:auth-ready", true, true);
     }
     window.dispatchEvent(event);
-    debug("AUTH READY: DISPATCHED");
   }
 
   function setLegacyPanel(panel, visible) {
@@ -159,7 +102,6 @@
       }, false);
     });
     activateLegacyTab("tradingTab");
-    debug("LEGACY TABS: BOUND");
   }
 
   function xhrJson(method, url, body, callback) {
@@ -208,7 +150,6 @@
     logoutButtons().forEach(function (button) { button.hidden = false; });
     showLoginError("");
     bindLegacyTabs();
-    debug("SESSION: AUTHENTICATED");
     dispatchAuthReady();
   }
 
