@@ -72,4 +72,3 @@ Scanner artık doğrulanmamış 0–100 puanını başarı olasılığı olarak 
 
 Backtest etiketleri sinyalden sonraki seansın açılışından başlar; aynı günlük mumda hedef ve stop birlikte görülürse muhafazakâr olarak LOSS sayılır. Walk-forward doğrulama kronolojiktir ve purge/embargo uygular. Geçmiş sonuçlar garanti değildir.
 
-`data/precision-model.json` yalnızca doğrulanmış, ayrı kalibrasyon ve test dönemleriyle üretilmiş model artefaktı ile güncellenmelidir. Yayın eşiği: en az 300 test dışı sinyal, masraf sonrası pozitif beklenti, profit factor ≥ 1.5, yeterli kalibrasyon ve en az 100 paper işlem. Güncel evrenle yapılan tarihsel test survivorship bias taşıyabilir; bu raporda açıkça belirtilmelidir.
