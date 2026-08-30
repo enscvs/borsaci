@@ -44,7 +44,7 @@ test("crypto safety readiness requires a real Binance account response", () => {
 
 test("NASDAQ scanner decisions are deduplicated and Alpaca entries receive emergency stops", () => {
   assert.match(source, /function mergeNasdaqScannerDecisions/);
-  assert.match(source, /paper\.decisions=mergeNasdaqScannerDecisions\(decisions,paper\.decisions,timestamp\)/);
+  assert.match(source, /paper\.decisions=mergeNasdaqScannerDecisions\(decisions,paper\.decisions\.filter\(item=>!activePositionSymbols\.has\(item\.symbol\)\),timestamp\)/);
   assert.match(source, /async function placeNasdaqEmergencyStop/);
   assert.match(source, /async function reconcileNasdaqEmergencyStop/);
   assert.match(source, /time_in_force:"gtc"/);
