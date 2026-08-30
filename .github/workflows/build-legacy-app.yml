@@ -30,9 +30,12 @@ jobs:
       - name: Sync latest main
         run: git pull --rebase origin main
 
+      - name: Install temporary Babel toolchain
+        run: npm install --no-save --no-package-lock @babel/core@7.28.4 @babel/cli@7.28.3 @babel/preset-env@7.28.3
+
       - name: Build iOS 10 bundle with Babel
         run: |
-          cat > /tmp/babel.config.json <<'JSON'
+          cat > babel.legacy.config.json <<'JSON'
           {
             "presets": [
               ["@babel/preset-env", {
@@ -43,10 +46,10 @@ jobs:
             ]
           }
           JSON
-          npx --yes -p @babel/core@7.28.4 -p @babel/cli@7.28.3 -p @babel/preset-env@7.28.3 \
-            babel public/app.js \
-            --config-file /tmp/babel.config.json \
+          ./node_modules/.bin/babel public/app.js \
+            --config-file ./babel.legacy.config.json \
             --out-file /tmp/app-legacy-core.js
+          rm -f babel.legacy.config.json
           cat public/legacy-polyfills.js /tmp/app-legacy-core.js > public/app-legacy.js
           if grep -Eq '[0-9]_[0-9]' public/app-legacy.js; then
             echo "Legacy build still contains numeric separators" >&2
