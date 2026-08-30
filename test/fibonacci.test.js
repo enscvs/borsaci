@@ -176,3 +176,39 @@ test("technical score breakdown reconciles exact category points and penalties",
   assert.equal(breakdown.total,result.score);
   assert.equal(result.score,55);
 });
+
+test("MACD signal starts after nine valid MACD values",()=>{
+  const values=Array.from({length:40},(_,index)=>100+index);
+  const result=fib.macd(values);
+  assert.equal(result.line[25]!==null,true);
+  assert.equal(result.signal[32],null);
+  assert.equal(result.hist[32],null);
+  assert.equal(result.signal[33]!==null,true);
+  assert.equal(result.hist[33]!==null,true);
+});
+
+test("daily validation rejects negative volume",()=>{
+  const history=Array.from({length:220},(_,index)=>({
+    time:Date.UTC(2025,0,1+index)/1000,
+    open:100,
+    high:101,
+    low:99,
+    close:100,
+    volume:index===100?-1:1000,
+  }));
+  assert.equal(fib.validateDaily(history).ok,false);
+});
+
+test("Fibonacci ATR uses Wilder smoothing",()=>{
+  const history=Array.from({length:40},(_,index)=>{
+    const close=100+index+(index%5===0?8:0);
+    return {time:Date.UTC(2025,0,1+index)/1000,open:close-1,high:close+(index%3+1),low:close-(index%4+1),close,volume:1000};
+  });
+  const trueRanges=history.map((bar,index)=>index===0
+    ? bar.high-bar.low
+    : Math.max(bar.high-bar.low,Math.abs(bar.high-history[index-1].close),Math.abs(bar.low-history[index-1].close)));
+  let expected=trueRanges.slice(0,14).reduce((sum,value)=>sum+value,0)/14;
+  for(let index=14;index<trueRanges.length;index+=1)expected=(expected*13+trueRanges[index])/14;
+  assert.ok(Math.abs(fib.atrSeries(history).at(-1)-expected)<1e-12);
+});
+
