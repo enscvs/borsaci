@@ -36,3 +36,18 @@ test("NASDAQ broker approvals are serialized and broker limit orders are submitt
   assert.match(source, /reservedCash/);
 });
 
+test("crypto safety readiness requires a real Binance account response", () => {
+  assert.match(source, /async function handleCryptoSpotSafety/);
+  assert.match(source, /const account = await fetchBinanceSpotAccount\(\)/);
+  assert.doesNotMatch(source, /connected: Boolean\(BINANCE_API_KEY && BINANCE_API_SECRET\)/);
+});
+
+test("NASDAQ scanner decisions are deduplicated and Alpaca entries receive emergency stops", () => {
+  assert.match(source, /function mergeNasdaqScannerDecisions/);
+  assert.match(source, /paper\.decisions=mergeNasdaqScannerDecisions\(decisions,paper\.decisions,timestamp\)/);
+  assert.match(source, /async function placeNasdaqEmergencyStop/);
+  assert.match(source, /async function reconcileNasdaqEmergencyStop/);
+  assert.match(source, /time_in_force:"gtc"/);
+  assert.match(source, /await cancelNasdaqEmergencyStop\(position, timestamp\)/);
+});
+
