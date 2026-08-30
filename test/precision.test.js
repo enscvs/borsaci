@@ -75,3 +75,30 @@ test("volume confirmation uses the latest three sessions", () => {
   assert.equal(features.averageVolume20, 200);
   assert.equal(features.volumeRatio, 1.5);
 });
+
+test("same-day BIST candle is incomplete until 18:15 Istanbul", () => {
+  const data = bars(252);
+  const lastDay = Date.parse("2026-08-28T00:00:00.000Z");
+  data.forEach((bar, index) => {
+    bar.timestamp = new Date(lastDay - (data.length - 1 - index) * 86400000).toISOString();
+  });
+  assert.equal(p.validateHistory(data, {now: Date.parse("2026-08-28T15:14:00.000Z")}).ok, false);
+  assert.equal(p.validateHistory(data, {now: Date.parse("2026-08-28T15:15:00.000Z")}).ok, true);
+});
+
+test("ATR uses Wilder smoothing", () => {
+  const data = bars(40);
+  const trueRanges = data.map((bar, index) => index === 0
+    ? bar.high - bar.low
+    : Math.max(
+      bar.high - bar.low,
+      Math.abs(bar.high - data[index - 1].close),
+      Math.abs(bar.low - data[index - 1].close),
+    ));
+  let expected = trueRanges.slice(0, 14).reduce((sum, value) => sum + value, 0) / 14;
+  for (let index = 14; index < trueRanges.length; index += 1) {
+    expected = (expected * 13 + trueRanges[index]) / 14;
+  }
+  assert.ok(Math.abs(p.atrSeries(data).at(-1) - expected) < 1e-12);
+});
+
