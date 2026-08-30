@@ -1,12 +1,14 @@
 #import "BCLRootViewController.h"
 #import "BCLPinStore.h"
 #import "BCLPinViewController.h"
+#import "BCLSplashViewController.h"
 #import "BCLWebViewController.h"
 
 @interface BCLRootViewController ()
 
 @property (nonatomic, strong) BCLWebViewController *webViewController;
 @property (nonatomic, strong) BCLPinViewController *pinViewController;
+@property (nonatomic, strong) BCLSplashViewController *splashViewController;
 
 @end
 
@@ -28,8 +30,7 @@
 		[weakSelf showPINWithMode:BCLPinModeChange];
 	};
 
-	BCLPinMode firstMode = [[BCLPinStore sharedStore] hasPIN] ? BCLPinModeUnlock : BCLPinModeSetup;
-	[self showPINWithMode:firstMode];
+	[self showSplash];
 }
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
@@ -37,14 +38,55 @@
 }
 
 - (UIViewController *)childViewControllerForStatusBarStyle {
-	return self.pinViewController ?: self.webViewController;
+	return self.splashViewController ?: self.pinViewController ?: self.webViewController;
+}
+
+- (UIViewController *)childViewControllerForStatusBarHidden {
+	return self.splashViewController ?: self.pinViewController ?: self.webViewController;
 }
 
 - (void)lockApplication {
+	if (self.splashViewController != nil) {
+		return;
+	}
 	if ([[BCLPinStore sharedStore] hasPIN]) {
 		[self hidePIN];
 		[self showPINWithMode:BCLPinModeUnlock];
 	}
+}
+
+- (void)showSplash {
+	__weak typeof(self) weakSelf = self;
+	BCLSplashViewController *controller = [[BCLSplashViewController alloc] initWithCompletion:^{
+		[weakSelf finishSplash];
+	}];
+	self.splashViewController = controller;
+	[self addChildViewController:controller];
+	controller.view.frame = self.view.bounds;
+	controller.view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+	[self.view addSubview:controller.view];
+	[controller didMoveToParentViewController:self];
+	[self setNeedsStatusBarAppearanceUpdate];
+}
+
+- (void)finishSplash {
+	BCLSplashViewController *controller = self.splashViewController;
+	if (controller == nil) {
+		return;
+	}
+	BCLPinMode firstMode = [[BCLPinStore sharedStore] hasPIN] ? BCLPinModeUnlock : BCLPinModeSetup;
+	[self showPINWithMode:firstMode];
+	[self.view bringSubviewToFront:controller.view];
+	[UIView animateWithDuration:0.32 animations:^{
+		controller.view.alpha = 0.0;
+	} completion:^(BOOL finished) {
+		(void)finished;
+		[controller willMoveToParentViewController:nil];
+		[controller.view removeFromSuperview];
+		[controller removeFromParentViewController];
+		self.splashViewController = nil;
+		[self setNeedsStatusBarAppearanceUpdate];
+	}];
 }
 
 - (void)showPINWithMode:(BCLPinMode)mode {
