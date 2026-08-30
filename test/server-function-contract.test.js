@@ -76,3 +76,13 @@ test("broker partial fills remain tracked and NASDAQ controls stay recoverable",
   assert.match(appSource, /data-nasdaq-protection-enable/);
 });
 
+test("NASDAQ broker reconciliation discovers only BorsaCI Alpaca orders", () => {
+  assert.match(source, /async function reconcileNasdaqBrokerState/);
+  assert.match(source, /\^bci-\(\?:entry\|stop\|nasd\)-/);
+  assert.match(source, /nasdaq-startup-reconcile/);
+  assert.match(source, /\/api\/nasdaq\/broker\/reconcile/);
+  assert.match(source, /brokerReconciliation = \{timestamp, reason, discovered, linked, updated, managedOrders:orders\.length\}/);
+  assert.match(appSource, /BROKER İLE UZLAŞTIR/);
+  assert.match(appSource, /data-nasdaq-broker-reconcile-status/);
+});
+
