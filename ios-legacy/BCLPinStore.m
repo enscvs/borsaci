@@ -60,7 +60,7 @@ static const uint32_t BCLPBKDFRounds = 30000;
 		rounds,
 		derived.mutableBytes,
 		derived.length);
-	return status == kCCSuccess ? derived : nil;
+	return status == 0 ? derived : nil;
 }
 
 - (BOOL)setPIN:(NSString *)pin error:(NSError **)error {
