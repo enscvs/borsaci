@@ -5,6 +5,8 @@
   var authenticated = false;
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
   var legacyControllerRequested = false;
+  var legacyControllerLoaded = false;
+  var legacyControllerCallbacks = [];
 
   window.borsaciAuth = {};
   Object.defineProperty(window.borsaciAuth, "authenticated", {
@@ -14,17 +16,51 @@
     get: function () { return csrfToken; }
   });
 
-  function isLegacyIPhone() {
-    var ua = String(navigator.userAgent || "");
-    return /iPhone|iPod/.test(ua) && /OS (?:8|9|10)_/.test(ua);
+  function needsLegacyController() {
+    try {
+      new Function("var x = {}; return x?.a;");
+      return false;
+    } catch (error) {
+      return true;
+    }
   }
 
-  function loadLegacyController() {
-    if (!isLegacyIPhone() || legacyControllerRequested) return;
+  function flushLegacyCallbacks() {
+    var callbacks = legacyControllerCallbacks.slice();
+    legacyControllerCallbacks = [];
+    callbacks.forEach(function (callback) {
+      try {
+        callback();
+      } catch (error) {}
+    });
+  }
+
+  function loadLegacyController(callback) {
+    if (!needsLegacyController()) {
+      if (callback) callback();
+      return;
+    }
+
+    if (callback) legacyControllerCallbacks.push(callback);
+
+    if (legacyControllerLoaded) {
+      flushLegacyCallbacks();
+      return;
+    }
+
+    if (legacyControllerRequested) return;
     legacyControllerRequested = true;
+
     var script = document.createElement("script");
-    script.src = "/legacy-controller.js?v=20260830-iphone5";
+    script.src = "/legacy-controller.js?v=20260830-iphone5-v2";
     script.async = false;
+    script.onload = function () {
+      legacyControllerLoaded = true;
+      flushLegacyCallbacks();
+    };
+    script.onerror = function () {
+      flushLegacyCallbacks();
+    };
     document.head.appendChild(script);
   }
 
@@ -75,8 +111,9 @@
     });
 
     showLoginError("");
-    loadLegacyController();
-    dispatchAuthReady();
+    loadLegacyController(function () {
+      dispatchAuthReady();
+    });
   }
 
   function deactivate(message) {
