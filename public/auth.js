@@ -9,12 +9,8 @@
   var legacyControllerCallbacks = [];
 
   window.borsaciAuth = {};
-  Object.defineProperty(window.borsaciAuth, "authenticated", {
-    get: function () { return authenticated; }
-  });
-  Object.defineProperty(window.borsaciAuth, "csrfToken", {
-    get: function () { return csrfToken; }
-  });
+  Object.defineProperty(window.borsaciAuth, "authenticated", { get: function () { return authenticated; } });
+  Object.defineProperty(window.borsaciAuth, "csrfToken", { get: function () { return csrfToken; } });
 
   function needsLegacyController() {
     try {
@@ -29,9 +25,7 @@
     var callbacks = legacyControllerCallbacks.slice();
     legacyControllerCallbacks = [];
     callbacks.forEach(function (callback) {
-      try {
-        callback();
-      } catch (error) {}
+      try { callback(); } catch (error) {}
     });
   }
 
@@ -42,17 +36,15 @@
     }
 
     if (callback) legacyControllerCallbacks.push(callback);
-
     if (legacyControllerLoaded) {
       flushLegacyCallbacks();
       return;
     }
-
     if (legacyControllerRequested) return;
-    legacyControllerRequested = true;
 
+    legacyControllerRequested = true;
     var script = document.createElement("script");
-    script.src = "/legacy-controller.js?v=20260830-iphone5-v2";
+    script.src = "/legacy-controller.js?v=iphone5-" + new Date().getTime();
     script.async = false;
     script.onload = function () {
       legacyControllerLoaded = true;
@@ -70,18 +62,14 @@
   }
 
   function logoutButtons() {
-    return Array.prototype.slice.call(
-      document.querySelectorAll("#logoutButton, [data-logout-button]")
-    );
+    return Array.prototype.slice.call(document.querySelectorAll("#logoutButton, [data-logout-button]"));
   }
 
   function setSubmitting(submitting) {
     var button = document.getElementById("loginButton");
     if (button) {
       button.disabled = submitting;
-      button.textContent = submitting
-        ? "GİRİŞ KONTROL EDİLİYOR..."
-        : "GİRİŞ YAP";
+      button.textContent = submitting ? "GİRİŞ KONTROL EDİLİYOR..." : "GİRİŞ YAP";
     }
   }
 
@@ -103,14 +91,20 @@
     var screen = document.getElementById("authScreen");
     var app = document.getElementById("appShell");
 
-    if (screen) screen.hidden = true;
-    if (app) app.hidden = false;
+    if (screen) {
+      screen.hidden = true;
+      screen.style.setProperty("display", "none", "important");
+      screen.style.setProperty("pointer-events", "none", "important");
+    }
+    if (app) {
+      app.hidden = false;
+      app.style.removeProperty("display");
+      app.style.setProperty("pointer-events", "auto", "important");
+    }
 
-    logoutButtons().forEach(function (button) {
-      button.hidden = false;
-    });
-
+    logoutButtons().forEach(function (button) { button.hidden = false; });
     showLoginError("");
+
     loadLegacyController(function () {
       dispatchAuthReady();
     });
@@ -123,11 +117,17 @@
     var screen = document.getElementById("authScreen");
     var app = document.getElementById("appShell");
 
-    if (app) app.hidden = true;
-    logoutButtons().forEach(function (button) {
-      button.hidden = true;
-    });
-    if (screen) screen.hidden = false;
+    if (app) {
+      app.hidden = true;
+      app.style.setProperty("display", "none", "important");
+      app.style.setProperty("pointer-events", "none", "important");
+    }
+    logoutButtons().forEach(function (button) { button.hidden = true; });
+    if (screen) {
+      screen.hidden = false;
+      screen.style.removeProperty("display");
+      screen.style.setProperty("pointer-events", "auto", "important");
+    }
 
     showLoginError(message || "");
   }
@@ -137,6 +137,7 @@
     xhr.open(method, url, true);
     xhr.withCredentials = true;
     xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Cache-Control", "no-cache");
 
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("Content-Type", "application/json");
@@ -144,68 +145,37 @@
 
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
-
       var payload = {};
-      try {
-        payload = xhr.responseText ? JSON.parse(xhr.responseText) : {};
-      } catch (error) {
-        payload = {};
-      }
-
+      try { payload = xhr.responseText ? JSON.parse(xhr.responseText) : {}; } catch (error) { payload = {}; }
       callback(null, xhr.status, payload);
     };
 
-    xhr.onerror = function () {
-      callback(new Error("Network error"), 0, {});
-    };
-
+    xhr.onerror = function () { callback(new Error("Network error"), 0, {}); };
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
   }
 
   if (nativeFetch) {
     window.fetch = function (input, init) {
       init = init || {};
-
       var inputUrl = typeof input === "string" ? input : input.url;
       var requestUrl = document.createElement("a");
       requestUrl.href = inputUrl;
 
-      var method = String(
-        init.method || (typeof input === "string" ? "GET" : input.method) || "GET"
-      ).toUpperCase();
+      var method = String(init.method || (typeof input === "string" ? "GET" : input.method) || "GET").toUpperCase();
+      var sameOrigin = requestUrl.protocol === window.location.protocol && requestUrl.host === window.location.host;
+      var headers = new Headers(init.headers || (typeof input === "string" ? undefined : input.headers));
 
-      var sameOrigin =
-        requestUrl.protocol === window.location.protocol &&
-        requestUrl.host === window.location.host;
-
-      var headers = new Headers(
-        init.headers || (typeof input === "string" ? undefined : input.headers)
-      );
-
-      if (
-        sameOrigin &&
-        method !== "GET" &&
-        method !== "HEAD" &&
-        method !== "OPTIONS" &&
-        csrfToken
-      ) {
+      if (sameOrigin && method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && csrfToken) {
         headers.set("X-CSRF-Token", csrfToken);
       }
 
       var nextInit = {};
-      Object.keys(init).forEach(function (key) {
-        nextInit[key] = init[key];
-      });
+      Object.keys(init).forEach(function (key) { nextInit[key] = init[key]; });
       nextInit.headers = headers;
       nextInit.credentials = "same-origin";
 
       return nativeFetch(input, nextInit).then(function (response) {
-        if (
-          sameOrigin &&
-          response.status === 401 &&
-          requestUrl.pathname.indexOf("/api/") === 0 &&
-          requestUrl.pathname.indexOf("/api/auth/") !== 0
-        ) {
+        if (sameOrigin && response.status === 401 && requestUrl.pathname.indexOf("/api/") === 0 && requestUrl.pathname.indexOf("/api/auth/") !== 0) {
           deactivate("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
         }
         return response;
@@ -214,23 +184,18 @@
   }
 
   function checkSession() {
-    xhrJson("GET", "/api/auth/session", null, function (error, status, session) {
+    xhrJson("GET", "/api/auth/session?ts=" + new Date().getTime(), null, function (error, status, session) {
       if (error || status < 200 || status >= 300) {
         deactivate(error ? "Oturum kontrol edilemedi. Lütfen tekrar deneyin." : "");
         return;
       }
-
-      if (session && session.authenticated) {
-        activate(session);
-      } else {
-        deactivate();
-      }
+      if (session && session.authenticated) activate(session);
+      else deactivate();
     });
   }
 
   function login(event) {
     event.preventDefault();
-
     var passwordInput = document.getElementById("loginPassword");
     var password = String(passwordInput && passwordInput.value ? passwordInput.value : "");
 
@@ -244,7 +209,6 @@
 
     xhrJson("POST", "/api/auth/login", { password: password }, function (error, status, payload) {
       setSubmitting(false);
-
       if (error || status < 200 || status >= 300 || !payload.authenticated) {
         showLoginError("Giriş bilgileri doğrulanamadı.");
         return;
@@ -252,18 +216,11 @@
 
       if (passwordInput) passwordInput.value = "";
 
-      xhrJson("GET", "/api/auth/session", null, function (verifyError, verifyStatus, session) {
-        if (
-          verifyError ||
-          verifyStatus < 200 ||
-          verifyStatus >= 300 ||
-          !session ||
-          !session.authenticated
-        ) {
+      xhrJson("GET", "/api/auth/session?ts=" + new Date().getTime(), null, function (verifyError, verifyStatus, session) {
+        if (verifyError || verifyStatus < 200 || verifyStatus >= 300 || !session || !session.authenticated) {
           deactivate("Giriş başarılı ancak oturum kaydedilemedi. Uygulamayı kapatıp tekrar deneyin.");
           return;
         }
-
         activate(session);
       });
     });
@@ -278,10 +235,7 @@
   var form = document.getElementById("loginForm");
   var logoutButtonList = logoutButtons();
 
-  if (form) {
-    form.addEventListener("submit", login, false);
-  }
-
+  if (form) form.addEventListener("submit", login, false);
   logoutButtonList.forEach(function (logoutButton) {
     logoutButton.addEventListener("click", logout, false);
   });
