@@ -3106,219 +3106,7 @@
       ],
       "decisions": [
         {
-          "id": "nasdaq-1788098174196-FTNT-999f0583",
-          "symbol": "FTNT",
-          "market": "NASDAQ",
-          "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
-          "grade": "A / AL ADAYI",
-          "timestamp": "2026-08-30T13:56:14.196Z",
-          "entry": {
-            "low": 149.09,
-            "high": 149.09,
-            "reference": 149.09
-          },
-          "stop": 145.36,
-          "target1": 165.79,
-          "target2": 170.54,
-          "target3": 176.59,
-          "fibonacci": {
-            "valid": true,
-            "status": "ENTRY_TOO_FAR",
-            "pointA": {
-              "type": "LOW",
-              "index": 20,
-              "price": 143.83,
-              "date": "2026-07-29T04:00:00.000Z"
-            },
-            "pointB": {
-              "type": "HIGH",
-              "index": 25,
-              "price": 172.09,
-              "date": "2026-08-05T04:00:00.000Z"
-            },
-            "pointC": {
-              "type": "LOW",
-              "index": 37,
-              "price": 148.33,
-              "date": "2026-08-21T04:00:00.000Z"
-            },
-            "range": 28.26,
-            "retracementRatio": 0.8408,
-            "entryTriggerPrice": 149.09,
-            "entryZoneLow": 149.09,
-            "entryZoneHigh": 161.39,
-            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
-            "descendingResistance": {
-              "valid": true,
-              "available": true,
-              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
-              "reason": null,
-              "anchor1": {
-                "type": "HIGH",
-                "index": 25,
-                "price": 172.09,
-                "date": "2026-08-05T04:00:00.000Z"
-              },
-              "anchor2": {
-                "type": "HIGH",
-                "index": 32,
-                "price": 165.75,
-                "date": "2026-08-14T04:00:00.000Z"
-              },
-              "slopePerBar": -0.905714,
-              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
-              "projectedPoint": {
-                "index": 42,
-                "date": "2026-08-28T04:00:00.000Z",
-                "price": 156.6929
-              },
-              "breakoutPrice": 156.6929,
-              "breakoutPriceAtLast": 156.6929,
-              "entryUpperRaw": 161.39364285714288,
-              "entryUpperPrice": 161.39
-            },
-            "stopLoss": 145.36,
-            "tp1": 165.79,
-            "tp2": 170.54,
-            "tp3": 176.59,
-            "volumeConfirmation": "STRONG",
-            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
-            "confirmationPassed": true,
-            "confirmationCandleTime": "2026-08-24T04:00:00.000Z",
-            "confirmationCandleClose": 152.01,
-            "entryPrice": 165.97
-          },
-          "indicators": {
-            "score": 78
-          },
-          "pendingOrder": {
-            "symbol": "FTNT",
-            "quantity": 6,
-            "entryPrice": 149.09,
-            "orderType": "LIMIT",
-            "stop": 145.36,
-            "target1": 165.79,
-            "target2": 170.54,
-            "target3": 176.59,
-            "paperOnly": false,
-            "source": "NASDAQ AI",
-            "createdAt": "2026-08-30T13:56:14.196Z",
-            "updatedAt": "2026-08-30T13:56:14.196Z"
-          }
-        },
-        {
-          "id": "nasdaq-1788095365079-FTNT-9558228c",
-          "symbol": "FTNT",
-          "market": "NASDAQ",
-          "action": "BUY SETUP",
-          "status": "REJECTED",
-          "grade": "A / AL ADAYI",
-          "timestamp": "2026-08-30T13:09:25.079Z",
-          "entry": {
-            "low": 149.09,
-            "high": 149.09,
-            "reference": 149.09
-          },
-          "stop": 145.36,
-          "target1": 165.79,
-          "target2": 170.54,
-          "target3": 176.59,
-          "fibonacci": {
-            "valid": true,
-            "status": "ENTRY_TOO_FAR",
-            "pointA": {
-              "type": "LOW",
-              "index": 20,
-              "price": 143.83,
-              "date": "2026-07-29T04:00:00.000Z"
-            },
-            "pointB": {
-              "type": "HIGH",
-              "index": 25,
-              "price": 172.09,
-              "date": "2026-08-05T04:00:00.000Z"
-            },
-            "pointC": {
-              "type": "LOW",
-              "index": 37,
-              "price": 148.33,
-              "date": "2026-08-21T04:00:00.000Z"
-            },
-            "range": 28.26,
-            "retracementRatio": 0.8408,
-            "entryTriggerPrice": 149.09,
-            "entryZoneLow": 149.09,
-            "entryZoneHigh": 161.39,
-            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
-            "descendingResistance": {
-              "valid": true,
-              "available": true,
-              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
-              "reason": null,
-              "anchor1": {
-                "type": "HIGH",
-                "index": 25,
-                "price": 172.09,
-                "date": "2026-08-05T04:00:00.000Z"
-              },
-              "anchor2": {
-                "type": "HIGH",
-                "index": 32,
-                "price": 165.75,
-                "date": "2026-08-14T04:00:00.000Z"
-              },
-              "slopePerBar": -0.905714,
-              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
-              "projectedPoint": {
-                "index": 42,
-                "date": "2026-08-28T04:00:00.000Z",
-                "price": 156.6929
-              },
-              "breakoutPrice": 156.6929,
-              "breakoutPriceAtLast": 156.6929,
-              "entryUpperRaw": 161.39364285714288,
-              "entryUpperPrice": 161.39
-            },
-            "stopLoss": 145.36,
-            "tp1": 165.79,
-            "tp2": 170.54,
-            "tp3": 176.59,
-            "volumeConfirmation": "STRONG",
-            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
-            "confirmationPassed": true,
-            "confirmationCandleTime": "2026-08-24T04:00:00.000Z",
-            "confirmationCandleClose": 152.01,
-            "entryPrice": 165.97
-          },
-          "indicators": {
-            "score": 78
-          },
-          "pendingOrder": {
-            "symbol": "FTNT",
-            "quantity": 6,
-            "entryPrice": 149.09,
-            "orderType": "LIMIT",
-            "stop": 145.36,
-            "target1": 165.79,
-            "target2": 170.54,
-            "target3": 176.59,
-            "paperOnly": false,
-            "source": "NASDAQ AI",
-            "createdAt": "2026-08-30T13:09:25.079Z",
-            "updatedAt": "2026-08-30T13:09:37.167Z",
-            "status": "PENDING_LIMIT",
-            "lastMarketPrice": 165.97
-          },
-          "lifecycle": {
-            "stage": "PENDING_LIMIT",
-            "lastCheckedAt": "2026-08-30T13:09:37.167Z",
-            "lastMarketPrice": 165.97
-          },
-          "closedAt": "2026-08-30T13:09:44.488Z"
-        },
-        {
-          "id": "1788095350575-FTNT",
+          "id": "1788098190463-FTNT",
           "rank": 1,
           "symbol": "FTNT",
           "action": "WATCH",
@@ -3633,22 +3421,22 @@
             "provider": "GROQ",
             "score": null,
             "verdict": "INFO",
-            "newsComment": "Fortinet hisse fiyatı yükseliyor; Palo Alto Networks ile birlikte tüm güvenlik grubu artışı, Stanford Atletikleri ile çok yıllı sponsorluk, %12 artış, güvenlik ",
-            "expertComment": "",
-            "summary": "Fortinet hisse senedi, güvenlik platformu başarısı ve yeni sponsorluk anlaşmalarıyla yükselişte."
+            "newsComment": "Fortinet hisseleri güvenlik sektörü haberleriyle yükselişte; Palo Alto Networks ile birlikte artış, Stanford Üniversitesi ile sponsorluk, son kazanç raporundan ",
+            "expertComment": "Analistler, Fortinet'in güvenlik platformu ivmesi ve stratejik ortaklıkları sayesinde büyüme potansiyelinin sürdüğünü vurguluyor.",
+            "summary": "Fortinet, güvenlik çözümleri ve yeni sponsorluk anlaşmaları sayesinde hisse fiyatında önemli bir yükseliş yaşadı."
           },
           "lifecycle": {
             "stage": "PENDING",
-            "createdAt": "2026-08-30T13:09:10.575Z",
-            "expiresAt": "2026-08-31T13:09:10.576Z"
+            "createdAt": "2026-08-30T13:56:30.463Z",
+            "expiresAt": "2026-08-31T13:56:30.463Z"
           },
           "currentScan": true,
           "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
           "invalidation": "C seviyesinin %2 altındaki stop (145.36) planı geçersiz kılar.",
-          "timestamp": "2026-08-30T13:09:10.575Z"
+          "timestamp": "2026-08-30T13:56:30.463Z"
         },
         {
-          "id": "1788095350576-NVDA",
+          "id": "1788098190463-NVDA",
           "rank": 2,
           "symbol": "NVDA",
           "action": "WATCH",
@@ -3945,22 +3733,22 @@
             "provider": "GROQ",
             "score": null,
             "verdict": "INFO",
-            "newsComment": "Verilen haberlerde Broadcom'un AI gelir hedefi, piyasa sinyalleri, AMD ile kıyaslamalar, Disney hissesi ve genel büyüme önerileri yer alıyor; doğrudan Nvidia il",
-            "expertComment": "",
-            "summary": "NVDA için doğrudan haber bulunmadığı için özet yapılamadı."
+            "newsComment": "Verilen başlıklarda NVDA ile ilgili doğrudan bir haber bulunmamaktadır.",
+            "expertComment": "Bu başlıklar Nvidia'nın performansı hakkında bilgi vermediği için analist görüşü oluşturulamamaktadır.",
+            "summary": "NVDA için sağlanan haberlerde şirketle ilgili spesifik bir gelişme yer almamaktadır."
           },
           "lifecycle": {
             "stage": "PENDING",
-            "createdAt": "2026-08-30T13:09:10.576Z",
-            "expiresAt": "2026-08-31T13:09:10.576Z"
+            "createdAt": "2026-08-30T13:56:30.463Z",
+            "expiresAt": "2026-08-31T13:56:30.463Z"
           },
           "currentScan": true,
           "reason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
           "invalidation": "C seviyesinin %2 altındaki stop (203.25) planı geçersiz kılar.",
-          "timestamp": "2026-08-30T13:09:10.576Z"
+          "timestamp": "2026-08-30T13:56:30.463Z"
         },
         {
-          "id": "1788095350576-SNPS",
+          "id": "1788098190463-SNPS",
           "rank": 3,
           "symbol": "SNPS",
           "action": "WATCH",
@@ -4253,23 +4041,133 @@
           ],
           "risks": [],
           "aiReview": {
-            "available": true,
-            "provider": "GROQ",
-            "score": null,
+            "available": false,
+            "provider": "UNAVAILABLE",
             "verdict": "INFO",
-            "newsComment": "Synopsys FY26 kâr marjı hedefi, Ansys alımının kârlılığı etkisi, yazılım hisseleri alım zamanı, kazanç beklentisi ve FY26 yönlendirmesi sonrası %16.8 artış habe",
-            "expertComment": "",
-            "summary": "Synopsys, FY26 kâr hedefi ve Ansys alımıyla kârlılık odaklı bir döneme giriyor, hisse fiyatı yükseliyor."
+            "score": null,
+            "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+            "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
+            "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
           },
           "lifecycle": {
             "stage": "PENDING",
-            "createdAt": "2026-08-30T13:09:10.576Z",
-            "expiresAt": "2026-08-31T13:09:10.576Z"
+            "createdAt": "2026-08-30T13:56:30.463Z",
+            "expiresAt": "2026-08-31T13:56:30.463Z"
           },
           "currentScan": true,
           "reason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
           "invalidation": "C seviyesinin %2 altındaki stop (380.59) planı geçersiz kılar.",
-          "timestamp": "2026-08-30T13:09:10.576Z"
+          "timestamp": "2026-08-30T13:56:30.463Z"
+        },
+        {
+          "id": "nasdaq-1788095365079-FTNT-9558228c",
+          "symbol": "FTNT",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-30T13:09:25.079Z",
+          "entry": {
+            "low": 149.09,
+            "high": 149.09,
+            "reference": 149.09
+          },
+          "stop": 145.36,
+          "target1": 165.79,
+          "target2": 170.54,
+          "target3": 176.59,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_TOO_FAR",
+            "pointA": {
+              "type": "LOW",
+              "index": 20,
+              "price": 143.83,
+              "date": "2026-07-29T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 25,
+              "price": 172.09,
+              "date": "2026-08-05T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 37,
+              "price": 148.33,
+              "date": "2026-08-21T04:00:00.000Z"
+            },
+            "range": 28.26,
+            "retracementRatio": 0.8408,
+            "entryTriggerPrice": 149.09,
+            "entryZoneLow": 149.09,
+            "entryZoneHigh": 161.39,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 25,
+                "price": 172.09,
+                "date": "2026-08-05T04:00:00.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 32,
+                "price": 165.75,
+                "date": "2026-08-14T04:00:00.000Z"
+              },
+              "slopePerBar": -0.905714,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": {
+                "index": 42,
+                "date": "2026-08-28T04:00:00.000Z",
+                "price": 156.6929
+              },
+              "breakoutPrice": 156.6929,
+              "breakoutPriceAtLast": 156.6929,
+              "entryUpperRaw": 161.39364285714288,
+              "entryUpperPrice": 161.39
+            },
+            "stopLoss": 145.36,
+            "tp1": 165.79,
+            "tp2": 170.54,
+            "tp3": 176.59,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-24T04:00:00.000Z",
+            "confirmationCandleClose": 152.01,
+            "entryPrice": 165.97
+          },
+          "indicators": {
+            "score": 78
+          },
+          "pendingOrder": {
+            "symbol": "FTNT",
+            "quantity": 6,
+            "entryPrice": 149.09,
+            "orderType": "LIMIT",
+            "stop": 145.36,
+            "target1": 165.79,
+            "target2": 170.54,
+            "target3": 176.59,
+            "paperOnly": false,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-30T13:09:25.079Z",
+            "updatedAt": "2026-08-30T13:09:37.167Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 165.97
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-30T13:09:37.167Z",
+            "lastMarketPrice": 165.97
+          },
+          "closedAt": "2026-08-30T13:09:44.488Z"
         },
         {
           "id": "nasdaq-1788036327350-FTNT-66fee7ac",
@@ -4869,117 +4767,6 @@
             "updatedAt": "2026-08-29T17:50:15.321Z"
           },
           "closedAt": "2026-08-29T17:57:20.878Z"
-        },
-        {
-          "id": "nasdaq-1788025186621-AFRM-db3bf0ba",
-          "symbol": "AFRM",
-          "market": "NASDAQ",
-          "action": "BUY SETUP",
-          "status": "PENDING_BROKER_ENTRY",
-          "grade": "A+ / GÜÇLÜ ADAY",
-          "timestamp": "2026-08-29T17:39:46.621Z",
-          "entry": {
-            "low": 72.06,
-            "high": 72.06,
-            "reference": 72.06
-          },
-          "stop": 70.31,
-          "target1": 78.74,
-          "target2": 80.64,
-          "target3": 83.06,
-          "fibonacci": {
-            "valid": true,
-            "status": "TARGET_REACHED",
-            "pointA": {
-              "type": "LOW",
-              "index": 21,
-              "price": 69.66,
-              "date": "2026-07-29T04:00:00.000Z"
-            },
-            "pointB": {
-              "type": "HIGH",
-              "index": 26,
-              "price": 80.97,
-              "date": "2026-08-05T04:00:00.000Z"
-            },
-            "pointC": {
-              "type": "LOW",
-              "index": 35,
-              "price": 71.75,
-              "date": "2026-08-18T04:00:00.000Z"
-            },
-            "range": 11.31,
-            "retracementRatio": 0.8152,
-            "entryTriggerPrice": 72.06,
-            "entryZoneLow": 72.06,
-            "entryZoneHigh": 82.6,
-            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
-            "descendingResistance": {
-              "valid": true,
-              "available": true,
-              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
-              "reason": null,
-              "anchor1": {
-                "type": "HIGH",
-                "index": 26,
-                "price": 80.97,
-                "date": "2026-08-05T04:00:00.000Z"
-              },
-              "anchor2": {
-                "type": "HIGH",
-                "index": 33,
-                "price": 80.65,
-                "date": "2026-08-14T04:00:00.000Z"
-              },
-              "slopePerBar": -0.045714,
-              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
-              "projectedPoint": {
-                "index": 43,
-                "date": "2026-08-28T04:00:00.000Z",
-                "price": 80.1929
-              },
-              "breakoutPrice": 80.1929,
-              "breakoutPriceAtLast": 80.1929,
-              "entryUpperRaw": 82.59864285714288,
-              "entryUpperPrice": 82.6
-            },
-            "stopLoss": 70.31,
-            "tp1": 78.74,
-            "tp2": 80.64,
-            "tp3": 83.06,
-            "volumeConfirmation": "STRONG",
-            "invalidReason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
-            "confirmationPassed": true,
-            "confirmationCandleTime": "2026-08-19T04:00:00.000Z",
-            "confirmationCandleClose": 77.33,
-            "entryPrice": 77.73,
-            "riskRewardTp1": 0.14,
-            "riskRewardTp2": 0.39,
-            "riskRewardTp3": 0.72
-          },
-          "indicators": {
-            "score": 83
-          },
-          "pendingOrder": {
-            "symbol": "AFRM",
-            "quantity": 13,
-            "entryPrice": 72.06,
-            "orderType": "LIMIT",
-            "stop": 70.31,
-            "target1": 78.74,
-            "target2": 80.64,
-            "target3": 83.06,
-            "paperOnly": false,
-            "source": "NASDAQ AI",
-            "createdAt": "2026-08-29T17:39:46.621Z",
-            "updatedAt": "2026-08-29T18:00:33.971Z",
-            "status": "PENDING_BROKER_ENTRY"
-          },
-          "lifecycle": {
-            "stage": "PENDING_BROKER_ENTRY",
-            "brokerOrderId": "83284ae6-c763-4cc2-bbf5-7a7583806f3f",
-            "lastCheckedAt": "2026-08-29T18:00:33.971Z"
-          }
         },
         {
           "id": "nasdaq-1788023994646-NVDA-9a0da969",
@@ -7479,6 +7266,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-30T13:56:30.462Z",
+          "type": "NASDAQ_SCAN",
+          "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
+        },
+        {
           "timestamp": "2026-08-30T13:56:14.196Z",
           "type": "NASDAQ_PENDING",
           "message": "FTNT NASDAQ emri onay bekliyor."
@@ -7525,7 +7317,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-30T13:09:10.575Z",
+        "timestamp": "2026-08-30T13:56:30.462Z",
         "scanned": 100,
         "successful": 99,
         "results": [
@@ -7836,9 +7628,9 @@
               "provider": "GROQ",
               "score": null,
               "verdict": "INFO",
-              "newsComment": "Fortinet hisse fiyatı yükseliyor; Palo Alto Networks ile birlikte tüm güvenlik grubu artışı, Stanford Atletikleri ile çok yıllı sponsorluk, %12 artış, güvenlik ",
-              "expertComment": "",
-              "summary": "Fortinet hisse senedi, güvenlik platformu başarısı ve yeni sponsorluk anlaşmalarıyla yükselişte."
+              "newsComment": "Fortinet hisseleri güvenlik sektörü haberleriyle yükselişte; Palo Alto Networks ile birlikte artış, Stanford Üniversitesi ile sponsorluk, son kazanç raporundan ",
+              "expertComment": "Analistler, Fortinet'in güvenlik platformu ivmesi ve stratejik ortaklıkları sayesinde büyüme potansiyelinin sürdüğünü vurguluyor.",
+              "summary": "Fortinet, güvenlik çözümleri ve yeni sponsorluk anlaşmaları sayesinde hisse fiyatında önemli bir yükseliş yaşadı."
             }
           },
           {
@@ -8130,9 +7922,9 @@
               "provider": "GROQ",
               "score": null,
               "verdict": "INFO",
-              "newsComment": "Verilen haberlerde Broadcom'un AI gelir hedefi, piyasa sinyalleri, AMD ile kıyaslamalar, Disney hissesi ve genel büyüme önerileri yer alıyor; doğrudan Nvidia il",
-              "expertComment": "",
-              "summary": "NVDA için doğrudan haber bulunmadığı için özet yapılamadı."
+              "newsComment": "Verilen başlıklarda NVDA ile ilgili doğrudan bir haber bulunmamaktadır.",
+              "expertComment": "Bu başlıklar Nvidia'nın performansı hakkında bilgi vermediği için analist görüşü oluşturulamamaktadır.",
+              "summary": "NVDA için sağlanan haberlerde şirketle ilgili spesifik bir gelişme yer almamaktadır."
             }
           },
           {
@@ -8420,13 +8212,13 @@
             "volumeRatio": 1.4413702510211202,
             "turnover": 49742895.599999994,
             "aiReview": {
-              "available": true,
-              "provider": "GROQ",
-              "score": null,
+              "available": false,
+              "provider": "UNAVAILABLE",
               "verdict": "INFO",
-              "newsComment": "Synopsys FY26 kâr marjı hedefi, Ansys alımının kârlılığı etkisi, yazılım hisseleri alım zamanı, kazanç beklentisi ve FY26 yönlendirmesi sonrası %16.8 artış habe",
-              "expertComment": "",
-              "summary": "Synopsys, FY26 kâr hedefi ve Ansys alımıyla kârlılık odaklı bir döneme giriyor, hisse fiyatı yükseliyor."
+              "score": null,
+              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
+              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
             }
           },
           {
