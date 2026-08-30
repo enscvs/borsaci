@@ -8237,7 +8237,14 @@ async function handleNasdaqPaperApprove(req, res) {
     if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada emir onaylanamaz.");
     const decision = (paper.decisions || []).find(item => item.id === String(input.decisionId || "") && item.status === "PENDING_APPROVAL");
     if (!decision) throw new Error("Bu NASDAQ emri artık onay beklemiyor.");
-    const order = decision.pendingOrder;
+    // Onay aşamasında değiştirilebilir taslağı yeniden normalize et. Broker'a
+    // yalnız daha önce kaydedilmiş ve güncel kurallardan tekrar geçmiş emir
+    // gönderilir; ham/eski state alanlarına doğrudan güvenilmez.
+    const order = normalizeNasdaqPaperOrder(
+      {...decision.pendingOrder, symbol:decision.symbol},
+      {existing:decision.pendingOrder}
+    );
+    decision.pendingOrder = {...decision.pendingOrder, ...order};
     const quote = await fetchNasdaqDailyClose(order.symbol);
     const marketPrice = Number(quote.price);
     const timestamp = new Date().toISOString();
