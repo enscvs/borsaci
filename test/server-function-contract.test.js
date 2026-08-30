@@ -63,3 +63,16 @@ test("NASDAQ analysis snapshot stays separate from mutable order state", () => {
   assert.match(appSource, /void loadNasdaqPaperState\(\{loadAnalysis:true\}\)/);
 });
 
+test("broker partial fills remain tracked and NASDAQ controls stay recoverable", () => {
+  assert.match(source, /CRYPTO_LIVE_ENTRY_PARTIAL/);
+  assert.match(source, /NASDAQ_BROKER_ENTRY_PARTIAL/);
+  assert.match(source, /accountedCost:cumulativeCost/);
+  assert.match(source, /executedQuantity:executed/);
+  assert.match(source, /brokerPendingEntries:/);
+  assert.match(source, /handleNasdaqBrokerEntryCancel/);
+  assert.match(source, /handleNasdaqProtectionEnable/);
+  assert.match(source, /fetchAlpacaTradingAccount/);
+  assert.match(appSource, /data-nasdaq-broker-cancel/);
+  assert.match(appSource, /data-nasdaq-protection-enable/);
+});
+
