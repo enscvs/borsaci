@@ -3058,6 +3058,31 @@
       "pnlPercent": 0,
       "positions": [
         {
+          "id": "nasdaq-broker-entry-1788098227698-SNPS",
+          "decisionId": "nasdaq-1788098200798-SNPS-4bbf91b4",
+          "symbol": "SNPS",
+          "market": "NASDAQ",
+          "status": "PENDING_BROKER_ENTRY",
+          "quantity": 2,
+          "remainingQuantity": 2,
+          "plannedEntry": 389.96,
+          "current": 442.71,
+          "stop": 380.59,
+          "target1": 424.92,
+          "target2": 434.86,
+          "target3": 447.53,
+          "openedAt": "2026-08-30T13:57:07.411Z",
+          "broker": {
+            "submitted": true,
+            "mode": "PAPER",
+            "brokerOrderId": "200719ef-2c18-4f50-b2ec-535ad8a7ba16",
+            "clientOrderId": "bci-entry-825792838bbf19f258d1c939",
+            "status": "accepted",
+            "filledQuantity": 0,
+            "filledAveragePrice": 0
+          }
+        },
+        {
           "id": "nasdaq-broker-entry-1788026434257-AFRM",
           "decisionId": "nasdaq-1788025186621-AFRM-db3bf0ba",
           "symbol": "AFRM",
@@ -3110,7 +3135,7 @@
           "symbol": "SNPS",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_BROKER_ENTRY",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-30T13:56:40.798Z",
           "entry": {
@@ -3188,6 +3213,11 @@
             "createdAt": "2026-08-30T13:56:40.798Z",
             "updatedAt": "2026-08-30T13:56:54.784Z",
             "editedAt": "2026-08-30T13:56:54.784Z"
+          },
+          "lifecycle": {
+            "stage": "PENDING_BROKER_ENTRY",
+            "brokerOrderId": "200719ef-2c18-4f50-b2ec-535ad8a7ba16",
+            "lastCheckedAt": "2026-08-30T13:57:07.411Z"
           }
         },
         {
@@ -7350,6 +7380,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T13:57:07.411Z",
+          "type": "NASDAQ_BROKER_ENTRY_PENDING",
+          "message": "SNPS Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
+        },
         {
           "timestamp": "2026-08-30T13:56:40.798Z",
           "type": "NASDAQ_PENDING",
