@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "pnpm dlx esbuild@0.25.9 public/app.js --target=safari10 --outfile=public/app.compat.js && cat public/legacy-polyfills.js public/app.compat.js > public/app.runtime.js && mv public/app.runtime.js public/app.js && rm -f public/app.compat.js && node server.js",
+    "start": "node server.js",
     "test": "node --test test/*.test.js",
     "test:precision": "node --test test/precision.test.js"
   },
