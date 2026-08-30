@@ -1,0 +1,55 @@
+name: Build iPhone 5 Legacy IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ios-personal-app]
+    paths:
+      - "ios-legacy/**"
+      - "ios-app/icon.png"
+      - ".github/workflows/build-ios-legacy.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Theos and iOS cross toolchain
+        env:
+          THEOS: ${{ runner.temp }}/theos
+        run: |
+          export CI=1
+          bash -c "$(curl -fsSL https://raw.githubusercontent.com/theos/theos/master/bin/install-theos)"
+          rm -rf "$THEOS/sdks"
+          git clone --depth=1 https://github.com/theos/sdks.git "$THEOS/sdks"
+          test -d "$THEOS/sdks/iPhoneOS10.3.sdk"
+
+      - name: Generate ay-yıldız icons
+        run: |
+          sudo apt-get install -y python3-pil
+          python3 ios-legacy/build-assets.py
+
+      - name: Build armv7 IPA for iOS 10
+        env:
+          THEOS: ${{ runner.temp }}/theos
+        run: bash ios-legacy/build-ipa.sh
+
+      - name: Verify package
+        run: |
+          unzip -l ios-legacy/Borsaci-Legacy-iPhone5.ipa
+          unzip -p ios-legacy/Borsaci-Legacy-iPhone5.ipa Payload/BorsaciLegacy.app/Info.plist > /tmp/BorsaciLegacy-Info.plist
+          file ios-legacy/Payload/BorsaciLegacy.app/BorsaciLegacy
+          grep -a "com.enscvs.borsaci.legacy" /tmp/BorsaciLegacy-Info.plist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Borsaci-Legacy-iPhone5
+          path: ios-legacy/Borsaci-Legacy-iPhone5.ipa
+          if-no-files-found: error
+          retention-days: 30
+
