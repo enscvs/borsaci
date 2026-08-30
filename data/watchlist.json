@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 142556.18,
-      "equity": 142556.18,
+      "cash": 102036.1,
+      "equity": 142515.7,
       "pnl": 42934.63357443809,
       "pnlPercent": 42.93463357443809,
       "positions": [
+        {
+          "id": "paper-2026-08-30T05:50:16.449Z-SDTTR-9a700894",
+          "decisionId": "1788068980674-SDTTR",
+          "decisionIds": [
+            "1788068980674-SDTTR"
+          ],
+          "symbol": "SDTTR",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 1659,
+          "originalQuantity": 1659,
+          "entry": 24.4,
+          "entryCommission": 40.48,
+          "current": 24.4,
+          "stop": 18.03,
+          "target1": 24.88,
+          "target2": 26.64,
+          "target3": 28.88,
+          "status": "OPEN",
+          "openedAt": "2026-08-30T05:50:16.449Z",
+          "tp1Hit": false,
+          "realizedPnl": -40.48,
+          "pnl": -40.48
+        },
         {
           "id": "paper-2026-08-29T20:44:09.911Z-SDTTR-64d35889",
           "decisionId": "1788036226189-SDTTR",
@@ -18739,7 +18764,7 @@
         "rank": 1,
         "symbol": "SDTTR",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -19037,10 +19062,11 @@
           "summary": "Şu anda SDTTR için güvenilir haber verisi yoktur."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-30T05:49:40.674Z",
           "expiresAt": "2026-08-31T05:49:40.674Z",
-          "overrideAt": "2026-08-30T05:50:06.851Z"
+          "overrideAt": "2026-08-30T05:50:06.851Z",
+          "openedAt": "2026-08-30T05:50:16.449Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -19061,8 +19087,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-30T05:50:06.851Z",
-          "updatedAt": "2026-08-30T05:50:13.448Z",
-          "editedAt": "2026-08-30T05:50:13.448Z"
+          "updatedAt": "2026-08-30T05:50:16.449Z",
+          "editedAt": "2026-08-30T05:50:13.448Z",
+          "commission": 40.48,
+          "totalCost": 40520.08,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-30T05:50:16.449Z"
         }
       },
       {
@@ -22775,6 +22805,16 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T05:50:16.449Z",
+        "type": "PAPER_APPROVED",
+        "message": "SDTTR paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-30T05:50:16.449Z",
+        "type": "PAPER_OPEN",
+        "message": "SDTTR scanner paper pozisyonu açıldı: 1659 lot · ₺40479.60 · LIMIT."
+      },
       {
         "timestamp": "2026-08-30T05:50:13.448Z",
         "type": "PAPER_ORDER_EDITED",
