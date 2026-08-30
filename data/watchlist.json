@@ -20775,7 +20775,7 @@
         "rank": 3,
         "symbol": "VAKBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 30.14,
@@ -21090,10 +21090,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-08-30T08:04:05.841Z",
           "expiresAt": "2026-08-31T08:04:05.842Z",
-          "overrideAt": "2026-08-30T09:51:04.786Z"
+          "overrideAt": "2026-08-30T09:51:04.786Z",
+          "rejectedAt": "2026-08-30T09:52:03.886Z",
+          "rejectedBy": "SITE"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
@@ -21116,7 +21118,8 @@
           "createdAt": "2026-08-30T09:51:04.786Z",
           "updatedAt": "2026-08-30T09:51:04.786Z",
           "editedAt": null
-        }
+        },
+        "outcome": "USER_REJECTED"
       }
     ],
     "history": [
@@ -24860,6 +24863,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T09:52:03.886Z",
+        "type": "PAPER_REJECTED",
+        "message": "VAKBN paper işlem planı SITE üzerinden reddedildi."
+      },
       {
         "timestamp": "2026-08-30T09:51:12.683Z",
         "type": "SCAN",
