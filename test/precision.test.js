@@ -102,3 +102,25 @@ test("ATR uses Wilder smoothing", () => {
   assert.ok(Math.abs(p.atrSeries(data).at(-1) - expected) < 1e-12);
 });
 
+test("backtest reports trading costs separately from gross performance", () => {
+  const data = bars(30);
+  data[20] = {...data[20], open:110, high:140, low:109, close:130};
+  const result = p.runBacktest([
+    {symbol:"TEST", history:data, signalIndex:19, plan:{stop:100}},
+  ], {strategy:{maxHoldingDays:1,slippageBps:10,commissionBps:10}});
+  assert.equal(result.totalSignals,1);
+  assert.ok(result.beforeCosts.averageR > result.afterCosts.averageR);
+  assert.ok(result.trades[0].costsR > 0);
+});
+
+test("overlapping signals for the same symbol are not double counted", () => {
+  const data = bars(40);
+  const result = p.runBacktest([
+    {symbol:"TEST",history:data,signalIndex:10,plan:{stop:90}},
+    {symbol:"TEST",history:data,signalIndex:11,plan:{stop:90}},
+  ], {strategy:{maxHoldingDays:5,slippageBps:0,commissionBps:0}});
+  assert.equal(result.coverage.evaluatedSignals,2);
+  assert.equal(result.coverage.executedSignals,1);
+});
+
+
