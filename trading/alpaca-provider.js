@@ -58,6 +58,11 @@ function buildAlpacaOrderPayload(order = {}) {
   if (!Number.isFinite(quantity) || quantity <= 0) throw new Error("Emir miktarı pozitif olmalı.");
   if (!['market', 'limit'].includes(type)) throw new Error("Emir türü MARKET veya LIMIT olmalı.");
   const payload = {symbol, qty: String(quantity), side: "buy", type, time_in_force: "day"};
+  if (order.clientOrderId) {
+    const clientOrderId = String(order.clientOrderId).trim();
+    if (!/^[A-Za-z0-9_-]{1,48}$/.test(clientOrderId)) throw new Error("Alpaca istemci emir kimliği geçersiz.");
+    payload.client_order_id = clientOrderId;
+  }
   if (type === "limit") {
     const price = Number(order.entryPrice);
     if (!Number.isFinite(price) || price <= 0) throw new Error("LIMIT emir için fiyat gerekli.");
@@ -72,3 +77,4 @@ module.exports = {
   alpacaTradingBase,
   buildAlpacaOrderPayload,
 };
+
