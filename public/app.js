@@ -297,9 +297,15 @@
   }
 
   function installV3Adapter() {
-    var LW = window.LightweightCharts;
-    if (!LW || typeof LW.createChart !== "function") return false;
-    if (LW.CandlestickSeries) return true;
+    var original = window.LightweightCharts;
+    if (!original || typeof original.createChart !== "function") return false;
+    if (original.CandlestickSeries && typeof original.createSeriesMarkers === "function") return true;
+
+    var facade = {};
+    var key;
+    for (key in original) {
+      try { facade[key] = original[key]; } catch (error) {}
+    }
 
     var types = {
       CandlestickSeries: "candlestick",
@@ -309,12 +315,12 @@
       BarSeries: "bar",
       BaselineSeries: "area"
     };
-    Object.keys(types).forEach(function (key) {
-      LW[key] = { __borsaciLegacySeriesType: types[key] };
+    Object.keys(types).forEach(function (seriesKey) {
+      facade[seriesKey] = { __borsaciLegacySeriesType: types[seriesKey] };
     });
 
-    var originalCreateChart = LW.createChart;
-    LW.createChart = function (container, options) {
+    var originalCreateChart = original.createChart;
+    facade.createChart = function (container, options) {
       var chart = originalCreateChart(container, options);
       if (!chart.addSeries) {
         chart.addSeries = function (seriesType, seriesOptions) {
@@ -330,17 +336,22 @@
       return chart;
     };
 
-    if (!LW.createSeriesMarkers) {
-      LW.createSeriesMarkers = function (series, markers) {
-        var current = markers || [];
-        if (series && typeof series.setMarkers === "function") series.setMarkers(current);
-        return {
-          setMarkers: function (nextMarkers) {
-            current = nextMarkers || [];
-            if (series && typeof series.setMarkers === "function") series.setMarkers(current);
-          }
-        };
+    facade.createSeriesMarkers = function (series, markers) {
+      var current = markers || [];
+      if (series && typeof series.setMarkers === "function") series.setMarkers(current);
+      return {
+        setMarkers: function (nextMarkers) {
+          current = nextMarkers || [];
+          if (series && typeof series.setMarkers === "function") series.setMarkers(current);
+        }
       };
+    };
+
+    try {
+      window.LightweightCharts = facade;
+    } catch (error) {
+      debug("LEGACY CHART ADAPTER: GLOBAL REPLACE FAILED");
+      return false;
     }
 
     debug("LEGACY CHART ADAPTER: V3 READY");
