@@ -5482,6 +5482,90 @@
       ],
       "decisions": [
         {
+          "id": "nasdaq-1788077097345-SNPS-a8101049",
+          "symbol": "SNPS",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "PENDING_APPROVAL",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-30T08:04:57.345Z",
+          "entry": {
+            "low": 389.96,
+            "high": 389.96,
+            "reference": 389.96
+          },
+          "stop": 380.59,
+          "target1": 424.92,
+          "target2": 434.86,
+          "target3": 447.53,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 12,
+              "price": 366.255,
+              "date": "2026-07-17T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 33,
+              "price": 425.42,
+              "date": "2026-08-17T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 38,
+              "price": 388.36,
+              "date": "2026-08-24T04:00:00.000Z"
+            },
+            "range": 59.17,
+            "retracementRatio": 0.6264,
+            "entryTriggerPrice": 389.96,
+            "entryZoneLow": 389.96,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 380.59,
+            "tp1": 424.92,
+            "tp2": 434.86,
+            "tp3": 447.53,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+          },
+          "indicators": {
+            "score": 73
+          },
+          "pendingOrder": {
+            "symbol": "SNPS",
+            "quantity": 2,
+            "entryPrice": 389.96,
+            "orderType": "LIMIT",
+            "stop": 380.59,
+            "target1": 424.92,
+            "target2": 434.86,
+            "target3": 447.53,
+            "paperOnly": false,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-30T08:04:57.345Z",
+            "updatedAt": "2026-08-30T08:04:57.345Z"
+          }
+        },
+        {
           "id": "1788077083094-FTNT",
           "rank": 1,
           "symbol": "FTNT",
@@ -18333,6 +18417,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T08:04:57.345Z",
+          "type": "NASDAQ_PENDING",
+          "message": "SNPS NASDAQ emri onay bekliyor."
+        },
         {
           "timestamp": "2026-08-30T08:04:43.094Z",
           "type": "NASDAQ_SCAN",
