@@ -52,19 +52,113 @@ jobs:
             --out-file /tmp/app-legacy-core.js
           rm -f babel.legacy.config.json
 
-          # Old Safari exposes element IDs as window globals. The app has top-level
-          # bindings such as analyzeBtn, chartSymbol and watchlist, which can collide
-          # with those DOM globals before the script even runs. Keep the whole app in
-          # its own function scope so those names never become global lexical bindings.
+          cat > /tmp/legacy-chart-bootstrap.js <<'JS'
+          (function () {
+            function debug(message) {
+              try {
+                if (typeof window.__borsaciLegacyDebug === "function") {
+                  window.__borsaciLegacyDebug(message);
+                }
+              } catch (error) {}
+            }
+
+            function installV3Adapter() {
+              var LW = window.LightweightCharts;
+              if (!LW || typeof LW.createChart !== "function") return false;
+              if (LW.CandlestickSeries) return true;
+
+              var types = {
+                CandlestickSeries: "candlestick",
+                HistogramSeries: "histogram",
+                LineSeries: "line",
+                AreaSeries: "area",
+                BarSeries: "bar",
+                BaselineSeries: "area"
+              };
+              Object.keys(types).forEach(function (key) {
+                LW[key] = { __borsaciLegacySeriesType: types[key] };
+              });
+
+              var originalCreateChart = LW.createChart;
+              LW.createChart = function (container, options) {
+                var chart = originalCreateChart(container, options);
+                if (!chart.addSeries) {
+                  chart.addSeries = function (seriesType, seriesOptions) {
+                    var type = seriesType && seriesType.__borsaciLegacySeriesType;
+                    if (type === "candlestick" && chart.addCandlestickSeries) return chart.addCandlestickSeries(seriesOptions || {});
+                    if (type === "histogram" && chart.addHistogramSeries) return chart.addHistogramSeries(seriesOptions || {});
+                    if (type === "line" && chart.addLineSeries) return chart.addLineSeries(seriesOptions || {});
+                    if (type === "area" && chart.addAreaSeries) return chart.addAreaSeries(seriesOptions || {});
+                    if (type === "bar" && chart.addBarSeries) return chart.addBarSeries(seriesOptions || {});
+                    throw new Error("Unsupported legacy chart series: " + String(type || "unknown"));
+                  };
+                }
+                return chart;
+              };
+
+              if (!LW.createSeriesMarkers) {
+                LW.createSeriesMarkers = function (series, markers) {
+                  var current = markers || [];
+                  if (series && typeof series.setMarkers === "function") series.setMarkers(current);
+                  return {
+                    setMarkers: function (nextMarkers) {
+                      current = nextMarkers || [];
+                      if (series && typeof series.setMarkers === "function") series.setMarkers(current);
+                    }
+                  };
+                };
+              }
+
+              debug("LEGACY CHART ADAPTER: V3 READY");
+              return true;
+            }
+
+            window.__borsaciBootLegacyChart = function (startApp) {
+              if (window.LightweightCharts && typeof window.LightweightCharts.createChart === "function") {
+                installV3Adapter();
+                debug("CHART LIBRARY: EXISTING READY");
+                startApp();
+                return;
+              }
+
+              debug("CHART LIBRARY: LOADING V3");
+              var script = document.createElement("script");
+              script.src = "https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js";
+              script.async = false;
+              script.onload = function () {
+                if (installV3Adapter()) {
+                  debug("CHART LIBRARY: V3 LOADED");
+                } else {
+                  debug("CHART LIBRARY: V3 ADAPTER FAILED");
+                }
+                startApp();
+              };
+              script.onerror = function () {
+                debug("CHART LIBRARY: V3 LOAD ERROR");
+                startApp();
+              };
+              (document.head || document.documentElement).appendChild(script);
+            };
+          })();
+          JS
+
+          # Archive bundle: polyfills + scoped app.
           {
-            printf '(function () {\n'
+            cat public/legacy-polyfills.js
+            printf '\n(function () {\n'
             cat /tmp/app-legacy-core.js
             printf '\n})();\n'
-          } > /tmp/app-legacy-scoped.js
+          } > public/app-legacy.js
 
-          cat public/legacy-polyfills.js /tmp/app-legacy-scoped.js > public/app-legacy.js
-          cat public/legacy-runtime-prelude.js public/app-legacy.js > /tmp/app-direct.js
-          mv /tmp/app-direct.js public/app.js
+          # Served bundle: diagnostics/polyfills, chart compatibility bootstrap, then app start.
+          {
+            cat public/legacy-runtime-prelude.js
+            cat public/legacy-polyfills.js
+            cat /tmp/legacy-chart-bootstrap.js
+            printf '\nwindow.__borsaciStartLegacyApp = function () {\n(function () {\n'
+            cat /tmp/app-legacy-core.js
+            printf '\n})();\n};\nwindow.__borsaciBootLegacyChart(window.__borsaciStartLegacyApp);\n'
+          } > public/app.js
 
           if grep -Eq '[0-9]_[0-9]' public/app.js; then
             echo "Legacy build still contains numeric separators" >&2
