@@ -60,7 +60,15 @@ function rsiSeries(values, period = 14) {
 }
 function atrSeries(history, period = 14) {
   const tr = history.map((bar, i) => i === 0 ? bar.high - bar.low : Math.max(bar.high - bar.low, Math.abs(bar.high - history[i - 1].close), Math.abs(bar.low - history[i - 1].close)));
-  return emaSeries(tr, period);
+  const result = new Array(tr.length).fill(null);
+  if (tr.length < period) return result;
+  let current = mean(tr.slice(0, period));
+  result[period - 1] = current;
+  for (let i = period; i < tr.length; i += 1) {
+    current = (current * (period - 1) + tr[i]) / period;
+    result[i] = current;
+  }
+  return result;
 }
 function adxSeries(history, period = 14) {
   const result = new Array(history.length).fill(null);
@@ -84,17 +92,25 @@ function adxSeries(history, period = 14) {
 }
 function macdHistogram(values) {
   const e12 = emaSeries(values, 12), e26 = emaSeries(values, 26);
-  const macd = values.map((_, i) => finite(e12[i]) && finite(e26[i]) ? e12[i] - e26[i] : 0);
-  const signal = emaSeries(macd, 9);
+  const macd = values.map((_, i) => finite(e12[i]) && finite(e26[i]) ? e12[i] - e26[i] : null);
+  const firstValid = macd.findIndex(finite);
+  const signal = new Array(values.length).fill(null);
+  if (firstValid >= 0) {
+    const validSignal = emaSeries(macd.slice(firstValid), 9);
+    validSignal.forEach((value, index) => {
+      signal[firstValid + index] = value;
+    });
+  }
   return values.map((_, i) => finite(e12[i]) && finite(e26[i]) && finite(signal[i]) ? macd[i] - signal[i] : null);
 }
 function isDailyCandleComplete(timestamp, now = Date.now()) {
   const d = new Date(timestamp), current = new Date(now);
-  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false });
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
   const parts = Object.fromEntries(fmt.formatToParts(d).filter(x => x.type !== "literal").map(x => [x.type, x.value]));
   const nowParts = Object.fromEntries(fmt.formatToParts(current).filter(x => x.type !== "literal").map(x => [x.type, x.value]));
   const day = parts.year + parts.month + parts.day, today = nowParts.year + nowParts.month + nowParts.day;
-  return day < today || (day === today && Number(nowParts.hour) >= 18);
+  const minutes = Number(nowParts.hour) * 60 + Number(nowParts.minute);
+  return day < today || (day === today && minutes >= 18 * 60 + 15);
 }
 function validateHistory(history, { now = Date.now(), config = CONFIG, requireComplete = true } = {}) {
   const errors = [];
@@ -268,3 +284,4 @@ function brierScore(predictions) {
 }
 
 module.exports = { CONFIG, barTimestamp, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
+
