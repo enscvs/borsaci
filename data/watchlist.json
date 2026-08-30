@@ -3258,92 +3258,7 @@
       ],
       "decisions": [
         {
-          "id": "nasdaq-1788099792979-NVDA-ba9804eb",
-          "symbol": "NVDA",
-          "market": "NASDAQ",
-          "action": "BUY SETUP",
-          "status": "REJECTED",
-          "grade": "A / AL ADAYI",
-          "timestamp": "2026-08-30T14:23:12.979Z",
-          "entry": {
-            "low": 208.42,
-            "high": 208.42,
-            "reference": 208.42
-          },
-          "stop": 203.25,
-          "target1": 230.8,
-          "target2": 237.16,
-          "target3": 245.27,
-          "fibonacci": {
-            "valid": true,
-            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
-            "pointA": {
-              "type": "LOW",
-              "index": 20,
-              "price": 190.035,
-              "date": "2026-07-29T04:00:00.000Z"
-            },
-            "pointB": {
-              "type": "HIGH",
-              "index": 33,
-              "price": 227.9,
-              "date": "2026-08-17T04:00:00.000Z"
-            },
-            "pointC": {
-              "type": "LOW",
-              "index": 38,
-              "price": 207.4,
-              "date": "2026-08-24T04:00:00.000Z"
-            },
-            "range": 37.87,
-            "retracementRatio": 0.5414,
-            "entryTriggerPrice": 208.42,
-            "entryZoneLow": 208.42,
-            "entryZoneHigh": null,
-            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-            "descendingResistance": {
-              "valid": false,
-              "available": false,
-              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
-              "anchor1": null,
-              "anchor2": null,
-              "slopePerBar": null,
-              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
-              "projectedPoint": null,
-              "breakoutPrice": null,
-              "breakoutPriceAtLast": null,
-              "entryUpperRaw": null,
-              "entryUpperPrice": null
-            },
-            "stopLoss": 203.25,
-            "tp1": 230.8,
-            "tp2": 237.16,
-            "tp3": 245.27,
-            "volumeConfirmation": "STRONG",
-            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
-          },
-          "indicators": {
-            "score": 73
-          },
-          "pendingOrder": {
-            "symbol": "NVDA",
-            "quantity": 4,
-            "entryPrice": 208.42,
-            "orderType": "LIMIT",
-            "stop": 203.25,
-            "target1": 230.8,
-            "target2": 237.16,
-            "target3": 245.27,
-            "paperOnly": false,
-            "source": "NASDAQ AI",
-            "createdAt": "2026-08-30T14:23:12.979Z",
-            "updatedAt": "2026-08-30T14:23:12.979Z"
-          },
-          "closedAt": "2026-08-30T14:23:28.542Z"
-        },
-        {
-          "id": "1788099779783-FTNT",
+          "id": "1788104407744-FTNT",
           "rank": 1,
           "symbol": "FTNT",
           "action": "WATCH",
@@ -3658,22 +3573,334 @@
             "provider": "GROQ",
             "score": null,
             "verdict": "INFO",
-            "newsComment": "Hisse, güvenlik sektöründeki olumlu gelişmeler ve teknik göstergelerle destekleniyor.",
-            "expertComment": "",
-            "summary": "Fortinet hissesi, son kazanç raporundan bu yana %12 artış gösterdi; güvenlik platformu ivmesi, 20 günlük hareketli ortalamanın üzerine çıkması ve Stanford Atletik ile çok yıllı spo"
+            "newsComment": "Fortinet hisseleri son haberlerde %12 artış, 20 günlük ortalamanın üzerine çıkması ve yeni sponsorluk anlaşmasıyla yükselişte.",
+            "expertComment": "Analistler, güvenlik platformu ivmesinin ve Fortinet‑Stanford ortaklığının hisse performansını desteklediğini belirtiyor.",
+            "summary": "Fortinet, güvenlik çözümleri ve sponsorluk sayesinde pozitif momentum kazanıyor."
           },
           "lifecycle": {
             "stage": "PENDING",
-            "createdAt": "2026-08-30T14:22:59.783Z",
-            "expiresAt": "2026-08-31T14:22:59.783Z"
+            "createdAt": "2026-08-30T15:40:07.744Z",
+            "expiresAt": "2026-08-31T15:40:07.744Z"
           },
           "currentScan": true,
           "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
           "invalidation": "C seviyesinin %2 altındaki stop (145.36) planı geçersiz kılar.",
-          "timestamp": "2026-08-30T14:22:59.783Z"
+          "timestamp": "2026-08-30T15:40:07.744Z"
         },
         {
-          "id": "1788099779783-SNPS",
+          "id": "1788104407744-NVDA",
+          "rank": 2,
+          "symbol": "NVDA",
+          "action": "WATCH",
+          "status": "PENDING",
+          "confidence": null,
+          "entry": {
+            "low": 208.42,
+            "high": null,
+            "reference": 208.42
+          },
+          "stop": 203.25,
+          "target1": 230.8,
+          "target2": 237.16,
+          "target3": 245.27,
+          "riskReward": {
+            "tp1": null,
+            "tp2": null,
+            "tp3": null
+          },
+          "riskPlan": {
+            "capital": 5000,
+            "targetPositionValue": 1000,
+            "reservePercent": 0,
+            "quantity": 4,
+            "positionValue": 833.68,
+            "actualRisk": 20.68,
+            "maxPositionPercent": 20,
+            "maxPositions": 5
+          },
+          "indicators": {
+            "score": 73,
+            "rsi": 52.75,
+            "atr": 7.6,
+            "macd": 2.64
+          },
+          "scoreBreakdown": {
+            "trend": {
+              "score": 30,
+              "max": 30,
+              "items": [
+                {
+                  "id": "price_above_ema20",
+                  "label": "Fiyat EMA20 üzerinde",
+                  "points": 8,
+                  "maxPoints": 8,
+                  "passed": true,
+                  "detail": ""
+                },
+                {
+                  "id": "ema20_above_ema50",
+                  "label": "EMA20 EMA50 üzerinde",
+                  "points": 8,
+                  "maxPoints": 8,
+                  "passed": true,
+                  "detail": ""
+                },
+                {
+                  "id": "price_above_ema200",
+                  "label": "Fiyat EMA200 üzerinde",
+                  "points": 7,
+                  "maxPoints": 7,
+                  "passed": true,
+                  "detail": ""
+                },
+                {
+                  "id": "ema20_rising_5d",
+                  "label": "EMA20 son 5 günde yükseliyor",
+                  "points": 7,
+                  "maxPoints": 7,
+                  "passed": true,
+                  "detail": ""
+                }
+              ]
+            },
+            "momentum": {
+              "score": 10,
+              "max": 25,
+              "items": [
+                {
+                  "id": "rsi14",
+                  "label": "RSI14",
+                  "points": 10,
+                  "maxPoints": 10,
+                  "passed": true,
+                  "partial": false,
+                  "detail": "RSI 52–65 aralığında"
+                },
+                {
+                  "id": "macd_above_signal",
+                  "label": "MACD sinyal çizgisinin üzerinde",
+                  "points": 0,
+                  "maxPoints": 8,
+                  "passed": false,
+                  "detail": ""
+                },
+                {
+                  "id": "macd_histogram_strengthening",
+                  "label": "MACD histogramı pozitif ve güçleniyor",
+                  "points": 0,
+                  "maxPoints": 7,
+                  "passed": false,
+                  "detail": ""
+                }
+              ]
+            },
+            "volumeLiquidity": {
+              "score": 20,
+              "max": 20,
+              "items": [
+                {
+                  "id": "volume_ratio",
+                  "label": "Hacim oranı",
+                  "points": 10,
+                  "maxPoints": 10,
+                  "passed": true,
+                  "partial": false,
+                  "detail": "Hacim 20 günlük ortalamanın en az 1,20 katı"
+                },
+                {
+                  "id": "turnover",
+                  "label": "Likidite / işlem tutarı",
+                  "points": 10,
+                  "maxPoints": 10,
+                  "passed": true,
+                  "partial": false,
+                  "detail": "Günlük işlem tutarı 500 milyon TL ve üzeri"
+                }
+              ]
+            },
+            "entryQuality": {
+              "score": 13,
+              "max": 25,
+              "items": [
+                {
+                  "id": "near_ema20",
+                  "label": "Fiyat EMA20'ye en fazla 1 ATR uzaklıkta",
+                  "points": 5,
+                  "maxPoints": 5,
+                  "passed": true,
+                  "detail": ""
+                },
+                {
+                  "id": "valid_fibonacci",
+                  "label": "Geçerli Fibonacci A–B–C yapısı",
+                  "points": 5,
+                  "maxPoints": 5,
+                  "passed": true,
+                  "detail": ""
+                },
+                {
+                  "id": "fibonacci_confirmation",
+                  "label": "Fibonacci dönüş teyidi",
+                  "points": 0,
+                  "maxPoints": 5,
+                  "passed": false,
+                  "detail": ""
+                },
+                {
+                  "id": "volume_confirmation",
+                  "label": "Dönüş hacmi güçlü",
+                  "points": 3,
+                  "maxPoints": 3,
+                  "passed": true,
+                  "detail": ""
+                },
+                {
+                  "id": "risk_reward",
+                  "label": "TP2 veya TP3 için en az 1:2 risk/getiri",
+                  "points": 0,
+                  "maxPoints": 7,
+                  "passed": false,
+                  "detail": ""
+                }
+              ]
+            },
+            "penalties": {
+              "score": 0,
+              "items": [
+                {
+                  "id": "rsi_overbought",
+                  "label": "RSI aşırı yüksek",
+                  "points": 0,
+                  "maxPoints": -10,
+                  "applied": false,
+                  "detail": ""
+                },
+                {
+                  "id": "extended_above_ema20",
+                  "label": "Fiyat EMA20'den aşırı uzak",
+                  "points": 0,
+                  "maxPoints": -10,
+                  "applied": false,
+                  "detail": ""
+                },
+                {
+                  "id": "five_day_runup",
+                  "label": "Son 5 günde aşırı yükseliş",
+                  "points": 0,
+                  "maxPoints": -5,
+                  "applied": false,
+                  "detail": ""
+                },
+                {
+                  "id": "low_volume",
+                  "label": "Hacim çok düşük",
+                  "points": 0,
+                  "maxPoints": -10,
+                  "applied": false,
+                  "detail": ""
+                },
+                {
+                  "id": "weakening_macd_histogram",
+                  "label": "MACD histogramı zayıflıyor",
+                  "points": 0,
+                  "maxPoints": -5,
+                  "applied": false,
+                  "detail": ""
+                }
+              ]
+            },
+            "positiveTotal": 73,
+            "rawTotal": 73,
+            "total": 73,
+            "maximum": 100,
+            "capped": false,
+            "calculationStage": "INITIAL_TECHNICAL_SCREEN"
+          },
+          "filters": {
+            "trend": true,
+            "momentum": true,
+            "volume": true,
+            "rsi": true
+          },
+          "planMethod": "FIBONACCI_A_B_C_DAILY",
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 20,
+              "price": 190.035,
+              "date": "2026-07-29T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 33,
+              "price": 227.9,
+              "date": "2026-08-17T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 38,
+              "price": 207.4,
+              "date": "2026-08-24T04:00:00.000Z"
+            },
+            "range": 37.87,
+            "retracementRatio": 0.5414,
+            "entryTriggerPrice": 208.42,
+            "entryZoneLow": 208.42,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 203.25,
+            "tp1": 230.8,
+            "tp2": 237.16,
+            "tp3": 245.27,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+          },
+          "grade": "A / AL ADAYI",
+          "reasons": [
+            "Fiyat EMA20 üzerinde",
+            "EMA20 EMA50 üzerinde",
+            "Fiyat EMA200 üzerinde",
+            "EMA20 son 5 günde yükseliyor"
+          ],
+          "risks": [],
+          "aiReview": {
+            "available": true,
+            "provider": "GROQ",
+            "score": null,
+            "verdict": "INFO",
+            "newsComment": "Verilen başlıklarda NVDA ile ilgili doğrudan bilgi bulunmamaktadır.",
+            "expertComment": "Bu başlıklarda NVDA hakkında analist görüşü yer almıyor.",
+            "summary": "NVDA için ilgili haber bulunmadığı için özet yapılamıyor."
+          },
+          "lifecycle": {
+            "stage": "PENDING",
+            "createdAt": "2026-08-30T15:40:07.744Z",
+            "expiresAt": "2026-08-31T15:40:07.744Z"
+          },
+          "currentScan": true,
+          "reason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
+          "invalidation": "C seviyesinin %2 altındaki stop (203.25) planı geçersiz kılar.",
+          "timestamp": "2026-08-30T15:40:07.744Z"
+        },
+        {
+          "id": "1788104407744-SNPS",
           "rank": 3,
           "symbol": "SNPS",
           "action": "WATCH",
@@ -3966,23 +4193,108 @@
           ],
           "risks": [],
           "aiReview": {
-            "available": false,
-            "provider": "UNAVAILABLE",
-            "verdict": "INFO",
+            "available": true,
+            "provider": "GROQ",
             "score": null,
-            "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
-            "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
+            "verdict": "INFO",
+            "newsComment": "Synopsys, FY26 için %42 non‑GAAP marj hedefi, Ansys alımının karlılığı etkisi, kazançların beklentiyi aşması ve yönlendirmelerin yükseltilmesi gibi haberlerle ö",
+            "expertComment": "Uzmanlar, FY26 marj hedefi ve yönlendirme artışının şirketin değerlemesini yeniden gözden geçirmesine yol açabileceğini vurguluyor.",
+            "summary": "Synopsys, güçlü kâr beklentileri ve marj hedefiyle yazılım sektöründe olumlu bir görünüm sergiliyor."
           },
           "lifecycle": {
             "stage": "PENDING",
-            "createdAt": "2026-08-30T14:22:59.783Z",
-            "expiresAt": "2026-08-31T14:22:59.783Z"
+            "createdAt": "2026-08-30T15:40:07.744Z",
+            "expiresAt": "2026-08-31T15:40:07.744Z"
           },
           "currentScan": true,
           "reason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
           "invalidation": "C seviyesinin %2 altındaki stop (380.59) planı geçersiz kılar.",
-          "timestamp": "2026-08-30T14:22:59.783Z"
+          "timestamp": "2026-08-30T15:40:07.744Z"
+        },
+        {
+          "id": "nasdaq-1788099792979-NVDA-ba9804eb",
+          "symbol": "NVDA",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-30T14:23:12.979Z",
+          "entry": {
+            "low": 208.42,
+            "high": 208.42,
+            "reference": 208.42
+          },
+          "stop": 203.25,
+          "target1": 230.8,
+          "target2": 237.16,
+          "target3": 245.27,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 20,
+              "price": 190.035,
+              "date": "2026-07-29T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 33,
+              "price": 227.9,
+              "date": "2026-08-17T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 38,
+              "price": 207.4,
+              "date": "2026-08-24T04:00:00.000Z"
+            },
+            "range": 37.87,
+            "retracementRatio": 0.5414,
+            "entryTriggerPrice": 208.42,
+            "entryZoneLow": 208.42,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 203.25,
+            "tp1": 230.8,
+            "tp2": 237.16,
+            "tp3": 245.27,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+          },
+          "indicators": {
+            "score": 73
+          },
+          "pendingOrder": {
+            "symbol": "NVDA",
+            "quantity": 4,
+            "entryPrice": 208.42,
+            "orderType": "LIMIT",
+            "stop": 203.25,
+            "target1": 230.8,
+            "target2": 237.16,
+            "target3": 245.27,
+            "paperOnly": false,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-30T14:23:12.979Z",
+            "updatedAt": "2026-08-30T14:23:12.979Z"
+          },
+          "closedAt": "2026-08-30T14:23:28.542Z"
         },
         {
           "id": "nasdaq-1788098550306-SNPS-b61bbe78",
@@ -7351,6 +7663,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-30T15:40:07.743Z",
+          "type": "NASDAQ_SCAN",
+          "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
+        },
+        {
           "timestamp": "2026-08-30T14:23:28.542Z",
           "type": "NASDAQ_REJECT",
           "message": "NVDA NASDAQ emri reddedildi."
@@ -7477,7 +7794,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-30T14:22:59.782Z",
+        "timestamp": "2026-08-30T15:40:07.743Z",
         "scanned": 100,
         "successful": 99,
         "results": [
@@ -7788,9 +8105,9 @@
               "provider": "GROQ",
               "score": null,
               "verdict": "INFO",
-              "newsComment": "Hisse, güvenlik sektöründeki olumlu gelişmeler ve teknik göstergelerle destekleniyor.",
-              "expertComment": "",
-              "summary": "Fortinet hissesi, son kazanç raporundan bu yana %12 artış gösterdi; güvenlik platformu ivmesi, 20 günlük hareketli ortalamanın üzerine çıkması ve Stanford Atletik ile çok yıllı spo"
+              "newsComment": "Fortinet hisseleri son haberlerde %12 artış, 20 günlük ortalamanın üzerine çıkması ve yeni sponsorluk anlaşmasıyla yükselişte.",
+              "expertComment": "Analistler, güvenlik platformu ivmesinin ve Fortinet‑Stanford ortaklığının hisse performansını desteklediğini belirtiyor.",
+              "summary": "Fortinet, güvenlik çözümleri ve sponsorluk sayesinde pozitif momentum kazanıyor."
             }
           },
           {
@@ -8078,13 +8395,13 @@
             "volumeRatio": 1.3730303707167444,
             "turnover": 1165482979.53,
             "aiReview": {
-              "available": false,
-              "provider": "UNAVAILABLE",
-              "verdict": "INFO",
+              "available": true,
+              "provider": "GROQ",
               "score": null,
-              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
-              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
+              "verdict": "INFO",
+              "newsComment": "Verilen başlıklarda NVDA ile ilgili doğrudan bilgi bulunmamaktadır.",
+              "expertComment": "Bu başlıklarda NVDA hakkında analist görüşü yer almıyor.",
+              "summary": "NVDA için ilgili haber bulunmadığı için özet yapılamıyor."
             }
           },
           {
@@ -8372,13 +8689,13 @@
             "volumeRatio": 1.4413702510211202,
             "turnover": 49742895.599999994,
             "aiReview": {
-              "available": false,
-              "provider": "UNAVAILABLE",
-              "verdict": "INFO",
+              "available": true,
+              "provider": "GROQ",
               "score": null,
-              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
-              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
+              "verdict": "INFO",
+              "newsComment": "Synopsys, FY26 için %42 non‑GAAP marj hedefi, Ansys alımının karlılığı etkisi, kazançların beklentiyi aşması ve yönlendirmelerin yükseltilmesi gibi haberlerle ö",
+              "expertComment": "Uzmanlar, FY26 marj hedefi ve yönlendirme artışının şirketin değerlemesini yeniden gözden geçirmesine yol açabileceğini vurguluyor.",
+              "summary": "Synopsys, güçlü kâr beklentileri ve marj hedefiyle yazılım sektöründe olumlu bir görünüm sergiliyor."
             }
           },
           {
