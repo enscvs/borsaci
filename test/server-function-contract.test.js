@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
+const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
 
 test("BIST and quantity-based paper close implementations cannot shadow each other", () => {
   assert.equal((source.match(/function closeBistPaperPosition\s*\(/g) || []).length, 1);
@@ -49,5 +50,13 @@ test("NASDAQ scanner decisions are deduplicated and Alpaca entries receive emerg
   assert.match(source, /async function reconcileNasdaqEmergencyStop/);
   assert.match(source, /time_in_force:"gtc"/);
   assert.match(source, /await cancelNasdaqEmergencyStop\(position, timestamp\)/);
+});
+
+test("NASDAQ analysis snapshot stays separate from mutable order state", () => {
+  assert.match(source, /const order = normalizeNasdaqPaperOrder\(\s*\{\.\.\.decision\.pendingOrder, symbol:decision\.symbol\}/);
+  assert.match(appSource, /const snapshots = Array\.isArray\(records\) \? records\.filter\(Boolean\)\.slice\(0, 3\) : \[\]/);
+  assert.doesNotMatch(appSource, /\{\.\.\.\(bySymbol\.get\(decision\.symbol\) \|\| \{\}\), \.\.\.decision/);
+  assert.match(appSource, /async function loadNasdaqPaperState\(\{loadAnalysis = false\} = \{\}\)/);
+  assert.match(appSource, /void loadNasdaqPaperState\(\{loadAnalysis:true\}\)/);
 });
 
