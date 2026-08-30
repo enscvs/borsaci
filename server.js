@@ -7851,11 +7851,15 @@ async function evaluateNasdaqCandidatesWithAi(candidates) {
 
 function nasdaqPaperStateForClient(state) {
   const paper = state.nasdaqPaper || createDefaultTradingState().nasdaqPaper;
-  return {...paper, broker:{configured:Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), mode:ALPACA_TRADING_MODE.toUpperCase(), orderSubmissionEnabled:ALPACA_TRADING_ENABLED, dataFeed:ALPACA_DATA_FEED.toUpperCase()}, positions:(paper.positions || []).filter(position => position.status === "OPEN")};
+  return {...paper, broker:{configured:Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), mode:ALPACA_TRADING_MODE.toUpperCase(), orderSubmissionEnabled:ALPACA_TRADING_ENABLED, dataFeed:ALPACA_DATA_FEED.toUpperCase()}, positions:(paper.positions || []).filter(position => position.status === "OPEN"), brokerPendingEntries:(paper.positions || []).filter(position => position.status === "PENDING_BROKER_ENTRY")};
 }
 
 function recalculateNasdaqPaper(paper) {
-  const openValue = (paper.positions || []).filter(position => position.status === "OPEN").reduce((sum, position) => sum + Number(position.current || position.entry || 0) * Number(position.quantity || 0), 0);
+  const openValue = (paper.positions || []).reduce((sum, position) => {
+    if (position.status === "OPEN") return sum + Number(position.current || position.entry || 0) * Number(position.quantity || 0);
+    if (position.status === "PENDING_BROKER_ENTRY") return sum + Number(position.current || position.plannedEntry || 0) * Number(position.broker?.filledQuantity || 0);
+    return sum;
+  }, 0);
   paper.equity = roundTradingValue(Number(paper.cash || 0) + openValue);
   paper.pnl = roundTradingValue(Number(paper.equity) - Number(paper.initialCapital || 0));
   paper.pnlPercent = Number(paper.initialCapital) > 0 ? roundTradingValue(Number(paper.pnl) * 100 / Number(paper.initialCapital)) : 0;
@@ -7911,6 +7915,14 @@ async function submitAlpacaPaperOrLiveOrder(order) {
     filledQuantity:Number(result?.filled_qty || 0) || 0,
     filledAveragePrice:Number(result?.filled_avg_price || 0) || 0,
   };
+}
+
+async function fetchAlpacaTradingAccount() {
+  if (!ALPACA_TRADING_ENABLED) return null;
+  const account = await alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/account`);
+  const buyingPower = Number(account?.buying_power ?? account?.cash);
+  if (!Number.isFinite(buyingPower) || buyingPower < 0) throw new Error("Alpaca kullanılabilir bakiye bilgisi doğrulanamadı.");
+  return {buyingPower, cash:Number(account?.cash), status:String(account?.status || "")};
 }
 
 function automationBrokerClientOrderId(market, position, monitorEvent) {
@@ -8018,6 +8030,8 @@ async function resolveAlpacaMonitorExit(position) {
   if (!pending?.orderId || !pending?.event) return null;
   const order = await alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/orders/${encodeURIComponent(String(pending.orderId))}`);
   const requested = Number(pending.event.closeQuantity || 0);
+  const executedQuantity = Number(order?.filled_qty || 0);
+  const averagePrice = Number(order?.filled_avg_price || pending.event.executionPrice || 0) || pending.event.executionPrice;
   if (alpacaOrderIsFullyFilled(order, requested)) {
     return {
       confirmed:true,
@@ -8027,7 +8041,7 @@ async function resolveAlpacaMonitorExit(position) {
     };
   }
   const terminal = ["canceled", "expired", "rejected", "suspended", "stopped"].includes(String(order?.status || "").toLowerCase());
-  return {confirmed:false, pending:!terminal, terminal, order};
+  return {confirmed:false, pending:!terminal, terminal, order, executedQuantity, averagePrice};
 }
 
 // Canlı Alpaca kapatmaları, kullanıcı manuel kapatsa veya acil durdurma ile
@@ -8096,7 +8110,7 @@ async function resolveNasdaqPendingManualExit(position) {
     return {confirmed:true, pending, order, averagePrice:Number(order?.filled_avg_price || pending.referencePrice || 0) || pending.referencePrice};
   }
   const terminal = ["canceled", "expired", "rejected", "suspended", "stopped"].includes(String(order?.status || "").toLowerCase());
-  return {confirmed:false, pending:!terminal, terminal, order};
+  return {confirmed:false, pending:!terminal, terminal, order, executedQuantity:Number(order?.filled_qty || 0), averagePrice:Number(order?.filled_avg_price || pending.referencePrice || 0) || pending.referencePrice};
 }
 
 // Ekrandaki NASDAQ kâğıt pozisyonlarını son tamamlanmış günlük Alpaca
@@ -8151,12 +8165,15 @@ async function handleNasdaqKillSwitch(req, res) {
         if (position.status === "PENDING_BROKER_ENTRY" && position.broker?.brokerOrderId && ALPACA_TRADING_ENABLED) {
           const cancelled = await liveBroker.cancelOrder({orderId:position.broker.brokerOrderId});
           if (cancelled.cancelled) {
-            position.status = "BROKER_ENTRY_CANCELLED";
-            position.closedAt = timestamp;
-            const decision = (paper.decisions || []).find(item => item.id === position.decisionId);
-            if (decision) { decision.status = "CANCELLED"; decision.closedAt = timestamp; paper.history = [{...decision}, ...(paper.history || [])].slice(0,100); }
+            await monitorNasdaqBrokerEntry(paper, position, timestamp);
+            if (position.status !== "OPEN") {
+              position.status = "BROKER_ENTRY_CANCELLED";
+              position.closedAt = timestamp;
+              const decision = (paper.decisions || []).find(item => item.id === position.decisionId);
+              if (decision) { decision.status = "CANCELLED"; decision.closedAt = timestamp; paper.history = [{...decision}, ...(paper.history || [])].slice(0,100); }
+            }
           } else brokerFailed += 1;
-          continue;
+          if (position.status !== "OPEN") continue;
         }
         if (position.status !== "OPEN") continue;
         const quantity = Number(position.remainingQuantity ?? position.quantity ?? 0);
@@ -8272,8 +8289,15 @@ async function handleNasdaqPaperApprove(req, res) {
     const entry = order.orderType === "MARKET" ? marketPrice : Number(order.entryPrice);
     if (order.stop !== null && Number(order.stop) >= entry) throw new Error("Stop gerçekleşen girişin altında olmalı.");
     const plannedCost = roundTradingValue(entry * Number(order.quantity));
-    const reservedCash = (paper.positions || []).filter(item => item.status === "PENDING_BROKER_ENTRY").reduce((sum, item) => sum + Number(item.plannedEntry || 0) * Number(item.quantity || 0), 0);
+    const reservedCash = (paper.positions || []).filter(item => item.status === "PENDING_BROKER_ENTRY").reduce((sum, item) => {
+      const remaining = Math.max(0, Number(item.quantity || 0) - Number(item.broker?.filledQuantity || 0));
+      return sum + Number(item.plannedEntry || 0) * remaining;
+    }, 0);
     if (plannedCost > Number(paper.cash) - reservedCash) throw new Error("NASDAQ kullanılabilir bakiyesi bu emir için yeterli değil.");
+    if (ALPACA_TRADING_ENABLED) {
+      const account = await fetchAlpacaTradingAccount();
+      if (plannedCost > account.buyingPower) throw new Error(`Alpaca buying power bu emir için yetersiz. Gerekli: $${plannedCost}, kullanılabilir: $${roundTradingValue(account.buyingPower)}.`);
+    }
     const existingPosition = (paper.positions || []).find(item => ["OPEN", "PENDING_BROKER_ENTRY"].includes(item.status) && item.symbol === order.symbol);
     if (existingPosition) throw new Error(`${order.symbol} için açık veya broker teyidi bekleyen NASDAQ pozisyonu zaten var.`);
     const occupiedSlots = (paper.positions || []).filter(item => ["OPEN", "PENDING_BROKER_ENTRY"].includes(item.status)).length;
@@ -8345,6 +8369,38 @@ async function handleNasdaqPaperReject(req,res) {
     await saveTradingState(saved.content,saved.sha,saved.container);
     return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
   }catch(error){return sendJSON(res,400,{error:error.message});}
+}
+
+async function handleNasdaqBrokerEntryCancel(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const saved = await getTradingState();
+    const paper = saved.content.nasdaqPaper;
+    const position = (paper.positions || []).find(item => item.id === String(input.positionId || "") && item.status === "PENDING_BROKER_ENTRY");
+    if (!position?.broker?.brokerOrderId || !ALPACA_TRADING_ENABLED) throw new Error("İptal edilebilir Alpaca giriş emri bulunamadı.");
+    await createAlpacaMonitorBroker().cancelOrder({orderId:position.broker.brokerOrderId});
+    await monitorNasdaqBrokerEntry(paper, position, new Date().toISOString());
+    if (position.status === "BROKER_ENTRY_FAILED") position.status = "BROKER_ENTRY_CANCELLED";
+    recalculateNasdaqPaper(paper);
+    await saveTradingState(saved.content, saved.sha, saved.container);
+    return sendJSON(res, 200, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  } catch (error) { return sendJSON(res, 400, {error:error.message}); }
+}
+
+async function handleNasdaqProtectionEnable(req, res) {
+  try {
+    const input = await readTradingRequest(req);
+    const saved = await getTradingState();
+    const paper = saved.content.nasdaqPaper;
+    const position = (paper.positions || []).find(item => item.id === String(input.positionId || "") && item.status === "OPEN");
+    if (!position?.broker?.submitted) throw new Error("Koruması etkinleştirilecek Alpaca pozisyonu bulunamadı.");
+    position.broker = {...position.broker, protectionSuppressed:false, protectionSuppressedAt:null, protectionError:null};
+    const changed = await placeNasdaqEmergencyStop(position, new Date().toISOString());
+    if (!position.broker?.protection?.orderId) throw new Error(position.broker?.protectionError || "Alpaca koruma emri yeniden kurulamadı.");
+    if (changed) paper.activity = [{timestamp:new Date().toISOString(),type:"NASDAQ_PROTECTION_ENABLED",message:`${position.symbol} Alpaca stop koruması yeniden etkinleştirildi.`},...(paper.activity || [])].slice(0,100);
+    await saveTradingState(saved.content, saved.sha, saved.container);
+    return sendJSON(res, 200, {nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
+  } catch (error) { return sendJSON(res, 400, {error:error.message}); }
 }
 
 async function handleNasdaqPaperClose(req, res) {
@@ -8896,6 +8952,8 @@ if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return with
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return withTradingStateMutation("nasdaq-paper-update", () => handleNasdaqPaperUpdate(req, res));
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return withTradingStateMutation("nasdaq-paper-approve", () => handleNasdaqPaperApprove(req, res));
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return withTradingStateMutation("nasdaq-paper-reject", () => handleNasdaqPaperReject(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/broker-entry/cancel") return withTradingStateMutation("nasdaq-broker-entry-cancel", () => handleNasdaqBrokerEntryCancel(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/protection/enable") return withTradingStateMutation("nasdaq-protection-enable", () => handleNasdaqProtectionEnable(req, res));
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return withTradingStateMutation("nasdaq-paper-close", () => handleNasdaqPaperClose(req, res));
 
 if (
@@ -9546,7 +9604,7 @@ async function resolveBinanceMonitorExit(position) {
     return {confirmed:true, event:pending.event, averagePrice:binanceOrderAveragePrice(order, pending.event.executionPrice), order};
   }
   const terminal = ["CANCELED", "REJECTED", "EXPIRED"].includes(String(order?.status || "").toUpperCase());
-  return {confirmed:false, pending:!terminal, terminal, order};
+  return {confirmed:false, pending:!terminal, terminal, order, executedQuantity:executed, averagePrice:binanceOrderAveragePrice(order, pending.event.executionPrice)};
 }
 
 async function handleCryptoSpotOrder(req, res) {
@@ -9680,12 +9738,15 @@ async function handleCryptoSpotKillSwitch(req, res) {
         if (position.status === "PENDING_BROKER_ENTRY") {
           const orderId = String(position?.broker?.brokerOrderId || "");
           if (cancelledIds.has(orderId)) {
-            position.status = "BROKER_ENTRY_CANCELLED";
-            position.closedAt = timestamp;
-            position.broker = {...(position.broker || {}), status:"CANCELED", cancelledAt:timestamp};
-            addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_ENTRY_CANCELLED", position.symbol, `${position.symbol} BorsaCI Binance giriş emri acil durdurma ile iptal edildi.`);
+            await monitorCryptoLiveEntry(live, position, timestamp);
+            if (position.status !== "OPEN") {
+              position.status = "BROKER_ENTRY_CANCELLED";
+              position.closedAt = timestamp;
+              position.broker = {...(position.broker || {}), status:"CANCELED", cancelledAt:timestamp};
+              addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_ENTRY_CANCELLED", position.symbol, `${position.symbol} BorsaCI Binance giriş emri acil durdurma ile iptal edildi.`);
+            }
           }
-          continue;
+          if (position.status !== "OPEN") continue;
         }
         if (position.status !== "OPEN") continue;
 
@@ -10243,7 +10304,7 @@ async function resolveBinancePendingManualExit(position) {
     return {confirmed:true, pending, order, averagePrice:binanceOrderAveragePrice(order, pending.referencePrice)};
   }
   const terminal = ["CANCELED", "REJECTED", "EXPIRED"].includes(String(order?.status || "").toUpperCase());
-  return {confirmed:false, pending:!terminal, terminal, order};
+  return {confirmed:false, pending:!terminal, terminal, order, executedQuantity:executed, averagePrice:binanceOrderAveragePrice(order, pending.referencePrice)};
 }
 
 async function monitorCryptoLiveEntry(live, position, timestamp) {
@@ -10260,6 +10321,7 @@ async function monitorCryptoLiveEntry(live, position, timestamp) {
   }
   const status = String(order?.status || "").toUpperCase();
   const executedQuantity = Number(order?.executedQty || 0);
+  const previousExecutedQuantity = Number(position?.broker?.filledQuantity || 0);
   const requestedQuantity = Number(position.originalQuantity || position.quantity || 0);
   if (status === "FILLED" && executedQuantity + 1e-12 >= requestedQuantity) {
     const entry = binanceOrderAveragePrice(order, position.plannedEntry);
@@ -10276,13 +10338,27 @@ async function monitorCryptoLiveEntry(live, position, timestamp) {
     return true;
   }
   if (["CANCELED", "REJECTED", "EXPIRED"].includes(status)) {
+    if (executedQuantity > 0) {
+      const entry = binanceOrderAveragePrice(order, position.plannedEntry);
+      if (!Number.isFinite(entry) || entry <= 0) return false;
+      position.status = "OPEN";
+      position.entry = entry;
+      position.current = entry;
+      position.quantity = executedQuantity;
+      position.remainingQuantity = executedQuantity;
+      position.originalQuantity = executedQuantity;
+      position.openedAt = timestamp;
+      position.broker = {...(position.broker || {}), status, filledQuantity:executedQuantity, filledAveragePrice:entry, entryFilledAt:timestamp, partialEntry:true};
+      addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_ENTRY_PARTIAL", position.symbol, `${position.symbol} Binance alış emrinin ${executedQuantity}/${requestedQuantity} miktarı gerçekleşti; kalan emir ${status}.`);
+      return true;
+    }
     position.status = "BROKER_ENTRY_FAILED";
     position.closedAt = timestamp;
     position.broker = {...(position.broker || {}), status, filledQuantity:executedQuantity};
     addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_ENTRY_FAILED", position.symbol, `${position.symbol} Binance Spot giriş emri ${status} durumuyla gerçekleşmedi.`);
     return true;
   }
-  if (String(position?.broker?.status || "").toUpperCase() === status) return false;
+  if (String(position?.broker?.status || "").toUpperCase() === status && previousExecutedQuantity === executedQuantity) return false;
   position.broker = {...(position.broker || {}), status, filledQuantity:executedQuantity};
   return true;
 }
@@ -10314,8 +10390,10 @@ async function monitorCryptoLiveTrading(live, timestamp) {
             {reason:pendingManualExit.reason || "MANUAL", orderType:pendingManualExit.orderType || "MARKET"}
           ) || changed;
         } else if (resolved?.terminal) {
-          position.monitor = {...(position.monitor || {}), pendingManualExit:null, exitBlocked:true, lastBrokerError:`Binance manuel çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; broker dolumu doğrulanmadı.`};
-          addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_MANUAL_EXIT_RECONCILIATION", position.symbol, `${position.symbol} Binance manuel çıkış emri tam dolmadı; yerel pozisyon açık bırakıldı.`);
+          const partial = Number(resolved.executedQuantity || 0);
+          if (partial > 0) settleCryptoLiveManualExit(live, position, resolved.averagePrice, partial, timestamp, {reason:"PARTIAL_BROKER_EXIT", orderType:pendingManualExit.orderType || "MARKET"});
+          position.monitor = {...(position.monitor || {}), pendingManualExit:null, exitBlocked:false, lastBrokerError:partial > 0 ? null : `Binance manuel çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; gerçekleşme yok.`};
+          addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_MANUAL_EXIT_RECONCILIATION", position.symbol, `${position.symbol} Binance manuel çıkışında ${partial} miktar broker gerçekleşmesine göre uzlaştırıldı.`);
           changed = true;
         }
       } catch (error) {
@@ -10342,8 +10420,10 @@ async function monitorCryptoLiveTrading(live, timestamp) {
         if (resolved?.confirmed) {
           changed = settleCryptoLiveMonitorEvent(live, position, before, resolved.event, price, timestamp, resolved.averagePrice) || changed;
         } else if (resolved?.terminal) {
-          position.monitor = {...(position.monitor || {}), pendingBrokerExit:null, exitBlocked:true, lastBrokerError:`Binance çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; otomatik tekrar gönderilmedi.`};
-          addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_EXIT_RECONCILIATION", position.symbol, `${position.symbol} Binance çıkış emri tam dolmadı; broker gerçekleşmesi doğrulanmadan yerel pozisyon kapatılmadı.`);
+          const partial = Number(resolved.executedQuantity || 0);
+          if (partial > 0) settleCryptoLiveMonitorEvent(live, position, before, {...resolved.event, closeQuantity:partial}, price, timestamp, resolved.averagePrice);
+          position.monitor = {...(position.monitor || {}), pendingBrokerExit:null, exitBlocked:false, lastBrokerError:partial > 0 ? null : `Binance çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; gerçekleşme yok.`};
+          addCryptoLiveActivity(live, timestamp, "CRYPTO_LIVE_EXIT_RECONCILIATION", position.symbol, `${position.symbol} Binance otomatik çıkışında ${partial} miktar broker gerçekleşmesine göre uzlaştırıldı.`);
           changed = true;
         }
       } catch (error) {
@@ -10411,11 +10491,14 @@ async function monitorNasdaqBrokerEntry(paper, position, timestamp) {
   }
   const status = String(order?.status || "").toLowerCase();
   const quantity = Number(order?.filled_qty || 0);
+  const averagePrice = Number(order?.filled_avg_price || position.plannedEntry || 0);
   const fullRequested = Number(position.quantity || position.remainingQuantity || 0);
+  const accountedCost = Number(position?.broker?.accountedCost || 0);
+  const cumulativeCost = quantity > 0 && Number.isFinite(averagePrice) && averagePrice > 0 ? roundTradingValue(quantity * averagePrice) : accountedCost;
+  if (cumulativeCost > accountedCost) paper.cash = roundTradingValue(Number(paper.cash || 0) - (cumulativeCost - accountedCost));
   if (status === "filled" && quantity + 1e-12 >= fullRequested) {
-    const entry = Number(order?.filled_avg_price || position.plannedEntry || 0);
+    const entry = averagePrice;
     if (!Number.isFinite(entry) || entry <= 0) return false;
-    const cost = roundTradingValue(entry * quantity);
     position.status = "OPEN";
     position.entry = entry;
     position.current = entry;
@@ -10423,8 +10506,7 @@ async function monitorNasdaqBrokerEntry(paper, position, timestamp) {
     position.remainingQuantity = quantity;
     position.originalQuantity = quantity;
     position.openedAt = timestamp;
-    position.broker = {...(position.broker || {}), status, filledQuantity:quantity, filledAveragePrice:entry, entryFilledAt:timestamp, lastCheckedAt:timestamp};
-    paper.cash = roundTradingValue(Number(paper.cash || 0) - cost);
+    position.broker = {...(position.broker || {}), status, filledQuantity:quantity, filledAveragePrice:entry, accountedCost:cumulativeCost, entryFilledAt:timestamp, lastCheckedAt:timestamp};
     const decision = (paper.decisions || []).find(item => item.id === position.decisionId);
     if (decision) {
       decision.status = "OPEN";
@@ -10435,6 +10517,21 @@ async function monitorNasdaqBrokerEntry(paper, position, timestamp) {
     return true;
   }
   if (["canceled", "expired", "rejected", "suspended", "stopped"].includes(status)) {
+    if (quantity > 0 && Number.isFinite(averagePrice) && averagePrice > 0) {
+      position.status = "OPEN";
+      position.entry = averagePrice;
+      position.current = averagePrice;
+      position.quantity = quantity;
+      position.remainingQuantity = quantity;
+      position.originalQuantity = quantity;
+      position.openedAt = timestamp;
+      position.broker = {...(position.broker || {}), status, filledQuantity:quantity, filledAveragePrice:averagePrice, accountedCost:cumulativeCost, entryFilledAt:timestamp, lastCheckedAt:timestamp, partialEntry:true};
+      const decision = (paper.decisions || []).find(item => item.id === position.decisionId);
+      if (decision) { decision.status = "OPEN"; decision.lifecycle = {...(decision.lifecycle || {}), stage:"PARTIALLY_FILLED", filledAt:timestamp, brokerOrderId:orderId}; }
+      paper.activity = [{timestamp,type:"NASDAQ_BROKER_ENTRY_PARTIAL",message:`${position.symbol} Alpaca emrinin ${quantity}/${fullRequested} adedi gerçekleşti; kalan emir ${status}.`},...(paper.activity || [])].slice(0,100);
+      await placeNasdaqEmergencyStop(position, timestamp);
+      return true;
+    }
     position.status = "BROKER_ENTRY_FAILED";
     position.closedAt = timestamp;
     position.broker = {...(position.broker || {}), status, lastCheckedAt:timestamp};
@@ -10448,7 +10545,7 @@ async function monitorNasdaqBrokerEntry(paper, position, timestamp) {
     return true;
   }
   if (previousStatus === status && previousFilledQuantity === quantity && !previousError) return false;
-  position.broker = {...(position.broker || {}), status, filledQuantity:quantity, lastError:null, lastCheckedAt:timestamp};
+  position.broker = {...(position.broker || {}), status, filledQuantity:quantity, filledAveragePrice:Number.isFinite(averagePrice) && averagePrice > 0 ? averagePrice : null, accountedCost:cumulativeCost, lastError:null, lastCheckedAt:timestamp};
   return true;
 }
 
@@ -10520,8 +10617,11 @@ async function monitorNasdaqPaperTrading(paper, timestamp) {
           changed = settled || changed;
           if (settled && position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
         } else if (resolved?.terminal) {
-          position.monitor = {...(position.monitor || {}), pendingManualExit:null, lastBrokerError:`Alpaca manuel çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; broker dolumu doğrulanmadı.`};
-          paper.activity = [{timestamp, type:"NASDAQ_BROKER_EXIT_RECONCILIATION", message:`${position.symbol} NASDAQ broker satışı tam dolmadı; yerel pozisyon açık bırakıldı.`}, ...(paper.activity || [])].slice(0,100);
+          const partial = Number(resolved.executedQuantity || 0);
+          if (partial > 0) settleNasdaqManualExit(paper, position, resolved.averagePrice, partial, timestamp, {reason:"PARTIAL_BROKER_EXIT", live:true, orderType:pendingManualExit.orderType || "MARKET"});
+          position.monitor = {...(position.monitor || {}), pendingManualExit:null, lastBrokerError:partial > 0 ? null : `Alpaca manuel çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; gerçekleşme yok.`};
+          paper.activity = [{timestamp, type:"NASDAQ_BROKER_EXIT_RECONCILIATION", message:`${position.symbol} NASDAQ broker satışında ${partial} adet gerçekleşme uzlaştırıldı.`}, ...(paper.activity || [])].slice(0,100);
+          if (position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
           changed = true;
         }
       } catch (error) {
@@ -10552,7 +10652,10 @@ async function monitorNasdaqPaperTrading(paper, timestamp) {
           changed = settled || changed;
           if (settled && position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
         } else if (resolved?.terminal) {
-          position.monitor = {...(position.monitor || {}), pendingBrokerExit:null, lastBrokerError:`Alpaca çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}.`};
+          const partial = Number(resolved.executedQuantity || 0);
+          if (partial > 0) settleNasdaqMonitorEvent(paper, position, before, {...resolved.event, closeQuantity:partial}, price, timestamp, {live:true, averagePrice:resolved.averagePrice});
+          position.monitor = {...(position.monitor || {}), pendingBrokerExit:null, lastBrokerError:partial > 0 ? null : `Alpaca çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; gerçekleşme yok.`};
+          if (position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
           changed = true;
         }
       } catch (error) {
