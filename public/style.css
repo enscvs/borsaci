@@ -472,6 +472,8 @@ body::before {
 .control-health-item small { color: #91ac94; font-size: 8px; line-height: 1.4; }
 .control-health-item.needs-attention { border-color: rgba(255, 166, 89, .5); }
 .control-health-item.needs-attention span { color: #ffc27e; }
+.control-health-item.is-running { border-color: rgba(92, 177, 255, .55); }
+.control-health-item.is-running span { color: #8dccff; }
 
 .control-activity-item {
   display: grid;
@@ -3522,3 +3524,4 @@ textarea::placeholder {
     padding: 8px;
   }
 }
+
