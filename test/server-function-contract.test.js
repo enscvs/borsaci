@@ -50,6 +50,9 @@ test("NASDAQ scanner decisions are deduplicated and Alpaca entries receive emerg
   assert.match(source, /async function reconcileNasdaqEmergencyStop/);
   assert.match(source, /time_in_force:"gtc"/);
   assert.match(source, /await cancelNasdaqEmergencyStop\(position, timestamp\)/);
+  assert.match(source, /position\?\.broker\?\.protectionSuppressed/);
+  assert.match(source, /const manuallyCancelled = status === "canceled"/);
+  assert.match(source, /otomatik yeniden kurulum durduruldu/);
 });
 
 test("NASDAQ analysis snapshot stays separate from mutable order state", () => {
