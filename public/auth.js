@@ -5,12 +5,16 @@
   var authenticated = false;
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
   var legacyMode = false;
-  var legacyBound = false;
+  var legacyTabsBound = false;
   var debugLines = [];
 
   window.borsaciAuth = {};
-  Object.defineProperty(window.borsaciAuth, "authenticated", { get: function () { return authenticated; } });
-  Object.defineProperty(window.borsaciAuth, "csrfToken", { get: function () { return csrfToken; } });
+  Object.defineProperty(window.borsaciAuth, "authenticated", {
+    get: function () { return authenticated; }
+  });
+  Object.defineProperty(window.borsaciAuth, "csrfToken", {
+    get: function () { return csrfToken; }
+  });
 
   function detectLegacy() {
     try {
@@ -47,19 +51,19 @@
     box.style.font = "10px/1.35 monospace";
     box.style.whiteSpace = "pre-wrap";
     box.style.wordBreak = "break-word";
-    box.textContent = "LEGACY DEBUG\n";
     if (document.body) document.body.appendChild(box);
     return box;
   }
 
   function debug(message) {
     if (!legacyMode) return;
-    var text = String(message || "");
-    debugLines.push(text);
-    if (debugLines.length > 12) debugLines.shift();
+    debugLines.push(String(message || ""));
+    if (debugLines.length > 14) debugLines.shift();
     var box = debugBox();
     if (box) box.textContent = "LEGACY DEBUG\n" + debugLines.join("\n");
   }
+
+  window.borsaciLegacyDebug = debug;
 
   if (legacyMode) {
     window.onerror = function (message, source, lineno, colno, error) {
@@ -97,10 +101,9 @@
 
   function setSubmitting(submitting) {
     var button = document.getElementById("loginButton");
-    if (button) {
-      button.disabled = submitting;
-      button.textContent = submitting ? "GİRİŞ KONTROL EDİLİYOR..." : "GİRİŞ YAP";
-    }
+    if (!button) return;
+    button.disabled = submitting;
+    button.textContent = submitting ? "GİRİŞ KONTROL EDİLİYOR..." : "GİRİŞ YAP";
   }
 
   function dispatchAuthReady() {
@@ -115,22 +118,7 @@
     debug("AUTH READY: DISPATCHED");
   }
 
-  function findParentTab(element) {
-    var node = element;
-    while (node && node !== document.body) {
-      if (
-        node.id === "controlTab" ||
-        node.id === "tradingTab" ||
-        node.id === "cryptoTab" ||
-        node.id === "nasdaqTab" ||
-        node.id === "terminalTab"
-      ) return node;
-      node = node.parentNode;
-    }
-    return null;
-  }
-
-  function setPanel(panel, visible) {
+  function setLegacyPanel(panel, visible) {
     if (!panel) return;
     if (visible) {
       panel.hidden = false;
@@ -147,12 +135,12 @@
     }
   }
 
-  function setLegacyTab(targetId) {
+  function activateLegacyTab(targetId) {
     var ids = ["controlTab", "tradingTab", "cryptoTab", "nasdaqTab", "terminalTab"];
     var buttons = toArray(document.querySelectorAll("#mainTabs [data-tab]"));
     var i;
     for (i = 0; i < ids.length; i += 1) {
-      setPanel(document.getElementById(ids[i]), ids[i] === targetId);
+      setLegacyPanel(document.getElementById(ids[i]), ids[i] === targetId);
     }
     for (i = 0; i < buttons.length; i += 1) {
       if (buttons[i].getAttribute("data-tab") === targetId) buttons[i].classList.add("active");
@@ -160,26 +148,32 @@
     }
   }
 
-  function escapeHtml(value) {
-    return String(value === null || value === undefined ? "" : value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+  function bindLegacyTabs() {
+    if (!legacyMode || legacyTabsBound) return;
+    legacyTabsBound = true;
+    var buttons = toArray(document.querySelectorAll("#mainTabs [data-tab]"));
+    buttons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        var targetId = button.getAttribute("data-tab");
+        if (targetId) activateLegacyTab(targetId);
+      }, false);
+    });
+    activateLegacyTab("tradingTab");
+    debug("LEGACY TABS: BOUND");
   }
 
   function xhrJson(method, url, body, callback) {
     var xhr = new XMLHttpRequest();
-    xhr.open(method, url, true);
+    var upperMethod = String(method || "GET").toUpperCase();
+    xhr.open(upperMethod, url, true);
     xhr.withCredentials = true;
     xhr.setRequestHeader("Accept", "application/json");
     try { xhr.setRequestHeader("Cache-Control", "no-cache"); } catch (error) {}
     if (body !== null && body !== undefined) {
       xhr.setRequestHeader("Content-Type", "application/json");
-      if (csrfToken && method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-        xhr.setRequestHeader("X-CSRF-Token", csrfToken);
-      }
+    }
+    if (csrfToken && upperMethod !== "GET" && upperMethod !== "HEAD" && upperMethod !== "OPTIONS") {
+      xhr.setRequestHeader("X-CSRF-Token", csrfToken);
     }
     xhr.onreadystatechange = function () {
       if (xhr.readyState !== 4) return;
@@ -189,107 +183,6 @@
     };
     xhr.onerror = function () { callback(new Error("Network error"), 0, {}); };
     xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
-  }
-
-  function renderLegacyScanner(container, data, label) {
-    if (!container) return;
-    var rows = data && data.results && data.results.length ? data.results : [];
-    if (!rows.length) {
-      container.innerHTML = "<div class=\"trading-empty\">" + escapeHtml(label) + " tamamlandı ancak sonuç dönmedi.</div>";
-      return;
-    }
-    var html = "";
-    var limit = Math.min(rows.length, 20);
-    var i;
-    for (i = 0; i < limit; i += 1) {
-      var row = rows[i] || {};
-      var symbol = row.symbol || row.ticker || row.code || "--";
-      var score = row.score !== undefined ? row.score : (row.totalScore !== undefined ? row.totalScore : "--");
-      var price = row.price !== undefined ? row.price : (row.lastPrice !== undefined ? row.lastPrice : "--");
-      var decision = row.decision || row.signal || row.grade || "";
-      html += "<div class=\"scanner-compact\"><div class=\"scanner-head\"><strong>" + escapeHtml(symbol) + "</strong><span>Skor: " + escapeHtml(score) + "</span><span>Fiyat: " + escapeHtml(price) + "</span><span>" + escapeHtml(decision) + "</span></div></div>";
-    }
-    container.innerHTML = html;
-  }
-
-  function bindLegacyTap(element, handler) {
-    if (!element || element.getAttribute("data-inline-legacy-bound") === "true") return;
-    element.setAttribute("data-inline-legacy-bound", "true");
-    var lastTouch = 0;
-    element.addEventListener("touchend", function (event) {
-      lastTouch = new Date().getTime();
-      event.preventDefault();
-      event.stopPropagation();
-      handler.call(element, event);
-    }, true);
-    element.addEventListener("click", function (event) {
-      if (new Date().getTime() - lastTouch < 700) return;
-      event.preventDefault();
-      event.stopPropagation();
-      handler.call(element, event);
-    }, true);
-  }
-
-  function bindLegacyUi() {
-    if (!legacyMode || legacyBound) return;
-    legacyBound = true;
-    document.documentElement.setAttribute("data-borsaci-legacy-inline", "true");
-
-    var buttons = toArray(document.querySelectorAll("#mainTabs [data-tab]"));
-    buttons.forEach(function (button) {
-      bindLegacyTap(button, function () {
-        var targetId = button.getAttribute("data-tab");
-        if (targetId) setLegacyTab(targetId);
-      });
-    });
-
-    var scannerButtons = toArray(document.querySelectorAll("#startScannerBtn, #startCryptoScannerBtn"));
-    scannerButtons.forEach(function (button) {
-      bindLegacyTap(button, function () {
-        if (button.disabled) return;
-        var tab = findParentTab(button);
-        var tabId = tab ? tab.id : "tradingTab";
-        var endpoint = "/api/trading/scanner?jobId=legacy-bist-" + new Date().getTime();
-        var resultsSelector = "#scannerResults";
-        var statusSelector = "#scannerStatus";
-        var label = "BIST100 taraması";
-
-        if (tabId === "cryptoTab") {
-          endpoint = "/api/crypto/scanner?jobId=legacy-crypto-" + new Date().getTime();
-          resultsSelector = "#cryptoScannerResults";
-          statusSelector = "#cryptoScannerStatus";
-          label = "Kripto taraması";
-        } else if (tabId === "nasdaqTab") {
-          endpoint = "/api/nasdaq/scanner?jobId=legacy-nasdaq-" + new Date().getTime();
-          label = "NASDAQ taraması";
-        }
-
-        var results = tab && tab.querySelector ? tab.querySelector(resultsSelector) : document.querySelector(resultsSelector);
-        var status = tab && tab.querySelector ? tab.querySelector(statusSelector) : document.querySelector(statusSelector);
-
-        button.disabled = true;
-        button.textContent = "TARANIYOR...";
-        if (status) status.textContent = "TARANIYOR";
-        if (results) results.innerHTML = "<div class=\"trading-empty\">" + escapeHtml(label) + " çalışıyor...</div>";
-
-        xhrJson("GET", endpoint, null, function (error, httpStatus, data) {
-          button.disabled = false;
-          button.textContent = "TARAMAYI BAŞLAT";
-          if (error || httpStatus < 200 || httpStatus >= 300 || (data && data.success === false)) {
-            if (status) status.textContent = "HATA";
-            if (results) results.innerHTML = "<div class=\"trading-empty\">Tarama hatası: " + escapeHtml(data && data.error ? data.error : "Sunucu isteği başarısız") + "</div>";
-            debug(label + " FALLBACK: ERROR " + httpStatus);
-            return;
-          }
-          if (status) status.textContent = "TAMAMLANDI";
-          renderLegacyScanner(results, data, label);
-          debug(label + " FALLBACK: OK");
-        });
-      });
-    });
-
-    setLegacyTab("tradingTab");
-    debug("LEGACY UI FALLBACK: BOUND");
   }
 
   function activate(session) {
@@ -314,7 +207,7 @@
 
     logoutButtons().forEach(function (button) { button.hidden = false; });
     showLoginError("");
-    bindLegacyUi();
+    bindLegacyTabs();
     debug("SESSION: AUTHENTICATED");
     dispatchAuthReady();
   }
@@ -350,7 +243,9 @@
       var method = String(init.method || (typeof input === "string" ? "GET" : input.method) || "GET").toUpperCase();
       var sameOrigin = requestUrl.protocol === window.location.protocol && requestUrl.host === window.location.host;
       var headers = new Headers(init.headers || (typeof input === "string" ? undefined : input.headers));
-      if (sameOrigin && method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && csrfToken) headers.set("X-CSRF-Token", csrfToken);
+      if (sameOrigin && method !== "GET" && method !== "HEAD" && method !== "OPTIONS" && csrfToken) {
+        headers.set("X-CSRF-Token", csrfToken);
+      }
       var nextInit = {};
       Object.keys(init).forEach(function (key) { nextInit[key] = init[key]; });
       nextInit.headers = headers;
@@ -411,7 +306,9 @@
   var form = document.getElementById("loginForm");
   var logoutButtonList = logoutButtons();
   if (form) form.addEventListener("submit", login, false);
-  logoutButtonList.forEach(function (logoutButton) { logoutButton.addEventListener("click", logout, false); });
+  logoutButtonList.forEach(function (logoutButton) {
+    logoutButton.addEventListener("click", logout, false);
+  });
 
   checkSession();
 })();
