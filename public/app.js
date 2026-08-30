@@ -288,6 +288,95 @@
   }
 })();
 (function () {
+  function debug(message) {
+    try {
+      if (typeof window.__borsaciLegacyDebug === "function") {
+        window.__borsaciLegacyDebug(message);
+      }
+    } catch (error) {}
+  }
+
+  function installV3Adapter() {
+    var LW = window.LightweightCharts;
+    if (!LW || typeof LW.createChart !== "function") return false;
+    if (LW.CandlestickSeries) return true;
+
+    var types = {
+      CandlestickSeries: "candlestick",
+      HistogramSeries: "histogram",
+      LineSeries: "line",
+      AreaSeries: "area",
+      BarSeries: "bar",
+      BaselineSeries: "area"
+    };
+    Object.keys(types).forEach(function (key) {
+      LW[key] = { __borsaciLegacySeriesType: types[key] };
+    });
+
+    var originalCreateChart = LW.createChart;
+    LW.createChart = function (container, options) {
+      var chart = originalCreateChart(container, options);
+      if (!chart.addSeries) {
+        chart.addSeries = function (seriesType, seriesOptions) {
+          var type = seriesType && seriesType.__borsaciLegacySeriesType;
+          if (type === "candlestick" && chart.addCandlestickSeries) return chart.addCandlestickSeries(seriesOptions || {});
+          if (type === "histogram" && chart.addHistogramSeries) return chart.addHistogramSeries(seriesOptions || {});
+          if (type === "line" && chart.addLineSeries) return chart.addLineSeries(seriesOptions || {});
+          if (type === "area" && chart.addAreaSeries) return chart.addAreaSeries(seriesOptions || {});
+          if (type === "bar" && chart.addBarSeries) return chart.addBarSeries(seriesOptions || {});
+          throw new Error("Unsupported legacy chart series: " + String(type || "unknown"));
+        };
+      }
+      return chart;
+    };
+
+    if (!LW.createSeriesMarkers) {
+      LW.createSeriesMarkers = function (series, markers) {
+        var current = markers || [];
+        if (series && typeof series.setMarkers === "function") series.setMarkers(current);
+        return {
+          setMarkers: function (nextMarkers) {
+            current = nextMarkers || [];
+            if (series && typeof series.setMarkers === "function") series.setMarkers(current);
+          }
+        };
+      };
+    }
+
+    debug("LEGACY CHART ADAPTER: V3 READY");
+    return true;
+  }
+
+  window.__borsaciBootLegacyChart = function (startApp) {
+    if (window.LightweightCharts && typeof window.LightweightCharts.createChart === "function") {
+      installV3Adapter();
+      debug("CHART LIBRARY: EXISTING READY");
+      startApp();
+      return;
+    }
+
+    debug("CHART LIBRARY: LOADING V3");
+    var script = document.createElement("script");
+    script.src = "https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js";
+    script.async = false;
+    script.onload = function () {
+      if (installV3Adapter()) {
+        debug("CHART LIBRARY: V3 LOADED");
+      } else {
+        debug("CHART LIBRARY: V3 ADAPTER FAILED");
+      }
+      startApp();
+    };
+    script.onerror = function () {
+      debug("CHART LIBRARY: V3 LOAD ERROR");
+      startApp();
+    };
+    (document.head || document.documentElement).appendChild(script);
+  };
+})();
+
+window.__borsaciStartLegacyApp = function () {
+(function () {
 /*
 ========================================================
 BORSACI // AI TRADING TERMINAL
@@ -7195,3 +7284,5 @@ console.log("BORSACI: APP.JS loaded.");
 })();
 
 })();
+};
+window.__borsaciBootLegacyChart(window.__borsaciStartLegacyApp);
