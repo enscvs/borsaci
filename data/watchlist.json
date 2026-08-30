@@ -3126,7 +3126,7 @@
           "decisionId": "nasdaq-1788099677940-NVDA-c175f1e7",
           "symbol": "NVDA",
           "market": "NASDAQ",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "BROKER_ENTRY_FAILED",
           "quantity": 2,
           "remainingQuantity": 2,
           "plannedEntry": 217.54,
@@ -3141,10 +3141,12 @@
             "mode": "PAPER",
             "brokerOrderId": "97fe77da-fdb1-442f-a27e-10e5bbcd323b",
             "clientOrderId": "bci-entry-8bf949d8989054e20c1f3683",
-            "status": "accepted",
+            "status": "canceled",
             "filledQuantity": 0,
-            "filledAveragePrice": 0
-          }
+            "filledAveragePrice": 0,
+            "lastCheckedAt": "2026-08-30T14:23:22.378Z"
+          },
+          "closedAt": "2026-08-30T14:23:22.378Z"
         },
         {
           "id": "nasdaq-broker-entry-1788098556041-SNPS",
@@ -7257,6 +7259,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T14:23:22.378Z",
+          "type": "NASDAQ_BROKER_ENTRY_FAILED",
+          "message": "NVDA Alpaca giriş emri canceled durumuyla gerçekleşmedi."
+        },
         {
           "timestamp": "2026-08-30T14:23:12.979Z",
           "type": "NASDAQ_PENDING",
