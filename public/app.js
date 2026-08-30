@@ -10349,10 +10349,16 @@ async function loadControlCenter() {
       : '<div class="trading-empty">Henüz gösterilecek işlem hareketi yok.</div>';
     const health = healthResult.status === "fulfilled" ? healthResult.value : null;
     if (healthGrid) healthGrid.innerHTML = Array.isArray(health?.items) && health.items.length
-      ? health.items.map(item => `<article class="control-health-item ${item.status === "READY" ? "" : "needs-attention"}"><strong>${escapeHtml(item.label || "SERVİS")}</strong><span>${item.status === "READY" ? "HAZIR" : "DİKKAT GEREKİYOR"}</span><small>${escapeHtml(item.detail || "")}</small></article>`).join("")
+      ? health.items.map(item => {
+        const running = item.status === "RUNNING";
+        const healthy = item.status === "READY" || running;
+        const label = running ? "ÇALIŞIYOR" : (healthy ? "HAZIR" : "DİKKAT GEREKİYOR");
+        return `<article class="control-health-item ${healthy ? "" : "needs-attention"}${running ? " is-running" : ""}"><strong>${escapeHtml(item.label || "SERVİS")}</strong><span>${label}</span><small>${escapeHtml(item.detail || "")}</small></article>`;
+      }).join("")
       : '<div class="trading-empty">Sağlık özeti alınamadı.</div>';
-    if (healthStatus) healthStatus.textContent = health ? `${health.healthy}/${health.total} HAZIR` : "BAĞLANTI HATASI";
-    if (refreshedAt) refreshedAt.textContent = `GÜNCELLENDİ · ${new Date().toLocaleTimeString("tr-TR", {hour: "2-digit", minute: "2-digit"})}`;
+    const failedReads = [bistResult, cryptoResult, nasdaqResult, healthResult].filter(result => result.status === "rejected").length;
+    if (healthStatus) healthStatus.textContent = health ? `${health.healthy}/${health.total} HAZIR${failedReads ? ` · ${failedReads} VERİ HATASI` : ""}` : "BAĞLANTI HATASI";
+    if (refreshedAt) refreshedAt.textContent = `${failedReads ? "KISMİ GÜNCELLEME" : "GÜNCELLENDİ"} · ${new Date().toLocaleTimeString("tr-TR", {hour: "2-digit", minute: "2-digit"})}`;
   } catch (error) {
     if (cards) cards.innerHTML = `<div class="trading-empty">Kontrol merkezi verileri alınamadı: ${escapeHtml(error.message || "bilinmeyen hata")}</div>`;
     if (recent) recent.innerHTML = '<div class="trading-empty">İşlem hareketleri alınamadı.</div>';
@@ -10426,3 +10432,4 @@ if (
 
 }
 })();
+
