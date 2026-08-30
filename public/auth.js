@@ -4,6 +4,7 @@
   var csrfToken = null;
   var authenticated = false;
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
+  var legacyControllerRequested = false;
 
   window.borsaciAuth = {};
   Object.defineProperty(window.borsaciAuth, "authenticated", {
@@ -12,6 +13,20 @@
   Object.defineProperty(window.borsaciAuth, "csrfToken", {
     get: function () { return csrfToken; }
   });
+
+  function isLegacyIPhone() {
+    var ua = String(navigator.userAgent || "");
+    return /iPhone|iPod/.test(ua) && /OS (?:8|9|10)_/.test(ua);
+  }
+
+  function loadLegacyController() {
+    if (!isLegacyIPhone() || legacyControllerRequested) return;
+    legacyControllerRequested = true;
+    var script = document.createElement("script");
+    script.src = "/legacy-controller.js?v=20260830-iphone5";
+    script.async = false;
+    document.head.appendChild(script);
+  }
 
   function showLoginError(message) {
     var element = document.getElementById("authMessage");
@@ -60,6 +75,7 @@
     });
 
     showLoginError("");
+    loadLegacyController();
     dispatchAuthReady();
   }
 
@@ -199,8 +215,6 @@
 
       if (passwordInput) passwordInput.value = "";
 
-      // Verify that the legacy WebView actually persisted the session cookie
-      // before exposing the application shell.
       xhrJson("GET", "/api/auth/session", null, function (verifyError, verifyStatus, session) {
         if (
           verifyError ||
