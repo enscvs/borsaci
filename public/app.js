@@ -8629,10 +8629,16 @@ function renderNasdaqPaperState(payload) {
 
 async function nasdaqRequest(endpoint, body = null) { const response=await fetch(endpoint,{method:body?"POST":"GET",headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined,cache:"no-store"});const payload=await response.json();if(!response.ok)throw new Error(payload?.error||"NASDAQ işlemi tamamlanamadı.");return payload; }
 function composeNasdaqAiRecords(records, decisions) {
-  const bySymbol = new Map((records || []).map(item => [item.symbol, item]));
-  return (decisions || []).slice(0, 3).map(decision => ({...(bySymbol.get(decision.symbol) || {}), ...decision, history: bySymbol.get(decision.symbol)?.history || decision.history}));
+  // Analiz kartı tarama anının değişmez snapshot'ıdır. Emir kararının status,
+  // entry ve lifecycle alanları bunun üzerine yazılmaz; bunlar yalnız emir ve
+  // açık pozisyon panellerinde gösterilir.
+  const snapshots = Array.isArray(records) ? records.filter(Boolean).slice(0, 3) : [];
+  if (snapshots.length) return snapshots.map(item => ({...item}));
+  // Eski state'lerde scanner snapshot'ı bulunmayabilir. Bu geri dönüş yalnız
+  // ilk görüntü içindir ve karar nesnelerini birbirine bindirmez.
+  return (Array.isArray(decisions) ? decisions : []).slice(0, 3).map(item => ({...item}));
 }
-async function loadNasdaqPaperState(){
+async function loadNasdaqPaperState({loadAnalysis = false} = {}){
   if(!nasdaqTab)return;
   const generation=++nasdaqStateLoadGeneration;
   try{
@@ -8644,7 +8650,7 @@ async function loadNasdaqPaperState(){
     // Sayfa açılışında son kalıcı özet gösterilebilir; kullanıcı aynı sayfada
     // yeni tarama yaptıysa ayrıntılı mum/AI kartları sadece o taramanın
     // snapshot'ından çizilir. Böylece 10-15 sn sonra eski sonuç dönmez.
-    if(nasdaqLocalScannerSnapshotActive)return;
+    if(!loadAnalysis || nasdaqLocalScannerSnapshotActive)return;
     nasdaqRecords=Array.isArray(data.nasdaqPaper?.scanner?.results)?data.nasdaqPaper.scanner.results:[];
     nasdaqAiRecords=composeNasdaqAiRecords(nasdaqRecords,data.nasdaqPaper?.decisions);
     renderNasdaqDecisionCards(nasdaqAiRecords);
@@ -9926,7 +9932,7 @@ async function startTradingWhenAuthenticated() {
   bindNasdaqKillSwitch();
   bindNasdaqLogout();
   bindControlCenter();
-  void loadNasdaqPaperState();
+  void loadNasdaqPaperState({loadAnalysis:true});
 }
 
 if (
