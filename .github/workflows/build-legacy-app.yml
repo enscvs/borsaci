@@ -51,9 +51,21 @@ jobs:
             --config-file ./babel.legacy.config.json \
             --out-file /tmp/app-legacy-core.js
           rm -f babel.legacy.config.json
-          cat public/legacy-polyfills.js /tmp/app-legacy-core.js > public/app-legacy.js
+
+          # Old Safari exposes element IDs as window globals. The app has top-level
+          # bindings such as analyzeBtn, chartSymbol and watchlist, which can collide
+          # with those DOM globals before the script even runs. Keep the whole app in
+          # its own function scope so those names never become global lexical bindings.
+          {
+            printf '(function () {\n'
+            cat /tmp/app-legacy-core.js
+            printf '\n})();\n'
+          } > /tmp/app-legacy-scoped.js
+
+          cat public/legacy-polyfills.js /tmp/app-legacy-scoped.js > public/app-legacy.js
           cat public/legacy-runtime-prelude.js public/app-legacy.js > /tmp/app-direct.js
           mv /tmp/app-direct.js public/app.js
+
           if grep -Eq '[0-9]_[0-9]' public/app.js; then
             echo "Legacy build still contains numeric separators" >&2
             exit 1
