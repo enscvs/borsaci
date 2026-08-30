@@ -2,8 +2,7 @@ services:
   - type: web
     name: gemini-borsaci
     runtime: node
-    buildCommand: pnpm install --frozen-lockfile
+    buildCommand: pnpm install --frozen-lockfile && pnpm dlx esbuild@0.25.9 public/app.js --target=safari10 --outfile=public/app.compat.js && cat public/legacy-polyfills.js public/app.compat.js > public/app.runtime.js && mv public/app.runtime.js public/app.js && rm -f public/app.compat.js
     startCommand: node server.js
     healthCheckPath: /health
     autoDeployTrigger: commit
-
