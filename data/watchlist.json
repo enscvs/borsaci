@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 142475.22,
-      "equity": 142475.22,
+      "cash": 111467.84,
+      "equity": 142444.24,
       "pnl": 42894.15357443809,
       "pnlPercent": 42.894153574438086,
       "positions": [
+        {
+          "id": "paper-2026-08-30T09:57:02.620Z-VAKBN-0f263156",
+          "decisionId": "1788077045842-VAKBN",
+          "decisionIds": [
+            "1788077045842-VAKBN"
+          ],
+          "symbol": "VAKBN",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 962,
+          "originalQuantity": 962,
+          "entry": 32.2,
+          "entryCommission": 30.98,
+          "current": 32.2,
+          "stop": 29.36,
+          "target1": 34.14,
+          "target2": 35.27,
+          "target3": 36.72,
+          "status": "OPEN",
+          "openedAt": "2026-08-30T09:57:02.620Z",
+          "tp1Hit": false,
+          "realizedPnl": -30.98,
+          "pnl": -30.98
+        },
         {
           "id": "paper-2026-08-30T05:50:16.449Z-SDTTR-9a700894",
           "decisionId": "1788068980674-SDTTR",
@@ -20775,7 +20800,7 @@
         "rank": 3,
         "symbol": "VAKBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 30.14,
@@ -21090,12 +21115,13 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-30T08:04:05.841Z",
           "expiresAt": "2026-08-31T08:04:05.842Z",
           "overrideAt": "2026-08-30T09:56:54.312Z",
           "rejectedAt": "2026-08-30T09:52:03.886Z",
-          "rejectedBy": "SITE"
+          "rejectedBy": "SITE",
+          "openedAt": "2026-08-30T09:57:02.620Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -21116,8 +21142,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-30T09:56:54.312Z",
-          "updatedAt": "2026-08-30T09:56:54.312Z",
-          "editedAt": null
+          "updatedAt": "2026-08-30T09:57:02.620Z",
+          "editedAt": null,
+          "commission": 30.98,
+          "totalCost": 31007.38,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-30T09:57:02.620Z"
         },
         "outcome": "USER_REJECTED"
       }
@@ -24863,6 +24893,16 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T09:57:02.620Z",
+        "type": "PAPER_APPROVED",
+        "message": "VAKBN paper işlemi TELEGRAM üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-30T09:57:02.620Z",
+        "type": "PAPER_OPEN",
+        "message": "VAKBN scanner paper pozisyonu açıldı: 962 lot · ₺30976.40 · LIMIT."
+      },
       {
         "timestamp": "2026-08-30T09:56:54.312Z",
         "type": "AI_DECISION_MANUAL_PENDING",
