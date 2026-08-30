@@ -1,287 +1,238 @@
 "use strict";
 
-(() => {
-  let csrfToken = null;
-  let authenticated = false;
+(function () {
+  var csrfToken = null;
+  var authenticated = false;
+  var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
 
-  const nativeFetch = window.fetch.bind(window);
-
-  window.borsaciAuth = {
-    get authenticated() {
-      return authenticated;
-    },
-    get csrfToken() {
-      return csrfToken;
-    },
-  };
+  window.borsaciAuth = {};
+  Object.defineProperty(window.borsaciAuth, "authenticated", {
+    get: function () { return authenticated; }
+  });
+  Object.defineProperty(window.borsaciAuth, "csrfToken", {
+    get: function () { return csrfToken; }
+  });
 
   function showLoginError(message) {
-    const element =
-      document.getElementById("authMessage");
-
-    if (element) {
-      element.textContent = message;
-    }
+    var element = document.getElementById("authMessage");
+    if (element) element.textContent = message;
   }
 
   function logoutButtons() {
-    return [
-      ...document.querySelectorAll(
-        "#logoutButton, [data-logout-button]"
-      ),
-    ];
+    return Array.prototype.slice.call(
+      document.querySelectorAll("#logoutButton, [data-logout-button]")
+    );
   }
 
   function setSubmitting(submitting) {
-    const button =
-      document.getElementById("loginButton");
-
+    var button = document.getElementById("loginButton");
     if (button) {
       button.disabled = submitting;
-      button.textContent =
-        submitting
-          ? "GİRİŞ KONTROL EDİLİYOR..."
-          : "GİRİŞ YAP";
+      button.textContent = submitting
+        ? "GİRİŞ KONTROL EDİLİYOR..."
+        : "GİRİŞ YAP";
     }
+  }
+
+  function dispatchAuthReady() {
+    var event;
+    try {
+      event = new Event("borsaci:auth-ready");
+    } catch (error) {
+      event = document.createEvent("Event");
+      event.initEvent("borsaci:auth-ready", true, true);
+    }
+    window.dispatchEvent(event);
   }
 
   function activate(session) {
     authenticated = true;
-    csrfToken = session.csrfToken || null;
+    csrfToken = session && session.csrfToken ? session.csrfToken : null;
 
-    const screen =
-      document.getElementById("authScreen");
-
-    const app =
-      document.getElementById("appShell");
+    var screen = document.getElementById("authScreen");
+    var app = document.getElementById("appShell");
 
     if (screen) screen.hidden = true;
     if (app) app.hidden = false;
-    logoutButtons().forEach(button => {
+
+    logoutButtons().forEach(function (button) {
       button.hidden = false;
     });
 
     showLoginError("");
-
-    window.dispatchEvent(
-      new Event("borsaci:auth-ready")
-    );
+    dispatchAuthReady();
   }
 
-  function deactivate(message = "") {
+  function deactivate(message) {
     authenticated = false;
     csrfToken = null;
 
-    const screen =
-      document.getElementById("authScreen");
-
-    const app =
-      document.getElementById("appShell");
+    var screen = document.getElementById("authScreen");
+    var app = document.getElementById("appShell");
 
     if (app) app.hidden = true;
-    logoutButtons().forEach(button => {
+    logoutButtons().forEach(function (button) {
       button.hidden = true;
     });
     if (screen) screen.hidden = false;
 
-    showLoginError(message);
+    showLoginError(message || "");
   }
 
-  window.fetch = async (
-    input,
-    init = {}
-  ) => {
-    const requestUrl =
-      new URL(
-        typeof input === "string"
-          ? input
-          : input.url,
-        window.location.origin
-      );
+  function xhrJson(method, url, body, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, url, true);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("Accept", "application/json");
 
-    const method =
-      String(
-        init.method ||
-        (
-          typeof input === "string"
-            ? "GET"
-            : input.method
-        ) ||
-        "GET"
+    if (body !== null && body !== undefined) {
+      xhr.setRequestHeader("Content-Type", "application/json");
+    }
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState !== 4) return;
+
+      var payload = {};
+      try {
+        payload = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch (error) {
+        payload = {};
+      }
+
+      callback(null, xhr.status, payload);
+    };
+
+    xhr.onerror = function () {
+      callback(new Error("Network error"), 0, {});
+    };
+
+    xhr.send(body !== null && body !== undefined ? JSON.stringify(body) : null);
+  }
+
+  if (nativeFetch) {
+    window.fetch = function (input, init) {
+      init = init || {};
+
+      var inputUrl = typeof input === "string" ? input : input.url;
+      var requestUrl = document.createElement("a");
+      requestUrl.href = inputUrl;
+
+      var method = String(
+        init.method || (typeof input === "string" ? "GET" : input.method) || "GET"
       ).toUpperCase();
 
-    const sameOrigin =
-      requestUrl.origin ===
-      window.location.origin;
+      var sameOrigin =
+        requestUrl.protocol === window.location.protocol &&
+        requestUrl.host === window.location.host;
 
-    const headers =
-      new Headers(
-        init.headers ||
-        (
-          typeof input === "string"
-            ? undefined
-            : input.headers
-        )
+      var headers = new Headers(
+        init.headers || (typeof input === "string" ? undefined : input.headers)
       );
 
-    if (
-      sameOrigin &&
-      !["GET", "HEAD", "OPTIONS"]
-        .includes(method) &&
-      csrfToken
-    ) {
-      headers.set(
-        "X-CSRF-Token",
+      if (
+        sameOrigin &&
+        method !== "GET" &&
+        method !== "HEAD" &&
+        method !== "OPTIONS" &&
         csrfToken
-      );
-    }
+      ) {
+        headers.set("X-CSRF-Token", csrfToken);
+      }
 
-    const response =
-      await nativeFetch(
-        input,
-        {
-          ...init,
-          headers,
-          credentials: "same-origin",
+      var nextInit = {};
+      Object.keys(init).forEach(function (key) {
+        nextInit[key] = init[key];
+      });
+      nextInit.headers = headers;
+      nextInit.credentials = "same-origin";
+
+      return nativeFetch(input, nextInit).then(function (response) {
+        if (
+          sameOrigin &&
+          response.status === 401 &&
+          requestUrl.pathname.indexOf("/api/") === 0 &&
+          requestUrl.pathname.indexOf("/api/auth/") !== 0
+        ) {
+          deactivate("Oturum süresi doldu. Lütfen tekrar giriş yapın.");
         }
-      );
+        return response;
+      });
+    };
+  }
 
-    if (
-      sameOrigin &&
-      response.status === 401 &&
-      requestUrl.pathname.startsWith("/api/") &&
-      !requestUrl.pathname.startsWith("/api/auth/")
-    ) {
-      deactivate(
-        "Oturum süresi doldu. Lütfen tekrar giriş yapın."
-      );
-    }
-
-    return response;
-  };
-
-  async function checkSession() {
-    try {
-      const response =
-        await nativeFetch(
-          "/api/auth/session",
-          {
-            credentials: "same-origin",
-            cache: "no-store",
-          }
-        );
-
-      if (!response.ok) {
-        deactivate();
+  function checkSession() {
+    xhrJson("GET", "/api/auth/session", null, function (error, status, session) {
+      if (error || status < 200 || status >= 300) {
+        deactivate(error ? "Oturum kontrol edilemedi. Lütfen tekrar deneyin." : "");
         return;
       }
 
-      const session =
-        await response.json();
-
-      if (session?.authenticated) {
+      if (session && session.authenticated) {
         activate(session);
       } else {
         deactivate();
       }
-    } catch {
-      deactivate(
-        "Oturum kontrol edilemedi. Lütfen tekrar deneyin."
-      );
-    }
+    });
   }
 
-  async function login(event) {
+  function login(event) {
     event.preventDefault();
 
-    const passwordInput =
-      document.getElementById("loginPassword");
-
-    const password =
-      String(passwordInput?.value || "");
+    var passwordInput = document.getElementById("loginPassword");
+    var password = String(passwordInput && passwordInput.value ? passwordInput.value : "");
 
     if (!password) {
-      showLoginError(
-        "Şifrenizi girin."
-      );
+      showLoginError("Şifrenizi girin.");
       return;
     }
 
     setSubmitting(true);
     showLoginError("");
 
-    try {
-      const response =
-        await nativeFetch(
-          "/api/auth/login",
-          {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-              "Content-Type":
-                "application/json",
-            },
-            body: JSON.stringify(
-              { password }
-            ),
-          }
-        );
+    xhrJson("POST", "/api/auth/login", { password: password }, function (error, status, payload) {
+      setSubmitting(false);
 
-      const payload =
-        await response.json()
-          .catch(() => ({}));
-
-      if (!response.ok || !payload.authenticated) {
-        showLoginError(
-          "Giriş bilgileri doğrulanamadı."
-        );
+      if (error || status < 200 || status >= 300 || !payload.authenticated) {
+        showLoginError("Giriş bilgileri doğrulanamadı.");
         return;
       }
 
-      if (passwordInput) {
-        passwordInput.value = "";
-      }
+      if (passwordInput) passwordInput.value = "";
 
-      activate(payload);
-    } catch {
-      showLoginError(
-        "Giriş bilgileri doğrulanamadı."
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function logout() {
-    try {
-      await window.fetch(
-        "/api/auth/logout",
-        {
-          method: "POST",
+      // Verify that the legacy WebView actually persisted the session cookie
+      // before exposing the application shell.
+      xhrJson("GET", "/api/auth/session", null, function (verifyError, verifyStatus, session) {
+        if (
+          verifyError ||
+          verifyStatus < 200 ||
+          verifyStatus >= 300 ||
+          !session ||
+          !session.authenticated
+        ) {
+          deactivate("Giriş başarılı ancak oturum kaydedilemedi. Uygulamayı kapatıp tekrar deneyin.");
+          return;
         }
-      );
-    } finally {
-      deactivate("Çıkış yapıldı.");
-    }
+
+        activate(session);
+      });
+    });
   }
 
-  const form =
-    document.getElementById("loginForm");
+  function logout() {
+    xhrJson("POST", "/api/auth/logout", null, function () {
+      deactivate("Çıkış yapıldı.");
+    });
+  }
 
-  const logoutButtonList = logoutButtons();
+  var form = document.getElementById("loginForm");
+  var logoutButtonList = logoutButtons();
 
   if (form) {
-    form.addEventListener(
-      "submit",
-      login
-    );
+    form.addEventListener("submit", login, false);
   }
 
-  logoutButtonList.forEach(logoutButton => {
-    logoutButton.addEventListener(
-      "click",
-      logout
-    );
+  logoutButtonList.forEach(function (logoutButton) {
+    logoutButton.addEventListener("click", logout, false);
   });
 
   checkSession();
