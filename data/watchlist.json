@@ -3126,7 +3126,7 @@
           "decisionId": "nasdaq-1788098550306-SNPS-b61bbe78",
           "symbol": "SNPS",
           "market": "NASDAQ",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "BROKER_ENTRY_FAILED",
           "quantity": 7,
           "remainingQuantity": 7,
           "plannedEntry": 442.71,
@@ -3141,10 +3141,12 @@
             "mode": "PAPER",
             "brokerOrderId": "c8cd86e1-2844-45dd-aa8c-d5a89fb46a7b",
             "clientOrderId": "bci-entry-1a401e64bbd9796a856db42e",
-            "status": "accepted",
+            "status": "canceled",
             "filledQuantity": 0,
-            "filledAveragePrice": 0
-          }
+            "filledAveragePrice": 0,
+            "lastCheckedAt": "2026-08-30T14:09:33.554Z"
+          },
+          "closedAt": "2026-08-30T14:09:33.554Z"
         },
         {
           "id": "nasdaq-broker-entry-1788098227698-SNPS",
@@ -3228,7 +3230,7 @@
           "symbol": "SNPS",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "REJECTED",
           "grade": "MANUEL",
           "timestamp": "2026-08-30T14:02:30.306Z",
           "entry": {
@@ -3262,7 +3264,8 @@
             "stage": "PENDING_BROKER_ENTRY",
             "brokerOrderId": "c8cd86e1-2844-45dd-aa8c-d5a89fb46a7b",
             "lastCheckedAt": "2026-08-30T14:02:35.760Z"
-          }
+          },
+          "closedAt": "2026-08-30T14:09:33.554Z"
         },
         {
           "id": "nasdaq-1788098238566-SNPS-444afe9d",
@@ -6657,6 +6660,48 @@
       ],
       "history": [
         {
+          "id": "nasdaq-1788098550306-SNPS-b61bbe78",
+          "symbol": "SNPS",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "MANUEL",
+          "timestamp": "2026-08-30T14:02:30.306Z",
+          "entry": {
+            "low": null,
+            "high": null,
+            "reference": null
+          },
+          "stop": null,
+          "target1": null,
+          "target2": null,
+          "target3": null,
+          "fibonacci": null,
+          "indicators": {
+            "score": null
+          },
+          "pendingOrder": {
+            "symbol": "SNPS",
+            "quantity": 7,
+            "entryPrice": null,
+            "orderType": "MARKET",
+            "stop": null,
+            "target1": null,
+            "target2": null,
+            "target3": null,
+            "paperOnly": false,
+            "source": "MANUAL",
+            "createdAt": "2026-08-30T14:02:30.306Z",
+            "updatedAt": "2026-08-30T14:02:30.306Z"
+          },
+          "lifecycle": {
+            "stage": "PENDING_BROKER_ENTRY",
+            "brokerOrderId": "c8cd86e1-2844-45dd-aa8c-d5a89fb46a7b",
+            "lastCheckedAt": "2026-08-30T14:02:35.760Z"
+          },
+          "closedAt": "2026-08-30T14:09:33.554Z"
+        },
+        {
           "id": "nasdaq-1788098200798-SNPS-4bbf91b4",
           "symbol": "SNPS",
           "market": "NASDAQ",
@@ -7776,6 +7821,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T14:09:33.554Z",
+          "type": "NASDAQ_BROKER_ENTRY_FAILED",
+          "message": "SNPS Alpaca giriş emri canceled durumuyla gerçekleşmedi."
+        },
         {
           "timestamp": "2026-08-30T14:02:35.760Z",
           "type": "NASDAQ_BROKER_ENTRY_PENDING",
