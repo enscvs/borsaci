@@ -25,6 +25,8 @@ Copy each generated value into its matching Render environment variable. Do not 
 
 Sessions expire after 12 hours and are removed on logout or server restart. API requests require an authenticated session; state-changing requests also require same-origin and CSRF validation.
 
+AI sağlayıcıları opsiyoneldir. `GROQ_API_KEY`, `GEMINI_API_KEY` veya `MISTRAL_API_KEY` değişkenlerinden en az biri tanımlıysa analiz bu sağlayıcılarla sırayla çalışır; hiçbiri tanımlı değilse piyasa, scanner ve paper özellikleri açık kalır, yalnız AI değerlendirmesi kullanılamaz.
+
 ## Telegram paper approval
 
 Paper işlemleri tarama sonunda otomatik açılmaz. Uygun adaylar önce sitedeki `PAPER TRADE APPROVAL` kutusunda ve Telegram'da onay bekler. Telegram içi onay düğmesi için Render'a şu değişkenleri ekleyin:
