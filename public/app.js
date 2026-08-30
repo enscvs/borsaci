@@ -6282,6 +6282,7 @@ function renderPendingPaperOrders(
           <span class="pending-paper-order-badge">${escapeHtml(translateTradingStatus(order.status || "PENDING APPROVAL"))}</span>
           <small>${escapeHtml(created)}</small>
         </div>
+        ${orderFillProgressMarkup(order.quantity, order.filledQuantity || 0, {digits:0})}
         <div class="paper-order-live-price" data-order-market-price data-symbol="${escapeHtml(order.symbol)}">
           SON DOĞRULANMIŞ FİYAT: YÜKLENİYOR…
         </div>
@@ -8509,6 +8510,33 @@ function formatNasdaqUsd(value) {
   if (!Number.isFinite(number)) return "—";
   return new Intl.NumberFormat("tr-TR", {style:"currency", currency:"USD", maximumFractionDigits:number < 10 ? 4 : 2}).format(number);
 }
+function orderFillProgressMarkup(requestedValue, filledValue, {digits = 2} = {}) {
+  const requested = Math.max(0, Number(requestedValue) || 0);
+  const filled = Math.min(requested || Infinity, Math.max(0, Number(filledValue) || 0));
+  const percent = requested > 0 ? Math.min(100, filled * 100 / requested) : 0;
+  const remaining = Math.max(0, requested - filled);
+  const amount = value => Number(value).toLocaleString("tr-TR", {maximumFractionDigits:digits});
+  return `<div class="order-fill-progress"><div class="order-fill-progress-head"><strong>GERÇEKLEŞME %${percent.toFixed(1)}</strong><span>${amount(filled)} / ${amount(requested)}</span></div><div class="order-fill-progress-track" role="progressbar" aria-label="Emir gerçekleşme oranı" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent.toFixed(1)}"><span style="width:${percent.toFixed(2)}%"></span></div><small>Kalan: ${amount(remaining)}</small></div>`;
+}
+function decorateOrderFillProgress(root = document) {
+  root.querySelectorAll?.(".pending-paper-order-card:not([data-fill-progress-ready])").forEach(card => {
+    if (card.querySelector(".order-fill-progress")) { card.dataset.fillProgressReady = "true"; return; }
+    let requested = Number(card.querySelector('input[name="quantity"]')?.value || 0);
+    let filled = Number(card.dataset.filledQuantity || 0);
+    let digits = requested % 1 ? 8 : 0;
+    if (card.classList.contains("crypto-spot-order-card")) {
+      const values = [...card.querySelectorAll(".decision-detail-grid span")].map(node => node.textContent || "");
+      requested = Number(values.find(value => value.startsWith("Miktar:"))?.split(":").slice(1).join(":").trim() || 0);
+      filled = Number(values.find(value => value.startsWith("Gerçekleşen:"))?.split(":").slice(1).join(":").trim() || 0);
+      digits = 8;
+    }
+    const head = card.querySelector(".pending-paper-order-head");
+    if (!head || !requested) return;
+    head.insertAdjacentHTML("afterend", orderFillProgressMarkup(requested, filled, {digits}));
+    card.dataset.fillProgressReady = "true";
+  });
+}
+new MutationObserver(() => decorateOrderFillProgress()).observe(document.documentElement, {childList:true, subtree:true});
 function nasdaqText(name, value) { const element = ns(name); if (element) element.textContent = value; }
 function nasdaqPlan(item) { const fib=item?.fibonacci || {}; return fib.valid ? fib : (item?.fallbackPlan || {}); }
 function nasdaqEntry(item) { const fib=item?.fibonacci || {}; const plan=nasdaqPlan(item); return {low:fib.valid ? fib.entryZoneLow : plan.entryPrice, high:fib.valid ? fib.entryZoneHigh : plan.entryPrice}; }
