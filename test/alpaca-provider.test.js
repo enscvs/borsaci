@@ -39,3 +39,10 @@ test("paper and live bases plus market and limit payloads are explicit", () => {
   assert.deepEqual(buildAlpacaOrderPayload({symbol:"MSFT", quantity:2, orderType:"MARKET"}), {symbol:"MSFT", qty:"2", side:"buy", type:"market", time_in_force:"day"});
   assert.equal(buildAlpacaOrderPayload({symbol:"MSFT", quantity:2, orderType:"LIMIT", entryPrice:420}).limit_price, "420");
 });
+
+test("Alpaca entry payload carries a stable client order id", () => {
+  const payload = buildAlpacaOrderPayload({symbol:"AAPL", quantity:2, orderType:"LIMIT", entryPrice:210, clientOrderId:"bci-entry-abc123"});
+  assert.equal(payload.client_order_id, "bci-entry-abc123");
+  assert.equal(payload.limit_price, "210");
+});
+
