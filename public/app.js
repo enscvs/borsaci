@@ -184,6 +184,7 @@
     };
   }
 })();
+(function () {
 /*
 ========================================================
 BORSACI // AI TRADING TERMINAL
@@ -7088,4 +7089,6 @@ console.log("BORSACI: APP.JS loaded.");
   } else {
     startTradingWhenAuthenticated();
   }
+})();
+
 })();
