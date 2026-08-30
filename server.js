@@ -7880,6 +7880,21 @@ function nasdaqDecisionFromInput(input, timestamp) {
   return {id:`nasdaq-${Date.now()}-${order.symbol}-${crypto.randomBytes(4).toString("hex")}`,symbol:order.symbol,market:"NASDAQ",action:"BUY SETUP",status:"PENDING_APPROVAL",grade:input.grade || "NASDAQ ADAYI",timestamp,entry:{low:order.entryPrice,high:order.entryPrice,reference:order.entryPrice},stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,fibonacci:input.fibonacci || null,indicators:{score:Number(input.score) || null},pendingOrder:{...order,source:input.source || "NASDAQ AI",createdAt:timestamp,updatedAt:timestamp}};
 }
 
+function mergeNasdaqScannerDecisions(incoming, existing, timestamp = new Date()) {
+  const now = new Date(timestamp).getTime();
+  const selectedSymbols = new Set((incoming || []).map(item => item.symbol));
+  const retainedSymbols = new Set();
+  const retained = (existing || []).filter(item => {
+    if (item.status !== "PENDING") return !(item.status === "PENDING_APPROVAL" && selectedSymbols.has(item.symbol));
+    const expiresAt = new Date(item.lifecycle?.expiresAt || 0).getTime();
+    if (Number.isFinite(expiresAt) && expiresAt > 0 && expiresAt <= now) return false;
+    if (selectedSymbols.has(item.symbol) || retainedSymbols.has(item.symbol)) return false;
+    retainedSymbols.add(item.symbol);
+    return true;
+  });
+  return [...(incoming || []), ...retained].slice(0, 100);
+}
+
 async function submitAlpacaPaperOrLiveOrder(order) {
   if (!ALPACA_TRADING_ENABLED) return {submitted:false, mode:"LOCAL_PAPER"};
   const clientOrderId = order.clientOrderId || `bci-entry-${crypto.createHash("sha256").update(String(order.decisionId || `${order.symbol}:${order.quantity}:${order.orderType}:${order.entryPrice}`)).digest("hex").slice(0,24)}`;
@@ -7921,6 +7936,68 @@ function createAlpacaMonitorBroker() {
       return {status:"canceled", cancelled:true};
     },
   });
+}
+
+async function placeNasdaqEmergencyStop(position, timestamp = new Date().toISOString()) {
+  const quantity = Number(position?.remainingQuantity ?? position?.quantity ?? 0);
+  const stopPrice = Number(position?.stop);
+  if (!ALPACA_TRADING_ENABLED || !position?.broker?.submitted || position.status !== "OPEN" || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(stopPrice) || stopPrice <= 0) return false;
+  if (Number.isFinite(Number(position.entry)) && stopPrice >= Number(position.entry)) {
+    position.broker = {...position.broker, protectionError:"Acil stop fiyatı gerçekleşen girişin altında değil.", protectionCheckedAt:timestamp};
+    return true;
+  }
+  if (position.broker?.protection?.orderId) return false;
+  const clientOrderId = `bci-stop-${crypto.createHash("sha256").update(`${position.id}:${quantity}:${stopPrice}`).digest("hex").slice(0,24)}`;
+  const result = await createAlpacaMonitorBroker().placeProtection({symbol:position.symbol, qty:String(quantity), side:"sell", type:"stop", stop_price:String(stopPrice), time_in_force:"gtc", client_order_id:clientOrderId});
+  if (!result.accepted || !result.order?.orderId) {
+    position.broker = {...position.broker, protectionError:String(result.message || result.code || "Alpaca acil stop emri kabul edilmedi."), protectionCheckedAt:timestamp};
+    return true;
+  }
+  position.broker = {...position.broker, protection:{orderId:result.order.orderId, clientOrderId:result.order.clientOrderId || clientOrderId, status:result.status, quantity, stopPrice, createdAt:timestamp}, protectionError:null, protectionCheckedAt:timestamp};
+  return true;
+}
+
+async function cancelNasdaqEmergencyStop(position, timestamp = new Date().toISOString()) {
+  const orderId = position?.broker?.protection?.orderId;
+  if (!orderId) return true;
+  const result = await createAlpacaMonitorBroker().cancelOrder({orderId});
+  if (!result.cancelled) {
+    position.broker = {...position.broker, protectionError:String(result.message || result.code || "Alpaca acil stop emri iptal edilemedi."), protectionCheckedAt:timestamp};
+    return false;
+  }
+  position.broker = {...position.broker, protection:null, protectionError:null, protectionCheckedAt:timestamp};
+  return true;
+}
+
+async function reconcileNasdaqEmergencyStop(paper, position, timestamp) {
+  const protection = position?.broker?.protection;
+  if (!protection?.orderId) return false;
+  let order;
+  try {
+    order = await alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/orders/${encodeURIComponent(String(protection.orderId))}`);
+  } catch (error) {
+    const message = String(error?.message || "Alpaca acil stop emri okunamadı.");
+    if (position.broker?.protectionError === message) return false;
+    position.broker = {...position.broker, protectionError:message, protectionCheckedAt:timestamp};
+    return true;
+  }
+  const status = String(order?.status || "").toLowerCase();
+  const remaining = Number(position.remainingQuantity ?? position.quantity ?? 0);
+  if (alpacaOrderIsFullyFilled(order, remaining)) {
+    const before = {...position};
+    const price = Number(order?.filled_avg_price || protection.stopPrice || position.stop || position.current || position.entry);
+    const event = evaluateLongPosition(before, Math.min(price, Number(before.stop)), {quantityPrecision:0});
+    if (!event || event.type !== "SL") return false;
+    event.idempotencyKey = `ALPACA_STOP:${protection.orderId}`;
+    return settleNasdaqMonitorEvent(paper, position, before, event, price, timestamp, {live:true, averagePrice:price});
+  }
+  if (["canceled", "expired", "rejected", "suspended", "stopped"].includes(status)) {
+    position.broker = {...position.broker, protection:null, protectionError:`Alpaca acil stop emri ${status}; yeniden kurulacak.`, protectionCheckedAt:timestamp};
+    return true;
+  }
+  const changed = protection.status !== status || position.broker?.protectionError;
+  position.broker = {...position.broker, protection:{...protection,status}, protectionError:null, protectionCheckedAt:timestamp};
+  return Boolean(changed);
 }
 
 async function resolveAlpacaMonitorExit(position) {
@@ -8073,6 +8150,10 @@ async function handleNasdaqKillSwitch(req, res) {
         const brokerBacked = Boolean(ALPACA_TRADING_ENABLED && position.broker?.submitted);
         if (brokerBacked) {
           try {
+            if (!await cancelNasdaqEmergencyStop(position, timestamp)) {
+              brokerFailed += 1;
+              continue;
+            }
             const result = await submitNasdaqBrokerExit(position, quantity, {reason:"KILL_SWITCH"});
             if (result.confirmed) {
               closed += settleNasdaqManualExit(paper, position, result.averagePrice || Number(position.current) || Number(position.entry), quantity, timestamp, {reason:"KILL_SWITCH", live:true}) ? 1 : 0;
@@ -8080,9 +8161,11 @@ async function handleNasdaqKillSwitch(req, res) {
               position.monitor = {...(position.monitor || {}), pendingManualExit:{orderId:result.orderId, quantity, reason:"KILL_SWITCH", submittedAt:timestamp, referencePrice:Number(position.current) || Number(position.entry)} };
               brokerPending += 1;
             } else {
+              await placeNasdaqEmergencyStop(position, timestamp);
               brokerFailed += 1;
             }
           } catch (error) {
+            await placeNasdaqEmergencyStop(position, timestamp).catch(() => undefined);
             position.monitor = {...(position.monitor || {}), lastBrokerError:String(error?.message || "Alpaca acil satış emri gönderilemedi.")};
             brokerFailed += 1;
           }
@@ -8172,7 +8255,7 @@ async function handleNasdaqPaperApprove(req, res) {
     const reservedCash = (paper.positions || []).filter(item => item.status === "PENDING_BROKER_ENTRY").reduce((sum, item) => sum + Number(item.plannedEntry || 0) * Number(item.quantity || 0), 0);
     if (plannedCost > Number(paper.cash) - reservedCash) throw new Error("NASDAQ kullanılabilir bakiyesi bu emir için yeterli değil.");
     const existingPosition = (paper.positions || []).find(item => ["OPEN", "PENDING_BROKER_ENTRY"].includes(item.status) && item.symbol === order.symbol);
-    if (existingPosition?.status === "PENDING_BROKER_ENTRY") throw new Error(`${order.symbol} için broker giriş teyidi zaten bekleniyor.`);
+    if (existingPosition) throw new Error(`${order.symbol} için açık veya broker teyidi bekleyen NASDAQ pozisyonu zaten var.`);
     const occupiedSlots = (paper.positions || []).filter(item => ["OPEN", "PENDING_BROKER_ENTRY"].includes(item.status)).length;
     const maxPositions = Number(paper.risk?.maxPositions) || 5;
     if (!existingPosition && occupiedSlots >= maxPositions) throw new Error(`En fazla ${maxPositions} açık veya broker teyidi bekleyen NASDAQ pozisyonu olabilir.`);
@@ -8223,6 +8306,7 @@ async function handleNasdaqPaperApprove(req, res) {
     }
     paper.cash = roundTradingValue(Number(paper.cash) - cost);
     decision.status = "OPEN";
+    if (brokerFilled) await placeNasdaqEmergencyStop(position, timestamp);
     paper.activity = [{timestamp, type:"NASDAQ_OPEN", message:`${order.symbol} NASDAQ ${broker.mode} pozisyonu açıldı.`}, ...(paper.activity || [])].slice(0,100);
     recalculateNasdaqPaper(paper);
     await saveTradingState(saved.content,saved.sha,saved.container);
@@ -8270,14 +8354,25 @@ async function handleNasdaqPaperClose(req, res) {
       if (position.monitor?.pendingManualExit || position.monitor?.pendingBrokerExit) {
         throw new Error("Bu NASDAQ pozisyonu için broker satış teyidi zaten bekleniyor.");
       }
-      const broker = await submitNasdaqBrokerExit(position, quantity, {orderType, limitPrice, reason:"MANUAL"});
+      if (!await cancelNasdaqEmergencyStop(position, timestamp)) throw new Error("Alpaca acil stop emri iptal edilmeden satış gönderilemez.");
+      let broker;
+      try {
+        broker = await submitNasdaqBrokerExit(position, quantity, {orderType, limitPrice, reason:"MANUAL"});
+      } catch (error) {
+        await placeNasdaqEmergencyStop(position, timestamp);
+        throw error;
+      }
       if (broker.confirmed) {
         settleNasdaqManualExit(paper, position, broker.averagePrice || marketPrice, quantity, timestamp, {reason:"MANUAL", live:true, orderType});
+        if (position.status === "OPEN") await placeNasdaqEmergencyStop(position, timestamp);
         recalculateNasdaqPaper(paper);
         await saveTradingState(saved.content, saved.sha, saved.container);
         return sendJSON(res, 200, {nasdaqPaper:nasdaqPaperStateForClient(saved.content), broker:{confirmed:true}});
       }
-      if (!broker.orderId) throw new Error("Alpaca satış emri broker tarafından kabul edilmedi.");
+      if (!broker.orderId) {
+        await placeNasdaqEmergencyStop(position, timestamp);
+        throw new Error("Alpaca satış emri broker tarafından kabul edilmedi.");
+      }
       position.monitor = {...(position.monitor || {}), pendingManualExit:{orderId:broker.orderId, quantity, reason:"MANUAL", orderType, submittedAt:timestamp, referencePrice:marketPrice}};
       paper.activity = [{timestamp, type:"NASDAQ_BROKER_MANUAL_PENDING", message:`${position.symbol} Alpaca ${orderType} satış emri gönderildi; broker dolum teyidi bekleniyor.`}, ...(paper.activity || [])].slice(0,100);
       await saveTradingState(saved.content, saved.sha, saved.container);
@@ -8314,7 +8409,7 @@ async function handleNasdaqScanner(req,res) {
     const compareNasdaqCandidate=(left,right)=>Number(right.score||0)-Number(left.score||0)||left.symbol.localeCompare(right.symbol,"en");
     for(let index=0;index<symbols.length;index+=20){const group=symbols.slice(index,index+20);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history,{minDailyBars:40});if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
     const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik kısa listede Fibonacci hesaplanıyor");const ranked=fibonacciEngine.rankCandidatesWithFibonacci(valid,Date.now(),{market:"NASDAQ"},{limit:5,shortlistLimit:12}).map(item=>({...item,price:item.features.price,ema20:item.features.ema20,ema50:item.features.ema50,ema200:item.features.ema200,rsi:item.features.rsi,macd:item.features.macd,atr:item.features.atr,volumeRatio:item.features.volumeRatio,turnover:item.features.turnover}));
-    updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};const selectedSymbols=new Set(decisions.map(item=>item.symbol));paper.decisions=[...decisions,...(paper.decisions||[]).filter(item=>!(item.status==="PENDING_APPROVAL"&&selectedSymbols.has(item.symbol)))].slice(0,100);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
+    updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital});const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};paper.decisions=mergeNasdaqScannerDecisions(decisions,paper.decisions,timestamp);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
   } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
   finally { releaseScannerExecution("NASDAQ"); }
 }
@@ -9047,7 +9142,12 @@ function cryptoSpotSafetyForClient() {
 }
 
 async function handleCryptoSpotSafety(req, res) {
-  return sendJSON(res, 200, {connected: Boolean(BINANCE_API_KEY && BINANCE_API_SECRET), policy: cryptoSpotSafetyForClient()});
+  try {
+    const account = await fetchBinanceSpotAccount();
+    return sendJSON(res, 200, {connected:true, canTrade:account.canTrade, policy:cryptoSpotSafetyForClient(), error:null});
+  } catch (error) {
+    return sendJSON(res, 200, {connected:false, canTrade:false, policy:cryptoSpotSafetyForClient(), error:{code:String(error?.code || "BINANCE_ACCOUNT_UNAVAILABLE"), message:String(error?.message || "Binance Spot bağlantısı doğrulanamadı.")}});
+  }
 }
 
 function assertNoRecentBinanceLiveDuplicate(fingerprint) {
@@ -10311,6 +10411,7 @@ async function monitorNasdaqBrokerEntry(paper, position, timestamp) {
       decision.lifecycle = {...(decision.lifecycle || {}), stage:"FILLED", filledAt:timestamp, brokerOrderId:orderId};
     }
     paper.activity = [{timestamp,type:"NASDAQ_BROKER_ENTRY_FILLED",message:`${position.symbol} Alpaca emri broker tarafından $${roundTradingValue(entry)} ile gerçekleşti.`},...(paper.activity || [])].slice(0,100);
+    await placeNasdaqEmergencyStop(position, timestamp);
     return true;
   }
   if (["canceled", "expired", "rejected", "suspended", "stopped"].includes(status)) {
@@ -10376,19 +10477,28 @@ async function monitorNasdaqPaperTrading(paper, timestamp) {
   for (const position of paper.positions || []) {
     if (position.status !== "OPEN") continue;
     const isBrokerBacked = Boolean(ALPACA_TRADING_ENABLED && position.broker?.submitted);
+    if (isBrokerBacked) {
+      changed = (await reconcileNasdaqEmergencyStop(paper, position, timestamp)) || changed;
+      if (position.status !== "OPEN") continue;
+      if (!position.broker?.protection?.orderId && !position.monitor?.pendingManualExit && !position.monitor?.pendingBrokerExit) {
+        changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
+      }
+    }
     const pendingManualExit = position.monitor?.pendingManualExit;
     if (isBrokerBacked && pendingManualExit?.orderId) {
       try {
         const resolved = await resolveNasdaqPendingManualExit(position);
         if (resolved?.confirmed) {
-          changed = settleNasdaqManualExit(
+          const settled = settleNasdaqManualExit(
             paper,
             position,
             resolved.averagePrice || Number(pendingManualExit.referencePrice) || Number(position.current) || Number(position.entry),
             Number(pendingManualExit.quantity),
             timestamp,
             {reason:pendingManualExit.reason || "MANUAL", live:true, orderType:pendingManualExit.orderType || "MARKET"}
-          ) || changed;
+          );
+          changed = settled || changed;
+          if (settled && position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
         } else if (resolved?.terminal) {
           position.monitor = {...(position.monitor || {}), pendingManualExit:null, lastBrokerError:`Alpaca manuel çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}; broker dolumu doğrulanmadı.`};
           paper.activity = [{timestamp, type:"NASDAQ_BROKER_EXIT_RECONCILIATION", message:`${position.symbol} NASDAQ broker satışı tam dolmadı; yerel pozisyon açık bırakıldı.`}, ...(paper.activity || [])].slice(0,100);
@@ -10418,7 +10528,9 @@ async function monitorNasdaqPaperTrading(paper, timestamp) {
       try {
         const resolved = await resolveAlpacaMonitorExit(position);
         if (resolved?.confirmed) {
-          changed = settleNasdaqMonitorEvent(paper, position, before, resolved.event, price, timestamp, {live:true, averagePrice:resolved.averagePrice}) || changed;
+          const settled = settleNasdaqMonitorEvent(paper, position, before, resolved.event, price, timestamp, {live:true, averagePrice:resolved.averagePrice});
+          changed = settled || changed;
+          if (settled && position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
         } else if (resolved?.terminal) {
           position.monitor = {...(position.monitor || {}), pendingBrokerExit:null, lastBrokerError:`Alpaca çıkış emri ${String(resolved.order?.status || "tamamlanmadı")}.`};
           changed = true;
@@ -10437,14 +10549,18 @@ async function monitorNasdaqPaperTrading(paper, timestamp) {
       continue;
     }
 
+    if (!await cancelNasdaqEmergencyStop(position, timestamp)) continue;
     const result = await liveBroker.executeExit({symbol:position.symbol, quantity:event.closeQuantity, clientOrderId:automationBrokerClientOrderId("NASDAQ", position, event)});
     if (result.confirmed) {
-      changed = settleNasdaqMonitorEvent(paper, position, before, event, price, timestamp, {live:true, averagePrice:result.averagePrice}) || changed;
+      const settled = settleNasdaqMonitorEvent(paper, position, before, event, price, timestamp, {live:true, averagePrice:result.averagePrice});
+      changed = settled || changed;
+      if (settled && position.status === "OPEN") changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
     } else if (result.order?.orderId) {
       position.monitor = {...(position.monitor || {}), pendingBrokerExit:{orderId:result.order.orderId, event, submittedAt:timestamp}, lastBrokerCheckAt:timestamp};
       changed = true;
     } else {
       position.monitor = {...(position.monitor || {}), lastBrokerError:String(result.message || result.code || "Alpaca exit doğrulanamadı."), lastBrokerCheckAt:timestamp};
+      changed = (await placeNasdaqEmergencyStop(position, timestamp)) || changed;
       changed = true;
     }
   }
