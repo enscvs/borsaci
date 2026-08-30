@@ -84,10 +84,6 @@ let chartSymbol = null;
 let chartEmpty = null;
 let chartContainer = null;
 
-let newsFeed = null;
-let newsImpact = null;
-let dataStatus = null;
-
 /* ---- Attach-image elements ---- */
 let attachImageBtn = null;
 let imageInput = null;
@@ -150,15 +146,6 @@ function initializeElements() {
 
   chartContainer =
     document.getElementById("market_chart");
-
-  newsFeed =
-    document.getElementById("newsFeed");
-
-  newsImpact =
-    document.getElementById("newsImpact");
-
-  dataStatus =
-    document.getElementById("dataStatus");
 
 }
 
@@ -1002,17 +989,6 @@ async function loadMarketData(
 
   if (!clean) return;
 
-  if (dataStatus) {
-
-    dataStatus.innerText =
-      "LOADING";
-
-    dataStatus.classList.add(
-      "loading"
-    );
-
-  }
-
   try {
 
     const cached =
@@ -1055,13 +1031,6 @@ async function loadMarketData(
           false,
           persistInWatchlist
         );
-
-        if (dataStatus) {
-
-          dataStatus.innerText =
-            "LIVE";
-
-        }
 
         return;
 
@@ -1164,13 +1133,6 @@ async function loadMarketData(
       persistInWatchlist
     );
 
-    if (dataStatus) {
-
-      dataStatus.innerText =
-        "LIVE";
-
-    }
-
   } catch (error) {
 
     if (
@@ -1189,32 +1151,9 @@ async function loadMarketData(
       error
     );
 
-    if (dataStatus) {
-
-      dataStatus.innerText =
-        "ERROR";
-
-    }
-
     showDashboardError(
       error.message
     );
-
-  } finally {
-
-    if (
-      dataStatus &&
-      isCurrentSymbolRequest(
-        clean,
-        requestId
-      )
-    ) {
-
-      dataStatus.classList.remove(
-        "loading"
-      );
-
-    }
 
   }
 
@@ -1290,14 +1229,6 @@ function updateDashboard(
     );
 
   }
-
-  updateNews(
-    data.news
-  );
-
-  updateNewsImpact(
-    data.news
-  );
 
   renderWatchlist();
 
@@ -3791,157 +3722,6 @@ function showEmptyChart(
 }
 
 /* ======================================================
-   NEWS
-====================================================== */
-
-function updateNews(
-  news
-) {
-
-  if (!newsFeed) return;
-
-  if (
-    !Array.isArray(news) ||
-    news.length === 0
-  ) {
-
-    newsFeed.innerHTML = `
-      <div class="empty-state">
-
-        <span>
-          NO NEWS DATA
-        </span>
-
-        <small>
-          No recent news found.
-        </small>
-
-      </div>
-    `;
-
-    return;
-
-  }
-
-  newsFeed.innerHTML =
-    news
-      .slice(
-        0,
-        8
-      )
-      .map(
-        item => {
-
-          const title =
-            escapeHtml(
-              item?.title ||
-              "Haber"
-            );
-
-          const source =
-            escapeHtml(
-              item?.source ||
-              ""
-            );
-
-          const date =
-            escapeHtml(
-              item?.publishedDate ||
-              item?.date ||
-              ""
-            );
-
-          return `
-
-            <div
-              class="news-item"
-            >
-
-              <div
-                class="news-date"
-              >
-                ${date}
-              </div>
-
-              <div
-                class="news-title"
-              >
-                ${title}
-              </div>
-
-              <div
-                class="news-source"
-              >
-                ${source}
-              </div>
-
-            </div>
-
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-/* ======================================================
-   NEWS IMPACT
-====================================================== */
-
-function updateNewsImpact(
-  news
-) {
-
-  if (!newsImpact) return;
-
-  if (
-    !Array.isArray(news) ||
-    news.length === 0
-  ) {
-
-    newsImpact.innerHTML = `
-      <span>
-        NO NEWS DATA
-      </span>
-
-      <small>
-        News impact will appear here.
-      </small>
-    `;
-
-    return;
-
-  }
-
-  const latest =
-    news[0];
-
-  newsImpact.innerHTML = `
-
-    <div class="impact-label">
-      LATEST EVENT
-    </div>
-
-    <strong>
-      ${escapeHtml(
-        latest?.title ||
-        "Haber"
-      )}
-    </strong>
-
-    <small>
-      ${escapeHtml(
-        latest?.source ||
-        ""
-      )}
-    </small>
-
-  `;
-
-}
-
-/* ======================================================
    DASHBOARD ERROR
 ====================================================== */
 
@@ -3953,30 +3733,6 @@ function showDashboardError(
     "PİYASA VERİ HATASI",
     message
   );
-
-  if (newsFeed) {
-
-    newsFeed.innerHTML = `
-
-      <div
-        class="empty-state"
-      >
-
-        <span>
-          DATA ERROR
-        </span>
-
-        <small>
-          ${escapeHtml(
-            message
-          )}
-        </small>
-
-      </div>
-
-    `;
-
-  }
 
 }
 
@@ -4020,38 +3776,6 @@ function clearDashboard() {
     "PİYASA VERİSİ YOK",
     "Select a symbol to display the chart."
   );
-
-  if (newsFeed) {
-
-    newsFeed.innerHTML = `
-      <div class="empty-state">
-
-        <span>
-          NO NEWS LOADED
-        </span>
-
-        <small>
-          Select a symbol.
-        </small>
-
-      </div>
-    `;
-
-  }
-
-  if (newsImpact) {
-
-    newsImpact.innerHTML = `
-      <span>
-        NO NEWS DATA
-      </span>
-
-      <small>
-        Select a symbol.
-      </small>
-    `;
-
-  }
 
   renderWatchlist();
 
@@ -5440,51 +5164,6 @@ console.log(
 
 
   /* =======================================================
-     DATA STATUS
-  ======================================================= */
-
-  function setVisualDataStatus(
-    text,
-    type = "waiting"
-  ) {
-
-    const el =
-      document.getElementById(
-        "dataStatus"
-      );
-
-    if (!el) return;
-
-    el.textContent =
-      text;
-
-    el.dataset.status =
-      type;
-
-    if (type === "live") {
-      el.style.color =
-        "var(--borsaci-green)";
-    }
-
-    else if (type === "error") {
-      el.style.color =
-        "var(--borsaci-red)";
-    }
-
-    else {
-      el.style.color =
-        "";
-    }
-
-  }
-
-  setVisualDataStatus(
-    "LIVE",
-    "live"
-  );
-
-
-  /* =======================================================
      PANEL LOAD EFFECT
   ======================================================= */
 
@@ -5920,12 +5599,6 @@ const aiDecisionFeed =
   document.getElementById(
     "aiDecisionFeed"
   );
-
-const tradingActivity =
-  document.getElementById(
-    "tradingActivity"
-  );
-
 
 const TRADING_STATE_STORAGE_KEY =
   "borsaci_trading_state_v1";
@@ -6768,8 +6441,6 @@ function renderPaperOrderState(
   renderAiDecisions(state.decisions || []);
   renderPaperPortfolio(state.paper);
   renderOpenPositions(state.paper?.positions || []);
-  renderTradingActivity(state.activity || []);
-  renderSignalHistory(state.history || []);
   renderPerformance(state);
   renderPendingPaperOrders(state);
   renderManualPendingOrders(state);
@@ -7031,7 +6702,6 @@ function savePaperState(
   saveLocalTradingState(nextState);
   renderPaperPortfolio(nextPaper);
   renderOpenPositions(nextPaper.positions);
-  renderTradingActivity(activity);
   renderPerformance(nextState);
 
   return nextState;
@@ -7056,8 +6726,6 @@ async function approvePaperPosition(
     renderAiDecisions(state.decisions || []);
     renderPaperPortfolio(state.paper);
     renderOpenPositions(state.paper?.positions || []);
-    renderTradingActivity(state.activity || []);
-    renderSignalHistory(state.history || []);
     renderPerformance(state);
     renderAiDecisionDetail((state.decisions || []).find(item => item.id === decision.id) || decision);
   } catch (error) {
@@ -7079,8 +6747,6 @@ async function rejectPaperPosition(decision) {
     renderAiDecisions(state.decisions || []);
     renderPaperPortfolio(state.paper);
     renderOpenPositions(state.paper?.positions || []);
-    renderTradingActivity(state.activity || []);
-    renderSignalHistory(state.history || []);
     renderPerformance(state);
     renderAiDecisionDetail((state.decisions || []).find(item => item.id === decision.id) || decision);
   } catch (error) {
@@ -7190,8 +6856,6 @@ async function closePaperPosition(payload) {
     renderAiDecisions(state.decisions || []);
     renderPaperPortfolio(state.paper);
     renderOpenPositions(state.paper?.positions || []);
-    renderTradingActivity(state.activity || []);
-    renderSignalHistory(state.history || []);
     renderPerformance(state.history || []);
   } catch (error) {
     alert(`Paper pozisyon kapatılamadı: ${error.message}`);
@@ -7487,9 +7151,6 @@ function bindDecisionBoard() {
 }
 
 
-let renderedHistoryRecords = [];
-
-
 function decisionSignature(
   item
 ) {
@@ -7528,117 +7189,6 @@ function uniqueDecisions(
 
       seen.add(signature);
       return true;
-
-    }
-  );
-
-}
-
-
-function detailMarkup(
-  item
-) {
-
-  return `
-    <strong>${item.symbol} · ${item.action} · ${item.status}</strong>
-    <div>Giriş ${formatCurrency(item.entry?.low)}–${formatCurrency(item.entry?.high)}</div>
-    <div>SL ${formatCurrency(item.stop)} · TP1 ${formatCurrency(item.target1)} · TP2 ${formatCurrency(item.target2)}</div>
-    <div>Risk: ${item.riskPlan?.quantity ?? "--"} lot · ${formatCurrency(item.riskPlan?.positionValue)} · azami zarar ${formatCurrency(item.riskPlan?.actualRisk)}</div>
-    <div>Filtreler: Trend ${item.filters?.trend ? "✓" : "—"} · Hacim ${item.filters?.volume ? "✓" : "—"} · Momentum ${item.filters?.momentum ? "✓" : "—"} · RSI ${item.filters?.rsi ? "✓" : "—"}</div>
-    <small>${item.reason || ""}</small>
-  `;
-
-}
-
-
-function renderSignalHistory(
-  history
-) {
-
-  const element =
-    document.getElementById("signalHistory");
-
-  const status =
-    document.getElementById("signalHistoryStatus");
-
-  const records =
-    uniqueDecisions(history);
-
-  renderedHistoryRecords = records;
-
-  if (status) {
-    status.textContent =
-      `${records.length} KAYIT`;
-  }
-
-  if (!element) return;
-
-  if (records.length === 0) {
-    element.innerHTML =
-      '<div class="trading-empty">Henüz arşivlenmiş sinyal yok.</div>';
-    return;
-  }
-
-  element.innerHTML =
-    records.slice(0, 12).map(
-      (item, index) => `
-        <button
-          type="button"
-          class="history-row"
-          data-history-index="${index}"
-        >
-          <span>${item.symbol}</span>
-          <span>${item.action}</span>
-          <span>${item.status}</span>
-          <small>${new Date(
-            item.lifecycle?.closedAt ||
-            item.timestamp
-          ).toLocaleString("tr-TR")}</small>
-        </button>
-      `
-    ).join("");
-
-}
-
-
-function bindSignalHistoryDetails() {
-
-  const element =
-    document.getElementById("signalHistory");
-
-  const detail =
-    document.getElementById("signalDetail");
-
-  if (
-    !element ||
-    !detail ||
-    element.dataset.detailsBound === "true"
-  ) {
-    return;
-  }
-
-  element.dataset.detailsBound = "true";
-
-  element.addEventListener(
-    "click",
-    event => {
-
-      const row =
-        event.target.closest(
-          "[data-history-index]"
-        );
-
-      if (!row) return;
-
-      const item =
-        renderedHistoryRecords[
-          Number(row.dataset.historyIndex)
-        ];
-
-      if (item) {
-        detail.innerHTML =
-          detailMarkup(item);
-      }
 
     }
   );
@@ -8065,41 +7615,6 @@ function renderPaperPortfolio(
 }
 
 
-function renderTradingActivity(
-  activity
-) {
-
-  if (!tradingActivity) {
-    return;
-  }
-
-  if (
-    !Array.isArray(activity) ||
-    activity.length === 0
-  ) {
-    return;
-  }
-
-  tradingActivity.innerHTML =
-    activity.slice(0, 8).map(
-      item => `
-        <div class="log-line">
-          <span class="log-time">
-            ${new Date(item.timestamp).toLocaleTimeString("tr-TR")}
-          </span>
-          <span>${item.message}</span>
-        </div>
-      `
-    ).join("");
-
-  const journal = document.getElementById("tradeJournal");
-  if (journal) {
-    journal.innerHTML = activity.slice(0, 100).map(item => `<details><summary>${escapeHtml(item.type || "EVENT")} · ${escapeHtml(new Date(item.timestamp).toLocaleString("tr-TR"))}</summary><p>${escapeHtml(item.message || "")}</p></details>`).join("") || '<div class="trading-empty">İşlem günlüğü bekleniyor.</div>';
-  }
-
-}
-
-
 async function loadTradingState() {
 
   const localState =
@@ -8117,14 +7632,6 @@ async function loadTradingState() {
 
     renderOpenPositions(
       localState.paper?.positions
-    );
-
-    renderTradingActivity(
-      localState.activity
-    );
-
-    renderSignalHistory(
-      localState.history
     );
 
     renderPerformance(
@@ -8184,14 +7691,6 @@ async function loadTradingState() {
 
       renderOpenPositions(
         state.paper?.positions
-      );
-
-      renderTradingActivity(
-        state.activity
-      );
-
-      renderSignalHistory(
-        state.history
       );
 
       renderPerformance(
@@ -8410,8 +7909,6 @@ async function saveRiskSettingsFromForm(
     renderPaperPortfolio(state.paper);
     renderAiDecisions(state.decisions || []);
     renderOpenPositions(state.paper?.positions || []);
-    renderTradingActivity(state.activity || []);
-    renderSignalHistory(state.history || []);
     renderPerformance(state);
 
   } catch (error) {
@@ -8564,10 +8061,6 @@ async function runTradingScanner() {
       data.paper
     );
 
-    renderTradingActivity(
-      data.activity
-    );
-
     const previousState =
       loadLocalTradingState() || {};
 
@@ -8604,10 +8097,6 @@ async function runTradingScanner() {
 
     renderAiDecisions(
       nextState.decisions
-    );
-
-    renderSignalHistory(
-      nextState.history
     );
 
     renderPerformance(
@@ -8895,8 +8384,6 @@ async function toggleKillSwitch() {
     renderAiDecisions(state.decisions || []);
     renderPaperPortfolio(state.paper);
     renderOpenPositions(state.paper?.positions || []);
-    renderTradingActivity(state.activity || []);
-    renderSignalHistory(state.history || []);
     renderPerformance(state);
 
   } catch (error) {
@@ -10218,8 +9705,6 @@ function bindTradingScannerControls() {
   loadTradingState();
 
   bindRiskSettings();
-
-  bindSignalHistoryDetails();
 
   bindPerformanceRange();
 
