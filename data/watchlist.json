@@ -1279,6 +1279,65 @@
       ],
       "signals": [
         {
+          "id": "crypto-signal-2026-08-30T14:00:06.449Z-APEUSDT",
+          "symbol": "APEUSDT",
+          "timestamp": "2026-08-30T14:00:06.449Z",
+          "score": 58,
+          "grade": "NÖTR",
+          "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+          "price": 0.1436,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 344,
+              "price": 0.0441,
+              "date": "2026-02-06T23:59:59.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 421,
+              "price": 0.2746,
+              "date": "2026-04-24T23:59:59.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 464,
+              "price": 0.1146,
+              "date": "2026-06-06T23:59:59.000Z"
+            },
+            "range": 0.23,
+            "retracementRatio": 0.6941,
+            "entryTriggerPrice": 0.12,
+            "entryZoneLow": 0.12,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-29T23:59:59.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 0.11,
+            "tp1": 0.26,
+            "tp2": 0.3,
+            "tp3": 0.35,
+            "volumeConfirmation": "WEAK",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
+          },
+          "fallbackPlan": null
+        },
+        {
           "id": "crypto-signal-2026-08-30T08:04:19.837Z-SLPUSDT",
           "symbol": "SLPUSDT",
           "timestamp": "2026-08-30T08:04:19.837Z",
@@ -1569,6 +1628,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-30T14:00:06.449Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-08-30T13:00:06.510Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -1595,7 +1659,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-08-30T13:00:06.510Z",
+        "timestamp": "2026-08-30T14:00:06.449Z",
         "scanned": 100,
         "successful": 90,
         "results": [
@@ -1875,7 +1939,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-30T13:00:03.329Z",
+            "timestamp": "2026-08-30T14:00:02.958Z",
             "fallbackPlan": null,
             "price": 1.142,
             "ema20": 0.8779181394093752,
@@ -2161,7 +2225,7 @@
               "volumeConfirmation": "WEAK",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-30T13:00:01.202Z",
+            "timestamp": "2026-08-30T14:00:00.966Z",
             "fallbackPlan": null,
             "price": 4.676,
             "ema20": 4.108165531191476,
@@ -2446,7 +2510,7 @@
               "volumeConfirmation": "WEAK",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-30T13:00:04.509Z",
+            "timestamp": "2026-08-30T14:00:04.250Z",
             "fallbackPlan": null,
             "price": 0.1436,
             "ema20": 0.1371973151376908,
@@ -2734,7 +2798,7 @@
               "volumeConfirmation": "WEAK",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-30T13:00:01.809Z",
+            "timestamp": "2026-08-30T14:00:01.567Z",
             "fallbackPlan": null,
             "price": 1.873,
             "ema20": 1.810081444642293,
@@ -3022,7 +3086,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-08-30T13:00:05.310Z",
+            "timestamp": "2026-08-30T14:00:04.850Z",
             "fallbackPlan": null,
             "price": 0.000689,
             "ema20": 0.000601042259185501,
