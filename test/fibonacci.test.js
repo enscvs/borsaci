@@ -177,6 +177,22 @@ test("technical score breakdown reconciles exact category points and penalties",
   assert.equal(result.score,55);
 });
 
+test("technical grade uses the same 60 point candidate threshold as decision policy",()=>{
+  assert.equal(fib.technicalGrade(59),"NÖTR");
+  assert.equal(fib.technicalGrade(60),"A / AL ADAYI");
+  assert.equal(fib.technicalGrade(80),"A+ / GÜÇLÜ ADAY");
+});
+
+test("candidate ranking is recomputed after Fibonacci analysis",()=>{
+  const history=descendingResistanceFixture();
+  const ranked=fib.rankCandidatesWithFibonacci([
+    {symbol:"ZZZ",score:100,history,validation:{ok:true}},
+    {symbol:"AAA",score:1,history,validation:{ok:true}},
+  ],Date.UTC(2026,7,27,20),{market:"BIST"},{limit:2,shortlistLimit:2});
+  assert.deepEqual(ranked.map(item=>item.symbol),["AAA","ZZZ"]);
+  assert.equal(ranked[0].score,ranked[1].score);
+});
+
 test("MACD signal starts after nine valid MACD values",()=>{
   const values=Array.from({length:40},(_,index)=>100+index);
   const result=fib.macd(values);
