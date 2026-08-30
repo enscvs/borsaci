@@ -7941,7 +7941,7 @@ function createAlpacaMonitorBroker() {
 async function placeNasdaqEmergencyStop(position, timestamp = new Date().toISOString()) {
   const quantity = Number(position?.remainingQuantity ?? position?.quantity ?? 0);
   const stopPrice = Number(position?.stop);
-  if (!ALPACA_TRADING_ENABLED || !position?.broker?.submitted || position.status !== "OPEN" || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(stopPrice) || stopPrice <= 0) return false;
+  if (!ALPACA_TRADING_ENABLED || !position?.broker?.submitted || position.status !== "OPEN" || position?.broker?.protectionSuppressed || !Number.isInteger(quantity) || quantity <= 0 || !Number.isFinite(stopPrice) || stopPrice <= 0) return false;
   if (Number.isFinite(Number(position.entry)) && stopPrice >= Number(position.entry)) {
     position.broker = {...position.broker, protectionError:"Acil stop fiyatı gerçekleşen girişin altında değil.", protectionCheckedAt:timestamp};
     return true;
@@ -7992,7 +7992,20 @@ async function reconcileNasdaqEmergencyStop(paper, position, timestamp) {
     return settleNasdaqMonitorEvent(paper, position, before, event, price, timestamp, {live:true, averagePrice:price});
   }
   if (["canceled", "expired", "rejected", "suspended", "stopped"].includes(status)) {
-    position.broker = {...position.broker, protection:null, protectionError:`Alpaca acil stop emri ${status}; yeniden kurulacak.`, protectionCheckedAt:timestamp};
+    // Alpaca panelinden iptal edilen bağımsız koruma emrini kullanıcının açık
+    // tercihi kabul et. Monitör aynı emri tekrar kurmaz; aksi halde Alpaca
+    // sitesinde silinen emir yaklaşık bir dakika sonra geri geliyordu.
+    const manuallyCancelled = status === "canceled";
+    position.broker = {
+      ...position.broker,
+      protection:null,
+      protectionSuppressed:manuallyCancelled || Boolean(position.broker?.protectionSuppressed),
+      protectionSuppressedAt:manuallyCancelled ? timestamp : position.broker?.protectionSuppressedAt,
+      protectionError:manuallyCancelled
+        ? "Alpaca koruma emri kullanıcı tarafından iptal edildi; otomatik yeniden kurulum durduruldu."
+        : `Alpaca acil stop emri ${status}; yeniden kurulacak.`,
+      protectionCheckedAt:timestamp,
+    };
     return true;
   }
   const changed = protection.status !== status || position.broker?.protectionError;
