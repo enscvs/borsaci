@@ -124,17 +124,22 @@ function rsiSeries(values, period=14) {
 }
 function atrSeries(history, period=14) {
   const tr=history.map((bar,i)=>i===0?bar.high-bar.low:Math.max(bar.high-bar.low,Math.abs(bar.high-history[i-1].close),Math.abs(bar.low-history[i-1].close)));
-  return emaSeries(tr,period);
+  const out=new Array(tr.length).fill(null);if(tr.length<period)return out;
+  let current=average(tr.slice(0,period));out[period-1]=current;
+  for(let i=period;i<tr.length;i+=1){current=(current*(period-1)+tr[i])/period;out[i]=current;}
+  return out;
 }
 function macd(values) {
   const e12=emaSeries(values,12),e26=emaSeries(values,26),line=values.map((_,i)=>finite(e12[i])&&finite(e26[i])?e12[i]-e26[i]:null);
-  const signal=emaSeries(line.map(v=>v??0),9),hist=line.map((v,i)=>finite(v)&&finite(signal[i])?v-signal[i]:null);
+  const firstValid=line.findIndex(finite),signal=new Array(values.length).fill(null);
+  if(firstValid>=0){const validSignal=emaSeries(line.slice(firstValid),9);validSignal.forEach((value,index)=>{signal[firstValid+index]=value;});}
+  const hist=line.map((v,i)=>finite(v)&&finite(signal[i])?v-signal[i]:null);
   return { line, signal, hist };
 }
 function validateDaily(history, options={}) {
   const minDailyBars = Math.max(20, Number(options?.minDailyBars) || CONFIG.data.minDailyBars);
   if (!Array.isArray(history) || history.length < minDailyBars) return { ok:false, code:"INSUFFICIENT_DAILY_DATA", message:`VERİ YETERSİZ: en az ${minDailyBars} tamamlanmış günlük mum gerekli.` };
-  for(let i=0;i<history.length;i+=1){const b=history[i];if(!finite(timeMs(b))||![b.open,b.high,b.low,b.close,b.volume].every(finite)||b.open<=0||b.low<=0||b.high<Math.max(b.open,b.close,b.low)||b.low>Math.min(b.open,b.close,b.high)){return {ok:false,code:"INVALID_DAILY_OHLCV",message:"VERİ YETERSİZ: günlük OHLCV tutarsız."};}if(i&&timeMs(b)<=timeMs(history[i-1]))return {ok:false,code:"NON_CHRONOLOGICAL_DAILY_DATA",message:"VERİ YETERSİZ: mum sırası geçersiz."};}
+  for(let i=0;i<history.length;i+=1){const b=history[i];if(!finite(timeMs(b))||![b.open,b.high,b.low,b.close,b.volume].every(finite)||b.open<=0||b.low<=0||b.volume<0||b.high<Math.max(b.open,b.close,b.low)||b.low>Math.min(b.open,b.close,b.high)){return {ok:false,code:"INVALID_DAILY_OHLCV",message:"VERİ YETERSİZ: günlük OHLCV tutarsız."};}if(i&&timeMs(b)<=timeMs(history[i-1]))return {ok:false,code:"NON_CHRONOLOGICAL_DAILY_DATA",message:"VERİ YETERSİZ: mum sırası geçersiz."};}
   return { ok:true };
 }
 function features(history) {
@@ -460,3 +465,4 @@ function score(history, fib) {
 }
 function xu100Info(history) { const f=features(history); const status=f.price>f.ema20&&f.ema20>f.ema50?"POZİTİF":f.price<f.ema50?"NEGATİF":"NÖTR"; return {status,description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."}; }
 module.exports={CONFIG,validateDaily,features,findAbc,findDescendingHighTrendline,completedDailyHistory,fibonacciLevels,fibonacciPlan,fallbackPlan,score,xu100Info,emaSeries,rsiSeries,atrSeries,macd};
+
