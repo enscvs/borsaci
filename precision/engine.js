@@ -206,18 +206,43 @@ function evaluateSetup(candidate, { regime, config = CONFIG, model = null } = {}
 function labelTrade(history, signalIndex, plan, config = CONFIG) {
   const entryBar = history[signalIndex + 1];
   if (!entryBar) return null;
-  const entry = entryBar.open * (1 + config.strategy.slippageBps / 10000), stop = plan.stop, target = entry + (entry - stop) * 2;
+  const slippageBps = finite(config.strategy?.slippageBps) ? Number(config.strategy.slippageBps) : 0;
+  const commissionBps = finite(config.strategy?.commissionBps) ? Number(config.strategy.commissionBps) : 0;
+  const rawEntry = Number(entryBar.open);
+  const entry = rawEntry * (1 + slippageBps / 10000), stop = Number(plan.stop), target = entry + (entry - stop) * 2;
+  const grossRisk = rawEntry - stop, netRisk = entry - stop;
+  if (!(grossRisk > 0) || !(netRisk > 0)) return null;
+  const settle = (rawExit, outcome, holdingDays, extra = {}) => {
+    const exit = Number(rawExit) * (1 - slippageBps / 10000);
+    const commission = (entry + exit) * commissionBps / 10000;
+    const grossR = (Number(rawExit) - rawEntry) / grossRisk;
+    const netR = (exit - entry - commission) / netRisk;
+    return {
+      outcome,
+      exit,
+      rawEntry,
+      rawExit: Number(rawExit),
+      entry,
+      stop,
+      target,
+      holdingDays,
+      grossR: round(grossR),
+      costsR: round(grossR - netR),
+      r: round(netR),
+      ...extra,
+    };
+  };
   const maxHoldingDays = finite(config.strategy.maxHoldingDays) ? Number(config.strategy.maxHoldingDays) : history.length - signalIndex - 1;
   for (let i = signalIndex + 1; i <= Math.min(history.length - 1, signalIndex + maxHoldingDays); i += 1) {
     const bar = history[i];
-    if (bar.open <= stop) return { outcome: "LOSS", exit: bar.open, holdingDays: i - signalIndex, entry, stop, target, r: round((bar.open - entry) / (entry - stop)) };
+    if (bar.open <= stop) return settle(bar.open, "LOSS", i - signalIndex);
     const stopHit = bar.low <= stop, targetHit = bar.high >= target;
-    if (stopHit && targetHit) return { outcome: "LOSS", exit: stop, holdingDays: i - signalIndex, entry, stop, target, r: -1, conservativeSameBar: true };
-    if (stopHit) return { outcome: "LOSS", exit: stop, holdingDays: i - signalIndex, entry, stop, target, r: -1 };
-    if (targetHit) return { outcome: "WIN", exit: target, holdingDays: i - signalIndex, entry, stop, target, r: 2 };
+    if (stopHit && targetHit) return settle(stop, "LOSS", i - signalIndex, {conservativeSameBar: true});
+    if (stopHit) return settle(stop, "LOSS", i - signalIndex);
+    if (targetHit) return settle(target, "WIN", i - signalIndex);
   }
   const exit = history[Math.min(history.length - 1, signalIndex + maxHoldingDays)].close;
-  return { outcome: "TIMEOUT", exit, holdingDays: maxHoldingDays, entry, stop, target, r: round((exit - entry) / (entry - stop)) };
+  return settle(exit, "TIMEOUT", maxHoldingDays);
 }
 function summarizeBacktest(trades) {
   const counts = { WIN: 0, LOSS: 0, TIMEOUT: 0 }; trades.forEach(x => { counts[x.outcome] = (counts[x.outcome] || 0) + 1; });
@@ -240,21 +265,23 @@ function attachLlmExplanation(decision, explanation) {
 
 function runBacktest(signals, config = CONFIG) {
   const trades = [];
-  const openSymbols = new Set();
+  const blockedUntil = new Map();
   const ordered = [...(signals || [])].sort((a, b) => Number(a.signalIndex) - Number(b.signalIndex));
   for (const signal of ordered) {
-    if (!signal?.history || openSymbols.has(signal.symbol)) continue;
+    const signalIndex = Number(signal?.signalIndex);
+    if (!signal?.history || !Number.isInteger(signalIndex) || signalIndex < Number(blockedUntil.get(signal.symbol) || -1)) continue;
     const label = labelTrade(signal.history, signal.signalIndex, signal.plan, config);
     if (!label) continue;
-    openSymbols.add(signal.symbol);
     trades.push({ ...label, symbol: signal.symbol, sector: signal.sector || "UNKNOWN", regime: signal.regime || "UNKNOWN", signalIndex: signal.signalIndex });
-    openSymbols.delete(signal.symbol);
+    blockedUntil.set(signal.symbol, signalIndex + label.holdingDays);
   }
   const summary = summarizeBacktest(trades);
+  const grossTrades = trades.map(trade => ({...trade, r: trade.grossR}));
+  const beforeCosts = summarizeBacktest(grossTrades);
   const group = key => Object.fromEntries([...new Set(trades.map(x => x[key]))].map(value => [value, summarizeBacktest(trades.filter(x => x[key] === value))]));
   return {
     ...summary,
-    beforeCosts: { ...summary },
+    beforeCosts,
     afterCosts: summary,
     byRegime: group("regime"),
     bySector: group("sector"),
@@ -284,4 +311,5 @@ function brierScore(predictions) {
 }
 
 module.exports = { CONFIG, barTimestamp, validateHistory, featuresAt, calculateMarketRegime, rankRelativeStrength, buildPlan, evaluateSetup, labelTrade, summarizeBacktest, walkForward, attachLlmExplanation, runBacktest, trainLogistic, brierScore, emaSeries, rsiSeries, atrSeries };
+
 
