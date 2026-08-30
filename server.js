@@ -8403,6 +8403,107 @@ async function handleNasdaqProtectionEnable(req, res) {
   } catch (error) { return sendJSON(res, 400, {error:error.message}); }
 }
 
+function nasdaqPlanForDiscoveredSymbol(paper, symbol) {
+  const decision = (paper.decisions || []).find(item => item.symbol === symbol);
+  const scan = (paper.scanner?.results || []).find(item => item.symbol === symbol);
+  const plan = scan?.fibonacci?.valid ? scan.fibonacci : (scan?.fallbackPlan || scan?.fibonacci || {});
+  return {
+    decisionId:decision?.id || null,
+    stop:Number(decision?.pendingOrder?.stop ?? decision?.stop ?? plan.stopLoss) || null,
+    target1:Number(decision?.pendingOrder?.target1 ?? decision?.target1 ?? plan.tp1) || null,
+    target2:Number(decision?.pendingOrder?.target2 ?? decision?.target2 ?? plan.tp2) || null,
+    target3:Number(decision?.pendingOrder?.target3 ?? decision?.target3 ?? plan.tp3) || null,
+  };
+}
+
+async function reconcileNasdaqBrokerState(reason = "MANUAL") {
+  if (!ALPACA_TRADING_ENABLED) throw new Error("Alpaca emir hattı açık değil.");
+  const saved = await getTradingState();
+  const paper = saved.content.nasdaqPaper;
+  const timestamp = new Date().toISOString();
+  const after = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const [ordersPayload, positionsPayload] = await Promise.all([
+    alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/orders?status=all&limit=500&direction=desc&nested=false&after=${encodeURIComponent(after)}`),
+    alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/positions`),
+  ]);
+  const orders = (Array.isArray(ordersPayload) ? ordersPayload : []).filter(order => /^bci-(?:entry|stop|nasd)-/i.test(String(order?.client_order_id || "")));
+  const brokerPositions = new Map((Array.isArray(positionsPayload) ? positionsPayload : []).map(position => [String(position.symbol || "").toUpperCase(), position]));
+  let discovered = 0;
+  let linked = 0;
+  let updated = 0;
+
+  for (const position of paper.positions || []) {
+    if (position.status === "PENDING_BROKER_ENTRY" && position.broker?.brokerOrderId) updated += await monitorNasdaqBrokerEntry(paper, position, timestamp) ? 1 : 0;
+    if (position.status === "OPEN" && position.broker?.submitted) updated += await reconcileNasdaqEmergencyStop(paper, position, timestamp) ? 1 : 0;
+  }
+
+  for (const order of orders) {
+    const orderId = String(order?.id || "");
+    const clientOrderId = String(order?.client_order_id || "");
+    const symbol = String(order?.symbol || "").toUpperCase();
+    const status = String(order?.status || "").toLowerCase();
+    if (!orderId || !symbol) continue;
+    const existing = (paper.positions || []).find(item => item.broker?.brokerOrderId === orderId || item.broker?.clientOrderId === clientOrderId);
+    if (/^bci-entry-/i.test(clientOrderId) && !existing) {
+      // Aynı sembol için birden çok eski BorsaCI giriş emri bulunabilir.
+      // Broker pozisyonunu yalnız en yeni eşleşmeyle bir kez yeniden kur.
+      if ((paper.positions || []).some(item => ["OPEN","PENDING_BROKER_ENTRY"].includes(item.status) && item.symbol === symbol)) continue;
+      const plan = nasdaqPlanForDiscoveredSymbol(paper, symbol);
+      const requested = Number(order?.qty || 0);
+      const filled = Number(order?.filled_qty || 0);
+      const brokerPosition = brokerPositions.get(symbol);
+      const openStatus = ["new","accepted","pending_new","partially_filled","held","replaced","pending_replace"].includes(status);
+      if (!openStatus && !brokerPosition) continue;
+      const quantity = brokerPosition ? Number(brokerPosition.qty || filled) : requested;
+      const entry = Number(brokerPosition?.avg_entry_price || order?.filled_avg_price || order?.limit_price || order?.stop_price || 0);
+      const reconstructed = {
+        id:`nasdaq-recovered-${orderId}`,
+        decisionId:plan.decisionId,
+        symbol, market:"NASDAQ",
+        status:openStatus ? "PENDING_BROKER_ENTRY" : "OPEN",
+        quantity:openStatus ? requested : quantity,
+        remainingQuantity:openStatus ? requested : quantity,
+        originalQuantity:openStatus ? requested : quantity,
+        plannedEntry:entry || Number(order?.limit_price || 0),
+        entry:openStatus ? undefined : entry,
+        current:Number(brokerPosition?.current_price || entry),
+        stop:plan.stop, target1:plan.target1, target2:plan.target2, target3:plan.target3,
+        openedAt:String(order?.filled_at || order?.submitted_at || timestamp),
+        broker:{submitted:true, brokerOrderId:orderId, clientOrderId, status, filledQuantity:filled, filledAveragePrice:Number(order?.filled_avg_price || 0) || null, accountedCost:filled > 0 && entry > 0 ? roundTradingValue(filled * entry) : 0, recoveredAt:timestamp},
+      };
+      paper.positions = [reconstructed, ...(paper.positions || [])];
+      if (reconstructed.broker.accountedCost > 0) paper.cash = roundTradingValue(Number(paper.cash || 0) - reconstructed.broker.accountedCost);
+      discovered += 1;
+      continue;
+    }
+    const local = existing || (paper.positions || []).find(item => item.status === "OPEN" && item.symbol === symbol);
+    if (!local) continue;
+    if (/^bci-stop-/i.test(clientOrderId) && !local.broker?.protection?.orderId && !["canceled","expired","rejected","filled"].includes(status)) {
+      local.broker = {...(local.broker || {}), protection:{orderId,clientOrderId,status,quantity:Number(order?.qty || local.remainingQuantity || local.quantity),stopPrice:Number(order?.stop_price || local.stop),createdAt:String(order?.submitted_at || timestamp)}, protectionSuppressed:false, protectionError:null};
+      linked += 1;
+    }
+    if (/^bci-nasd-/i.test(clientOrderId) && !local.monitor?.pendingManualExit && !["canceled","expired","rejected","filled"].includes(status)) {
+      local.monitor = {...(local.monitor || {}), pendingManualExit:{orderId,quantity:Number(order?.qty || 0),reason:"RECOVERED",orderType:String(order?.type || "market").toUpperCase(),submittedAt:String(order?.submitted_at || timestamp),referencePrice:Number(local.current || local.entry)}};
+      linked += 1;
+    }
+  }
+
+  for (const position of paper.positions || []) {
+    if (position.status !== "OPEN" || !position.broker?.submitted) continue;
+    position.broker = {...position.broker, brokerDiscrepancy:brokerPositions.has(position.symbol) ? null : "Alpaca hesabında eşleşen açık pozisyon bulunamadı.", lastReconciledAt:timestamp};
+  }
+  recalculateNasdaqPaper(paper);
+  paper.brokerReconciliation = {timestamp, reason, discovered, linked, updated, managedOrders:orders.length};
+  paper.activity = [{timestamp,type:"NASDAQ_BROKER_RECONCILE",message:`Alpaca uzlaştırması tamamlandı: ${discovered} emir keşfedildi, ${linked} kayıt bağlandı, ${updated} durum güncellendi.`},...(paper.activity || [])].slice(0,100);
+  await saveTradingState(saved.content, saved.sha, saved.container);
+  return {nasdaqPaper:nasdaqPaperStateForClient(saved.content), reconciliation:paper.brokerReconciliation};
+}
+
+async function handleNasdaqBrokerReconcile(req, res) {
+  try { return sendJSON(res, 200, await reconcileNasdaqBrokerState("MANUAL")); }
+  catch (error) { return sendJSON(res, 400, {error:error.message}); }
+}
+
 async function handleNasdaqPaperClose(req, res) {
   try {
     const input = await readTradingRequest(req);
@@ -8954,6 +9055,7 @@ if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return wi
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return withTradingStateMutation("nasdaq-paper-reject", () => handleNasdaqPaperReject(req, res));
 if (req.method === "POST" && pathname === "/api/nasdaq/broker-entry/cancel") return withTradingStateMutation("nasdaq-broker-entry-cancel", () => handleNasdaqBrokerEntryCancel(req, res));
 if (req.method === "POST" && pathname === "/api/nasdaq/protection/enable") return withTradingStateMutation("nasdaq-protection-enable", () => handleNasdaqProtectionEnable(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/broker/reconcile") return withTradingStateMutation("nasdaq-broker-reconcile", () => handleNasdaqBrokerReconcile(req, res));
 if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return withTradingStateMutation("nasdaq-paper-close", () => handleNasdaqPaperClose(req, res));
 
 if (
@@ -11441,6 +11543,15 @@ server.listen(
     };
     setTimeout(() => triggerUnifiedPositionMonitor("START"), 15000);
     setInterval(() => triggerUnifiedPositionMonitor("CYCLE"), PAPER_MONITOR_INTERVAL_MS);
+
+    // Render yeniden başladığında yalnız BorsaCI client_order_id önekli
+    // Alpaca emirlerini keşfet ve GitHub state ile yeniden bağla.
+    if (ALPACA_TRADING_ENABLED) {
+      setTimeout(() => {
+        void withTradingStateMutation("nasdaq-startup-reconcile", () => reconcileNasdaqBrokerState("STARTUP"))
+          .catch(error => console.error("NASDAQ STARTUP RECONCILE ERROR:", error.message));
+      }, 25000);
+    }
 
     // Scheduler bir sonraki tam saatte otomatik tarama yapar. BIST ve
     // NASDAQ piyasa kapaliyken atlanir, kripto ise 7/24 calisir. Her scanner
