@@ -7882,13 +7882,16 @@ function nasdaqDecisionFromInput(input, timestamp) {
 
 async function submitAlpacaPaperOrLiveOrder(order) {
   if (!ALPACA_TRADING_ENABLED) return {submitted:false, mode:"LOCAL_PAPER"};
-  const payload = buildAlpacaOrderPayload(order);
+  const clientOrderId = order.clientOrderId || `bci-entry-${crypto.createHash("sha256").update(String(order.decisionId || `${order.symbol}:${order.quantity}:${order.orderType}:${order.entryPrice}`)).digest("hex").slice(0,24)}`;
+  const payload = buildAlpacaOrderPayload({...order, clientOrderId});
   const result = await alpacaJson(`${alpacaTradingBase(ALPACA_TRADING_MODE)}/v2/orders`, {method:"POST", body:payload});
+  const brokerOrderId = String(result?.id || "").trim();
+  if (!brokerOrderId) throw new Error("Alpaca emri kabul ettiğini doğrulayan order ID döndürmedi.");
   return {
     submitted:true,
     mode:ALPACA_TRADING_MODE.toUpperCase(),
-    brokerOrderId:String(result?.id || "") || null,
-    clientOrderId:String(result?.client_order_id || "") || null,
+    brokerOrderId,
+    clientOrderId:String(result?.client_order_id || clientOrderId),
     status:String(result?.status || "submitted").toLowerCase(),
     filledQuantity:Number(result?.filled_qty || 0) || 0,
     filledAveragePrice:Number(result?.filled_avg_price || 0) || 0,
@@ -8155,7 +8158,7 @@ async function handleNasdaqPaperApprove(req, res) {
     const quote = await fetchNasdaqDailyClose(order.symbol);
     const marketPrice = Number(quote.price);
     const timestamp = new Date().toISOString();
-    if (order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
+    if (!ALPACA_TRADING_ENABLED && order.orderType === "LIMIT" && marketPrice > Number(order.entryPrice)) {
       decision.status = "PENDING_LIMIT";
       decision.pendingOrder = {...order, status:"PENDING_LIMIT", lastMarketPrice:marketPrice, updatedAt:timestamp};
       decision.lifecycle = {...(decision.lifecycle || {}), stage:"PENDING_LIMIT", lastCheckedAt:timestamp, lastMarketPrice:marketPrice};
@@ -8163,11 +8166,17 @@ async function handleNasdaqPaperApprove(req, res) {
       await saveTradingState(saved.content, saved.sha, saved.container);
       return sendJSON(res,200,{nasdaqPaper:nasdaqPaperStateForClient(saved.content)});
     }
-    const entry = order.orderType === "MARKET" ? marketPrice : Math.min(marketPrice, Number(order.entryPrice));
+    const entry = order.orderType === "MARKET" ? marketPrice : Number(order.entryPrice);
     if (order.stop !== null && Number(order.stop) >= entry) throw new Error("Stop gerçekleşen girişin altında olmalı.");
     const plannedCost = roundTradingValue(entry * Number(order.quantity));
-    if (plannedCost > Number(paper.cash)) throw new Error("NASDAQ paper bakiyesi bu emir için yeterli değil.");
-    const broker = await submitAlpacaPaperOrLiveOrder({...order, entryPrice:entry});
+    const reservedCash = (paper.positions || []).filter(item => item.status === "PENDING_BROKER_ENTRY").reduce((sum, item) => sum + Number(item.plannedEntry || 0) * Number(item.quantity || 0), 0);
+    if (plannedCost > Number(paper.cash) - reservedCash) throw new Error("NASDAQ kullanılabilir bakiyesi bu emir için yeterli değil.");
+    const existingPosition = (paper.positions || []).find(item => ["OPEN", "PENDING_BROKER_ENTRY"].includes(item.status) && item.symbol === order.symbol);
+    if (existingPosition?.status === "PENDING_BROKER_ENTRY") throw new Error(`${order.symbol} için broker giriş teyidi zaten bekleniyor.`);
+    const occupiedSlots = (paper.positions || []).filter(item => ["OPEN", "PENDING_BROKER_ENTRY"].includes(item.status)).length;
+    const maxPositions = Number(paper.risk?.maxPositions) || 5;
+    if (!existingPosition && occupiedSlots >= maxPositions) throw new Error(`En fazla ${maxPositions} açık veya broker teyidi bekleyen NASDAQ pozisyonu olabilir.`);
+    const broker = await submitAlpacaPaperOrLiveOrder({...order, entryPrice:entry, decisionId:decision.id});
     const liveBrokerOrder = Boolean(broker.submitted);
     const brokerFilled = liveBrokerOrder && String(broker.status || "").toLowerCase() === "filled" && Number(broker.filledQuantity || 0) + 1e-12 >= Number(order.quantity);
 
@@ -8209,8 +8218,6 @@ async function handleNasdaqPaperApprove(req, res) {
       position.entry = roundTradingValue((Number(position.entry) * Number(position.quantity) + executedEntry * executedQuantity) / total);
       position.quantity = total; position.remainingQuantity = total; position.current = marketPrice;
     } else {
-      const max = Number(paper.risk?.maxPositions) || 5;
-      if ((paper.positions || []).filter(item => item.status === "OPEN").length >= max) throw new Error(`En fazla ${max} açık NASDAQ pozisyonu olabilir.`);
       position = {id:`nasdaq-pos-${Date.now()}-${order.symbol}`,decisionId:decision.id,symbol:order.symbol,market:"NASDAQ",status:"OPEN",quantity:executedQuantity,remainingQuantity:executedQuantity,originalQuantity:executedQuantity,entry:executedEntry,current:marketPrice,stop:order.stop,target1:order.target1,target2:order.target2,target3:order.target3,openedAt:timestamp,broker};
       paper.positions = [position, ...(paper.positions || [])];
     }
@@ -8770,11 +8777,11 @@ if (req.method === "GET" && pathname === "/api/nasdaq/state") return handleNasda
 if (req.method === "GET" && pathname === "/api/nasdaq/quotes") return handleNasdaqQuotes(req, res);
 if (req.method === "POST" && pathname === "/api/nasdaq/risk-settings") return handleNasdaqRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/nasdaq/kill-switch") return handleNasdaqKillSwitch(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return handleNasdaqPaperQueue(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return handleNasdaqPaperUpdate(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return handleNasdaqPaperApprove(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return handleNasdaqPaperReject(req, res);
-if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return handleNasdaqPaperClose(req, res);
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/queue") return withTradingStateMutation("nasdaq-paper-queue", () => handleNasdaqPaperQueue(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/update") return withTradingStateMutation("nasdaq-paper-update", () => handleNasdaqPaperUpdate(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/approve") return withTradingStateMutation("nasdaq-paper-approve", () => handleNasdaqPaperApprove(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/reject") return withTradingStateMutation("nasdaq-paper-reject", () => handleNasdaqPaperReject(req, res));
+if (req.method === "POST" && pathname === "/api/nasdaq/paper/close") return withTradingStateMutation("nasdaq-paper-close", () => handleNasdaqPaperClose(req, res));
 
 if (
   req.method === "GET" &&
