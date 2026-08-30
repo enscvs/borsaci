@@ -55,8 +55,6 @@ const {
   selectBinanceSignedRequestBases,
 } = require("./trading/binance-private-gateway");
 
-const precision = require("./precision/engine");
-
 const {
   Client,
 } = require("@modelcontextprotocol/sdk/client/index.js");
@@ -4808,7 +4806,7 @@ async function openEligiblePaperPositions(
   return opened;
 }
 
-function closeMonitoredPaperPosition(
+function closeBistPaperPosition(
   state,
   position,
   closePrice,
@@ -5850,7 +5848,7 @@ async function handleKillSwitch(req, res) {
         }
 
         const notification =
-          closeMonitoredPaperPosition(
+          closeBistPaperPosition(
             state,
             position,
             closePrice,
@@ -6301,7 +6299,7 @@ async function handlePaperClose(req, res) {
     const timestamp = new Date().toISOString();
     let notification;
     if (quantity === Number(position.quantity)) {
-      notification = closeMonitoredPaperPosition(
+      notification = closeBistPaperPosition(
         state, position, closePrice, "CLOSED", `MANUAL_${orderType}_CLOSE`, timestamp
       );
     } else {
@@ -11133,3 +11131,4 @@ server.listen(
 
   }
 );
+
