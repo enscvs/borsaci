@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 101893.18,
-      "equity": 142372.78,
-      "pnl": 42863.173574438086,
-      "pnlPercent": 42.863173574438086,
+      "cash": 142332.3,
+      "equity": 142332.3,
+      "pnl": 42822.69357443808,
+      "pnlPercent": 42.822693574438084,
       "positions": [
         {
           "id": "paper-2026-08-30T09:58:25.019Z-SDTTR-c10d3946",
@@ -28,11 +28,13 @@
           "target1": 24.88,
           "target2": 26.64,
           "target3": 28.88,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-08-30T09:58:25.019Z",
           "tp1Hit": false,
           "realizedPnl": -40.48,
-          "pnl": -40.48
+          "pnl": -80.96,
+          "closedAt": "2026-08-30T11:51:00.010Z",
+          "closeReason": "MANUAL_MARKET_CLOSE"
         },
         {
           "id": "paper-2026-08-30T09:57:02.620Z-VAKBN-0f263156",
@@ -20518,13 +20520,15 @@
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
         "timestamp": "2026-08-30T09:51:11.656Z",
         "manualOverride": false
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1788077045841-SDTTR",
         "rank": 2,
         "symbol": "SDTTR",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 18.68,
@@ -20822,11 +20826,12 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-08-30T09:51:11.657Z",
           "expiresAt": "2026-08-31T09:51:11.657Z",
           "overrideAt": "2026-08-30T09:57:43.814Z",
-          "openedAt": "2026-08-30T09:58:25.019Z"
+          "openedAt": "2026-08-30T09:58:25.019Z",
+          "closedAt": "2026-08-30T11:51:00.010Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -20853,10 +20858,10 @@
           "totalCost": 40520.08,
           "status": "APPROVED",
           "approvedAt": "2026-08-30T09:58:25.019Z"
-        }
-      }
-    ],
-    "history": [
+        },
+        "outcome": "MANUAL_MARKET_CLOSE",
+        "realizedPnL": -80.96
+      },
       {
         "id": "1788077045842-VAKBN",
         "rank": 3,
@@ -24955,6 +24960,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T11:51:00.010Z",
+        "type": "CLOSED",
+        "message": "SDTTR paper pozisyonu kapatıldı: MANUAL_MARKET_CLOSE · ₺-80.96."
+      },
       {
         "timestamp": "2026-08-30T09:58:25.019Z",
         "type": "PAPER_APPROVED",
