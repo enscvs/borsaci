@@ -3,7 +3,10 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 
-const SESSION_COOKIE_NAME = "__Host-borsaci_session";
+// Legacy iOS WebViews can mishandle the modern __Host- cookie prefix.
+// Keep the same secure cookie attributes while using a broadly compatible
+// cookie name so old iPhone wrappers can persist and resend the session.
+const SESSION_COOKIE_NAME = "borsaci_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILED_LOGINS = 5;
