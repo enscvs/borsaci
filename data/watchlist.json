@@ -3122,6 +3122,31 @@
       "pnlPercent": 0,
       "positions": [
         {
+          "id": "nasdaq-broker-entry-1788099726561-NVDA",
+          "decisionId": "nasdaq-1788099677940-NVDA-c175f1e7",
+          "symbol": "NVDA",
+          "market": "NASDAQ",
+          "status": "PENDING_BROKER_ENTRY",
+          "quantity": 2,
+          "remainingQuantity": 2,
+          "plannedEntry": 217.54,
+          "current": 217.54,
+          "stop": 203.25,
+          "target1": 230.8,
+          "target2": 237.16,
+          "target3": 245.27,
+          "openedAt": "2026-08-30T14:22:06.275Z",
+          "broker": {
+            "submitted": true,
+            "mode": "PAPER",
+            "brokerOrderId": "97fe77da-fdb1-442f-a27e-10e5bbcd323b",
+            "clientOrderId": "bci-entry-8bf949d8989054e20c1f3683",
+            "status": "accepted",
+            "filledQuantity": 0,
+            "filledAveragePrice": 0
+          }
+        },
+        {
           "id": "nasdaq-broker-entry-1788098556041-SNPS",
           "decisionId": "nasdaq-1788098550306-SNPS-b61bbe78",
           "symbol": "SNPS",
@@ -3230,7 +3255,7 @@
           "symbol": "NVDA",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_APPROVAL",
+          "status": "PENDING_BROKER_ENTRY",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-30T14:21:17.940Z",
           "entry": {
@@ -3308,6 +3333,11 @@
             "createdAt": "2026-08-30T14:21:17.940Z",
             "updatedAt": "2026-08-30T14:22:00.381Z",
             "editedAt": "2026-08-30T14:22:00.381Z"
+          },
+          "lifecycle": {
+            "stage": "PENDING_BROKER_ENTRY",
+            "brokerOrderId": "97fe77da-fdb1-442f-a27e-10e5bbcd323b",
+            "lastCheckedAt": "2026-08-30T14:22:06.275Z"
           }
         },
         {
@@ -7906,6 +7936,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T14:22:06.275Z",
+          "type": "NASDAQ_BROKER_ENTRY_PENDING",
+          "message": "NVDA Alpaca emri gönderildi; broker fill doğrulaması bekleniyor."
+        },
         {
           "timestamp": "2026-08-30T14:21:17.940Z",
           "type": "NASDAQ_PENDING",
