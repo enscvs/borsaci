@@ -2484,6 +2484,12 @@ textarea::placeholder {
   font-size: 9px;
 }
 
+.order-fill-progress { display:grid; gap:5px; padding:9px 10px; border-bottom:1px solid rgba(72,255,104,.15); background:rgba(0,0,0,.18); }
+.order-fill-progress-head { display:flex; justify-content:space-between; gap:12px; color:#d9ffe0; font-size:10px; }
+.order-fill-progress-track { height:8px; overflow:hidden; border:1px solid rgba(72,255,104,.38); background:rgba(72,255,104,.08); }
+.order-fill-progress-track > span { display:block; height:100%; background:linear-gradient(90deg,#d49a00,#48ff68); transition:width .25s ease; }
+.order-fill-progress small { color:#8ba48e; font-size:9px; }
+
 .paper-order-live-price {
   padding: 7px 10px;
   border-bottom: 1px solid rgba(68, 255, 117, .16);
