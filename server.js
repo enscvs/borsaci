@@ -11,6 +11,7 @@ const {
 
 const OpenAI = require("openai");
 const fibonacciEngine = require("./trading/fibonacci-engine");
+const precisionEngine = require("./precision/engine");
 const dailySummary = require("./trading/daily-summary");
 const paperOrders = require("./trading/paper-orders");
 const { scannerAction } = require("./trading/decision-policy");
@@ -348,7 +349,7 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
       return false;
     }
 
-    if (state.dailySummary?.sessionKey === snapshotSessionKey) {
+    if (state.dailySummary?.sessionKey === snapshotSessionKey && state.dailySummary?.status === "SENT") {
       return false;
     }
 
@@ -362,6 +363,8 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
       sessionKey: snapshotSessionKey,
       reservedAt: new Date().toISOString(),
       snapshotCreatedAt: state.scannerSnapshot?.createdAt || null,
+      status: "PENDING",
+      attempts: Number(state.dailySummary?.attempts || 0) + 1,
     };
 
     // Önce kalıcı rezervasyon, ardından dış Telegram çağrısı: restart
@@ -375,8 +378,27 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
     const delivered = await sendTelegramNotification(message);
 
     if (delivered) {
+      const deliveredState = await getTradingState();
+      if (deliveredState.content.dailySummary?.sessionKey === snapshotSessionKey) {
+        deliveredState.content.dailySummary = {
+          ...deliveredState.content.dailySummary,
+          status: "SENT",
+          sentAt: new Date().toISOString(),
+          lastError: null,
+        };
+        await saveTradingState(deliveredState.content, deliveredState.sha, deliveredState.container);
+      }
       console.log("TELEGRAM DAILY SUMMARY SENT");
     } else {
+      const failedState = await getTradingState();
+      if (failedState.content.dailySummary?.sessionKey === snapshotSessionKey) {
+        failedState.content.dailySummary = {
+          ...failedState.content.dailySummary,
+          status: "FAILED_RETRYABLE",
+          lastError: "Telegram teslimatı başarısız.",
+        };
+        await saveTradingState(failedState.content, failedState.sha, failedState.container);
+      }
       console.error("TELEGRAM DAILY SUMMARY DELIVERY FAILED");
     }
 
@@ -572,31 +594,13 @@ AI PROVIDERS
 ========================================================
 */
 
-const groqAI = new OpenAI({
-  apiKey:
-    process.env.GROQ_API_KEY,
+function createOptionalAiClient(apiKey, baseURL) {
+  return apiKey ? new OpenAI({apiKey, baseURL}) : null;
+}
 
-  baseURL:
-    "https://api.groq.com/openai/v1",
-});
-
-
-const geminiAI = new OpenAI({
-  apiKey:
-    process.env.GEMINI_API_KEY,
-
-  baseURL:
-    "https://generativelanguage.googleapis.com/v1beta/openai/",
-});
-
-
-const mistralAI = new OpenAI({
-  apiKey:
-    process.env.MISTRAL_API_KEY,
-
-  baseURL:
-    "https://api.mistral.ai/v1",
-});
+const groqAI = createOptionalAiClient(process.env.GROQ_API_KEY, "https://api.groq.com/openai/v1");
+const geminiAI = createOptionalAiClient(process.env.GEMINI_API_KEY, "https://generativelanguage.googleapis.com/v1beta/openai/");
+const mistralAI = createOptionalAiClient(process.env.MISTRAL_API_KEY, "https://api.mistral.ai/v1");
 
 
 /*
@@ -4120,6 +4124,10 @@ function createDefaultTradingState() {
       sessionKey: null,
       reservedAt: null,
       snapshotCreatedAt: null,
+      status: null,
+      attempts: 0,
+      sentAt: null,
+      lastError: null,
     },
 
     // Saatlik tarama snapshot'ları ve pozisyon takip event'leri yeniden
@@ -4987,7 +4995,7 @@ async function monitorPaperPositions() {
   const timestamp =
     new Date().toISOString();
 
-  const notifications = [];
+  const openingNotifications = [];
   let changed = false;
 
   for (const decision of pendingLimitDecisions) {
@@ -5014,7 +5022,7 @@ async function monitorPaperPositions() {
         `${position.symbol} LIMIT emri gerçekleşti: ${position.quantity} lot · ${formatTelegramCurrency(position.entry)}.`,
         timestamp
       );
-      notifications.push(buildPaperOpenNotification(position));
+      openingNotifications.push(buildPaperOpenNotification(position));
       changed = true;
     } catch (error) {
       console.error(
@@ -5058,8 +5066,7 @@ async function monitorPaperPositions() {
       // Burada sadece açık pozisyonun güncel quote ile yürütülmesi var.
       const monitorEvent = evaluateLongPosition({...position, remainingQuantity: position.quantity}, current, {quantityPrecision:0});
       if (monitorEvent) {
-        const notification = settleBistPaperMonitorEvent(state, position, monitorEvent, current, timestamp);
-        if (notification) notifications.push(notification);
+        settleBistPaperMonitorEvent(state, position, monitorEvent, current, timestamp);
         changed = true;
       }
 
@@ -5087,6 +5094,10 @@ async function monitorPaperPositions() {
     stateResult.sha,
     stateResult.container
   );
+
+  for (const notification of openingNotifications) {
+    void sendTelegramNotification(notification);
+  }
 
   // Telegram teslimi unified position-monitor tarafından tekil olay anahtarı
   // ile yapılır. Burada doğrudan gönderim yaparsak aynı TP/SL için iki mesaj
@@ -7455,9 +7466,13 @@ async function scanSymbol(symbol) {
     const history = fibonacciEngine.completedDailyHistory(yahoo.history, Date.now(), {market:"BIST"});
     const validation = fibonacciEngine.validateDaily(history);
     if (!validation.ok) return { symbol, history, validation, dataStatus: validation.message };
+    const precisionValidation = precisionEngine.validateHistory(history, {requireComplete:false});
+    const precision = precisionValidation.ok
+      ? {status:"VALIDATED", dataQuality:"PASSED", calibration:"KALIBRE_EDILMEDI"}
+      : {status:"UNAVAILABLE", dataQuality:"FAILED", calibration:"KALIBRE_EDILMEDI", errors:precisionValidation.errors};
     const baseFib = { valid:false, status:"NO_VALID_STRUCTURE", riskRewardTp2:null, riskRewardTp3:null, volumeConfirmation:"WEAK" };
     const analysis = fibonacciEngine.score(history, baseFib);
-    return { symbol, history, validation, dataStatus:"OK", ...analysis, fibonacci:baseFib, timestamp:new Date().toISOString() };
+    return { symbol, history, validation, precision, dataStatus:"OK", ...analysis, fibonacci:baseFib, timestamp:new Date().toISOString() };
   } catch (error) {
     console.warn(`SCANNER ${symbol}:`, error.message);
     return { symbol, history:null, validation:{ok:false,code:"FETCH_FAILED"}, dataStatus:"VERİ YETERSİZ" };
@@ -8459,8 +8474,14 @@ async function runUnifiedPositionMonitor() {
 
     const stateResult = await getTradingState();
     const newEvents = monitorActivityRows(stateResult.content, startedAt);
-    const freshEvents = await persistMonitorNotificationKeys(newEvents);
-    for (const event of freshEvents) void sendTelegramNotification(monitoringTelegramMessage(event));
+    const deliveredEvents = [];
+    const existingKeys = new Set((stateResult.content.automation?.monitor?.events || []).map(item => item.key));
+    for (const event of newEvents) {
+      event.key = `${event.market}:${event.type}:${event.timestamp}:${event.message}`;
+      if (existingKeys.has(event.key)) continue;
+      if (await sendTelegramNotification(monitoringTelegramMessage(event))) deliveredEvents.push(event);
+    }
+    const freshEvents = await persistMonitorNotificationKeys(deliveredEvents);
 
     runtime.lastSuccessAt = new Date().toISOString();
     runtime.lastFinishedAt = new Date().toISOString();
