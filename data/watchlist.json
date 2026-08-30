@@ -3126,7 +3126,7 @@
           "decisionId": "nasdaq-1788098200798-SNPS-4bbf91b4",
           "symbol": "SNPS",
           "market": "NASDAQ",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "BROKER_ENTRY_FAILED",
           "quantity": 2,
           "remainingQuantity": 2,
           "plannedEntry": 389.96,
@@ -3141,17 +3141,19 @@
             "mode": "PAPER",
             "brokerOrderId": "200719ef-2c18-4f50-b2ec-535ad8a7ba16",
             "clientOrderId": "bci-entry-825792838bbf19f258d1c939",
-            "status": "accepted",
+            "status": "canceled",
             "filledQuantity": 0,
-            "filledAveragePrice": 0
-          }
+            "filledAveragePrice": 0,
+            "lastCheckedAt": "2026-08-30T14:00:33.046Z"
+          },
+          "closedAt": "2026-08-30T14:00:33.046Z"
         },
         {
           "id": "nasdaq-broker-entry-1788026434257-AFRM",
           "decisionId": "nasdaq-1788025186621-AFRM-db3bf0ba",
           "symbol": "AFRM",
           "market": "NASDAQ",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "BROKER_ENTRY_FAILED",
           "quantity": 13,
           "remainingQuantity": 13,
           "plannedEntry": 72.06,
@@ -3166,10 +3168,12 @@
             "mode": "PAPER",
             "brokerOrderId": "83284ae6-c763-4cc2-bbf5-7a7583806f3f",
             "clientOrderId": "54c15458-141e-4963-9807-5eb13ea1d4d5",
-            "status": "accepted",
+            "status": "canceled",
             "filledQuantity": 0,
-            "filledAveragePrice": 0
-          }
+            "filledAveragePrice": 0,
+            "lastCheckedAt": "2026-08-30T14:00:33.046Z"
+          },
+          "closedAt": "2026-08-30T14:00:33.046Z"
         },
         {
           "id": "nasdaq-pos-1787822985953-ACGL",
@@ -3284,7 +3288,7 @@
           "symbol": "SNPS",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_BROKER_ENTRY",
+          "status": "REJECTED",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-30T13:56:40.798Z",
           "entry": {
@@ -3367,7 +3371,8 @@
             "stage": "PENDING_BROKER_ENTRY",
             "brokerOrderId": "200719ef-2c18-4f50-b2ec-535ad8a7ba16",
             "lastCheckedAt": "2026-08-30T13:57:07.411Z"
-          }
+          },
+          "closedAt": "2026-08-30T14:00:33.046Z"
         },
         {
           "id": "1788098190463-FTNT",
@@ -6586,6 +6591,97 @@
       ],
       "history": [
         {
+          "id": "nasdaq-1788098200798-SNPS-4bbf91b4",
+          "symbol": "SNPS",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-30T13:56:40.798Z",
+          "entry": {
+            "low": 389.96,
+            "high": 389.96,
+            "reference": 389.96
+          },
+          "stop": 380.59,
+          "target1": 424.92,
+          "target2": 434.86,
+          "target3": 447.53,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+            "pointA": {
+              "type": "LOW",
+              "index": 12,
+              "price": 366.255,
+              "date": "2026-07-17T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 33,
+              "price": 425.42,
+              "date": "2026-08-17T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 38,
+              "price": 388.36,
+              "date": "2026-08-24T04:00:00.000Z"
+            },
+            "range": 59.17,
+            "retracementRatio": 0.6264,
+            "entryTriggerPrice": 389.96,
+            "entryZoneLow": 389.96,
+            "entryZoneHigh": null,
+            "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "descendingResistance": {
+              "valid": false,
+              "available": false,
+              "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
+              "anchor1": null,
+              "anchor2": null,
+              "slopePerBar": null,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": null,
+              "breakoutPrice": null,
+              "breakoutPriceAtLast": null,
+              "entryUpperRaw": null,
+              "entryUpperPrice": null
+            },
+            "stopLoss": 380.59,
+            "tp1": 424.92,
+            "tp2": 434.86,
+            "tp3": 447.53,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+          },
+          "indicators": {
+            "score": 73
+          },
+          "pendingOrder": {
+            "symbol": "SNPS",
+            "quantity": 2,
+            "entryPrice": 389.96,
+            "orderType": "LIMIT",
+            "stop": 380.59,
+            "target1": 424.92,
+            "target2": 434.86,
+            "target3": 447.53,
+            "paperOnly": false,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-30T13:56:40.798Z",
+            "updatedAt": "2026-08-30T13:56:54.784Z",
+            "editedAt": "2026-08-30T13:56:54.784Z"
+          },
+          "lifecycle": {
+            "stage": "PENDING_BROKER_ENTRY",
+            "brokerOrderId": "200719ef-2c18-4f50-b2ec-535ad8a7ba16",
+            "lastCheckedAt": "2026-08-30T13:57:07.411Z"
+          },
+          "closedAt": "2026-08-30T14:00:33.046Z"
+        },
+        {
           "id": "nasdaq-1788098238566-SNPS-444afe9d",
           "symbol": "SNPS",
           "market": "NASDAQ",
@@ -7614,6 +7710,16 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T14:00:33.046Z",
+          "type": "NASDAQ_BROKER_ENTRY_FAILED",
+          "message": "AFRM Alpaca giriş emri canceled durumuyla gerçekleşmedi."
+        },
+        {
+          "timestamp": "2026-08-30T14:00:33.046Z",
+          "type": "NASDAQ_BROKER_ENTRY_FAILED",
+          "message": "SNPS Alpaca giriş emri canceled durumuyla gerçekleşmedi."
+        },
         {
           "timestamp": "2026-08-30T13:57:40.956Z",
           "type": "NASDAQ_REJECT",
