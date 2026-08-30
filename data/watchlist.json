@@ -10003,19 +10003,19 @@
         "pendingOrder": {
           "symbol": "ASTOR",
           "quantity": 115,
-          "entryPrice": 349,
-          "orderType": "LIMIT",
+          "entryPrice": null,
+          "orderType": "MARKET",
           "stop": 257.25,
           "target1": 383.84,
           "target2": 416.83,
           "target3": 458.85,
-          "positionValue": 40135,
-          "actualRisk": 10551.25,
+          "positionValue": null,
+          "actualRisk": null,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-30T21:16:43.387Z",
-          "updatedAt": "2026-08-30T21:16:43.387Z",
-          "editedAt": null
+          "updatedAt": "2026-08-30T21:16:59.506Z",
+          "editedAt": "2026-08-30T21:16:59.506Z"
         }
       },
       {
@@ -12441,6 +12441,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T21:16:59.506Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "ASTOR bekleyen paper emri düzenlendi: 115 lot · ₺0,00 · MARKET."
+      },
       {
         "timestamp": "2026-08-30T21:16:43.387Z",
         "type": "AI_DECISION_MANUAL_PENDING",
