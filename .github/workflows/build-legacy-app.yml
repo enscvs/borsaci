@@ -16,19 +16,37 @@ jobs:
   build-legacy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout latest main
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
 
-      - name: Build Safari 10 bundle
+      - name: Sync latest main
+        run: git pull --rebase origin main
+
+      - name: Build iOS 10 bundle with Babel
         run: |
-          npx --yes esbuild@0.25.9 public/app.js --target=safari10 --outfile=/tmp/app-legacy-core.js
+          cat > /tmp/babel.config.json <<'JSON'
+          {
+            "presets": [
+              ["@babel/preset-env", {
+                "targets": { "ios": "10" },
+                "modules": false,
+                "bugfixes": true
+              }]
+            ]
+          }
+          JSON
+          npx --yes -p @babel/core@7.28.4 -p @babel/cli@7.28.3 -p @babel/preset-env@7.28.3 \
+            babel public/app.js \
+            --config-file /tmp/babel.config.json \
+            --out-file /tmp/app-legacy-core.js
           cat public/legacy-polyfills.js /tmp/app-legacy-core.js > public/app-legacy.js
           if grep -Eq '[0-9]_[0-9]' public/app-legacy.js; then
             echo "Legacy build still contains numeric separators" >&2
@@ -45,5 +63,6 @@ jobs:
             echo "Legacy bundle already current"
             exit 0
           fi
-          git commit -m "Build static Safari 10 app bundle"
-          git push
+          git commit -m "Build static iOS 10 app bundle"
+          git pull --rebase origin main
+          git push origin main
