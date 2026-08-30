@@ -20775,7 +20775,7 @@
         "rank": 3,
         "symbol": "VAKBN",
         "action": "BUY SETUP",
-        "status": "REJECTED_BY_USER",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 30.14,
@@ -21090,15 +21090,15 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "REJECTED_BY_USER",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-30T08:04:05.841Z",
           "expiresAt": "2026-08-31T08:04:05.842Z",
-          "overrideAt": "2026-08-30T09:51:04.786Z",
+          "overrideAt": "2026-08-30T09:56:54.312Z",
           "rejectedAt": "2026-08-30T09:52:03.886Z",
           "rejectedBy": "SITE"
         },
         "currentScan": true,
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (29.36) planı geçersiz kılar.",
         "timestamp": "2026-08-30T09:51:11.657Z",
         "manualOverride": true,
@@ -21115,8 +21115,8 @@
           "actualRisk": 2732.08,
           "paperOnly": true,
           "source": "SCANNER",
-          "createdAt": "2026-08-30T09:51:04.786Z",
-          "updatedAt": "2026-08-30T09:51:04.786Z",
+          "createdAt": "2026-08-30T09:56:54.312Z",
+          "updatedAt": "2026-08-30T09:56:54.312Z",
           "editedAt": null
         },
         "outcome": "USER_REJECTED"
@@ -24863,6 +24863,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T09:56:54.312Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "VAKBN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-08-30T09:52:03.886Z",
         "type": "PAPER_REJECTED",
