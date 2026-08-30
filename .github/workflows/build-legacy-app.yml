@@ -1,0 +1,49 @@
+name: Build legacy iPhone app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "public/app.js"
+      - "public/legacy-polyfills.js"
+      - ".github/workflows/build-legacy-app.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-legacy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build Safari 10 bundle
+        run: |
+          npx --yes esbuild@0.25.9 public/app.js --target=safari10 --outfile=/tmp/app-legacy-core.js
+          cat public/legacy-polyfills.js /tmp/app-legacy-core.js > public/app-legacy.js
+          if grep -Eq '[0-9]_[0-9]' public/app-legacy.js; then
+            echo "Legacy build still contains numeric separators" >&2
+            exit 1
+          fi
+          node --check public/app-legacy.js
+
+      - name: Commit generated legacy bundle
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/app-legacy.js
+          if git diff --cached --quiet; then
+            echo "Legacy bundle already current"
+            exit 0
+          fi
+          git commit -m "Build static Safari 10 app bundle"
+          git push
