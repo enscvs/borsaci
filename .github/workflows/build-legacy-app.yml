@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "public/app.js"
+      - "public/app-modern.js"
       - "public/legacy-polyfills.js"
       - ".github/workflows/build-legacy-app.yml"
 
@@ -46,7 +46,7 @@ jobs:
             ]
           }
           JSON
-          ./node_modules/.bin/babel public/app.js \
+          ./node_modules/.bin/babel public/app-modern.js \
             --config-file ./babel.legacy.config.json \
             --out-file /tmp/app-legacy-core.js
           rm -f babel.legacy.config.json
