@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: gemini-borsaci
+    runtime: node
+    buildCommand: corepack enable && pnpm install --frozen-lockfile
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+
