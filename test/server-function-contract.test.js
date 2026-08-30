@@ -18,7 +18,7 @@ test("optional AI providers do not construct clients without credentials", () =>
 
 test("Telegram delivery is recorded only after successful sends", () => {
   assert.match(source, /status: "FAILED_RETRYABLE"/);
-  assert.match(source, /if \(await sendTelegramNotification\(monitoringTelegramMessage\(event\)\)\) deliveredEvents\.push\(event\)/);
+  assert.match(source, /if \(await sendTelegramNotification\(monitoringTelegramMessage\(event\), null, \{queueOnFailure:false\}\)\) deliveredEvents\.push\(event\)/);
   assert.match(source, /for \(const notification of openingNotifications\)/);
 });
 
