@@ -27,3 +27,12 @@ test("live BIST scan exposes precision data-quality validation", () => {
   assert.match(source, /status:"VALIDATED", dataQuality:"PASSED", calibration:"KALIBRE_EDILMEDI"/);
 });
 
+test("NASDAQ broker approvals are serialized and broker limit orders are submitted", () => {
+  assert.match(source, /nasdaq-paper-approve/);
+  assert.match(source, /!ALPACA_TRADING_ENABLED && order\.orderType === "LIMIT"/);
+  assert.match(source, /clientOrderId = order\.clientOrderId \|\| `bci-entry-/);
+  assert.match(source, /if \(!brokerOrderId\) throw new Error/);
+  assert.match(source, /occupiedSlots >= maxPositions/);
+  assert.match(source, /reservedCash/);
+});
+
