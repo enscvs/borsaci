@@ -7833,6 +7833,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-08-30T15:56:24.971Z",
+          "type": "NASDAQ_BROKER_RECONCILE",
+          "message": "Alpaca uzlaştırması tamamlandı: 0 emir keşfedildi, 0 kayıt bağlandı, 0 durum güncellendi."
+        },
+        {
           "timestamp": "2026-08-30T15:40:42.789Z",
           "type": "NASDAQ_REJECT",
           "message": "NVDA NASDAQ emri reddedildi."
@@ -9490,6 +9495,14 @@
       "killSwitch": {
         "active": false,
         "activatedAt": null
+      },
+      "brokerReconciliation": {
+        "timestamp": "2026-08-30T15:56:24.971Z",
+        "reason": "STARTUP",
+        "discovered": 0,
+        "linked": 0,
+        "updated": 0,
+        "managedOrders": 3
       }
     },
     "risk": {
