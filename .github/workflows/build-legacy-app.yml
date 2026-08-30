@@ -7,6 +7,7 @@ on:
     paths:
       - "public/app-modern.js"
       - "public/legacy-polyfills.js"
+      - "public/legacy-runtime-prelude.js"
       - ".github/workflows/build-legacy-app.yml"
 
 permissions:
@@ -51,17 +52,20 @@ jobs:
             --out-file /tmp/app-legacy-core.js
           rm -f babel.legacy.config.json
           cat public/legacy-polyfills.js /tmp/app-legacy-core.js > public/app-legacy.js
-          if grep -Eq '[0-9]_[0-9]' public/app-legacy.js; then
+          cat public/legacy-runtime-prelude.js public/app-legacy.js > /tmp/app-direct.js
+          mv /tmp/app-direct.js public/app.js
+          if grep -Eq '[0-9]_[0-9]' public/app.js; then
             echo "Legacy build still contains numeric separators" >&2
             exit 1
           fi
           node --check public/app-legacy.js
+          node --check public/app.js
 
       - name: Commit generated legacy bundle
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/app-legacy.js
+          git add public/app-legacy.js public/app.js
           if git diff --cached --quiet; then
             echo "Legacy bundle already current"
             exit 0
