@@ -9691,8 +9691,8 @@
         "id": "1788036226189-ASTOR",
         "rank": 1,
         "symbol": "ASTOR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 267.8,
@@ -9990,15 +9990,33 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-30T21:10:08.907Z",
-          "expiresAt": "2026-08-31T21:10:08.908Z"
+          "expiresAt": "2026-08-31T21:10:08.908Z",
+          "overrideAt": "2026-08-30T21:16:43.387Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
         "timestamp": "2026-08-30T21:10:08.907Z",
-        "manualOverride": false
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "ASTOR",
+          "quantity": 115,
+          "entryPrice": 349,
+          "orderType": "LIMIT",
+          "stop": 257.25,
+          "target1": 383.84,
+          "target2": 416.83,
+          "target3": 458.85,
+          "positionValue": 40135,
+          "actualRisk": 10551.25,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-30T21:16:43.387Z",
+          "updatedAt": "2026-08-30T21:16:43.387Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1788094867262-SDTTR",
@@ -12423,6 +12441,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T21:16:43.387Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "ASTOR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-08-30T21:10:09.495Z",
         "type": "SCAN",
