@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 142332.3,
-      "equity": 142332.3,
+      "cash": 102157.17,
+      "equity": 142292.16999999998,
       "pnl": 42822.69357443808,
       "pnlPercent": 42.822693574438084,
       "positions": [
+        {
+          "id": "paper-2026-08-30T21:17:02.739Z-ASTOR-8e41492e",
+          "decisionId": "1788036226189-ASTOR",
+          "decisionIds": [
+            "1788036226189-ASTOR"
+          ],
+          "symbol": "ASTOR",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 115,
+          "originalQuantity": 115,
+          "entry": 349,
+          "entryCommission": 40.13,
+          "current": 349,
+          "stop": 257.25,
+          "target1": 383.84,
+          "target2": 416.83,
+          "target3": 458.85,
+          "status": "OPEN",
+          "openedAt": "2026-08-30T21:17:02.739Z",
+          "tp1Hit": false,
+          "realizedPnl": -40.13,
+          "pnl": -40.13
+        },
         {
           "id": "paper-2026-08-30T09:58:25.019Z-SDTTR-c10d3946",
           "decisionId": "1788077045841-SDTTR",
@@ -9692,7 +9717,7 @@
         "rank": 1,
         "symbol": "ASTOR",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 267.8,
@@ -9990,10 +10015,11 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-30T21:10:08.907Z",
           "expiresAt": "2026-08-31T21:10:08.908Z",
-          "overrideAt": "2026-08-30T21:16:43.387Z"
+          "overrideAt": "2026-08-30T21:16:43.387Z",
+          "openedAt": "2026-08-30T21:17:02.739Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -10003,19 +10029,23 @@
         "pendingOrder": {
           "symbol": "ASTOR",
           "quantity": 115,
-          "entryPrice": null,
+          "entryPrice": 349,
           "orderType": "MARKET",
           "stop": 257.25,
           "target1": 383.84,
           "target2": 416.83,
           "target3": 458.85,
-          "positionValue": null,
-          "actualRisk": null,
+          "positionValue": 40135,
+          "actualRisk": 10551.25,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-30T21:16:43.387Z",
-          "updatedAt": "2026-08-30T21:16:59.506Z",
-          "editedAt": "2026-08-30T21:16:59.506Z"
+          "updatedAt": "2026-08-30T21:17:02.739Z",
+          "editedAt": "2026-08-30T21:16:59.506Z",
+          "commission": 40.13,
+          "totalCost": 40175.13,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-30T21:17:02.739Z"
         }
       },
       {
@@ -12441,6 +12471,16 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-30T21:17:02.739Z",
+        "type": "PAPER_APPROVED",
+        "message": "ASTOR paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-30T21:17:02.739Z",
+        "type": "PAPER_OPEN",
+        "message": "ASTOR scanner paper pozisyonu açıldı: 115 lot · ₺40135.00 · MARKET."
+      },
       {
         "timestamp": "2026-08-30T21:16:59.506Z",
         "type": "PAPER_ORDER_EDITED",
