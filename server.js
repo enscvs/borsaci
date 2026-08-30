@@ -206,6 +206,12 @@ const paperMonitorStatus = {
   lastError: null,
 };
 
+const integrationHealth = {
+  telegram: {lastSuccessAt:null, webhookConfiguredAt:null, deliveryError:null, webhookError:null},
+  alpaca: {lastSuccessAt:null, lastCheckedAt:null, lastError:null},
+  binance: {lastSuccessAt:null, lastCheckedAt:null, lastError:null},
+};
+
 // Otomasyon, aynı Render process'inde scanner/monitor state yazılarını
 // sıraya alır. GitHub Contents SHA çakışmalarını tamamen ortadan kaldıramasa
 // da kendi worker'larımızın birbirinin güncellemesini ezmesini önler.
@@ -259,7 +265,8 @@ function releaseScannerExecution(market) {
 
 async function sendTelegramNotification(
   message,
-  replyMarkup = null
+  replyMarkup = null,
+  {queueOnFailure = true} = {}
 ) {
 
   if (
@@ -299,6 +306,8 @@ async function sendTelegramNotification(
     }
 
     console.log("TELEGRAM NOTIFICATION SENT");
+    integrationHealth.telegram.lastSuccessAt = new Date().toISOString();
+    integrationHealth.telegram.deliveryError = null;
     return true;
 
   } catch (error) {
@@ -307,11 +316,54 @@ async function sendTelegramNotification(
       "TELEGRAM NOTIFICATION ERROR:",
       error.message
     );
+    integrationHealth.telegram.deliveryError = String(error.message || "Telegram gönderimi başarısız.").slice(0, 300);
+    if (queueOnFailure) void enqueueTelegramOutbox(message, replyMarkup, error);
 
     return false;
 
   }
 
+}
+
+function telegramOutboxKey(message, replyMarkup) {
+  return crypto.createHash("sha256").update(JSON.stringify([String(message || ""), replyMarkup || null])).digest("hex");
+}
+
+async function enqueueTelegramOutbox(message, replyMarkup, error) {
+  if (!message) return;
+  await withTradingStateMutation("telegram-outbox-enqueue", async () => {
+    const saved = await getTradingState();
+    const state = saved.content;
+    const key = telegramOutboxKey(message, replyMarkup);
+    const rows = Array.isArray(state.telegramOutbox) ? state.telegramOutbox : [];
+    if (!rows.some(item => item.key === key)) {
+      state.telegramOutbox = [{key, message:String(message).slice(0,4000), replyMarkup:replyMarkup || null, attempts:0, createdAt:new Date().toISOString(), lastError:String(error?.message || "Teslimat başarısız.").slice(0,300)}, ...rows].slice(0,100);
+      await saveTradingState(state, saved.sha, saved.container);
+    }
+  }).catch(outboxError => console.error("TELEGRAM OUTBOX ERROR:", outboxError.message));
+}
+
+let telegramOutboxFlushRunning = false;
+async function flushTelegramOutbox() {
+  if (telegramOutboxFlushRunning || !TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  telegramOutboxFlushRunning = true;
+  try {
+    const saved = await getTradingState();
+    const rows = (Array.isArray(saved.content.telegramOutbox) ? saved.content.telegramOutbox : []).slice().reverse().slice(0,10);
+    if (!rows.length) return;
+    const delivered = new Set();
+    for (const item of rows) {
+      if (await sendTelegramNotification(item.message, item.replyMarkup, {queueOnFailure:false})) delivered.add(item.key);
+      else item.attempts = Number(item.attempts || 0) + 1;
+    }
+    const latest = await getTradingState();
+    latest.content.telegramOutbox = (latest.content.telegramOutbox || []).filter(item => !delivered.has(item.key)).map(item => rows.find(row => row.key === item.key) || item);
+    await saveTradingState(latest.content, latest.sha, latest.container);
+  } catch (error) {
+    console.error("TELEGRAM OUTBOX FLUSH ERROR:", error.message);
+  } finally {
+    telegramOutboxFlushRunning = false;
+  }
 }
 
 /*
@@ -375,7 +427,7 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
       stateResult.container
     );
 
-    const delivered = await sendTelegramNotification(message);
+    const delivered = await sendTelegramNotification(message, null, {queueOnFailure:false});
 
     if (delivered) {
       const deliveredState = await getTradingState();
@@ -456,9 +508,12 @@ async function configureTelegramWebhook() {
       secret_token: TELEGRAM_WEBHOOK_SECRET,
       allowed_updates: ["callback_query"],
     });
+    integrationHealth.telegram.webhookConfiguredAt = new Date().toISOString();
+    integrationHealth.telegram.webhookError = null;
     console.log("TELEGRAM APPROVAL WEBHOOK CONFIGURED");
     return true;
   } catch (error) {
+    integrationHealth.telegram.webhookError = String(error.message || "Webhook yapılandırılamadı.").slice(0, 300);
     console.error("TELEGRAM WEBHOOK ERROR:", error.message);
     return false;
   }
@@ -4130,6 +4185,8 @@ function createDefaultTradingState() {
       lastError: null,
     },
 
+    telegramOutbox: [],
+
     // Saatlik tarama snapshot'ları ve pozisyon takip event'leri yeniden
     // başlatma sonrası da korunur. Burada yalnız hafif sonuçlar tutulur;
     // günlük OHLCV serileri state'e yazılmaz.
@@ -6390,6 +6447,17 @@ function systemHealthItem(label, ready, detail) {
 
 async function handleSystemHealth(req, res) {
   try {
+    const checkDue = item => !item.lastCheckedAt || Date.now() - new Date(item.lastCheckedAt).getTime() > (item.lastError ? 60 * 1000 : 5 * 60 * 1000);
+    const checks = [];
+    if (process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY && checkDue(integrationHealth.alpaca)) {
+      integrationHealth.alpaca.lastCheckedAt = new Date().toISOString();
+      checks.push(alpacaJson(`${ALPACA_DATA_BASE_URL}/v2/stocks/AAPL/bars?timeframe=1Day&limit=1&feed=${encodeURIComponent(ALPACA_DATA_FEED)}`));
+    }
+    if (BINANCE_API_KEY && BINANCE_API_SECRET && checkDue(integrationHealth.binance)) {
+      integrationHealth.binance.lastCheckedAt = new Date().toISOString();
+      checks.push(fetchBinanceSpotAccount());
+    }
+    if (checks.length) await Promise.allSettled(checks);
     const saved = await getTradingState();
     const state = saved.content || {};
     const cryptoPaper = state.cryptoPaper || {};
@@ -6401,22 +6469,26 @@ async function handleSystemHealth(req, res) {
     const bistScanTimestamp = bistScanner.createdAt || bistScanner.timestamp || null;
     const aiProviderCount = [process.env.GROQ_API_KEY, process.env.GEMINI_API_KEY, process.env.MISTRAL_API_KEY]
       .filter(Boolean).length;
+    const recent = (value, maxAgeMs) => Boolean(value && Date.now() - new Date(value).getTime() <= maxAgeMs);
+    const bistFresh = recent(bistScanTimestamp, 72 * 60 * 60 * 1000);
+    const cryptoFresh = recent(cryptoPaper.scanner?.timestamp, 2 * 60 * 60 * 1000);
+    const nasdaqFresh = recent(nasdaqPaper.scanner?.timestamp, 72 * 60 * 60 * 1000);
     const items = [
       systemHealthItem("OTURUM GÜVENLİĞİ", Boolean(process.env.AUTH_PASSWORD_HASH && process.env.SESSION_SECRET), "Sunucu oturumu"),
       systemHealthItem("KALICI DURUM", Boolean(process.env.GITHUB_OWNER && process.env.GITHUB_REPO && process.env.GITHUB_TOKEN), "GitHub state deposu"),
       systemHealthItem("YZ SAĞLAYICILARI", aiProviderCount > 0, aiProviderCount ? `${aiProviderCount} sağlayıcı hazır` : "YZ anahtarı eksik"),
-      systemHealthItem("TELEGRAM", Boolean(TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && TELEGRAM_WEBHOOK_SECRET), TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && TELEGRAM_WEBHOOK_SECRET ? "Bildirim ve onay webhook'u" : "Bildirim yapılandırması eksik"),
-      systemHealthItem("BIST VERİSİ", Boolean(bistScanTimestamp), bistScanTimestamp ? `Son tarama: ${bistScanTimestamp}` : "Henüz BIST taraması yok"),
-      systemHealthItem("BİNANCE", Boolean(BINANCE_API_KEY && BINANCE_API_SECRET), BINANCE_API_KEY && BINANCE_API_SECRET ? "Spot bağlantısı yapılandırıldı" : "Spot anahtarları eksik"),
-      systemHealthItem("KRİPTO VERİSİ", Boolean(cryptoPaper.scanner?.timestamp), cryptoPaper.scanner?.timestamp ? `Son tarama: ${cryptoPaper.scanner.timestamp}` : "Henüz kripto taraması yok"),
-      systemHealthItem("ALPACA", Boolean(process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY), process.env.ALPACA_API_KEY_ID && process.env.ALPACA_API_SECRET_KEY ? `${ALPACA_DATA_FEED.toUpperCase()} günlük veri yapılandırıldı` : "Alpaca anahtarları eksik"),
-      systemHealthItem("NASDAQ VERİSİ", Boolean(nasdaqPaper.scanner?.timestamp), nasdaqPaper.scanner?.timestamp ? `Son tarama: ${nasdaqPaper.scanner.timestamp}` : "Henüz NASDAQ taraması yok"),
-      systemHealthItem("BIST İZLEYİCİ", !paperMonitorStatus.lastError, paperMonitorStatus.lastFinishedAt ? `Son kontrol: ${paperMonitorStatus.lastFinishedAt}` : "İlk kontrol bekleniyor"),
-      systemHealthItem("PİYASA İZLEYİCİ", !marketPaperMonitorRunning, marketPaperMonitorRunning ? "Kontrol çalışıyor" : "Sonraki kontrolü bekliyor"),
+      systemHealthItem("TELEGRAM", Boolean(integrationHealth.telegram.webhookConfiguredAt && integrationHealth.telegram.lastSuccessAt && !integrationHealth.telegram.webhookError && !integrationHealth.telegram.deliveryError), integrationHealth.telegram.webhookError || integrationHealth.telegram.deliveryError || (integrationHealth.telegram.webhookConfiguredAt ? `Son teslim: ${integrationHealth.telegram.lastSuccessAt}` : "Webhook doğrulanmadı")),
+      systemHealthItem("BIST VERİSİ", bistFresh, bistScanTimestamp ? `Son tarama: ${bistScanTimestamp}` : "Henüz BIST taraması yok"),
+      systemHealthItem("BİNANCE", Boolean(integrationHealth.binance.lastSuccessAt && !integrationHealth.binance.lastError), integrationHealth.binance.lastError || (integrationHealth.binance.lastSuccessAt ? `Son bağlantı: ${integrationHealth.binance.lastSuccessAt}` : "Spot bağlantısı doğrulanmadı")),
+      systemHealthItem("KRİPTO VERİSİ", cryptoFresh, cryptoPaper.scanner?.timestamp ? `Son tarama: ${cryptoPaper.scanner.timestamp}` : "Henüz kripto taraması yok"),
+      systemHealthItem("ALPACA", Boolean(integrationHealth.alpaca.lastSuccessAt && !integrationHealth.alpaca.lastError), integrationHealth.alpaca.lastError || (integrationHealth.alpaca.lastSuccessAt ? `Son bağlantı: ${integrationHealth.alpaca.lastSuccessAt} · ${ALPACA_DATA_FEED.toUpperCase()}` : "Alpaca bağlantısı doğrulanmadı")),
+      systemHealthItem("NASDAQ VERİSİ", nasdaqFresh, nasdaqPaper.scanner?.timestamp ? `Son tarama: ${nasdaqPaper.scanner.timestamp}` : "Henüz NASDAQ taraması yok"),
+      systemHealthItem("BIST İZLEYİCİ", Boolean(paperMonitorStatus.lastFinishedAt && !paperMonitorStatus.lastError), paperMonitorStatus.lastError || (paperMonitorStatus.lastFinishedAt ? `Son kontrol: ${paperMonitorStatus.lastFinishedAt}` : "İlk kontrol bekleniyor")),
+      {label:"PİYASA İZLEYİCİ", status: unifiedPositionMonitorRunning || marketPaperMonitorRunning ? "RUNNING" : (automationRuntimeStatus.monitor.lastError ? "NEEDS_ATTENTION" : "READY"), detail: automationRuntimeStatus.monitor.lastError || (unifiedPositionMonitorRunning || marketPaperMonitorRunning ? "Kontrol çalışıyor" : `Sonraki kontrolü bekliyor${automationRuntimeStatus.monitor.lastFinishedAt ? ` · Son: ${automationRuntimeStatus.monitor.lastFinishedAt}` : ""}`)},
     ];
     return sendJSON(res, 200, {
       timestamp: new Date().toISOString(),
-      healthy: items.filter(item => item.status === "READY").length,
+      healthy: items.filter(item => item.status === "READY" || item.status === "RUNNING").length,
       total: items.length,
       items,
     });
@@ -7604,7 +7676,12 @@ async function alpacaJson(url, {method = "GET", body = null} = {}) {
     const response = await fetch(url, {method, headers: {...alpacaHeaders(), ...(body ? {"Content-Type":"application/json"} : {})}, body: body ? JSON.stringify(body) : undefined, signal: controller.signal});
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(String(payload?.message || `Alpaca HTTP ${response.status}`).slice(0, 240));
+    integrationHealth.alpaca.lastSuccessAt = new Date().toISOString();
+    integrationHealth.alpaca.lastError = null;
     return payload;
+  } catch (error) {
+    integrationHealth.alpaca.lastError = String(error.message || "Alpaca bağlantısı başarısız.").slice(0, 300);
+    throw error;
   } finally { clearTimeout(timeout); }
 }
 
@@ -8479,7 +8556,7 @@ async function runUnifiedPositionMonitor() {
     for (const event of newEvents) {
       event.key = `${event.market}:${event.type}:${event.timestamp}:${event.message}`;
       if (existingKeys.has(event.key)) continue;
-      if (await sendTelegramNotification(monitoringTelegramMessage(event))) deliveredEvents.push(event);
+      if (await sendTelegramNotification(monitoringTelegramMessage(event), null, {queueOnFailure:false})) deliveredEvents.push(event);
     }
     const freshEvents = await persistMonitorNotificationKeys(deliveredEvents);
 
@@ -8908,12 +8985,16 @@ async function fetchBinanceSpotAccount() {
       .filter(balance => balance.asset && balance.total > 0)
       .sort((left, right) => left.asset.localeCompare(right.asset));
 
+    integrationHealth.binance.lastSuccessAt = new Date().toISOString();
+    integrationHealth.binance.lastError = null;
+
     return {
       accountType: String(account.accountType || "SPOT"),
       canTrade: account.canTrade === true,
       balances
     };
   } catch (error) {
+    integrationHealth.binance.lastError = String(error.message || "Binance bağlantısı başarısız.").slice(0, 300);
     if (String(error?.code || "").startsWith("BINANCE_")) throw error;
     throw createBinanceAccountError(
       "BINANCE_ACCOUNT_UNAVAILABLE",
@@ -11149,6 +11230,9 @@ server.listen(
       () => { void configureTelegramWebhook(); },
       30 * 60 * 1000
     );
+
+    setTimeout(() => { void flushTelegramOutbox(); }, 20000);
+    setInterval(() => { void flushTelegramOutbox(); }, 60 * 1000);
 
   }
 );
