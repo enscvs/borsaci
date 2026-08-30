@@ -6,8 +6,7 @@
   var nativeFetch = typeof window.fetch === "function" ? window.fetch.bind(window) : null;
   var legacyMode = false;
   var legacyBound = false;
-  var legacyFullAppLoading = false;
-  var legacyFullAppLoaded = false;
+  var debugLines = [];
 
   window.borsaciAuth = {};
   Object.defineProperty(window.borsaciAuth, "authenticated", { get: function () { return authenticated; } });
@@ -26,6 +25,65 @@
 
   function toArray(list) {
     return Array.prototype.slice.call(list || []);
+  }
+
+  function debugBox() {
+    if (!legacyMode) return null;
+    var box = document.getElementById("legacyDebugBox");
+    if (box) return box;
+    box = document.createElement("div");
+    box.id = "legacyDebugBox";
+    box.style.position = "fixed";
+    box.style.left = "4px";
+    box.style.right = "4px";
+    box.style.bottom = "4px";
+    box.style.zIndex = "2147483647";
+    box.style.maxHeight = "42vh";
+    box.style.overflow = "auto";
+    box.style.padding = "8px";
+    box.style.border = "1px solid #ff5555";
+    box.style.background = "rgba(20,0,0,.96)";
+    box.style.color = "#ffb0b0";
+    box.style.font = "10px/1.35 monospace";
+    box.style.whiteSpace = "pre-wrap";
+    box.style.wordBreak = "break-word";
+    box.textContent = "LEGACY DEBUG\n";
+    if (document.body) document.body.appendChild(box);
+    return box;
+  }
+
+  function debug(message) {
+    if (!legacyMode) return;
+    var text = String(message || "");
+    debugLines.push(text);
+    if (debugLines.length > 12) debugLines.shift();
+    var box = debugBox();
+    if (box) box.textContent = "LEGACY DEBUG\n" + debugLines.join("\n");
+  }
+
+  if (legacyMode) {
+    window.onerror = function (message, source, lineno, colno, error) {
+      var details = "JS ERROR: " + String(message || (error && error.message) || "unknown");
+      if (source) details += "\n" + source;
+      if (lineno) details += ":" + lineno + (colno ? ":" + colno : "");
+      debug(details);
+      return false;
+    };
+
+    if (window.addEventListener) {
+      window.addEventListener("unhandledrejection", function (event) {
+        var reason = event && event.reason;
+        debug("PROMISE ERROR: " + String(reason && reason.message ? reason.message : reason || "unknown"));
+      }, false);
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        debug("AUTH LEGACY: OK");
+      }, false);
+    } else {
+      debug("AUTH LEGACY: OK");
+    }
   }
 
   function showLoginError(message) {
@@ -54,6 +112,7 @@
       event.initEvent("borsaci:auth-ready", true, true);
     }
     window.dispatchEvent(event);
+    debug("AUTH READY: DISPATCHED");
   }
 
   function findParentTab(element) {
@@ -219,179 +278,18 @@
           if (error || httpStatus < 200 || httpStatus >= 300 || (data && data.success === false)) {
             if (status) status.textContent = "HATA";
             if (results) results.innerHTML = "<div class=\"trading-empty\">Tarama hatası: " + escapeHtml(data && data.error ? data.error : "Sunucu isteği başarısız") + "</div>";
+            debug(label + " FALLBACK: ERROR " + httpStatus);
             return;
           }
           if (status) status.textContent = "TAMAMLANDI";
           renderLegacyScanner(results, data, label);
+          debug(label + " FALLBACK: OK");
         });
       });
     });
 
     setLegacyTab("tradingTab");
-  }
-
-  function installLegacyPolyfills() {
-    if (!legacyMode) return;
-
-    if (!Array.prototype.includes) {
-      Array.prototype.includes = function (value) { return this.indexOf(value) !== -1; };
-    }
-    if (!String.prototype.includes) {
-      String.prototype.includes = function (value, start) { return this.indexOf(value, start || 0) !== -1; };
-    }
-    if (!String.prototype.startsWith) {
-      String.prototype.startsWith = function (value, start) { start = start || 0; return this.substr(start, value.length) === value; };
-    }
-    if (!String.prototype.endsWith) {
-      String.prototype.endsWith = function (value) { return this.slice(-value.length) === value; };
-    }
-    if (!Object.entries) {
-      Object.entries = function (object) { return Object.keys(object).map(function (key) { return [key, object[key]]; }); };
-    }
-    if (!Object.values) {
-      Object.values = function (object) { return Object.keys(object).map(function (key) { return object[key]; }); };
-    }
-    if (!Object.fromEntries) {
-      Object.fromEntries = function (entries) {
-        var object = {};
-        toArray(entries).forEach(function (entry) { object[entry[0]] = entry[1]; });
-        return object;
-      };
-    }
-    if (!Number.isFinite) {
-      Number.isFinite = function (value) { return typeof value === "number" && isFinite(value); };
-    }
-    if (!Number.isNaN) {
-      Number.isNaN = function (value) { return value !== value; };
-    }
-    if (!window.ResizeObserver) {
-      window.ResizeObserver = function () {};
-      window.ResizeObserver.prototype.observe = function () {};
-      window.ResizeObserver.prototype.unobserve = function () {};
-      window.ResizeObserver.prototype.disconnect = function () {};
-    }
-    if (!window.AbortController) {
-      window.AbortController = function () { this.signal = undefined; };
-      window.AbortController.prototype.abort = function () {};
-    }
-    if (!window.structuredClone) {
-      window.structuredClone = function (value) { return JSON.parse(JSON.stringify(value)); };
-    }
-    if (window.Element && !Element.prototype.matches) {
-      Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
-    }
-    if (window.Element && !Element.prototype.closest) {
-      Element.prototype.closest = function (selector) {
-        var element = this;
-        while (element && element.nodeType === 1) {
-          if (element.matches(selector)) return element;
-          element = element.parentElement || element.parentNode;
-        }
-        return null;
-      };
-    }
-
-    if (!window.Headers) {
-      window.Headers = function (initial) {
-        this.map = {};
-        var self = this;
-        if (initial) {
-          if (typeof initial.forEach === "function") initial.forEach(function (value, key) { self.set(key, value); });
-          else Object.keys(initial).forEach(function (key) { self.set(key, initial[key]); });
-        }
-      };
-      window.Headers.prototype.set = function (key, value) { this.map[String(key).toLowerCase()] = String(value); };
-      window.Headers.prototype.get = function (key) { return this.map[String(key).toLowerCase()] || null; };
-      window.Headers.prototype.forEach = function (callback) {
-        var self = this;
-        Object.keys(this.map).forEach(function (key) { callback(self.map[key], key); });
-      };
-    }
-
-    if (!window.fetch) {
-      window.fetch = function (input, init) {
-        init = init || {};
-        return new Promise(function (resolve, reject) {
-          var url = typeof input === "string" ? input : input.url;
-          var method = String(init.method || "GET").toUpperCase();
-          var xhr = new XMLHttpRequest();
-          xhr.open(method, url, true);
-          xhr.withCredentials = init.credentials !== "omit";
-
-          var headers = new Headers(init.headers || {});
-          if (csrfToken && method !== "GET" && method !== "HEAD" && method !== "OPTIONS") {
-            headers.set("X-CSRF-Token", csrfToken);
-          }
-          headers.forEach(function (value, key) {
-            try { xhr.setRequestHeader(key, value); } catch (error) {}
-          });
-
-          xhr.onreadystatechange = function () {
-            if (xhr.readyState !== 4) return;
-            var response = {
-              ok: xhr.status >= 200 && xhr.status < 300,
-              status: xhr.status,
-              statusText: xhr.statusText,
-              url: url,
-              text: function () { return Promise.resolve(xhr.responseText || ""); },
-              json: function () {
-                try { return Promise.resolve(xhr.responseText ? JSON.parse(xhr.responseText) : {}); }
-                catch (error) { return Promise.reject(error); }
-              }
-            };
-            resolve(response);
-          };
-          xhr.onerror = function () { reject(new TypeError("Network request failed")); };
-          xhr.send(init.body !== undefined ? init.body : null);
-        });
-      };
-    }
-  }
-
-  function loadLegacyFullApp() {
-    if (!legacyMode || legacyFullAppLoading || legacyFullAppLoaded) return;
-    legacyFullAppLoading = true;
-    installLegacyPolyfills();
-
-    function compileAndRun() {
-      var xhr = new XMLHttpRequest();
-      xhr.open("GET", "/app.js?legacySource=" + new Date().getTime(), true);
-      xhr.withCredentials = true;
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState !== 4) return;
-        if (xhr.status < 200 || xhr.status >= 300) {
-          legacyFullAppLoading = false;
-          return;
-        }
-        try {
-          var transformed = window.Babel.transform(xhr.responseText, {
-            presets: [["env", { targets: { safari: "10" }, modules: false }]],
-            sourceType: "script",
-            comments: false,
-            compact: true
-          }).code;
-          new Function(transformed + "\n//# sourceURL=borsaci-app-legacy.js")();
-          legacyFullAppLoaded = true;
-        } catch (error) {
-          try { console.error("BORSACI LEGACY APP ERROR", error); } catch (ignore) {}
-        }
-        legacyFullAppLoading = false;
-      };
-      xhr.onerror = function () { legacyFullAppLoading = false; };
-      xhr.send(null);
-    }
-
-    if (window.Babel && typeof window.Babel.transform === "function") {
-      compileAndRun();
-      return;
-    }
-
-    var script = document.createElement("script");
-    script.src = "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js";
-    script.async = true;
-    script.onload = compileAndRun;
-    script.onerror = function () { legacyFullAppLoading = false; };
-    document.head.appendChild(script);
+    debug("LEGACY UI FALLBACK: BOUND");
   }
 
   function activate(session) {
@@ -417,7 +315,7 @@
     logoutButtons().forEach(function (button) { button.hidden = false; });
     showLoginError("");
     bindLegacyUi();
-    loadLegacyFullApp();
+    debug("SESSION: AUTHENTICATED");
     dispatchAuthReady();
   }
 
