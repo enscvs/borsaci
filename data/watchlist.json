@@ -3129,7 +3129,7 @@
           "symbol": "FTNT",
           "market": "NASDAQ",
           "action": "BUY SETUP",
-          "status": "PENDING_LIMIT",
+          "status": "REJECTED",
           "grade": "A / AL ADAYI",
           "timestamp": "2026-08-30T13:09:25.079Z",
           "entry": {
@@ -3231,7 +3231,8 @@
             "stage": "PENDING_LIMIT",
             "lastCheckedAt": "2026-08-30T13:09:37.167Z",
             "lastMarketPrice": 165.97
-          }
+          },
+          "closedAt": "2026-08-30T13:09:44.488Z"
         },
         {
           "id": "1788095350575-FTNT",
@@ -17218,6 +17219,116 @@
       ],
       "history": [
         {
+          "id": "nasdaq-1788095365079-FTNT-9558228c",
+          "symbol": "FTNT",
+          "market": "NASDAQ",
+          "action": "BUY SETUP",
+          "status": "REJECTED",
+          "grade": "A / AL ADAYI",
+          "timestamp": "2026-08-30T13:09:25.079Z",
+          "entry": {
+            "low": 149.09,
+            "high": 149.09,
+            "reference": 149.09
+          },
+          "stop": 145.36,
+          "target1": 165.79,
+          "target2": 170.54,
+          "target3": 176.59,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_TOO_FAR",
+            "pointA": {
+              "type": "LOW",
+              "index": 20,
+              "price": 143.83,
+              "date": "2026-07-29T04:00:00.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 25,
+              "price": 172.09,
+              "date": "2026-08-05T04:00:00.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 37,
+              "price": 148.33,
+              "date": "2026-08-21T04:00:00.000Z"
+            },
+            "range": 28.26,
+            "retracementRatio": 0.8408,
+            "entryTriggerPrice": 149.09,
+            "entryZoneLow": 149.09,
+            "entryZoneHigh": 161.39,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 25,
+                "price": 172.09,
+                "date": "2026-08-05T04:00:00.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 32,
+                "price": 165.75,
+                "date": "2026-08-14T04:00:00.000Z"
+              },
+              "slopePerBar": -0.905714,
+              "lastCompletedCandleTime": "2026-08-28T04:00:00.000Z",
+              "projectedPoint": {
+                "index": 42,
+                "date": "2026-08-28T04:00:00.000Z",
+                "price": 156.6929
+              },
+              "breakoutPrice": 156.6929,
+              "breakoutPriceAtLast": 156.6929,
+              "entryUpperRaw": 161.39364285714288,
+              "entryUpperPrice": 161.39
+            },
+            "stopLoss": 145.36,
+            "tp1": 165.79,
+            "tp2": 170.54,
+            "tp3": 176.59,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-24T04:00:00.000Z",
+            "confirmationCandleClose": 152.01,
+            "entryPrice": 165.97
+          },
+          "indicators": {
+            "score": 78
+          },
+          "pendingOrder": {
+            "symbol": "FTNT",
+            "quantity": 6,
+            "entryPrice": 149.09,
+            "orderType": "LIMIT",
+            "stop": 145.36,
+            "target1": 165.79,
+            "target2": 170.54,
+            "target3": 176.59,
+            "paperOnly": false,
+            "source": "NASDAQ AI",
+            "createdAt": "2026-08-30T13:09:25.079Z",
+            "updatedAt": "2026-08-30T13:09:37.167Z",
+            "status": "PENDING_LIMIT",
+            "lastMarketPrice": 165.97
+          },
+          "lifecycle": {
+            "stage": "PENDING_LIMIT",
+            "lastCheckedAt": "2026-08-30T13:09:37.167Z",
+            "lastMarketPrice": 165.97
+          },
+          "closedAt": "2026-08-30T13:09:44.488Z"
+        },
+        {
           "id": "nasdaq-1788036327350-FTNT-66fee7ac",
           "symbol": "FTNT",
           "market": "NASDAQ",
@@ -18051,6 +18162,11 @@
         }
       ],
       "activity": [
+        {
+          "timestamp": "2026-08-30T13:09:44.488Z",
+          "type": "NASDAQ_REJECT",
+          "message": "FTNT NASDAQ emri reddedildi."
+        },
         {
           "timestamp": "2026-08-30T13:09:37.167Z",
           "type": "NASDAQ_LIMIT_PENDING",
