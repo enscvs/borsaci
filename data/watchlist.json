@@ -9360,8 +9360,8 @@
         "id": "1788094867262-VAKBN",
         "rank": 3,
         "symbol": "VAKBN",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 30.14,
@@ -9676,15 +9676,33 @@
           "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-08-31T09:48:05.340Z",
-          "expiresAt": "2026-09-01T09:48:05.340Z"
+          "expiresAt": "2026-09-01T09:48:05.340Z",
+          "overrideAt": "2026-08-31T09:48:15.124Z"
         },
         "currentScan": true,
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (29.36) planı geçersiz kılar.",
         "timestamp": "2026-08-31T09:48:05.340Z",
-        "manualOverride": false
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "VAKBN",
+          "quantity": 962,
+          "entryPrice": 32.2,
+          "orderType": "LIMIT",
+          "stop": 29.36,
+          "target1": 34.14,
+          "target2": 35.27,
+          "target3": 36.72,
+          "positionValue": 30976.4,
+          "actualRisk": 2732.08,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-08-31T09:48:15.124Z",
+          "updatedAt": "2026-08-31T09:48:15.124Z",
+          "editedAt": null
+        }
       }
     ],
     "history": [
@@ -11764,6 +11782,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-31T09:48:15.124Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "VAKBN kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-08-31T09:48:05.979Z",
         "type": "SCAN",
