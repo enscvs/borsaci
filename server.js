@@ -42,6 +42,9 @@ const {
   createMarketScheduler,
 } = require("./trading/market-scheduler");
 const {
+  ScannerExecutionRegistry,
+} = require("./trading/scanner-execution-lock");
+const {
   createBinanceBroker,
 } = require("./trading/broker/binance-broker");
 const {
@@ -184,7 +187,11 @@ const scannerJobs = new Map();
 // ikisi de aynı GitHub state dosyasını kaydetmeye çalışır. Bu yalnızca
 // çakışma değil küçük Render instance'ında bellek baskısı da yaratıyordu.
 // Kilit market bazlıdır: BIST'in taranması kripto/NASDAQ isteğini engellemez.
-const activeScannerMarkets = new Set();
+const scannerLockMaxAgeMs = Math.max(5 * 60 * 1000, Math.min(60 * 60 * 1000, Number(process.env.SCANNER_LOCK_MAX_AGE_MS) || 30 * 60 * 1000));
+const scannerExecutionRegistry = new ScannerExecutionRegistry({maxAgeMs:scannerLockMaxAgeMs});
+// Map değeri {market, startedAt, token} taşır. Böylece process içindeki eski
+// bir lock makul üst süreyi aşarsa yeni tarama tarafından güvenle kurtarılır.
+const activeScannerMarkets = scannerExecutionRegistry.locks;
 let paperMonitorRunning = false;
 let marketPaperMonitorRunning = false;
 let unifiedPositionMonitorRunning = false;
@@ -253,14 +260,15 @@ function updateScannerJob(jobId, progress, message, status = "RUNNING") {
 }
 
 function acquireScannerExecution(market) {
-  const normalized = String(market || "").toUpperCase();
-  if (activeScannerMarkets.has(normalized)) return false;
-  activeScannerMarkets.add(normalized);
-  return true;
+  return scannerExecutionRegistry.acquire(market);
 }
 
-function releaseScannerExecution(market) {
-  activeScannerMarkets.delete(String(market || "").toUpperCase());
+function releaseScannerExecution(market, token) {
+  return scannerExecutionRegistry.release(market, token);
+}
+
+function activeScannerMarketNames() {
+  return scannerExecutionRegistry.activeMarkets();
 }
 
 async function sendTelegramNotification(
@@ -7559,7 +7567,8 @@ SCANNER HANDLER
 */
 
 async function handleTradingScanner(req,res) {
-  if (!acquireScannerExecution("BIST")) {
+  const scannerLockToken = acquireScannerExecution("BIST");
+  if (!scannerLockToken) {
     return sendJSON(res, 409, {success:false, error:"BIST taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
   }
   let jobId = "";
@@ -7648,7 +7657,7 @@ async function handleTradingScanner(req,res) {
     updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
     return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
   } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
-  finally { releaseScannerExecution("BIST"); }
+  finally { releaseScannerExecution("BIST", scannerLockToken); }
 }
 
 function handleTradingScannerStatus(req,res) {
@@ -8570,7 +8579,8 @@ async function handleNasdaqPaperClose(req, res) {
 }
 
 async function handleNasdaqScanner(req,res) {
-  if (!acquireScannerExecution("NASDAQ")) {
+  const scannerLockToken = acquireScannerExecution("NASDAQ");
+  if (!scannerLockToken) {
     return sendJSON(res, 409, {success:false, error:"NASDAQ taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
   }
   const url=new URL(req.url,`http://${req.headers.host||"localhost"}`);const jobId=String(url.searchParams.get("jobId")||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,80);
@@ -8588,7 +8598,7 @@ async function handleNasdaqScanner(req,res) {
     const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik kısa listede Fibonacci hesaplanıyor");const ranked=fibonacciEngine.rankCandidatesWithFibonacci(valid,Date.now(),{market:"NASDAQ"},{limit:5,shortlistLimit:12}).map(item=>({...item,price:item.features.price,ema20:item.features.ema20,ema50:item.features.ema50,ema200:item.features.ema200,rsi:item.features.rsi,macd:item.features.macd,atr:item.features.atr,volumeRatio:item.features.volumeRatio,turnover:item.features.turnover}));
     updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),activePositionSymbols=new Set((paper.positions||[]).filter(item=>["OPEN","PENDING_BROKER_ENTRY"].includes(item.status)).map(item=>item.symbol)),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital}).filter(item=>!activePositionSymbols.has(item.symbol));const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};paper.decisions=mergeNasdaqScannerDecisions(decisions,paper.decisions.filter(item=>!activePositionSymbols.has(item.symbol)),timestamp);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
   } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
-  finally { releaseScannerExecution("NASDAQ"); }
+  finally { releaseScannerExecution("NASDAQ", scannerLockToken); }
 }
 
 /* ========================================================
@@ -8688,12 +8698,14 @@ async function runAutomatedMarketScanner(market, {timestamp = new Date()} = {}) 
   runtime.lastRunAt = new Date(timestamp).toISOString();
 
   try {
-    const result = await withTradingStateMutation(`scanner:${normalized}`, async () => {
-      const response = await invokeMarketScanner(normalized);
-      if (response.statusCode >= 400 || !response.payload?.success) {
-        throw new Error(String(response.payload?.error || `${normalized} taraması tamamlanamadı.`));
-      }
-
+    // Scanner handler kendi market lock'unu ve kendi sonuç state yazımını
+    // yönetir. Handler'ı mutation kuyruğu içine almak, BIST handler'ın içteki
+    // bist-scanner-commit kuyruğunu beklemesiyle deadlock oluşturuyordu.
+    const response = await invokeMarketScanner(normalized);
+    if (response.statusCode >= 400 || !response.payload?.success) {
+      throw new Error(String(response.payload?.error || `${normalized} taraması tamamlanamadı.`));
+    }
+    const result = await withTradingStateMutation(`scanner-result:${normalized}`, async () => {
       const stateResult = await getTradingState();
       const state = stateResult.content;
       const bucket = automationBucket(state, normalized);
@@ -8748,7 +8760,10 @@ const marketScheduler = createMarketScheduler({
     const target = automationRuntimeStatus.scanner[source];
     if (!target) return;
     const status = marketScheduler.getStatus()[source];
-    Object.assign(target, status);
+    // onResult scheduler'ın kendi finally bloğundan hemen önce çağrılır;
+    // status.running o anda hâlâ true olabilir. Job sonucu teslim edildiğinde
+    // ortak runtime görünümü kesin olarak tamamlanmış olmalıdır.
+    Object.assign(target, status, {running:false});
   },
 });
 
@@ -8805,8 +8820,9 @@ async function runUnifiedPositionMonitor() {
   // Tarama sırasında GitHub state yazısı scanner'a aittir. Monitor bir
   // dakika sonra tekrar çalışır; burada atlamak, uzun tarama sonunda 409
   // yüzünden tüm scanner'ın hata vermesini önler.
-  if (activeScannerMarkets.size > 0) {
-    return {skipped:true, reason:"SCANNER_ACTIVE", markets:[...activeScannerMarkets]};
+  const activeMarkets = activeScannerMarketNames();
+  if (activeMarkets.length > 0) {
+    return {skipped:true, reason:"SCANNER_ACTIVE", markets:activeMarkets};
   }
   unifiedPositionMonitorRunning = true;
   const startedAt = new Date().toISOString();
@@ -10846,7 +10862,8 @@ async function scanCryptoSymbol(symbol) {
 async function handleCryptoScanner(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const jobId = String(url.searchParams.get("jobId") || "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
-  if (!acquireScannerExecution("CRYPTO")) {
+  const scannerLockToken = acquireScannerExecution("CRYPTO");
+  if (!scannerLockToken) {
     return sendJSON(res, 409, {success:false, error:"Kripto taraması zaten çalışıyor. Mevcut taramanın tamamlanmasını bekleyin."});
   }
   try {
@@ -10909,7 +10926,7 @@ async function handleCryptoScanner(req, res) {
   } catch (error) {
     updateScannerJob(jobId, 100, `Kripto tarama hatası: ${error.message}`, "ERROR");
     return sendJSON(res, 500, {success:false, error:error.message});
-  } finally { releaseScannerExecution("CRYPTO"); }
+  } finally { releaseScannerExecution("CRYPTO", scannerLockToken); }
 }
 
 if (
