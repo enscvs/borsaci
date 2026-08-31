@@ -9689,19 +9689,19 @@
         "pendingOrder": {
           "symbol": "VAKBN",
           "quantity": 962,
-          "entryPrice": 32.2,
-          "orderType": "LIMIT",
+          "entryPrice": null,
+          "orderType": "MARKET",
           "stop": 29.36,
           "target1": 34.14,
           "target2": 35.27,
           "target3": 36.72,
-          "positionValue": 30976.4,
-          "actualRisk": 2732.08,
+          "positionValue": null,
+          "actualRisk": null,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-31T09:48:15.124Z",
-          "updatedAt": "2026-08-31T09:48:15.124Z",
-          "editedAt": null
+          "updatedAt": "2026-08-31T09:48:27.370Z",
+          "editedAt": "2026-08-31T09:48:27.370Z"
         }
       }
     ],
@@ -11782,6 +11782,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-31T09:48:27.370Z",
+        "type": "PAPER_ORDER_EDITED",
+        "message": "VAKBN bekleyen paper emri düzenlendi: 962 lot · ₺0,00 · MARKET."
+      },
       {
         "timestamp": "2026-08-31T09:48:15.124Z",
         "type": "AI_DECISION_MANUAL_PENDING",
