@@ -8732,6 +8732,318 @@
     },
     "decisions": [
       {
+        "id": "1788169685340-ASTOR",
+        "rank": 1,
+        "symbol": "ASTOR",
+        "action": "WATCH",
+        "status": "PENDING",
+        "confidence": null,
+        "entry": {
+          "low": 267.8,
+          "high": null,
+          "reference": 267.8
+        },
+        "stop": 257.25,
+        "target1": 383.84,
+        "target2": 416.83,
+        "target3": 458.85,
+        "riskReward": {
+          "tp1": null,
+          "tp2": null,
+          "tp3": null
+        },
+        "riskPlan": {
+          "capital": 100000,
+          "targetPositionValue": 31000,
+          "reservePercent": 7,
+          "quantity": 115,
+          "positionValue": 30797,
+          "actualRisk": 1213.25,
+          "maxPositionPercent": 31,
+          "maxPositions": 3
+        },
+        "indicators": {
+          "score": 83,
+          "rsi": 62.24,
+          "atr": 16.24,
+          "macd": 10.46
+        },
+        "scoreBreakdown": {
+          "trend": {
+            "score": 30,
+            "max": 30,
+            "items": [
+              {
+                "id": "price_above_ema20",
+                "label": "Fiyat EMA20 üzerinde",
+                "points": 8,
+                "maxPoints": 8,
+                "passed": true,
+                "detail": ""
+              },
+              {
+                "id": "ema20_above_ema50",
+                "label": "EMA20 EMA50 üzerinde",
+                "points": 8,
+                "maxPoints": 8,
+                "passed": true,
+                "detail": ""
+              },
+              {
+                "id": "price_above_ema200",
+                "label": "Fiyat EMA200 üzerinde",
+                "points": 7,
+                "maxPoints": 7,
+                "passed": true,
+                "detail": ""
+              },
+              {
+                "id": "ema20_rising_5d",
+                "label": "EMA20 son 5 günde yükseliyor",
+                "points": 7,
+                "maxPoints": 7,
+                "passed": true,
+                "detail": ""
+              }
+            ]
+          },
+          "momentum": {
+            "score": 25,
+            "max": 25,
+            "items": [
+              {
+                "id": "rsi14",
+                "label": "RSI14",
+                "points": 10,
+                "maxPoints": 10,
+                "passed": true,
+                "partial": false,
+                "detail": "RSI 52–65 aralığında"
+              },
+              {
+                "id": "macd_above_signal",
+                "label": "MACD sinyal çizgisinin üzerinde",
+                "points": 8,
+                "maxPoints": 8,
+                "passed": true,
+                "detail": ""
+              },
+              {
+                "id": "macd_histogram_strengthening",
+                "label": "MACD histogramı pozitif ve güçleniyor",
+                "points": 7,
+                "maxPoints": 7,
+                "passed": true,
+                "detail": ""
+              }
+            ]
+          },
+          "volumeLiquidity": {
+            "score": 20,
+            "max": 20,
+            "items": [
+              {
+                "id": "volume_ratio",
+                "label": "Hacim oranı",
+                "points": 10,
+                "maxPoints": 10,
+                "passed": true,
+                "partial": false,
+                "detail": "Hacim 20 günlük ortalamanın en az 1,20 katı"
+              },
+              {
+                "id": "turnover",
+                "label": "Likidite / işlem tutarı",
+                "points": 10,
+                "maxPoints": 10,
+                "passed": true,
+                "partial": false,
+                "detail": "Günlük işlem tutarı 500 milyon TL ve üzeri"
+              }
+            ]
+          },
+          "entryQuality": {
+            "score": 8,
+            "max": 25,
+            "items": [
+              {
+                "id": "near_ema20",
+                "label": "Fiyat EMA20'ye en fazla 1 ATR uzaklıkta",
+                "points": 0,
+                "maxPoints": 5,
+                "passed": false,
+                "detail": ""
+              },
+              {
+                "id": "valid_fibonacci",
+                "label": "Geçerli Fibonacci A–B–C yapısı",
+                "points": 5,
+                "maxPoints": 5,
+                "passed": true,
+                "detail": ""
+              },
+              {
+                "id": "fibonacci_confirmation",
+                "label": "Fibonacci dönüş teyidi",
+                "points": 0,
+                "maxPoints": 5,
+                "passed": false,
+                "detail": ""
+              },
+              {
+                "id": "volume_confirmation",
+                "label": "Dönüş hacmi güçlü",
+                "points": 3,
+                "maxPoints": 3,
+                "passed": true,
+                "detail": ""
+              },
+              {
+                "id": "risk_reward",
+                "label": "TP2 veya TP3 için en az 1:2 risk/getiri",
+                "points": 0,
+                "maxPoints": 7,
+                "passed": false,
+                "detail": ""
+              }
+            ]
+          },
+          "penalties": {
+            "score": 0,
+            "items": [
+              {
+                "id": "rsi_overbought",
+                "label": "RSI aşırı yüksek",
+                "points": 0,
+                "maxPoints": -10,
+                "applied": false,
+                "detail": ""
+              },
+              {
+                "id": "extended_above_ema20",
+                "label": "Fiyat EMA20'den aşırı uzak",
+                "points": 0,
+                "maxPoints": -10,
+                "applied": false,
+                "detail": ""
+              },
+              {
+                "id": "five_day_runup",
+                "label": "Son 5 günde aşırı yükseliş",
+                "points": 0,
+                "maxPoints": -5,
+                "applied": false,
+                "detail": ""
+              },
+              {
+                "id": "low_volume",
+                "label": "Hacim çok düşük",
+                "points": 0,
+                "maxPoints": -10,
+                "applied": false,
+                "detail": ""
+              },
+              {
+                "id": "weakening_macd_histogram",
+                "label": "MACD histogramı zayıflıyor",
+                "points": 0,
+                "maxPoints": -5,
+                "applied": false,
+                "detail": ""
+              }
+            ]
+          },
+          "positiveTotal": 83,
+          "rawTotal": 83,
+          "total": 83,
+          "maximum": 100,
+          "capped": false,
+          "calculationStage": "INITIAL_TECHNICAL_SCREEN"
+        },
+        "filters": {
+          "trend": true,
+          "momentum": true,
+          "volume": true,
+          "rsi": true
+        },
+        "planMethod": "FIBONACCI_A_B_C_DAILY",
+        "fibonacci": {
+          "valid": true,
+          "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+          "pointA": {
+            "type": "LOW",
+            "index": 411,
+            "price": 189.39999389648438,
+            "date": "2026-04-17T06:30:00.000Z"
+          },
+          "pointB": {
+            "type": "HIGH",
+            "index": 441,
+            "price": 385.75,
+            "date": "2026-06-03T06:30:00.000Z"
+          },
+          "pointC": {
+            "type": "LOW",
+            "index": 449,
+            "price": 262.5,
+            "date": "2026-06-15T06:30:00.000Z"
+          },
+          "range": 196.35,
+          "retracementRatio": 0.6277,
+          "entryTriggerPrice": 267.8,
+          "entryZoneLow": 267.8,
+          "entryZoneHigh": null,
+          "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+          "descendingResistance": {
+            "valid": false,
+            "available": false,
+            "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+            "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+            "anchor1": null,
+            "anchor2": null,
+            "slopePerBar": null,
+            "lastCompletedCandleTime": "2026-08-27T06:30:00.000Z",
+            "projectedPoint": null,
+            "breakoutPrice": null,
+            "breakoutPriceAtLast": null,
+            "entryUpperRaw": null,
+            "entryUpperPrice": null
+          },
+          "stopLoss": 257.25,
+          "tp1": 383.84,
+          "tp2": 416.83,
+          "tp3": 458.85,
+          "volumeConfirmation": "STRONG",
+          "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
+        },
+        "grade": "A+ / GÜÇLÜ ADAY",
+        "reasons": [
+          "Fiyat EMA20 üzerinde",
+          "EMA20 EMA50 üzerinde",
+          "Fiyat EMA200 üzerinde",
+          "EMA20 son 5 günde yükseliyor"
+        ],
+        "risks": [],
+        "aiReview": {
+          "available": true,
+          "provider": "GROQ",
+          "score": null,
+          "verdict": "INFO",
+          "newsComment": "Doğrulanmış haber başlığı alınamadı.",
+          "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+          "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
+        },
+        "lifecycle": {
+          "stage": "PENDING",
+          "createdAt": "2026-08-31T09:48:05.340Z",
+          "expiresAt": "2026-09-01T09:48:05.340Z"
+        },
+        "currentScan": true,
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
+        "timestamp": "2026-08-31T09:48:05.340Z"
+      },
+      {
         "id": "1788094867262-SDTTR",
         "rank": 2,
         "symbol": "SDTTR",
@@ -9030,18 +9342,18 @@
           "score": null,
           "verdict": "INFO",
           "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-          "summary": "Doğrulanmış haber başlığı alınamadı."
+          "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+          "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-31T06:33:10.775Z",
-          "expiresAt": "2026-09-01T06:33:10.776Z"
+          "createdAt": "2026-08-31T09:48:05.340Z",
+          "expiresAt": "2026-09-01T09:48:05.340Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
         "invalidation": "C seviyesinin %2 altındaki stop (18.03) planı geçersiz kılar.",
-        "timestamp": "2026-08-31T06:33:10.775Z",
+        "timestamp": "2026-08-31T09:48:05.340Z",
         "manualOverride": false
       },
       {
@@ -9360,18 +9672,18 @@
           "score": null,
           "verdict": "INFO",
           "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-          "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-          "summary": "Doğrulanmış haber başlığı alınamadı."
+          "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+          "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
         },
         "lifecycle": {
           "stage": "PENDING",
-          "createdAt": "2026-08-31T06:33:10.776Z",
-          "expiresAt": "2026-09-01T06:33:10.776Z"
+          "createdAt": "2026-08-31T09:48:05.340Z",
+          "expiresAt": "2026-09-01T09:48:05.340Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
         "invalidation": "C seviyesinin %2 altındaki stop (29.36) planı geçersiz kılar.",
-        "timestamp": "2026-08-31T06:33:10.776Z",
+        "timestamp": "2026-08-31T09:48:05.340Z",
         "manualOverride": false
       }
     ],
@@ -11453,6 +11765,11 @@
     },
     "activity": [
       {
+        "timestamp": "2026-08-31T09:48:05.979Z",
+        "type": "SCAN",
+        "message": "3 active AI decision(s) refreshed or generated."
+      },
+      {
         "timestamp": "2026-08-31T09:30:05.566Z",
         "type": "RISK",
         "message": "Risk Engine ve Paper Portfolio sermayesi ₺100.000,00 olarak eşitlendi."
@@ -11567,7 +11884,7 @@
       "version": "daily-top-five-v6",
       "sessionKey": "2026-08-28",
       "riskKey": "100000|31|3",
-      "createdAt": "2026-08-31T06:33:10.776Z",
+      "createdAt": "2026-08-31T09:48:05.340Z",
       "scanned": 106,
       "successful": 104,
       "results": [
@@ -11850,7 +12167,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-31T06:33:03.384Z",
+          "timestamp": "2026-08-31T09:47:58.053Z",
           "fallbackPlan": null,
           "price": 349,
           "ema20": 326.82275443387323,
@@ -11867,8 +12184,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-            "summary": "Doğrulanmış haber başlığı alınamadı."
+            "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+            "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
           }
         },
         {
@@ -12150,7 +12467,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-31T06:33:06.834Z",
+          "timestamp": "2026-08-31T09:48:01.843Z",
           "fallbackPlan": null,
           "price": 24.399999618530273,
           "ema20": 23.08602507612727,
@@ -12167,8 +12484,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-            "summary": "Doğrulanmış haber başlığı alınamadı."
+            "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+            "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
           }
         },
         {
@@ -12467,7 +12784,7 @@
             "confirmationCandleClose": 30.6,
             "entryPrice": 32.2
           },
-          "timestamp": "2026-08-31T06:33:08.032Z",
+          "timestamp": "2026-08-31T09:48:02.943Z",
           "fallbackPlan": null,
           "price": 32.20000076293945,
           "ema20": 30.991950434786524,
@@ -12484,8 +12801,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-            "summary": "Doğrulanmış haber başlığı alınamadı."
+            "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+            "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
           }
         },
         {
@@ -12767,7 +13084,7 @@
             "volumeConfirmation": "STRONG",
             "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
           },
-          "timestamp": "2026-08-31T06:33:03.526Z",
+          "timestamp": "2026-08-31T09:47:58.446Z",
           "fallbackPlan": null,
           "price": 186.60000610351562,
           "ema20": 181.45730985552092,
@@ -12784,8 +13101,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-            "summary": "Doğrulanmış haber başlığı alınamadı."
+            "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+            "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
           }
         },
         {
@@ -13084,7 +13401,7 @@
             "confirmationCandleClose": 19.42,
             "entryPrice": 22.34
           },
-          "timestamp": "2026-08-31T06:33:04.526Z",
+          "timestamp": "2026-08-31T09:47:59.446Z",
           "fallbackPlan": null,
           "price": 22.34000015258789,
           "ema20": 21.303337534762463,
@@ -13101,8 +13418,8 @@
             "score": null,
             "verdict": "INFO",
             "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Doğrulanmış haber başlığı alınamadı.",
-            "summary": "Doğrulanmış haber başlığı alınamadı."
+            "expertComment": "Şu an için bu şirketle ilgili ek bir bilgi bulunmamaktadır.",
+            "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
           }
         }
       ]
