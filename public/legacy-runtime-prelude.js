@@ -11,6 +11,22 @@
 
   if (!isLegacy()) return;
 
+  if (window.Element && !Element.prototype.append) {
+    Element.prototype.append = function () {
+      for (var i = 0; i < arguments.length; i += 1) {
+        var node = arguments[i];
+        if (!(node && node.nodeType)) node = document.createTextNode(String(node));
+        this.appendChild(node);
+      }
+    };
+  }
+
+  if (window.Element && !Element.prototype.remove) {
+    Element.prototype.remove = function () {
+      if (this.parentNode) this.parentNode.removeChild(this);
+    };
+  }
+
   function debug(message) {
     if (typeof window.borsaciLegacyDebug === "function") {
       window.borsaciLegacyDebug(message);
