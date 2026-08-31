@@ -27,6 +27,18 @@
     };
   }
 
+  if (window.Node && !Node.prototype.closest) {
+    Node.prototype.closest = function (selector) {
+      var node = this;
+      if (node.nodeType !== 1) node = node.parentElement || node.parentNode;
+      while (node && node.nodeType === 1) {
+        if (node.matches && node.matches(selector)) return node;
+        node = node.parentElement || node.parentNode;
+      }
+      return null;
+    };
+  }
+
   function debug(message) {
     if (typeof window.borsaciLegacyDebug === "function") {
       window.borsaciLegacyDebug(message);
