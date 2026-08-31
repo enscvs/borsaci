@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 142252.04,
-      "equity": 142252.04,
+      "cash": 111244.66,
+      "equity": 142221.06,
       "pnl": 42782.563574438085,
       "pnlPercent": 42.782563574438086,
       "positions": [
+        {
+          "id": "paper-2026-08-31T09:48:30.505Z-VAKBN-ea3cca0e",
+          "decisionId": "1788094867262-VAKBN",
+          "decisionIds": [
+            "1788094867262-VAKBN"
+          ],
+          "symbol": "VAKBN",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "MARKET",
+          "quantity": 962,
+          "originalQuantity": 962,
+          "entry": 32.2,
+          "entryCommission": 30.98,
+          "current": 32.2,
+          "stop": 29.36,
+          "target1": 34.14,
+          "target2": 35.27,
+          "target3": 36.72,
+          "status": "OPEN",
+          "openedAt": "2026-08-31T09:48:30.505Z",
+          "tp1Hit": false,
+          "realizedPnl": -30.98,
+          "pnl": -30.98
+        },
         {
           "id": "paper-2026-08-30T21:17:02.739Z-ASTOR-8e41492e",
           "decisionId": "1788036226189-ASTOR",
@@ -9361,7 +9386,7 @@
         "rank": 3,
         "symbol": "VAKBN",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 30.14,
@@ -9676,10 +9701,11 @@
           "summary": "İlgili şirket hakkında doğrulanmış bir haber mevcut değil."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-08-31T09:48:05.340Z",
           "expiresAt": "2026-09-01T09:48:05.340Z",
-          "overrideAt": "2026-08-31T09:48:15.124Z"
+          "overrideAt": "2026-08-31T09:48:15.124Z",
+          "openedAt": "2026-08-31T09:48:30.505Z"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -9689,19 +9715,23 @@
         "pendingOrder": {
           "symbol": "VAKBN",
           "quantity": 962,
-          "entryPrice": null,
+          "entryPrice": 32.2,
           "orderType": "MARKET",
           "stop": 29.36,
           "target1": 34.14,
           "target2": 35.27,
           "target3": 36.72,
-          "positionValue": null,
-          "actualRisk": null,
+          "positionValue": 30976.4,
+          "actualRisk": 2732.08,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-08-31T09:48:15.124Z",
-          "updatedAt": "2026-08-31T09:48:27.370Z",
-          "editedAt": "2026-08-31T09:48:27.370Z"
+          "updatedAt": "2026-08-31T09:48:30.505Z",
+          "editedAt": "2026-08-31T09:48:27.370Z",
+          "commission": 30.98,
+          "totalCost": 31007.38,
+          "status": "APPROVED",
+          "approvedAt": "2026-08-31T09:48:30.505Z"
         }
       }
     ],
@@ -11782,6 +11812,16 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-08-31T09:48:30.505Z",
+        "type": "PAPER_APPROVED",
+        "message": "VAKBN paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-08-31T09:48:30.505Z",
+        "type": "PAPER_OPEN",
+        "message": "VAKBN scanner paper pozisyonu açıldı: 962 lot · ₺30976.40 · MARKET."
+      },
       {
         "timestamp": "2026-08-31T09:48:27.370Z",
         "type": "PAPER_ORDER_EDITED",
