@@ -5122,10 +5122,26 @@ async function monitorPaperPositions() {
         continue;
       }
 
-      position.current = current;
-      position.pnl =
+      const previousCurrent = Number(position.current);
+      const previousPnl = Number(position.pnl);
+      const nextPnl = roundTradingValue(
         (current - Number(position.entry)) *
-        Number(position.quantity);
+        Number(position.quantity)
+      );
+
+      position.current = current;
+      position.pnl = nextPnl;
+
+      // Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e
+      // yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.
+      if (
+        !Number.isFinite(previousCurrent) ||
+        previousCurrent !== current ||
+        !Number.isFinite(previousPnl) ||
+        previousPnl !== nextPnl
+      ) {
+        changed = true;
+      }
 
       // Strateji/sinyal hesaplamasi yalnız tamamlanmış günlük mumdan gelir.
       // Burada sadece açık pozisyonun güncel quote ile yürütülmesi var.
