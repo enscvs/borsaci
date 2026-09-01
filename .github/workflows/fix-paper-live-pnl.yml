@@ -1,56 +1,33 @@
-name: Fix paper live PnL persistence
+name: Inspect paper live PnL block
 
 on: push
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  patch:
+  inspect:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch and commit
+      - name: Show target context
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import re
-          p = Path("server.js")
-          s = p.read_text()
-          pattern = re.compile(r"(?P<i>[ \t]*)position\.current\s*=\s*current;\s*position\.pnl\s*=\s*\(current\s*-\s*Number\(position\.entry\)\)\s*\*\s*Number\(position\.quantity\);")
-          matches = list(pattern.finditer(s))
-          if len(matches) != 1:
-              raise SystemExit("target block count=" + str(len(matches)))
-          i = matches[0].group("i")
-          lines = [
-              i + "const previousCurrent = Number(position.current);",
-              i + "const previousPnl = Number(position.pnl);",
-              i + "const nextPnl = roundTradingValue(",
-              i + "  (current - Number(position.entry)) *",
-              i + "  Number(position.quantity)",
-              i + ");",
-              "",
-              i + "position.current = current;",
-              i + "position.pnl = nextPnl;",
-              "",
-              i + "// Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e",
-              i + "// yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.",
-              i + "if (",
-              i + "  !Number.isFinite(previousCurrent) ||",
-              i + "  previousCurrent !== current ||",
-              i + "  !Number.isFinite(previousPnl) ||",
-              i + "  previousPnl !== nextPnl",
-              i + ") {",
-              i + "  changed = true;",
-              i + "}",
-          ]
-          p.write_text(pattern.sub("\n".join(lines), s, count=1))
+          s = Path("server.js").read_text()
+          needle = "position.current = current;"
+          start = 0
+          hits = []
+          while True:
+              i = s.find(needle, start)
+              if i < 0:
+                  break
+              hits.append(i)
+              start = i + 1
+          print("HITS", len(hits), hits)
+          for i in hits:
+              print("---CONTEXT---")
+              print(s[max(0, i-500):i+900])
           PY
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add server.js
-          git commit -m "Persist live paper position price and PnL"
-          git push
