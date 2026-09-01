@@ -1,61 +1,32 @@
 name: Fix paper live PnL persistence
 
-on:
-  push:
-    paths:
-      - '.github/workflows/fix-paper-live-pnl.yml'
+on: push
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Patch server.js
+      - name: Patch and commit
+        shell: bash
         run: |
-          python - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          path = Path('server.js')
-          text = path.read_text()
-          old = '''      position.current = current;
-      position.pnl =
-        (current - Number(position.entry)) *
-        Number(position.quantity);
-'''
-          new = '''      const previousCurrent = Number(position.current);
-      const previousPnl = Number(position.pnl);
-      const nextPnl = roundTradingValue(
-        (current - Number(position.entry)) *
-        Number(position.quantity)
-      );
-
-      position.current = current;
-      position.pnl = nextPnl;
-
-      // Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e
-      // yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.
-      if (
-        !Number.isFinite(previousCurrent) ||
-        previousCurrent !== current ||
-        !Number.isFinite(previousPnl) ||
-        previousPnl !== nextPnl
-      ) {
-        changed = true;
-      }
-'''
-          if old not in text:
-              raise SystemExit('Target block not found; refusing to patch')
-          if text.count(old) != 1:
-              raise SystemExit(f'Expected one target block, found {text.count(old)}')
-          path.write_text(text.replace(old, new, 1))
+          p = Path("server.js")
+          s = p.read_text()
+          old = """      position.current = current;\n      position.pnl =\n        (current - Number(position.entry)) *\n        Number(position.quantity);\n"""
+          new = """      const previousCurrent = Number(position.current);\n      const previousPnl = Number(position.pnl);\n      const nextPnl = roundTradingValue(\n        (current - Number(position.entry)) *\n        Number(position.quantity)\n      );\n\n      position.current = current;\n      position.pnl = nextPnl;\n\n      // Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e\n      // yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.\n      if (\n        !Number.isFinite(previousCurrent) ||\n        previousCurrent !== current ||\n        !Number.isFinite(previousPnl) ||\n        previousPnl !== nextPnl\n      ) {\n        changed = true;\n      }\n"""
+          if s.count(old) != 1:
+              raise SystemExit("target block count=" + str(s.count(old)))
+          p.write_text(s.replace(old, new, 1))
           PY
-      - name: Commit fix
-        run: |
+          git diff --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add server.js
-          git diff --cached --check
           git commit -m "Persist live paper position price and PnL"
           git push
