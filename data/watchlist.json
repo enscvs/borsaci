@@ -11013,6 +11013,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-09-01T17:02:16.843Z",
+          "type": "NASDAQ_BROKER_RECONCILE",
+          "message": "Alpaca uzlaştırması tamamlandı: 0 emir keşfedildi, 0 kayıt bağlandı, 0 durum güncellendi."
+        },
+        {
           "timestamp": "2026-09-01T17:00:33.786Z",
           "type": "NASDAQ_SCAN",
           "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
@@ -12870,7 +12875,7 @@
         "activatedAt": null
       },
       "brokerReconciliation": {
-        "timestamp": "2026-09-01T09:47:49.292Z",
+        "timestamp": "2026-09-01T17:02:16.843Z",
         "reason": "STARTUP",
         "discovered": 0,
         "linked": 0,
@@ -18695,6 +18700,17 @@
         "lastSuccessAt": null,
         "lastError": null,
         "lastErrorAt": null
+      },
+      "eod": {
+        "BIST": {
+          "sessionKey": null,
+          "status": null,
+          "completedAt": null,
+          "snapshotCreatedAt": null,
+          "failedAt": null,
+          "retryAt": null,
+          "error": null
+        }
       }
     },
     "activity": [
