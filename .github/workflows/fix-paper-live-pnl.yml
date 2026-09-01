@@ -17,42 +17,36 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           p = Path("server.js")
           s = p.read_text()
-
-          pattern = re.compile(
-              r"(?P<i>[ \t]*)position\.current\s*=\s*current;\s*"
-              r"position\.pnl\s*=\s*"
-              r"\(current\s*-\s*Number\(position\.entry\)\)\s*\*\s*"
-              r"Number\(position\.quantity\);"
-          )
+          pattern = re.compile(r"(?P<i>[ \t]*)position\.current\s*=\s*current;\s*position\.pnl\s*=\s*\(current\s*-\s*Number\(position\.entry\)\)\s*\*\s*Number\(position\.quantity\);")
           matches = list(pattern.finditer(s))
           if len(matches) != 1:
               raise SystemExit("target block count=" + str(len(matches)))
-
           i = matches[0].group("i")
-          new = f"""{i}const previousCurrent = Number(position.current);
-{i}const previousPnl = Number(position.pnl);
-{i}const nextPnl = roundTradingValue(
-{i}  (current - Number(position.entry)) *
-{i}  Number(position.quantity)
-{i});
-
-{i}position.current = current;
-{i}position.pnl = nextPnl;
-
-{i}// Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e
-{i}// yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.
-{i}if (
-{i}  !Number.isFinite(previousCurrent) ||
-{i}  previousCurrent !== current ||
-{i}  !Number.isFinite(previousPnl) ||
-{i}  previousPnl !== nextPnl
-{i}) {{
-{i}  changed = true;
-{i}}}"""
-          p.write_text(pattern.sub(new, s, count=1))
+          lines = [
+              i + "const previousCurrent = Number(position.current);",
+              i + "const previousPnl = Number(position.pnl);",
+              i + "const nextPnl = roundTradingValue(",
+              i + "  (current - Number(position.entry)) *",
+              i + "  Number(position.quantity)",
+              i + ");",
+              "",
+              i + "position.current = current;",
+              i + "position.pnl = nextPnl;",
+              "",
+              i + "// Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e",
+              i + "// yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.",
+              i + "if (",
+              i + "  !Number.isFinite(previousCurrent) ||",
+              i + "  previousCurrent !== current ||",
+              i + "  !Number.isFinite(previousPnl) ||",
+              i + "  previousPnl !== nextPnl",
+              i + ") {",
+              i + "  changed = true;",
+              i + "}",
+          ]
+          p.write_text(pattern.sub("\n".join(lines), s, count=1))
           PY
           git diff --check
           git config user.name "github-actions[bot]"
