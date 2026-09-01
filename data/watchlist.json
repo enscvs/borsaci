@@ -11815,8 +11815,8 @@
         "id": "1788246008354-ASTOR",
         "rank": 2,
         "symbol": "ASTOR",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 267.8,
@@ -12114,14 +12114,33 @@
           "summary": "Şirket hakkında güncel doğrulanmış haber mevcut değil."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-09-01T07:00:08.354Z",
-          "expiresAt": "2026-09-02T07:00:08.354Z"
+          "expiresAt": "2026-09-02T07:00:08.354Z",
+          "overrideAt": "2026-09-01T07:24:59.556Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (257.25) planı geçersiz kılar.",
-        "timestamp": "2026-09-01T07:00:08.354Z"
+        "timestamp": "2026-09-01T07:00:08.354Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "ASTOR",
+          "quantity": 115,
+          "entryPrice": 349.25,
+          "orderType": "LIMIT",
+          "stop": 257.25,
+          "target1": 383.84,
+          "target2": 416.83,
+          "target3": 458.85,
+          "positionValue": 40163.75,
+          "actualRisk": 10580,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-09-01T07:24:59.556Z",
+          "updatedAt": "2026-09-01T07:24:59.556Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1788246008354-ENJSA",
@@ -16303,6 +16322,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-01T07:24:59.556Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "ASTOR kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-09-01T07:00:09.163Z",
         "type": "SCAN",
