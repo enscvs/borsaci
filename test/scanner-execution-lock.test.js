@@ -66,7 +66,7 @@ test("automated scanner invokes handler outside the state mutation queue", () =>
   const start = source.indexOf("async function runAutomatedMarketScanner");
   const end = source.indexOf("const marketScheduler", start);
   const body = source.slice(start, end);
-  assert.match(body, /const response = await invokeMarketScanner\(normalized\)/);
+  assert.match(body, /await invokeMarketScanner\(normalized(?:, \{forceRefresh:true\})?\)/);
   assert.match(body, /withTradingStateMutation\(`scanner-result:\$\{normalized\}`/);
   assert.doesNotMatch(body, /withTradingStateMutation\(`scanner:\$\{normalized\}`/);
   assert.match(source, /Object\.assign\(target, status, \{running:false\}\)/);

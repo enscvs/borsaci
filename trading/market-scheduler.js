@@ -95,7 +95,7 @@ class MarketScheduler {
     return JSON.parse(JSON.stringify(this.status));
   }
 
-  async runMarketOnce(market, {force = false, timestamp = this.now()} = {}) {
+  async runMarketOnce(market, {force = false, timestamp = this.now(), reason = "HOURLY"} = {}) {
     const normalized = String(market || "").toUpperCase();
     if (!MARKETS.includes(normalized)) throw new Error("Bilinmeyen piyasa zamanlayıcısı.");
     const state = this.status[normalized];
@@ -113,7 +113,12 @@ class MarketScheduler {
     state.running = true;
     state.lastRunAt = timestamp.toISOString();
     try {
-      const result = await this.runMarket(normalized, {timestamp, hourKey: hourKey(timestamp)});
+      const result = await this.runMarket(normalized, {
+        timestamp,
+        hourKey: hourKey(timestamp),
+        force: Boolean(force),
+        reason,
+      });
       state.lastSuccessAt = new Date(this.now()).toISOString();
       state.lastError = null;
       state.lastErrorAt = null;

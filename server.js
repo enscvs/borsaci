@@ -45,6 +45,10 @@ const {
   ScannerExecutionRegistry,
 } = require("./trading/scanner-execution-lock");
 const {
+  eodDecision,
+  failedEodState,
+} = require("./trading/bist-eod-scheduler");
+const {
   createBinanceBroker,
 } = require("./trading/broker/binance-broker");
 const {
@@ -195,6 +199,7 @@ const activeScannerMarkets = scannerExecutionRegistry.locks;
 let paperMonitorRunning = false;
 let marketPaperMonitorRunning = false;
 let unifiedPositionMonitorRunning = false;
+let bistEndOfDayScanRunning = false;
 // Kripto route'ları HTTP callback'i içinde tanımlı olduğundan, aynı server
 // process'indeki scheduler bunlara yalnız bu küçük köprü üzerinden erişir.
 // Köprü yalnız fonksiyon referansı taşır; secret veya kullanıcı verisi tutmaz.
@@ -403,8 +408,17 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
     const snapshotCreatedToday = state.scannerSnapshot?.createdAt &&
       istanbulClock(new Date(state.scannerSnapshot.createdAt)).key === expectedSessionKey;
 
-    // Otomatik scanner çalıştırmıyoruz. Sonuç gerçekten bugünün
-    // kapanmış günlük mumuna ait değilse yanıltıcı "yeni ilk 5" mesajı yok.
+    const eod = state.automation?.eod?.BIST || {};
+
+    // Özet yalnız 18:15 kapanış taraması başarılı biçimde kaydedildikten
+    // sonra gider. Böylece öğleden kalma veya eski snapshot ile Telegram'a
+    // yanlış "gün sonu" özeti düşmez.
+    if (eod.sessionKey !== expectedSessionKey || eod.status !== "SUCCESS") {
+      return false;
+    }
+
+    // Sonuç gerçekten bugünün kapanmış günlük mumuna ait değilse yanıltıcı
+    // "yeni ilk 5" mesajı yok.
     if (snapshotSessionKey !== expectedSessionKey && !snapshotCreatedToday) {
       return false;
     }
@@ -4210,6 +4224,17 @@ function createDefaultTradingState() {
         lastError: null,
         lastErrorAt: null,
       },
+      eod: {
+        BIST: {
+          sessionKey: null,
+          status: null,
+          completedAt: null,
+          snapshotCreatedAt: null,
+          failedAt: null,
+          retryAt: null,
+          error: null,
+        },
+      },
     },
 
     activity: [
@@ -4378,6 +4403,14 @@ function normalizeTradingState(
         events: Array.isArray((value || {}).automation?.monitor?.events)
           ? (value || {}).automation.monitor.events.slice(0, 300)
           : [],
+      },
+      eod: {
+        ...fallback.automation.eod,
+        ...((value || {}).automation?.eod || {}),
+        BIST: {
+          ...fallback.automation.eod.BIST,
+          ...((value || {}).automation?.eod?.BIST || {}),
+        },
       },
     },
 
@@ -8692,9 +8725,12 @@ function automationBucket(state, market) {
   return state.automation.scanner[market];
 }
 
-async function invokeMarketScanner(market) {
+async function invokeMarketScanner(market, {forceRefresh = false} = {}) {
   if (market === "BIST") {
-    return invokeAutomationHandler(handleTradingScanner, "/api/trading/scanner?automation=1");
+    return invokeAutomationHandler(
+      handleTradingScanner,
+      `/api/trading/scanner?automation=1${forceRefresh ? "&force=1" : ""}`
+    );
   }
   if (market === "NASDAQ") {
     return invokeAutomationHandler(handleNasdaqScanner, "/api/nasdaq/scanner?automation=1");
@@ -8706,7 +8742,7 @@ async function invokeMarketScanner(market) {
   throw new Error("Bilinmeyen piyasa otomasyonu.");
 }
 
-async function runAutomatedMarketScanner(market, {timestamp = new Date()} = {}) {
+async function runAutomatedMarketScanner(market, {timestamp = new Date(), force = false} = {}) {
   const normalized = String(market || "").toUpperCase();
   const runtime = automationRuntimeStatus.scanner[normalized];
   if (!runtime) throw new Error("Bilinmeyen market scanner.");
@@ -8717,7 +8753,9 @@ async function runAutomatedMarketScanner(market, {timestamp = new Date()} = {}) 
     // Scanner handler kendi market lock'unu ve kendi sonuç state yazımını
     // yönetir. Handler'ı mutation kuyruğu içine almak, BIST handler'ın içteki
     // bist-scanner-commit kuyruğunu beklemesiyle deadlock oluşturuyordu.
-    const response = await invokeMarketScanner(normalized);
+    const response = force && normalized === "BIST"
+      ? await invokeMarketScanner(normalized, {forceRefresh:true})
+      : await invokeMarketScanner(normalized);
     if (response.statusCode >= 400 || !response.payload?.success) {
       throw new Error(String(response.payload?.error || `${normalized} taraması tamamlanamadı.`));
     }
@@ -8782,6 +8820,106 @@ const marketScheduler = createMarketScheduler({
     Object.assign(target, status, {running:false});
   },
 });
+
+function bistEodBucket(state) {
+  state.automation = state.automation || {};
+  state.automation.eod = state.automation.eod || {};
+  state.automation.eod.BIST = state.automation.eod.BIST || {};
+  return state.automation.eod.BIST;
+}
+
+async function recordBistEodFailure(sessionKey, error, now = new Date()) {
+  return withTradingStateMutation("bist-eod-failure", async () => {
+    const stateResult = await getTradingState();
+    const state = stateResult.content;
+    state.automation = state.automation || {};
+    state.automation.eod = state.automation.eod || {};
+    state.automation.eod.BIST = failedEodState(sessionKey, error, now);
+    await saveTradingState(state, stateResult.sha, stateResult.container);
+  });
+}
+
+async function runBistEndOfDayScanIfDue(now = new Date()) {
+  if (bistEndOfDayScanRunning) return {skipped:true, reason:"EOD_IN_FLIGHT"};
+
+  const stateResult = await getTradingState();
+  const state = stateResult.content;
+  const decision = eodDecision({
+    now,
+    eodState: state.automation?.eod?.BIST,
+    dailySummary: state.dailySummary,
+    scannerLocked: activeScannerMarkets.has("BIST"),
+  });
+
+  if (decision.action === "WAIT" || decision.action === "COMPLETE" || decision.action === "RETRY_WAIT") {
+    return {skipped:true, reason:decision.action, sessionKey:decision.sessionKey};
+  }
+  if (decision.action === "SCANNER_IN_FLIGHT") {
+    // Manuel tarama ile çakışmıyoruz. Bir sonraki 60 sn çevriminde aynı
+    // kapanış scanner'ı mevcut ortak kilit üzerinden tekrar denenir.
+    return {skipped:true, reason:"SCANNER_IN_FLIGHT", sessionKey:decision.sessionKey};
+  }
+  if (decision.action === "SEND_SUMMARY") {
+    return {success:await sendDailyTradingSummaryIfDue(now), sessionKey:decision.sessionKey, summaryOnly:true};
+  }
+
+  bistEndOfDayScanRunning = true;
+  try {
+    const outcome = await marketScheduler.runMarketOnce("BIST", {
+      force:true,
+      timestamp:now,
+      reason:"BIST_END_OF_DAY",
+    });
+
+    if (outcome.skipped) {
+      return {skipped:true, reason:outcome.reason || "SCANNER_IN_FLIGHT", sessionKey:decision.sessionKey};
+    }
+    if (outcome.error) {
+      // Manuel request araya girdiyse bunu başarısız kapanış olarak
+      // işaretlemeyiz; ortak lock serbest kalınca tekrar deneriz.
+      if (/zaten çalışıyor|SCANNER_ACTIVE/i.test(String(outcome.error?.message || ""))) {
+        return {skipped:true, reason:"SCANNER_IN_FLIGHT", sessionKey:decision.sessionKey};
+      }
+      await recordBistEodFailure(decision.sessionKey, outcome.error, now);
+      return {success:false, error:outcome.error, sessionKey:decision.sessionKey};
+    }
+
+    const freshResult = await getTradingState();
+    const freshState = freshResult.content;
+    const snapshot = freshState.scannerSnapshot;
+    const snapshotCreatedForSession = snapshot?.createdAt &&
+      istanbulClock(new Date(snapshot.createdAt)).key === decision.sessionKey;
+    if (snapshot?.sessionKey !== decision.sessionKey || !snapshotCreatedForSession) {
+      const error = new Error("BIST kapanış taraması güncel scanner snapshot üretmedi.");
+      await recordBistEodFailure(decision.sessionKey, error, now);
+      return {success:false, error, sessionKey:decision.sessionKey};
+    }
+
+    await withTradingStateMutation("bist-eod-success", async () => {
+      const latestResult = await getTradingState();
+      const latestState = latestResult.content;
+      const bucket = bistEodBucket(latestState);
+      bucket.sessionKey = decision.sessionKey;
+      bucket.status = "SUCCESS";
+      bucket.completedAt = new Date().toISOString();
+      bucket.snapshotCreatedAt = latestState.scannerSnapshot?.createdAt || null;
+      bucket.failedAt = null;
+      bucket.retryAt = null;
+      bucket.error = null;
+      await saveTradingState(latestState, latestResult.sha, latestResult.container);
+    });
+
+    const summarySent = await sendDailyTradingSummaryIfDue(now);
+    return {success:true, sessionKey:decision.sessionKey, summarySent};
+  } catch (error) {
+    await recordBistEodFailure(decision.sessionKey, error, now)
+      .catch((saveError) => console.error("BIST EOD FAILURE STATE ERROR:", saveError.message));
+    console.error("BIST END-OF-DAY SCANNER ERROR:", error.message);
+    return {success:false, error, sessionKey:decision.sessionKey};
+  } finally {
+    bistEndOfDayScanRunning = false;
+  }
+}
 
 function monitorActivityRows(state, since) {
   const after = new Date(since).getTime();
@@ -11591,22 +11729,17 @@ server.listen(
     // yine yalniz tamamlanmis DAILY mumlari kullanir.
     marketScheduler.start();
 
-    // Seans kapanışından sonra güncel scanner kaydı varsa tek günlük
-    // Telegram özetini yollar. Bir dakika aralık, Render'ın geç uyanması
-    // veya taramanın 18:15'ten hemen sonra bitmesi durumunda da yeterlidir.
-    setTimeout(
-      () => {
-        sendDailyTradingSummaryIfDue();
-      },
-      30000
-    );
-
-    setInterval(
-      () => {
-        sendDailyTradingSummaryIfDue();
-      },
-      60 * 1000
-    );
+    // BIST kapanışında normal saatlik uygunluk devre dışıdır. Bu bağımsız
+    // recovery-aware worker 18:15'ten sonra yalnız hafta içi çalışır,
+    // mevcut BIST scanner'ı force-refresh ile tamamlar ve ancak başarılı
+    // snapshot kalıcı hâle geldikten sonra günlük özeti yollar.
+    const triggerBistEndOfDay = source => {
+      void runBistEndOfDayScanIfDue().catch(error => {
+        console.error(`BIST END-OF-DAY ${source} ERROR:`, error.message);
+      });
+    };
+    setTimeout(() => triggerBistEndOfDay("STARTUP_RECOVERY"), 30000);
+    setInterval(() => triggerBistEndOfDay("CYCLE"), 60 * 1000);
 
     sendTelegramNotification(
       "BORSACI bağlantısı aktif. Paper işlem monitörü hazır."
