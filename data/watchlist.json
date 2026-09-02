@@ -1356,6 +1356,86 @@
       ],
       "signals": [
         {
+          "id": "crypto-signal-2026-09-02T22:00:09.505Z-ENAUSDT",
+          "symbol": "ENAUSDT",
+          "timestamp": "2026-09-02T22:00:09.505Z",
+          "score": 68,
+          "grade": "A / AL ADAYI",
+          "status": "ACTIVE",
+          "price": 0.16,
+          "fibonacci": {
+            "valid": true,
+            "status": "ACTIVE",
+            "pointA": {
+              "type": "LOW",
+              "index": 363,
+              "price": 0.071,
+              "date": "2026-06-10T23:59:59.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 435,
+              "price": 0.25,
+              "date": "2026-08-21T23:59:59.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 440,
+              "price": 0.137,
+              "date": "2026-08-26T23:59:59.000Z"
+            },
+            "range": 0.18,
+            "retracementRatio": 0.6313,
+            "entryTriggerPrice": 0.14,
+            "entryZoneLow": 0.14,
+            "entryZoneHigh": 0.16,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 435,
+                "price": 0.25,
+                "date": "2026-08-21T23:59:59.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 442,
+                "price": 0.1926,
+                "date": "2026-08-28T23:59:59.000Z"
+              },
+              "slopePerBar": -0.0082,
+              "lastCompletedCandleTime": "2026-09-01T23:59:59.000Z",
+              "projectedPoint": {
+                "index": 446,
+                "date": "2026-09-01T23:59:59.000Z",
+                "price": 0.1598
+              },
+              "breakoutPrice": 0.1598,
+              "breakoutPriceAtLast": 0.1598,
+              "entryUpperRaw": 0.164594,
+              "entryUpperPrice": 0.16
+            },
+            "stopLoss": 0.13,
+            "tp1": 0.25,
+            "tp2": 0.28,
+            "tp3": 0.32,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": null,
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-08-27T23:59:59.000Z",
+            "confirmationCandleClose": 0.17,
+            "entryPrice": 0.16,
+            "riskRewardTp1": 3,
+            "riskRewardTp2": 4,
+            "riskRewardTp3": 5.33
+          },
+          "fallbackPlan": null
+        },
+        {
           "id": "crypto-signal-2026-09-02T00:00:10.721Z-PROMUSDT",
           "symbol": "PROMUSDT",
           "timestamp": "2026-09-02T00:00:10.721Z",
@@ -3172,6 +3252,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-09-02T22:00:09.505Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-09-02T21:00:09.908Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -3568,7 +3653,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-09-02T21:00:09.908Z",
+        "timestamp": "2026-09-02T22:00:09.505Z",
         "scanned": 100,
         "successful": 92,
         "results": [
@@ -3846,7 +3931,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
             },
-            "timestamp": "2026-09-02T21:00:04.082Z",
+            "timestamp": "2026-09-02T22:00:03.756Z",
             "fallbackPlan": null,
             "price": 4.769,
             "ema20": 3.8761823089120817,
@@ -4154,7 +4239,7 @@
               "riskRewardTp2": 3.66,
               "riskRewardTp3": 4.89
             },
-            "timestamp": "2026-09-02T21:00:03.600Z",
+            "timestamp": "2026-09-02T22:00:03.762Z",
             "fallbackPlan": null,
             "price": 2.266,
             "ema20": 2.143439603056611,
@@ -4167,41 +4252,44 @@
             "turnover": 25732.161224
           },
           {
-            "symbol": "KSMUSDT",
+            "symbol": "ENAUSDT",
             "validation": {
               "ok": true
             },
             "dataStatus": "OK",
-            "score": 66,
+            "score": 68,
             "grade": "A / AL ADAYI",
             "features": {
-              "price": 3.6,
-              "ema20": 3.2626916489908098,
-              "ema50": 3.2492940023097425,
-              "ema200": 4.574430398393347,
-              "ema20FiveDaysAgo": 3.2045587782778537,
-              "rsi": 61.87253754084956,
-              "atr": 0.1865642211384793,
-              "macd": 0.1009624041654078,
-              "macdSignal": 0.06593715111291182,
-              "macdHistogram": 0.035025253052495986,
-              "previousHistogram": 0.0248082616647209,
-              "histogramThreeBack": 0.023212584655754147,
-              "volume": 78.881,
-              "averageVolume": 25.3872,
-              "volumeRatio": 3.107116972332514,
-              "turnover": 283.9716,
-              "fiveDayReturn": 2.2727272727272707
+              "price": 0.16,
+              "ema20": 0.13608040803190713,
+              "ema50": 0.11360144676213345,
+              "ema200": 0.133851202545098,
+              "ema20FiveDaysAgo": 0.12184826007502926,
+              "rsi": 63.26030219378818,
+              "atr": 0.019243592776377105,
+              "macd": 0.018439710220981814,
+              "macdSignal": 0.016977973147051136,
+              "macdHistogram": 0.0014617370739306787,
+              "previousHistogram": 0.0020504466263200176,
+              "histogramThreeBack": 0.004379915484665766,
+              "volume": 20340.43,
+              "averageVolume": 17454.743499999997,
+              "volumeRatio": 1.1653239132388284,
+              "turnover": 3254.4688,
+              "fiveDayReturn": -7.084785133565619
             },
             "reasons": [
               "Fiyat EMA20 üzerinde",
               "EMA20 EMA50 üzerinde",
+              "Fiyat EMA200 üzerinde",
               "EMA20 son 5 günde yükseliyor"
             ],
-            "risks": [],
+            "risks": [
+              "MACD histogramı zayıflıyor"
+            ],
             "scoreBreakdown": {
               "trend": {
-                "score": 23,
+                "score": 30,
                 "max": 30,
                 "items": [
                   {
@@ -4223,9 +4311,9 @@
                   {
                     "id": "price_above_ema200",
                     "label": "Fiyat EMA200 üzerinde",
-                    "points": 0,
+                    "points": 7,
                     "maxPoints": 7,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   },
                   {
@@ -4239,7 +4327,7 @@
                 ]
               },
               "momentum": {
-                "score": 25,
+                "score": 18,
                 "max": 25,
                 "items": [
                   {
@@ -4262,25 +4350,25 @@
                   {
                     "id": "macd_histogram_strengthening",
                     "label": "MACD histogramı pozitif ve güçleniyor",
-                    "points": 7,
+                    "points": 0,
                     "maxPoints": 7,
-                    "passed": true,
+                    "passed": false,
                     "detail": ""
                   }
                 ]
               },
               "volumeLiquidity": {
-                "score": 10,
+                "score": 5,
                 "max": 20,
                 "items": [
                   {
                     "id": "volume_ratio",
                     "label": "Hacim oranı",
-                    "points": 10,
+                    "points": 5,
                     "maxPoints": 10,
                     "passed": true,
-                    "partial": false,
-                    "detail": "Hacim 20 günlük ortalamanın en az 1,20 katı"
+                    "partial": true,
+                    "detail": "Hacim 20 günlük ortalamaya yakın"
                   },
                   {
                     "id": "turnover",
@@ -4294,7 +4382,7 @@
                 ]
               },
               "entryQuality": {
-                "score": 8,
+                "score": 20,
                 "max": 25,
                 "items": [
                   {
@@ -4316,9 +4404,9 @@
                   {
                     "id": "fibonacci_confirmation",
                     "label": "Fibonacci dönüş teyidi",
-                    "points": 0,
+                    "points": 5,
                     "maxPoints": 5,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   },
                   {
@@ -4332,15 +4420,15 @@
                   {
                     "id": "risk_reward",
                     "label": "TP2 veya TP3 için en az 1:2 risk/getiri",
-                    "points": 0,
+                    "points": 7,
                     "maxPoints": 7,
-                    "passed": false,
+                    "passed": true,
                     "detail": ""
                   }
                 ]
               },
               "penalties": {
-                "score": 0,
+                "score": -5,
                 "items": [
                   {
                     "id": "rsi_overbought",
@@ -4377,79 +4465,100 @@
                   {
                     "id": "weakening_macd_histogram",
                     "label": "MACD histogramı zayıflıyor",
-                    "points": 0,
+                    "points": -5,
                     "maxPoints": -5,
-                    "applied": false,
+                    "applied": true,
                     "detail": ""
                   }
                 ]
               },
-              "positiveTotal": 66,
-              "rawTotal": 66,
-              "total": 66,
+              "positiveTotal": 73,
+              "rawTotal": 68,
+              "total": 68,
               "maximum": 100,
               "capped": false
             },
             "fibonacci": {
               "valid": true,
-              "status": "ENTRY_RESISTANCE_UNAVAILABLE",
+              "status": "ACTIVE",
               "pointA": {
                 "type": "LOW",
-                "index": 511,
-                "price": 2.6,
-                "date": "2026-07-26T23:59:59.000Z"
+                "index": 363,
+                "price": 0.071,
+                "date": "2026-06-10T23:59:59.000Z"
               },
               "pointB": {
                 "type": "HIGH",
-                "index": 543,
-                "price": 4.18,
-                "date": "2026-08-27T23:59:59.000Z"
+                "index": 435,
+                "price": 0.25,
+                "date": "2026-08-21T23:59:59.000Z"
               },
               "pointC": {
                 "type": "LOW",
-                "index": 544,
-                "price": 3.05,
-                "date": "2026-08-28T23:59:59.000Z"
+                "index": 440,
+                "price": 0.137,
+                "date": "2026-08-26T23:59:59.000Z"
               },
-              "range": 1.58,
-              "retracementRatio": 0.7152,
-              "entryTriggerPrice": 3.09,
-              "entryZoneLow": 3.09,
-              "entryZoneHigh": null,
-              "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
+              "range": 0.18,
+              "retracementRatio": 0.6313,
+              "entryTriggerPrice": 0.14,
+              "entryZoneLow": 0.14,
+              "entryZoneHigh": 0.16,
+              "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
               "descendingResistance": {
-                "valid": false,
-                "available": false,
-                "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-                "reason": "B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı.",
-                "anchor1": null,
-                "anchor2": null,
-                "slopePerBar": null,
+                "valid": true,
+                "available": true,
+                "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+                "reason": null,
+                "anchor1": {
+                  "type": "HIGH",
+                  "index": 435,
+                  "price": 0.25,
+                  "date": "2026-08-21T23:59:59.000Z"
+                },
+                "anchor2": {
+                  "type": "HIGH",
+                  "index": 442,
+                  "price": 0.1926,
+                  "date": "2026-08-28T23:59:59.000Z"
+                },
+                "slopePerBar": -0.0082,
                 "lastCompletedCandleTime": "2026-09-01T23:59:59.000Z",
-                "projectedPoint": null,
-                "breakoutPrice": null,
-                "breakoutPriceAtLast": null,
-                "entryUpperRaw": null,
-                "entryUpperPrice": null
+                "projectedPoint": {
+                  "index": 446,
+                  "date": "2026-09-01T23:59:59.000Z",
+                  "price": 0.1598
+                },
+                "breakoutPrice": 0.1598,
+                "breakoutPriceAtLast": 0.1598,
+                "entryUpperRaw": 0.164594,
+                "entryUpperPrice": 0.16
               },
-              "stopLoss": 2.99,
-              "tp1": 4.03,
-              "tp2": 4.29,
-              "tp3": 4.63,
+              "stopLoss": 0.13,
+              "tp1": 0.25,
+              "tp2": 0.28,
+              "tp3": 0.32,
               "volumeConfirmation": "STRONG",
-              "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
+              "invalidReason": null,
+              "confirmationPassed": true,
+              "confirmationCandleTime": "2026-08-27T23:59:59.000Z",
+              "confirmationCandleClose": 0.17,
+              "entryPrice": 0.16,
+              "riskRewardTp1": 3,
+              "riskRewardTp2": 4,
+              "riskRewardTp3": 5.33
             },
-            "timestamp": "2026-09-02T21:00:08.446Z",
+            "timestamp": "2026-09-02T22:00:06.855Z",
             "fallbackPlan": null,
-            "price": 3.6,
-            "ema20": 3.2626916489908098,
-            "ema50": 3.2492940023097425,
-            "ema200": 4.574430398393347,
-            "rsi": 61.87253754084956,
-            "macd": 0.1009624041654078,
-            "atr": 0.1865642211384793,
-            "volumeRatio": 3.107116972332514,
-            "turnover": 283.9716
+            "price": 0.16,
+            "ema20": 0.13608040803190713,
+            "ema50": 0.11360144676213345,
+            "ema200": 0.133851202545098,
+            "rsi": 63.26030219378818,
+            "macd": 0.018439710220981814,
+            "atr": 0.019243592776377105,
+            "volumeRatio": 1.1653239132388284,
+            "turnover": 3254.4688
           },
           {
             "symbol": "SPXUSDT",
@@ -4727,7 +4836,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
             },
-            "timestamp": "2026-09-02T21:00:07.050Z",
+            "timestamp": "2026-09-02T22:00:06.900Z",
             "fallbackPlan": null,
             "price": 0.5601,
             "ema20": 0.4763248630184753,
@@ -5011,7 +5120,7 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
             },
-            "timestamp": "2026-09-02T21:00:08.443Z",
+            "timestamp": "2026-09-02T22:00:08.244Z",
             "fallbackPlan": null,
             "price": 0.04619,
             "ema20": 0.044577926233734334,
