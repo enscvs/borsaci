@@ -14035,8 +14035,8 @@
         "id": "1788451910525-ENJSA",
         "rank": 1,
         "symbol": "ENJSA",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 97.51,
@@ -14334,15 +14334,33 @@
           "summary": "ENJSA için güncel haber yok."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-09-04T14:04:58.383Z",
-          "expiresAt": "2026-09-05T14:04:58.383Z"
+          "expiresAt": "2026-09-05T14:04:58.383Z",
+          "overrideAt": "2026-09-04T14:05:23.837Z"
         },
         "currentScan": true,
-        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
+        "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (94.77) planı geçersiz kılar.",
         "timestamp": "2026-09-04T14:04:58.383Z",
-        "manualOverride": false
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "ENJSA",
+          "quantity": 317,
+          "entryPrice": 114.5,
+          "orderType": "LIMIT",
+          "stop": 94.77,
+          "target1": 115.33,
+          "target2": 120.4,
+          "target3": 126.85,
+          "positionValue": 36296.5,
+          "actualRisk": 6254.41,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-09-04T14:05:23.837Z",
+          "updatedAt": "2026-09-04T14:05:23.837Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1788094867262-VAKBN",
@@ -20480,6 +20498,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-04T14:05:23.837Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "ENJSA kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-09-04T14:04:59.644Z",
         "type": "SCAN",
