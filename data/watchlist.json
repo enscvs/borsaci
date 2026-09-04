@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 71040.75,
-      "equity": 137251.13,
+      "cash": 34707.95,
+      "equity": 137214.83000000002,
       "pnl": 42782.563574438085,
       "pnlPercent": 42.782563574438086,
       "positions": [
+        {
+          "id": "paper-2026-09-04T14:05:44.546Z-ENJSA-b7fe49a2",
+          "decisionId": "1788451910525-ENJSA",
+          "decisionIds": [
+            "1788451910525-ENJSA"
+          ],
+          "symbol": "ENJSA",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 317,
+          "originalQuantity": 317,
+          "entry": 114.5,
+          "entryCommission": 36.3,
+          "current": 114.5,
+          "stop": 94.77,
+          "target1": 115.33,
+          "target2": 120.4,
+          "target3": 126.85,
+          "status": "OPEN",
+          "openedAt": "2026-09-04T14:05:44.546Z",
+          "tp1Hit": false,
+          "realizedPnl": -36.3,
+          "pnl": -36.3
+        },
         {
           "id": "paper-2026-09-01T07:25:09.087Z-ASTOR-eb2b8a9d",
           "decisionId": "1788246008354-ASTOR",
@@ -14036,7 +14061,7 @@
         "rank": 1,
         "symbol": "ENJSA",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 97.51,
@@ -14334,10 +14359,11 @@
           "summary": "ENJSA için güncel haber yok."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-09-04T14:04:58.383Z",
           "expiresAt": "2026-09-05T14:04:58.383Z",
-          "overrideAt": "2026-09-04T14:05:23.837Z"
+          "overrideAt": "2026-09-04T14:05:23.837Z",
+          "openedAt": "2026-09-04T14:05:44.546Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
@@ -14358,8 +14384,12 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-09-04T14:05:23.837Z",
-          "updatedAt": "2026-09-04T14:05:40.449Z",
-          "editedAt": "2026-09-04T14:05:40.449Z"
+          "updatedAt": "2026-09-04T14:05:44.546Z",
+          "editedAt": "2026-09-04T14:05:40.449Z",
+          "commission": 36.3,
+          "totalCost": 36332.8,
+          "status": "APPROVED",
+          "approvedAt": "2026-09-04T14:05:44.546Z"
         }
       },
       {
@@ -20498,6 +20528,16 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-04T14:05:44.546Z",
+        "type": "PAPER_APPROVED",
+        "message": "ENJSA paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-09-04T14:05:44.546Z",
+        "type": "PAPER_OPEN",
+        "message": "ENJSA scanner paper pozisyonu açıldı: 317 lot · ₺36296.50 · LIMIT."
+      },
       {
         "timestamp": "2026-09-04T14:05:40.449Z",
         "type": "PAPER_ORDER_EDITED",
