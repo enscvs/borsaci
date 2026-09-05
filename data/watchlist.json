@@ -14793,8 +14793,8 @@
         "id": "1788626410413-KUYAS",
         "rank": 1,
         "symbol": "KUYAS",
-        "action": "WATCH",
-        "status": "PENDING",
+        "action": "BUY SETUP",
+        "status": "PENDING_APPROVAL",
         "confidence": null,
         "entry": {
           "low": 55.83,
@@ -15109,14 +15109,33 @@
           "summary": "Bu şirket için güncel doğrulanmış haber verisi mevcut değil."
         },
         "lifecycle": {
-          "stage": "PENDING",
+          "stage": "PENDING_APPROVAL",
           "createdAt": "2026-09-05T16:40:10.413Z",
-          "expiresAt": "2026-09-06T16:40:10.413Z"
+          "expiresAt": "2026-09-06T16:40:10.413Z",
+          "overrideAt": "2026-09-05T16:41:12.863Z"
         },
         "currentScan": true,
-        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+        "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir. Kullanıcı kriter dışı AI kararını manuel onay kuyruğuna ekledi.",
         "invalidation": "C seviyesinin %2 altındaki stop (54) planı geçersiz kılar.",
-        "timestamp": "2026-09-05T16:40:10.413Z"
+        "timestamp": "2026-09-05T16:40:10.413Z",
+        "manualOverride": true,
+        "pendingOrder": {
+          "symbol": "KUYAS",
+          "quantity": 451,
+          "entryPrice": 68.7,
+          "orderType": "LIMIT",
+          "stop": 54,
+          "target1": 71.76,
+          "target2": 76.28,
+          "target3": 82.05,
+          "positionValue": 30983.7,
+          "actualRisk": 6629.7,
+          "paperOnly": true,
+          "source": "SCANNER",
+          "createdAt": "2026-09-05T16:41:12.863Z",
+          "updatedAt": "2026-09-05T16:41:12.863Z",
+          "editedAt": null
+        }
       },
       {
         "id": "1788094867262-VAKBN",
@@ -22585,6 +22604,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-05T16:41:12.863Z",
+        "type": "AI_DECISION_MANUAL_PENDING",
+        "message": "KUYAS kriter dışı AI kararı kullanıcı isteğiyle onay kuyruğuna eklendi."
+      },
       {
         "timestamp": "2026-09-05T16:40:11.129Z",
         "type": "SCAN",
