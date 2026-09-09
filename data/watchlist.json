@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 69920.38,
-      "equity": 139888.28,
-      "pnl": 47018.59,
-      "pnlPercent": 47.018589999999996,
+      "cash": 88699.68,
+      "equity": 141969.03,
+      "pnl": 47649.64,
+      "pnlPercent": 47.64964,
       "positions": [
         {
           "id": "paper-2026-09-04T14:05:44.546Z-ENJSA-b7fe49a2",
@@ -19,20 +19,36 @@
           "source": "SCANNER",
           "paperOnly": true,
           "orderType": "LIMIT",
-          "quantity": 317,
+          "quantity": 158.5,
           "originalQuantity": 317,
           "entry": 114.5,
           "entryCommission": 36.3,
-          "current": 113.7,
-          "stop": 94.77,
+          "current": 118.6,
+          "stop": 114.5,
           "target1": 115.33,
           "target2": 120.4,
           "target3": 126.85,
           "status": "OPEN",
           "openedAt": "2026-09-04T14:05:44.546Z",
-          "tp1Hit": false,
-          "realizedPnl": -36.3,
-          "pnl": -253.6
+          "tp1Hit": true,
+          "realizedPnl": 594.75,
+          "pnl": 1244.6,
+          "remainingQuantity": 158.5,
+          "stopLoss": 114.5,
+          "monitor": {
+            "events": {
+              "TP1": {
+                "type": "TP1",
+                "idempotencyKey": "paper-2026-09-04T14:05:44.546Z-ENJSA-b7fe49a2:POSITION_MONITOR:TP1",
+                "price": 118.6,
+                "closeQuantity": 158.5,
+                "remainingQuantity": 158.5,
+                "confirmedAt": "2026-09-09T16:38:02.901Z"
+              }
+            },
+            "lastEvent": "TP1",
+            "lastEventAt": "2026-09-09T16:38:02.901Z"
+          }
         },
         {
           "id": "paper-2026-09-01T07:25:09.087Z-ASTOR-eb2b8a9d",
@@ -48,7 +64,7 @@
           "originalQuantity": 115,
           "entry": 349.25,
           "entryCommission": 40.16,
-          "current": 295,
+          "current": 299.75,
           "stop": 257.25,
           "target1": 383.84,
           "target2": 416.83,
@@ -57,7 +73,7 @@
           "openedAt": "2026-09-01T07:25:09.087Z",
           "tp1Hit": false,
           "realizedPnl": -40.16,
-          "pnl": -6238.75
+          "pnl": -5692.5
         },
         {
           "id": "paper-2026-08-31T09:48:30.505Z-VAKBN-ea3cca0e",
@@ -27242,6 +27258,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-09T16:38:02.901Z",
+        "type": "TP1",
+        "message": "ENJSA TP1: 158.5 lot kapatıldı, SL maliyete çekildi."
+      },
       {
         "timestamp": "2026-09-09T08:00:09.036Z",
         "type": "SCAN",
