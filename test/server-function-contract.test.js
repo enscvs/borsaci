@@ -28,6 +28,19 @@ test("live BIST scan exposes precision data-quality validation", () => {
   assert.match(source, /status:"VALIDATED", dataQuality:"PASSED", calibration:"KALIBRE_EDILMEDI"/);
 });
 
+test("Precision insights stay informational and NASDAQ requires complete long history", () => {
+  assert.match(source, /affectsScore:false/);
+  assert.match(source, /attachPrecisionInsights\(shortlist\.sort\(compareNasdaqCandidate\),await benchmarkPromise,"NASDAQ"\)/);
+  assert.match(source, /minDailyBars:252/);
+  assert.doesNotMatch(source, /minDailyBars:40/);
+});
+
+test("BIST scanner uses the official dynamic XUTUM universe", () => {
+  assert.match(source, /fetchOfficialBistUniverse\(\{fallback:BIST_UNIVERSE_FALLBACK_SYMBOLS\}\)/);
+  assert.match(source, /bistUniverse\.symbols/);
+  assert.doesNotMatch(source, /const BIST100_SYMBOLS/);
+});
+
 test("NASDAQ broker approvals are serialized and broker limit orders are submitted", () => {
   assert.match(source, /nasdaq-paper-approve/);
   assert.match(source, /!ALPACA_TRADING_ENABLED && order\.orderType === "LIMIT"/);
