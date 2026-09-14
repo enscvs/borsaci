@@ -371,8 +371,14 @@ function technicalGrade(value) {
   const scoreValue=Math.max(0,Math.min(100,Math.round(Number(value)||0)));
   return scoreValue>=80?"A+ / GÜÇLÜ ADAY":scoreValue>=60?"A / AL ADAYI":scoreValue>=50?"NÖTR":"ZAYIF";
 }
-function score(history, fib) {
-  const f=features(history), c=CONFIG.scoring;
+function marketScoring(market = "BIST") {
+  const normalized = String(market || "BIST").toUpperCase();
+  if (normalized === "NASDAQ") return {...CONFIG.scoring, turnoverStrong:100000000, turnoverMedium:25000000, turnoverCurrency:"USD"};
+  if (normalized === "CRYPTO") return {...CONFIG.scoring, turnoverStrong:100000000, turnoverMedium:25000000, turnoverCurrency:"USDT"};
+  return {...CONFIG.scoring, turnoverCurrency:"TL"};
+}
+function score(history, fib, options={}) {
+  const f=features(history), c=marketScoring(options.market);
   const reasons=[],risks=[];
   const trend={score:0,max:30,items:[]};
   const momentum={score:0,max:25,items:[]};
@@ -400,10 +406,10 @@ function score(history, fib) {
     penalties.items.push({id,label,points:deducted,maxPoints:-Math.abs(points),applied:Boolean(applied),detail});
   };
 
-  const priceAboveEma20=f.price>f.ema20;
-  const ema20AboveEma50=f.ema20>f.ema50;
-  const priceAboveEma200=f.price>f.ema200;
-  const ema20Rising=f.ema20>f.ema20FiveDaysAgo;
+  const priceAboveEma20=finite(f.price)&&finite(f.ema20)&&f.price>f.ema20;
+  const ema20AboveEma50=finite(f.ema20)&&finite(f.ema50)&&f.ema20>f.ema50;
+  const priceAboveEma200=finite(f.price)&&finite(f.ema200)&&f.price>f.ema200;
+  const ema20Rising=finite(f.ema20)&&finite(f.ema20FiveDaysAgo)&&f.ema20>f.ema20FiveDaysAgo;
   add(trend,"price_above_ema20","Fiyat EMA20 üzerinde",8,priceAboveEma20);
   if(priceAboveEma20) reasons.push("Fiyat EMA20 üzerinde");
   add(trend,"ema20_above_ema50","EMA20 EMA50 üzerinde",8,ema20AboveEma50);
@@ -422,8 +428,9 @@ function score(history, fib) {
   const volumePoints=f.volumeRatio>=c.volumeStrongRatio?10:(f.volumeRatio>=c.volumeNeutralMin&&f.volumeRatio<c.volumeStrongRatio?5:0);
   const volumeDetail=volumePoints===10?"Hacim 20 günlük ortalamanın en az 1,20 katı":volumePoints===5?"Hacim 20 günlük ortalamaya yakın":"Hacim 20 günlük ortalamanın altında";
   addVariable(volumeLiquidity,"volume_ratio","Hacim oranı",volumePoints,10,volumeDetail);
-  const turnoverPoints=f.turnover>=c.turnoverStrong?10:(f.turnover>=c.turnoverMedium?5:0);
-  const turnoverDetail=turnoverPoints===10?"Günlük işlem tutarı 500 milyon TL ve üzeri":turnoverPoints===5?"Günlük işlem tutarı 200–500 milyon TL":"Günlük işlem tutarı 200 milyon TL altında";
+  const turnoverPoints=finite(f.turnover)&&f.turnover>=c.turnoverStrong?10:(finite(f.turnover)&&f.turnover>=c.turnoverMedium?5:0);
+  const formatThreshold=value=>`${Number(value/1000000).toLocaleString("tr-TR")} milyon ${c.turnoverCurrency}`;
+  const turnoverDetail=turnoverPoints===10?`Günlük işlem tutarı ${formatThreshold(c.turnoverStrong)} ve üzeri`:turnoverPoints===5?`Günlük işlem tutarı ${formatThreshold(c.turnoverMedium)}–${formatThreshold(c.turnoverStrong)}`:`Günlük işlem tutarı ${formatThreshold(c.turnoverMedium)} altında`;
   addVariable(volumeLiquidity,"turnover","Likidite / işlem tutarı",turnoverPoints,10,turnoverDetail);
 
   add(entryQuality,"near_ema20","Fiyat EMA20'ye en fazla 1 ATR uzaklıkta",5,Math.abs(f.price-f.ema20)<=f.atr*c.emaDistanceAtr);
@@ -477,7 +484,7 @@ function rankCandidatesWithFibonacci(candidates, now=Date.now(), options={}, lim
     .slice(0,shortlistLimit)
     .map(item=>{
       const fibonacci=fibonacciPlan(item.history,now,options);
-      const analysis=score(item.history,fibonacci);
+      const analysis=score(item.history,fibonacci,options);
       const informationalFallback=fibonacci.valid?null:fallbackPlan(item.history,analysis.features);
       return {...item,...analysis,fibonacci,fallbackPlan:informationalFallback};
     })
