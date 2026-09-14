@@ -45,9 +45,11 @@ const {
   ScannerExecutionRegistry,
 } = require("./trading/scanner-execution-lock");
 const {
-  eodDecision,
-  failedEodState,
-} = require("./trading/bist-eod-scheduler");
+  calculateRiskBasedQuantity,
+} = require("./trading/position-sizing");
+const {
+  fetchOfficialBistUniverse,
+} = require("./trading/bist-universe");
 const {
   createBinanceBroker,
 } = require("./trading/broker/binance-broker");
@@ -182,7 +184,8 @@ const ALPACA_DATA_FEED = String(process.env.ALPACA_DATA_FEED || "sip").toLowerCa
 // yalnız bu küçük evren için teknik geçmiş indirilir. Bu hem A/B/... yanlılığını
 // hem de Render belleğinde binlerce uzun fiyat serisi tutmayı önler.
 const NASDAQ_UNIVERSE_LIMIT = Math.max(20, Math.min(100, Number(process.env.NASDAQ_UNIVERSE_LIMIT) || 50));
-const NASDAQ_HISTORY_DAYS = Math.max(45, Math.min(90, Number(process.env.NASDAQ_HISTORY_DAYS) || 62));
+const NASDAQ_HISTORY_DAYS = Math.max(370, Math.min(550, Number(process.env.NASDAQ_HISTORY_DAYS) || 400));
+const MAX_TRADE_RISK_PERCENT = Math.max(0.1, Math.min(5, Number(process.env.MAX_TRADE_RISK_PERCENT) || 1));
 
 // Scanner ilerlemesi yalnızca kısa süreli arayüz geri bildirimi içindir;
 // kalıcı işlem/veri durumunun kaynağı değildir.
@@ -199,7 +202,6 @@ const activeScannerMarkets = scannerExecutionRegistry.locks;
 let paperMonitorRunning = false;
 let marketPaperMonitorRunning = false;
 let unifiedPositionMonitorRunning = false;
-let bistEndOfDayScanRunning = false;
 // Kripto route'ları HTTP callback'i içinde tanımlı olduğundan, aynı server
 // process'indeki scheduler bunlara yalnız bu küçük köprü üzerinden erişir.
 // Köprü yalnız fonksiyon referansı taşır; secret veya kullanıcı verisi tutmaz.
@@ -408,17 +410,8 @@ async function sendDailyTradingSummaryIfDue(now = new Date()) {
     const snapshotCreatedToday = state.scannerSnapshot?.createdAt &&
       istanbulClock(new Date(state.scannerSnapshot.createdAt)).key === expectedSessionKey;
 
-    const eod = state.automation?.eod?.BIST || {};
-
-    // Özet yalnız 18:15 kapanış taraması başarılı biçimde kaydedildikten
-    // sonra gider. Böylece öğleden kalma veya eski snapshot ile Telegram'a
-    // yanlış "gün sonu" özeti düşmez.
-    if (eod.sessionKey !== expectedSessionKey || eod.status !== "SUCCESS") {
-      return false;
-    }
-
-    // Sonuç gerçekten bugünün kapanmış günlük mumuna ait değilse yanıltıcı
-    // "yeni ilk 5" mesajı yok.
+    // Otomatik scanner çalıştırmıyoruz. Sonuç gerçekten bugünün
+    // kapanmış günlük mumuna ait değilse yanıltıcı "yeni ilk 5" mesajı yok.
     if (snapshotSessionKey !== expectedSessionKey && !snapshotCreatedToday) {
       return false;
     }
@@ -4224,17 +4217,6 @@ function createDefaultTradingState() {
         lastError: null,
         lastErrorAt: null,
       },
-      eod: {
-        BIST: {
-          sessionKey: null,
-          status: null,
-          completedAt: null,
-          snapshotCreatedAt: null,
-          failedAt: null,
-          retryAt: null,
-          error: null,
-        },
-      },
     },
 
     activity: [
@@ -4404,14 +4386,6 @@ function normalizeTradingState(
           ? (value || {}).automation.monitor.events.slice(0, 300)
           : [],
       },
-      eod: {
-        ...fallback.automation.eod,
-        ...((value || {}).automation?.eod || {}),
-        BIST: {
-          ...fallback.automation.eod.BIST,
-          ...((value || {}).automation?.eod?.BIST || {}),
-        },
-      },
     },
 
     activity:
@@ -4531,7 +4505,13 @@ function buildAiDecision(item, rank, riskSettings = {}) {
   const capital=Math.max(1000,Number(riskSettings.capital)||100000), allocation=Math.max(1,Number(riskSettings.maxPositionPercent)||31);
   const entry=hasPlan ? structuralEntry : null;
   const stop=usablePlan ? Number(plan.stopLoss) : null;
-  const quantity=entry ? Math.floor(capital*allocation/100/entry) : 0;
+  const quantity=usablePlan ? calculateRiskBasedQuantity({
+    capital,
+    maxPositionPercent:allocation,
+    maxRiskPercent:MAX_TRADE_RISK_PERCENT,
+    entry,
+    stop,
+  }) : 0;
   const hasEntryUpper=hasPlan&&Number.isFinite(Number(fib.entryZoneHigh))&&Number(fib.entryZoneHigh)>Number(fib.entryZoneLow);
   // Trend direnci olmadan giriş üst limiti yoktur; bu durumda onaya
   // düşebilecek bir BUY SETUP üretmeyiz.
@@ -4544,7 +4524,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
     entry:{low:hasPlan?roundTradingValue(fib.entryZoneLow):null,high:hasEntryUpper?roundTradingValue(fib.entryZoneHigh):null,reference:entry===null?null:roundTradingValue(entry)},
     stop:stop===null?null:roundTradingValue(stop),target1:usablePlan?roundTradingValue(plan.tp1):null,target2:usablePlan?roundTradingValue(plan.tp2):null,target3:usablePlan?roundTradingValue(plan.tp3):null,
     riskReward:{tp1:usablePlan?plan.riskRewardTp1??null:null,tp2:usablePlan?plan.riskRewardTp2??null:null,tp3:usablePlan?plan.riskRewardTp3??null:null},
-    riskPlan:{capital,targetPositionValue:usablePlan?roundTradingValue(capital*allocation/100):null,reservePercent:Math.max(0,100-allocation*Math.max(1,Number(riskSettings.maxPositions)||3)),quantity,positionValue:usablePlan?roundTradingValue(quantity*entry):null,actualRisk:usablePlan?roundTradingValue(quantity*Math.max(0,entry-stop)):null,maxPositionPercent:allocation,maxPositions:Math.max(1,Number(riskSettings.maxPositions)||3)},
+    riskPlan:{capital,targetPositionValue:usablePlan?roundTradingValue(capital*allocation/100):null,reservePercent:Math.max(0,100-allocation*Math.max(1,Number(riskSettings.maxPositions)||3)),quantity,positionValue:usablePlan?roundTradingValue(quantity*entry):null,actualRisk:usablePlan?roundTradingValue(quantity*Math.max(0,entry-stop)):null,maxRiskPercent:MAX_TRADE_RISK_PERCENT,maxPositionPercent:allocation,maxPositions:Math.max(1,Number(riskSettings.maxPositions)||3)},
     indicators:{score:item.score,rsi:roundTradingValue(item.features.rsi),atr:roundTradingValue(item.features.atr),macd:roundTradingValue(item.features.macd)},
     /*
      * Bu tablo ilk teknik eleme skorunun açıklamasıdır. Fibonacci daha
@@ -4553,7 +4533,7 @@ function buildAiDecision(item, rank, riskSettings = {}) {
      */
     scoreBreakdown:item.scoreBreakdown?{...item.scoreBreakdown,calculationStage:"INITIAL_TECHNICAL_SCREEN"}:null,
     filters:{trend:item.scoreBreakdown?.trend?.score>0,momentum:item.scoreBreakdown?.momentum?.score>0,volume:item.scoreBreakdown?.volumeLiquidity?.score>0,rsi:item.features.rsi>=45&&item.features.rsi<=70},
-    planMethod:"FIBONACCI_A_B_C_DAILY",fibonacci:fib,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
+    planMethod:"FIBONACCI_A_B_C_DAILY",fibonacci:fib,precision:item.precision||null,grade:item.grade,reasons:item.reasons||[],risks:item.risks||[],
     aiReview:item.aiReview||{available:false,provider:"NOT_REQUESTED",summary:""},
     lifecycle:{stage:status,createdAt:now,expiresAt:new Date(Date.now()+24*60*60*1000).toISOString()},
     currentScan: true,
@@ -5155,26 +5135,10 @@ async function monitorPaperPositions() {
         continue;
       }
 
-      const previousCurrent = Number(position.current);
-      const previousPnl = Number(position.pnl);
-      const nextPnl = roundTradingValue(
-        (current - Number(position.entry)) *
-        Number(position.quantity)
-      );
-
       position.current = current;
-      position.pnl = nextPnl;
-
-      // Açık pozisyonlarda TP/SL olmasa bile fiyat ve PnL değişimi state'e
-      // yazılmalı; aksi halde arayüz son kaydedilen fiyatı göstermeye devam eder.
-      if (
-        !Number.isFinite(previousCurrent) ||
-        previousCurrent !== current ||
-        !Number.isFinite(previousPnl) ||
-        previousPnl !== nextPnl
-      ) {
-        changed = true;
-      }
+      position.pnl =
+        (current - Number(position.entry)) *
+        Number(position.quantity);
 
       // Strateji/sinyal hesaplamasi yalnız tamamlanmış günlük mumdan gelir.
       // Burada sadece açık pozisyonun güncel quote ile yürütülmesi var.
@@ -6561,7 +6525,9 @@ AI TRADING SCANNER
 ========================================================
 */
 
-const BIST100_SYMBOLS = [
+// Borsa İstanbul'un resmî XUTUM CSV'sine erişilemediğinde taramayı tamamen
+// durdurmayan son bilinen güvenli evren. Normal çalışma bu listeyi kullanmaz.
+const BIST_UNIVERSE_FALLBACK_SYMBOLS = [
   "AEFES","AGHOL","AHGAZ","AKBNK","AKCNS","AKFGY","AKFYE",
   "AKSA","AKSEN","ALARK","ALBRK","ALFAS","ARCLK","ASELS",
   "ASTOR","AYDEM","BAGFS","BASGZ","BERA","BIMAS","BINBN",
@@ -7600,12 +7566,47 @@ async function scanSymbol(symbol) {
       ? {status:"VALIDATED", dataQuality:"PASSED", calibration:"KALIBRE_EDILMEDI"}
       : {status:"UNAVAILABLE", dataQuality:"FAILED", calibration:"KALIBRE_EDILMEDI", errors:precisionValidation.errors};
     const baseFib = { valid:false, status:"NO_VALID_STRUCTURE", riskRewardTp2:null, riskRewardTp3:null, volumeConfirmation:"WEAK" };
-    const analysis = fibonacciEngine.score(history, baseFib);
+    const analysis = fibonacciEngine.score(history, baseFib, {market:"BIST"});
     return { symbol, history, validation, precision, dataStatus:"OK", ...analysis, fibonacci:baseFib, timestamp:new Date().toISOString() };
   } catch (error) {
     console.warn(`SCANNER ${symbol}:`, error.message);
     return { symbol, history:null, validation:{ok:false,code:"FETCH_FAILED"}, dataStatus:"VERİ YETERSİZ" };
   }
+}
+
+function attachPrecisionInsights(candidates, indexHistory, market, breadthFeatures = null) {
+  const list = Array.isArray(candidates) ? candidates : [];
+  const featureRows = list.map(item => ({
+    symbol:item.symbol,
+    history:item.history,
+    features:precisionEngine.featuresAt(item.history),
+  }));
+  const indexReady = Array.isArray(indexHistory) && indexHistory.length >= precisionEngine.CONFIG.data.minBars;
+  const regime = indexReady
+    ? precisionEngine.calculateMarketRegime({indexHistory, universeFeatures:Array.isArray(breadthFeatures) ? breadthFeatures : featureRows.map(item => item.features)})
+    : {regime:"UNKNOWN", allowed:false, reason:`${market} karşılaştırma endeksi için Precision geçmişi yetersiz.`};
+  const relativeStrength = indexReady ? precisionEngine.rankRelativeStrength(featureRows, indexHistory) : [];
+  const relativeBySymbol = new Map(relativeStrength.map(item => [item.symbol, item]));
+  return list.map(item => {
+    const validation = precisionEngine.validateHistory(item.history, {requireComplete:false});
+    const precisionFeatures = featureRows.find(row => row.symbol === item.symbol)?.features || null;
+    const relative = relativeBySymbol.get(item.symbol);
+    return {...item, precision:{
+      status:validation.ok ? "VALIDATED" : "UNAVAILABLE",
+      dataQuality:validation.ok ? "PASSED" : "FAILED",
+      calibration:"KALIBRE_EDILMEDI",
+      marketRegime:regime.regime,
+      marketRegimeReason:regime.reason,
+      breadth:regime.breadth ?? null,
+      relativeStrengthRank:relative?.relativeStrengthRank ?? null,
+      relativeStrengthPercentile:relative?.relativeStrengthPercentile ?? null,
+      rs20:relative?.rs20 ?? null,
+      rs60:relative?.rs60 ?? null,
+      indicators:precisionFeatures ? {adx:precisionFeatures.adx, atrPercent:precisionFeatures.atrPercent, volumeZScore:precisionFeatures.volumeZScore} : null,
+      errors:validation.ok ? [] : validation.errors,
+      affectsScore:false,
+    }};
+  });
 }
 
 
@@ -7654,33 +7655,45 @@ async function handleTradingScanner(req,res) {
         ()=>{ clearTimeout(timeout); resolve(fallback); }
       );
     });
+    const bistUniverse=await fetchOfficialBistUniverse({fallback:BIST_UNIVERSE_FALLBACK_SYMBOLS});
+    const bistSymbols=bistUniverse.symbols;
+    if(!bistSymbols.length) throw new Error("BIST tarama evreni alınamadı.");
     // Her sembol ayrı zaman aşımına sahiptir. Bir yavaş Yahoo yanıtı
-    // tüm batch'i boşaltmaz; 106 sembol daima aynı sabit sırayla taranır.
-    const batchSize=12,results=[];let scanned=0;
+    // tüm batch'i boşaltmaz; resmî XUTUM evreni küçük partilerle taranır.
+    const batchSize=12,technicalCandidates=[],breadthFeatures=[];let scanned=0,successful=0;
     const xu100Promise=within(
-      fetchYahooChart("XU100","2y","1d",3000).then(value=>fibonacciEngine.xu100Info(
-        fibonacciEngine.completedDailyHistory(value.history, Date.now(), {market:"BIST"})
-      )),
+      fetchYahooChart("XU100","2y","1d",3000).then(value=>{
+        const history=fibonacciEngine.completedDailyHistory(value.history, Date.now(), {market:"BIST"});
+        return {history,info:fibonacciEngine.xu100Info(history)};
+      }),
       3000,
       null
     ).catch(()=>null);
-    for(let i=0;i<BIST100_SYMBOLS.length;i+=batchSize){
-      const batch=BIST100_SYMBOLS.slice(i,i+batchSize);
+    for(let i=0;i<bistSymbols.length;i+=batchSize){
+      const batch=bistSymbols.slice(i,i+batchSize);
       const rows=await Promise.all(batch.map(symbol=>within(
         scanSymbol(symbol),
         7000,
         {symbol,history:null,validation:{ok:false,code:"FETCH_TIMEOUT"},dataStatus:"VERİ YETERSİZ"}
       )));
-      scanned+=batch.length;results.push(...rows);
-      updateScannerJob(jobId,5+Math.round(50*scanned/BIST100_SYMBOLS.length),`${scanned}/${BIST100_SYMBOLS.length} hisse için günlük veri kontrol edildi`);
+      scanned+=batch.length;
+      for(const row of rows){
+        if(!row.validation?.ok) continue;
+        successful+=1;
+        breadthFeatures.push(precisionEngine.featuresAt(row.history));
+        technicalCandidates.push(row);
+        technicalCandidates.sort((a,b)=>Number(b.score||0)-Number(a.score||0)||String(a.symbol).localeCompare(String(b.symbol),"en"));
+        if(technicalCandidates.length>12) technicalCandidates.length=12;
+      }
+      updateScannerJob(jobId,5+Math.round(50*scanned/bistSymbols.length),`${scanned}/${bistSymbols.length} hisse için günlük veri kontrol edildi`);
     }
     let xu100={status:"BİLİNMİYOR",description:"XU100 görünümü bilgilendirme amaçlıdır; hisselerin teknik kalite skorunu ve sıralamasını engellemez."};
     const xu100Result=await xu100Promise;
-    if(xu100Result) xu100=xu100Result;
+    if(xu100Result?.info) xu100=xu100Result.info;
     // İlk seçim yalnızca mevcut teknik kalite kurallarıyla yapılır.
     // Fibonacci bu sıralamayı değiştirmez; yalnızca ilk beş adayın
     // giriş/stop/hedef planını doğrular.
-    const valid=results.filter(x=>x.validation?.ok).sort((a,b)=>Number(b.score||0)-Number(a.score||0)||String(a.symbol).localeCompare(String(b.symbol),"en"));
+    const valid=attachPrecisionInsights(technicalCandidates,xu100Result?.history,"BIST",breadthFeatures).sort((a,b)=>Number(b.score||0)-Number(a.score||0)||String(a.symbol).localeCompare(String(b.symbol),"en"));
     const technicalShortlist=valid.slice(0,12);
     updateScannerJob(jobId,60,`Teknik puanla ilk ${technicalShortlist.length} aday kısa listeye alındı`);
     updateScannerJob(jobId,70,"Seçilen 5 aday için günlük Fibonacci A-B-C hesaplanıyor");
@@ -7698,13 +7711,13 @@ async function handleTradingScanner(req,res) {
     const ranked=enriched.map(item=>({...item,aiReview:rawAi.get(item.symbol)||noAi.get(item.symbol)||{available:false,provider:"PENDING",summary:"YZ DEĞERLENDİRMESİ BEKLİYOR",newsComment:"",expertComment:""}}));
     const decisions=createAiDecisions(ranked.slice(0,5),riskSettings);
     updateScannerJob(jobId,96,"Uygun Fibonacci kurulumları kaydediliyor");
-    const snapshot=createScannerSnapshot(ranked,riskSettings,scanned,valid.length);
+    const snapshot=createScannerSnapshot(ranked,riskSettings,scanned,successful);
     // Scanner sonucu state'e tek sıralı olarak yazılır. Böylece eşzamanlı
     // monitor veya başka bir kullanıcı işlemi eski karar kümesini yeniden
     // kaydedip yeni taramanın üstüne yazamaz.
     const state=await withTradingStateMutation("bist-scanner-commit",()=>recordAiDecisions(decisions,snapshot));
     updateScannerJob(jobId,100,`${state.paper?.positions?.filter(item=>item.status==="OPEN").length||0} açık paper pozisyon · Tarama tamamlandı`,"COMPLETE");
-    return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful:valid.length,complete:scanned===BIST100_SYMBOLS.length,xu100,results:ranked,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
+    return sendJSON(res,200,{success:true,timestamp:new Date().toISOString(),scanned,successful,complete:scanned===bistSymbols.length,universe:{source:bistUniverse.source,sourceUrl:bistUniverse.sourceUrl,fallback:bistUniverse.fallback},xu100,results:ranked,decisions:state.decisions,paper:paperStateForClient(state),activity:state.activity,history:state.history,risk:state.risk});
   } catch(error) { updateScannerJob(jobId,100,`Tarama hatası: ${error.message}`,"ERROR"); console.error("TRADING SCANNER ERROR:",error.message);return sendJSON(res,500,{success:false,error:error.message}); }
   finally { releaseScannerExecution("BIST", scannerLockToken); }
 }
@@ -8297,7 +8310,16 @@ async function handleNasdaqPaperQueue(req,res) {
     if (paper.killSwitch?.active) throw new Error("NASDAQ acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
 
     const timestamp = new Date().toISOString();
-    const candidate = nasdaqDecisionFromInput(input, timestamp);
+    const manualInput = String(input.source || "").toUpperCase() === "MANUAL";
+    const riskQuantity = manualInput ? Number(input.quantity) : calculateRiskBasedQuantity({
+      capital:paper.initialCapital,
+      maxPositionPercent:paper.risk?.maxPositionPercent,
+      maxRiskPercent:MAX_TRADE_RISK_PERCENT,
+      entry:input.entryPrice,
+      stop:input.stop,
+    });
+    if (!manualInput && riskQuantity < 1) throw new Error("NASDAQ risk sınırları bu plan için en az 1 lota izin vermiyor.");
+    const candidate = nasdaqDecisionFromInput({...input, quantity:riskQuantity}, timestamp);
     const manual = String(candidate.pendingOrder.source).toUpperCase() === "MANUAL";
     const isSameQueue = item => (String(item.pendingOrder?.source || "").toUpperCase() === "MANUAL") === manual;
 
@@ -8637,14 +8659,15 @@ async function handleNasdaqScanner(req,res) {
     updateScannerJob(jobId,2,"Alpaca'dan aktif NASDAQ evreni ve günlük likidite alınıyor");
     const nasdaqUniverse=await fetchNasdaqUniverse();
     const symbols=nasdaqUniverse.symbols;
-    updateScannerJob(jobId,8,`${nasdaqUniverse.totalAssets} aktif hisseden likiditeye göre seçilen ${symbols.length} NASDAQ hissesi için iki aylık günlük OHLCV alınıyor`);
-    // Likidite ön filtresinden geçen 50 sembolün iki aylık mumları işlenir.
-    // Her partide yalnız teknik olarak ilk 12 aday bellekte tutulur; sonuç
-    // yine ilk 5'tir.
+    updateScannerJob(jobId,8,`${nasdaqUniverse.totalAssets} aktif hisseden likiditeye göre seçilen ${symbols.length} NASDAQ hissesi için yeterli günlük OHLCV alınıyor`);
+    // Yaklaşık bir yıllık geçmiş 10 sembollük partiler halinde işlenir ve
+    // partiden sonra yalnız ilk 12 aday tutulur. Böylece EMA200/Precision
+    // eksiksiz kalırken Render belleğinde tüm evrenin geçmişi birikmez.
     const shortlist=[];let successful=0;let feedUsed=ALPACA_DATA_FEED;
     const compareNasdaqCandidate=(left,right)=>Number(right.score||0)-Number(left.score||0)||left.symbol.localeCompare(right.symbol,"en");
-    for(let index=0;index<symbols.length;index+=20){const group=symbols.slice(index,index+20);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history,{minDailyBars:40});if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
-    const valid=shortlist.sort(compareNasdaqCandidate);updateScannerJob(jobId,75,"Teknik kısa listede Fibonacci hesaplanıyor");const ranked=fibonacciEngine.rankCandidatesWithFibonacci(valid,Date.now(),{market:"NASDAQ"},{limit:5,shortlistLimit:12}).map(item=>({...item,price:item.features.price,ema20:item.features.ema20,ema50:item.features.ema50,ema200:item.features.ema200,rsi:item.features.rsi,macd:item.features.macd,atr:item.features.atr,volumeRatio:item.features.volumeRatio,turnover:item.features.turnover}));
+    const benchmarkPromise=fetchNasdaqBarsWithFallback(["QQQ"]).then(batch=>batch.barsBySymbol.get("QQQ")||[]).catch(()=>[]);
+    for(let index=0;index<symbols.length;index+=10){const group=symbols.slice(index,index+10);const batch=await fetchNasdaqBarsWithFallback(group);feedUsed=batch.feed;for(const symbol of group){const history=batch.barsBySymbol.get(symbol)||[];const validation=fibonacciEngine.validateDaily(history,{minDailyBars:252});if(validation.ok){successful+=1;const baseFib={valid:false,status:"NO_VALID_STRUCTURE",riskRewardTp2:null,riskRewardTp3:null,volumeConfirmation:"WEAK"};shortlist.push({symbol,history,validation,dataStatus:"OK",...fibonacciEngine.score(history,baseFib,{market:"NASDAQ"}),fibonacci:baseFib});shortlist.sort(compareNasdaqCandidate);if(shortlist.length>12)shortlist.length=12;}}updateScannerJob(jobId,10+Math.round(62*Math.min(index+group.length,symbols.length)/symbols.length),`${Math.min(index+group.length,symbols.length)}/${symbols.length} NASDAQ hissesi işlendi`);}
+    const valid=attachPrecisionInsights(shortlist.sort(compareNasdaqCandidate),await benchmarkPromise,"NASDAQ");updateScannerJob(jobId,75,"Teknik kısa listede Fibonacci hesaplanıyor");const ranked=fibonacciEngine.rankCandidatesWithFibonacci(valid,Date.now(),{market:"NASDAQ"},{limit:5,shortlistLimit:12}).map(item=>({...item,price:item.features.price,ema20:item.features.ema20,ema50:item.features.ema50,ema200:item.features.ema200,rsi:item.features.rsi,macd:item.features.macd,atr:item.features.atr,volumeRatio:item.features.volumeRatio,turnover:item.features.turnover}));
     updateScannerJob(jobId,86,"İlk 3 aday için doğrulanmış haber başlıkları değerlendiriliyor");const ai=await evaluateNasdaqCandidatesWithAi(ranked.slice(0,3));const enriched=ranked.map(item=>({...item,aiReview:ai.get(item.symbol)||{available:false,provider:"UNAVAILABLE",summary:"Doğrulanmış haber başlığı alınamadı."}}));const saved=await getTradingState(),paper=saved.content.nasdaqPaper,timestamp=new Date().toISOString(),activePositionSymbols=new Set((paper.positions||[]).filter(item=>["OPEN","PENDING_BROKER_ENTRY"].includes(item.status)).map(item=>item.symbol)),decisions=createAiDecisions(enriched,{...paper.risk,capital:paper.initialCapital}).filter(item=>!activePositionSymbols.has(item.symbol));const signals=enriched.map(item=>({id:`nasdaq-signal-${timestamp}-${item.symbol}`,symbol:item.symbol,timestamp,score:Number(item.score||0),grade:item.grade||"KARAR",status:item.fibonacci?.status||"NO_VALID_STRUCTURE",price:item.price,fibonacci:item.fibonacci||null,fallbackPlan:item.fallbackPlan||null}));const existing=new Set((paper.signals||[]).map(item=>`${item.symbol}:${String(item.timestamp||"").slice(0,10)}`));paper.signals=[...signals.filter(item=>!existing.has(`${item.symbol}:${timestamp.slice(0,10)}`)),...(paper.signals||[])].slice(0,200);paper.scanner={timestamp,scanned:symbols.length,successful,results:enriched.map(item=>{const {history,...rest}=item;return rest;}),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`};paper.decisions=mergeNasdaqScannerDecisions(decisions,paper.decisions.filter(item=>!activePositionSymbols.has(item.symbol)),timestamp);paper.activity=[{timestamp,type:"NASDAQ_SCAN",message:`${symbols.length} NASDAQ hissesi tarandı; ${enriched.length} aday kaydedildi (${String(feedUsed).toUpperCase()} günlük veri).`},...(paper.activity||[])].slice(0,100);await saveTradingState(saved.content,saved.sha,saved.container);updateScannerJob(jobId,100,"NASDAQ taraması tamamlandı","COMPLETE");return sendJSON(res,200,{success:true,timestamp,scanned:symbols.length,successful,results:enriched,decisions,paper:nasdaqPaperStateForClient(saved.content),nasdaqPaper:nasdaqPaperStateForClient(saved.content),source:`ALPACA_${String(feedUsed).toUpperCase()}_1DAY`});
   } catch(error) {updateScannerJob(jobId,100,`NASDAQ tarama hatası: ${error.message}`,"ERROR");console.error("NASDAQ SCANNER:",String(error.message||"error").slice(0,240));return sendJSON(res,500,{success:false,error:error.message});}
   finally { releaseScannerExecution("NASDAQ", scannerLockToken); }
@@ -8725,12 +8748,9 @@ function automationBucket(state, market) {
   return state.automation.scanner[market];
 }
 
-async function invokeMarketScanner(market, {forceRefresh = false} = {}) {
+async function invokeMarketScanner(market) {
   if (market === "BIST") {
-    return invokeAutomationHandler(
-      handleTradingScanner,
-      `/api/trading/scanner?automation=1${forceRefresh ? "&force=1" : ""}`
-    );
+    return invokeAutomationHandler(handleTradingScanner, "/api/trading/scanner?automation=1");
   }
   if (market === "NASDAQ") {
     return invokeAutomationHandler(handleNasdaqScanner, "/api/nasdaq/scanner?automation=1");
@@ -8742,7 +8762,7 @@ async function invokeMarketScanner(market, {forceRefresh = false} = {}) {
   throw new Error("Bilinmeyen piyasa otomasyonu.");
 }
 
-async function runAutomatedMarketScanner(market, {timestamp = new Date(), force = false} = {}) {
+async function runAutomatedMarketScanner(market, {timestamp = new Date()} = {}) {
   const normalized = String(market || "").toUpperCase();
   const runtime = automationRuntimeStatus.scanner[normalized];
   if (!runtime) throw new Error("Bilinmeyen market scanner.");
@@ -8753,9 +8773,7 @@ async function runAutomatedMarketScanner(market, {timestamp = new Date(), force 
     // Scanner handler kendi market lock'unu ve kendi sonuç state yazımını
     // yönetir. Handler'ı mutation kuyruğu içine almak, BIST handler'ın içteki
     // bist-scanner-commit kuyruğunu beklemesiyle deadlock oluşturuyordu.
-    const response = force && normalized === "BIST"
-      ? await invokeMarketScanner(normalized, {forceRefresh:true})
-      : await invokeMarketScanner(normalized);
+    const response = await invokeMarketScanner(normalized);
     if (response.statusCode >= 400 || !response.payload?.success) {
       throw new Error(String(response.payload?.error || `${normalized} taraması tamamlanamadı.`));
     }
@@ -8820,106 +8838,6 @@ const marketScheduler = createMarketScheduler({
     Object.assign(target, status, {running:false});
   },
 });
-
-function bistEodBucket(state) {
-  state.automation = state.automation || {};
-  state.automation.eod = state.automation.eod || {};
-  state.automation.eod.BIST = state.automation.eod.BIST || {};
-  return state.automation.eod.BIST;
-}
-
-async function recordBistEodFailure(sessionKey, error, now = new Date()) {
-  return withTradingStateMutation("bist-eod-failure", async () => {
-    const stateResult = await getTradingState();
-    const state = stateResult.content;
-    state.automation = state.automation || {};
-    state.automation.eod = state.automation.eod || {};
-    state.automation.eod.BIST = failedEodState(sessionKey, error, now);
-    await saveTradingState(state, stateResult.sha, stateResult.container);
-  });
-}
-
-async function runBistEndOfDayScanIfDue(now = new Date()) {
-  if (bistEndOfDayScanRunning) return {skipped:true, reason:"EOD_IN_FLIGHT"};
-
-  const stateResult = await getTradingState();
-  const state = stateResult.content;
-  const decision = eodDecision({
-    now,
-    eodState: state.automation?.eod?.BIST,
-    dailySummary: state.dailySummary,
-    scannerLocked: activeScannerMarkets.has("BIST"),
-  });
-
-  if (decision.action === "WAIT" || decision.action === "COMPLETE" || decision.action === "RETRY_WAIT") {
-    return {skipped:true, reason:decision.action, sessionKey:decision.sessionKey};
-  }
-  if (decision.action === "SCANNER_IN_FLIGHT") {
-    // Manuel tarama ile çakışmıyoruz. Bir sonraki 60 sn çevriminde aynı
-    // kapanış scanner'ı mevcut ortak kilit üzerinden tekrar denenir.
-    return {skipped:true, reason:"SCANNER_IN_FLIGHT", sessionKey:decision.sessionKey};
-  }
-  if (decision.action === "SEND_SUMMARY") {
-    return {success:await sendDailyTradingSummaryIfDue(now), sessionKey:decision.sessionKey, summaryOnly:true};
-  }
-
-  bistEndOfDayScanRunning = true;
-  try {
-    const outcome = await marketScheduler.runMarketOnce("BIST", {
-      force:true,
-      timestamp:now,
-      reason:"BIST_END_OF_DAY",
-    });
-
-    if (outcome.skipped) {
-      return {skipped:true, reason:outcome.reason || "SCANNER_IN_FLIGHT", sessionKey:decision.sessionKey};
-    }
-    if (outcome.error) {
-      // Manuel request araya girdiyse bunu başarısız kapanış olarak
-      // işaretlemeyiz; ortak lock serbest kalınca tekrar deneriz.
-      if (/zaten çalışıyor|SCANNER_ACTIVE/i.test(String(outcome.error?.message || ""))) {
-        return {skipped:true, reason:"SCANNER_IN_FLIGHT", sessionKey:decision.sessionKey};
-      }
-      await recordBistEodFailure(decision.sessionKey, outcome.error, now);
-      return {success:false, error:outcome.error, sessionKey:decision.sessionKey};
-    }
-
-    const freshResult = await getTradingState();
-    const freshState = freshResult.content;
-    const snapshot = freshState.scannerSnapshot;
-    const snapshotCreatedForSession = snapshot?.createdAt &&
-      istanbulClock(new Date(snapshot.createdAt)).key === decision.sessionKey;
-    if (snapshot?.sessionKey !== decision.sessionKey || !snapshotCreatedForSession) {
-      const error = new Error("BIST kapanış taraması güncel scanner snapshot üretmedi.");
-      await recordBistEodFailure(decision.sessionKey, error, now);
-      return {success:false, error, sessionKey:decision.sessionKey};
-    }
-
-    await withTradingStateMutation("bist-eod-success", async () => {
-      const latestResult = await getTradingState();
-      const latestState = latestResult.content;
-      const bucket = bistEodBucket(latestState);
-      bucket.sessionKey = decision.sessionKey;
-      bucket.status = "SUCCESS";
-      bucket.completedAt = new Date().toISOString();
-      bucket.snapshotCreatedAt = latestState.scannerSnapshot?.createdAt || null;
-      bucket.failedAt = null;
-      bucket.retryAt = null;
-      bucket.error = null;
-      await saveTradingState(latestState, latestResult.sha, latestResult.container);
-    });
-
-    const summarySent = await sendDailyTradingSummaryIfDue(now);
-    return {success:true, sessionKey:decision.sessionKey, summarySent};
-  } catch (error) {
-    await recordBistEodFailure(decision.sessionKey, error, now)
-      .catch((saveError) => console.error("BIST EOD FAILURE STATE ERROR:", saveError.message));
-    console.error("BIST END-OF-DAY SCANNER ERROR:", error.message);
-    return {success:false, error, sessionKey:decision.sessionKey};
-  } finally {
-    bistEndOfDayScanRunning = false;
-  }
-}
 
 function monitorActivityRows(state, since) {
   const after = new Date(since).getTime();
@@ -10310,7 +10228,18 @@ async function handleCryptoPaperQueue(req, res) {
     const paper = state.cryptoPaper;
     if (paper.killSwitch?.active) throw new Error("KRİPTO acil durdurma aktif; bu sayfada yeni emir oluşturulamaz.");
     const timestamp = new Date().toISOString();
-    const candidate = cryptoPaperDecisionFromInput(input, paper, timestamp);
+    const manualInput = String(input.source || "").toUpperCase() === "MANUAL";
+    const riskQuantity = manualInput ? Number(input.quantity) : calculateRiskBasedQuantity({
+      capital:paper.initialCapital,
+      maxPositionPercent:paper.risk?.maxPositionPercent,
+      maxRiskPercent:MAX_TRADE_RISK_PERCENT,
+      entry:input.entryPrice,
+      stop:input.stop,
+      allowFractional:true,
+      fractionalDecimals:8,
+    });
+    if (!manualInput && riskQuantity <= 0) throw new Error("Kripto risk sınırları bu plan için pozisyon açılmasına izin vermiyor.");
+    const candidate = cryptoPaperDecisionFromInput({...input, quantity:riskQuantity}, paper, timestamp);
     const isManual = String(candidate.pendingOrder?.source || "").toUpperCase() === "MANUAL";
 
     // YZ ve manuel panellerin her biri yalnız bir aktif taslak taşır.
@@ -11005,7 +10934,7 @@ async function scanCryptoSymbol(symbol) {
     const validation = fibonacciEngine.validateDaily(history);
     if (!validation.ok) return {symbol, history, validation, dataStatus: validation.message};
     const baseFib = {valid:false, status:"NO_VALID_STRUCTURE", riskRewardTp2:null, riskRewardTp3:null, volumeConfirmation:"WEAK"};
-    const analysis = fibonacciEngine.score(history, baseFib);
+    const analysis = fibonacciEngine.score(history, baseFib, {market:"CRYPTO"});
     return {symbol, history, validation, dataStatus:"OK", ...analysis, fibonacci:baseFib, timestamp:new Date().toISOString()};
   } catch (error) {
     console.warn(`CRYPTO SCANNER ${symbol}:`, error.message);
@@ -11038,8 +10967,9 @@ async function handleCryptoScanner(req, res) {
     }
     // Kripto günlük mumları BIST'e özgü state alanlarından bağımsızdır;
     // gerçek, sıralı ve yeterli OHLCV dizisi bulunan her parite adaydır.
-    const valid = results
-      .filter(item => Array.isArray(item.history) && item.history.length >= 220)
+    const cryptoBenchmark = results.find(item => item.symbol === "BTCUSDT")?.history || [];
+    const valid = attachPrecisionInsights(results
+      .filter(item => Array.isArray(item.history) && item.history.length >= 252), cryptoBenchmark, "CRYPTO")
       .sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
     updateScannerJob(jobId, 82, "İlk 5 aday için Fibonacci A-B-C hesaplanıyor");
     const ranked = fibonacciEngine.rankCandidatesWithFibonacci(valid,Date.now(),{market:"CRYPTO"},{limit:5,shortlistLimit:12}).map(item=>({
@@ -11729,17 +11659,22 @@ server.listen(
     // yine yalniz tamamlanmis DAILY mumlari kullanir.
     marketScheduler.start();
 
-    // BIST kapanışında normal saatlik uygunluk devre dışıdır. Bu bağımsız
-    // recovery-aware worker 18:15'ten sonra yalnız hafta içi çalışır,
-    // mevcut BIST scanner'ı force-refresh ile tamamlar ve ancak başarılı
-    // snapshot kalıcı hâle geldikten sonra günlük özeti yollar.
-    const triggerBistEndOfDay = source => {
-      void runBistEndOfDayScanIfDue().catch(error => {
-        console.error(`BIST END-OF-DAY ${source} ERROR:`, error.message);
-      });
-    };
-    setTimeout(() => triggerBistEndOfDay("STARTUP_RECOVERY"), 30000);
-    setInterval(() => triggerBistEndOfDay("CYCLE"), 60 * 1000);
+    // Seans kapanışından sonra güncel scanner kaydı varsa tek günlük
+    // Telegram özetini yollar. Bir dakika aralık, Render'ın geç uyanması
+    // veya taramanın 18:15'ten hemen sonra bitmesi durumunda da yeterlidir.
+    setTimeout(
+      () => {
+        sendDailyTradingSummaryIfDue();
+      },
+      30000
+    );
+
+    setInterval(
+      () => {
+        sendDailyTradingSummaryIfDue();
+      },
+      60 * 1000
+    );
 
     sendTelegramNotification(
       "BORSACI bağlantısı aktif. Paper işlem monitörü hazır."
@@ -11759,4 +11694,3 @@ server.listen(
 
   }
 );
-
