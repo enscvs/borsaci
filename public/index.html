@@ -10,7 +10,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>𐰉𐰆𐰺𐰽𐰀𐰲𐰃</title>
+  <title>𐰇𐰠𐰇𐱁</title>
 
   <link
     rel="icon"
@@ -47,7 +47,7 @@
         src="/borsaci-crescent-star.png?v=2"
         alt="BorsaCI ay yıldız"
       >
-      <div class="turkic-auth-title">𐰉𐰆𐰺𐰽𐰀𐰲𐰃</div>
+      <div class="turkic-auth-title">𐰇𐰠𐰇𐱁</div>
     </div>
     <p>GÜVENLİ İŞLEM TERMİNALİ</p>
     <label for="loginPassword">ŞİFRE</label>
@@ -81,7 +81,7 @@
     </div>
 
     <div class="turkic-main-banner topbar-turkic-banner" aria-label="BorsaCI">
-      <div>𐰉𐰆𐰺𐰽𐰀𐰲𐰃</div>
+      <div>𐰇𐰠𐰇𐱁</div>
     </div>
 
     <div class="system-clock-stack">
@@ -3644,10 +3644,19 @@ Waiting for input...
     display: none !important;
   }
   .auth-screen {
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    min-height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 24px;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 10000;
     background: radial-gradient(circle at center, rgba(22, 60, 30, .42), #030703 68%);
   }
   .auth-card {
@@ -3661,6 +3670,8 @@ Waiting for input...
     box-shadow: 0 0 28px rgba(71, 255, 104, .17);
     color: #d9ffe0;
     font-family: inherit;
+    margin: auto !important;
+    flex: 0 1 390px;
   }
   .auth-brand {
     display: flex;
@@ -3791,3 +3802,4 @@ Waiting for input...
 </body>
 
 </html>
+
