@@ -21,7 +21,7 @@ import TacticalSplash from './TacticalSplash';
 
 const URL_KEY = 'borsaci.serverUrl';
 const DEFAULT_SERVER_URL = 'https://gemini-borsaci.onrender.com';
-const BRAND_NAME = '𐰉𐰆𐰺𐰽𐰀𐰲𐰃';
+const BRAND_NAME = '𐰇𐰠𐰇𐱁';
 
 function normalizeUrl(value) {
   const trimmed = value.trim().replace(/\/$/, '');

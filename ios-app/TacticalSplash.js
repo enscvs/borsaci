@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-const BRAND_NAME = '𐰉𐰆𐰺𐰽𐰀𐰲𐰃';
+const BRAND_NAME = '𐰇𐰠𐰇𐱁';
 const GRID_COLUMNS = Array.from({ length: 17 }, (_, index) => index);
 const GRID_ROWS = Array.from({ length: 35 }, (_, index) => index);
 
