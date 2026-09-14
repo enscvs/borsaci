@@ -17,6 +17,7 @@ import {
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { WebView } from 'react-native-webview';
+import TacticalSplash from './TacticalSplash';
 
 const URL_KEY = 'borsaci.serverUrl';
 const DEFAULT_SERVER_URL = 'https://gemini-borsaci.onrender.com';
@@ -38,6 +39,7 @@ export default function App() {
   const [settings, setSettings] = useState(false);
   const [webLoading, setWebLoading] = useState(false);
   const [webError, setWebError] = useState('');
+  const [showSplash, setShowSplash] = useState(true);
 
   const unlock = useCallback(async () => {
     const available = await LocalAuthentication.hasHardwareAsync();
@@ -62,9 +64,8 @@ export default function App() {
       setServerUrl(initialUrl);
       setDraftUrl(initialUrl);
       setLoading(false);
-      await unlock();
     })();
-  }, [unlock]);
+  }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', next => {
@@ -84,6 +85,15 @@ export default function App() {
     setServerUrl(value);
     setSettings(false);
     setWebError('');
+  }
+
+  const finishSplash = useCallback(() => {
+    setShowSplash(false);
+    unlock();
+  }, [unlock]);
+
+  if (showSplash) {
+    return <TacticalSplash onFinished={finishSplash} />;
   }
 
   if (loading) {
@@ -172,3 +182,4 @@ const styles = StyleSheet.create({
   header: { minHeight: 62, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#263b31' }, headerTitle: { color: '#f8fafc', fontSize: 19, fontWeight: '800' }, status: { color: '#22c55e', fontSize: 11, marginTop: 2 }, actions: { flexDirection: 'row', gap: 8 }, action: { backgroundColor: '#14231b', paddingHorizontal: 11, paddingVertical: 8, borderRadius: 9 }, actionText: { color: '#d1fae5', fontSize: 12, fontWeight: '700' },
   progress: { position: 'absolute', top: 70, zIndex: 3, alignSelf: 'center', backgroundColor: '#14231b', padding: 8, borderRadius: 20 }, web: { flex: 1, backgroundColor: '#07110d' }, error: { padding: 14, backgroundColor: '#3f1515', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, errorText: { color: '#fecaca', flex: 1, fontSize: 12 }, retry: { color: '#fff', fontWeight: '800', marginLeft: 12 }
 });
+
