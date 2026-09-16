@@ -4,10 +4,10 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 106798.11,
-      "equity": 139285.61,
-      "pnl": 47599.82,
-      "pnlPercent": 47.59982,
+      "cash": 135002.38,
+      "equity": 135002.38,
+      "pnl": 35640.34,
+      "pnlPercent": 35.640339999999995,
       "positions": [
         {
           "id": "paper-2026-09-04T14:05:44.546Z-ENJSA-b7fe49a2",
@@ -71,20 +71,38 @@
           "source": "SCANNER",
           "paperOnly": true,
           "orderType": "LIMIT",
-          "quantity": 115,
+          "quantity": 0,
           "originalQuantity": 115,
           "entry": 349.25,
           "entryCommission": 40.16,
-          "current": 282.5,
+          "current": 245.5,
           "stop": 257.25,
           "target1": 383.84,
           "target2": 416.83,
           "target3": 458.85,
-          "status": "OPEN",
+          "status": "CLOSED",
           "openedAt": "2026-09-01T07:25:09.087Z",
           "tp1Hit": false,
-          "realizedPnl": -40.16,
-          "pnl": -7676.25
+          "realizedPnl": -11999.64,
+          "pnl": -11999.64,
+          "slHit": true,
+          "remainingQuantity": 0,
+          "monitor": {
+            "events": {
+              "SL": {
+                "type": "SL",
+                "idempotencyKey": "paper-2026-09-01T07:25:09.087Z-ASTOR-eb2b8a9d:POSITION_MONITOR:SL",
+                "price": 245.5,
+                "closeQuantity": 115,
+                "remainingQuantity": 0,
+                "confirmedAt": "2026-09-16T17:15:58.340Z"
+              }
+            },
+            "lastEvent": "SL",
+            "lastEventAt": "2026-09-16T17:15:58.340Z"
+          },
+          "closedAt": "2026-09-16T17:15:58.340Z",
+          "closeReason": "STOP_REACHED"
         },
         {
           "id": "paper-2026-08-31T09:48:30.505Z-VAKBN-ea3cca0e",
@@ -13628,13 +13646,15 @@
         "invalidation": "C seviyesinin %2 altındaki stop (38.26) planı geçersiz kılar.",
         "timestamp": "2026-09-15T14:00:31.787Z",
         "manualOverride": false
-      },
+      }
+    ],
+    "history": [
       {
         "id": "1788246008354-ASTOR",
         "rank": 2,
         "symbol": "ASTOR",
         "action": "BUY SETUP",
-        "status": "OPEN",
+        "status": "CLOSED",
         "confidence": null,
         "entry": {
           "low": 267.8,
@@ -13932,11 +13952,12 @@
           "summary": "Bu şirket için güncel doğrulanmış bir haber kaynağı mevcut değil."
         },
         "lifecycle": {
-          "stage": "OPEN",
+          "stage": "CLOSED",
           "createdAt": "2026-09-01T07:00:08.354Z",
           "expiresAt": "2026-09-02T07:00:08.354Z",
           "overrideAt": "2026-09-01T07:24:59.556Z",
-          "openedAt": "2026-09-01T07:25:09.087Z"
+          "openedAt": "2026-09-01T07:25:09.087Z",
+          "closedAt": "2026-09-16T17:15:58.340Z"
         },
         "currentScan": false,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
@@ -13963,10 +13984,10 @@
           "totalCost": 40203.91,
           "status": "APPROVED",
           "approvedAt": "2026-09-01T07:25:09.087Z"
-        }
-      }
-    ],
-    "history": [
+        },
+        "outcome": "STOP_REACHED",
+        "realizedPnL": -11999.64
+      },
       {
         "id": "1789455629549-EFOR",
         "rank": 1,
@@ -20399,6 +20420,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-16T17:15:58.340Z",
+        "type": "SL",
+        "message": "ASTOR paper pozisyonu kapatıldı: STOP_REACHED · ₺-11999.64."
+      },
       {
         "timestamp": "2026-09-15T14:00:33.023Z",
         "type": "SCAN",
