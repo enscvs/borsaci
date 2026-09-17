@@ -13427,7 +13427,7 @@
         "rank": 2,
         "symbol": "BOSSA",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "PENDING_LIMIT",
         "confidence": null,
         "entry": {
           "low": 6.25,
@@ -13766,9 +13766,11 @@
           "summary": "Doğrulanmış haber olmadığı için özet yok."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "PENDING_LIMIT",
           "createdAt": "2026-09-17T09:00:34.593Z",
-          "expiresAt": "2026-09-18T09:00:34.593Z"
+          "expiresAt": "2026-09-18T09:00:34.593Z",
+          "lastCheckedAt": "2026-09-17T15:55:36.109Z",
+          "lastMarketPrice": 6.83
         },
         "currentScan": true,
         "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
@@ -13788,8 +13790,10 @@
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-09-17T09:00:34.593Z",
-          "updatedAt": "2026-09-17T15:55:32.415Z",
-          "editedAt": "2026-09-17T15:55:32.415Z"
+          "updatedAt": "2026-09-17T15:55:36.109Z",
+          "editedAt": "2026-09-17T15:55:32.415Z",
+          "status": "PENDING_LIMIT",
+          "lastMarketPrice": 6.83
         }
       },
       {
@@ -21933,6 +21937,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-17T15:55:36.109Z",
+        "type": "PAPER_LIMIT_PENDING",
+        "message": "BOSSA LIMIT emir bekliyor: son ₺6,83 · limit ₺6,68."
+      },
       {
         "timestamp": "2026-09-17T15:55:32.415Z",
         "type": "PAPER_ORDER_EDITED",
