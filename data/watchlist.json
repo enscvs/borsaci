@@ -14555,7 +14555,7 @@
         "rank": 2,
         "symbol": "BOSSA",
         "action": "BUY SETUP",
-        "status": "PENDING_LIMIT",
+        "status": "REJECTED_BY_USER",
         "confidence": null,
         "entry": {
           "low": 6.25,
@@ -14891,11 +14891,13 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_LIMIT",
+          "stage": "REJECTED_BY_USER",
           "createdAt": "2026-09-17T09:00:34.593Z",
           "expiresAt": "2026-09-18T09:00:34.593Z",
           "lastCheckedAt": "2026-09-19T11:55:38.467Z",
-          "lastMarketPrice": 6.83
+          "lastMarketPrice": 6.83,
+          "rejectedAt": "2026-09-19T11:55:42.570Z",
+          "rejectedBy": "TELEGRAM"
         },
         "currentScan": true,
         "reason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
@@ -14920,7 +14922,8 @@
           "editedAt": "2026-09-17T15:55:32.415Z",
           "status": "PENDING_LIMIT",
           "lastMarketPrice": 6.83
-        }
+        },
+        "outcome": "USER_REJECTED"
       },
       {
         "id": "1789818601172-DMRGD",
@@ -24798,6 +24801,11 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-19T11:55:42.570Z",
+        "type": "PAPER_REJECTED",
+        "message": "BOSSA paper işlem planı TELEGRAM üzerinden reddedildi."
+      },
       {
         "timestamp": "2026-09-19T11:55:38.467Z",
         "type": "PAPER_LIMIT_PENDING",
