@@ -46,7 +46,13 @@ const {
 } = require("./trading/position-monitor");
 const {
   createMarketScheduler,
+  isBistMarketOpen,
+  isNasdaqMarketOpen,
 } = require("./trading/market-scheduler");
+const {
+  timestampMs,
+  canUseSessionQuote,
+} = require("./trading/market-price-guard");
 const {
   ScannerExecutionRegistry,
 } = require("./trading/scanner-execution-lock");
@@ -276,6 +282,11 @@ let cryptoRuntimeBridge = null;
 let tradingStateMutationTail = Promise.resolve();
 const PAPER_MONITOR_INTERVAL_MS = 60 * 1000;
 const PAPER_PRICE_CACHE_TTL_MS = 15 * 1000;
+const BIST_MONITOR_QUOTE_MAX_AGE_MS = 5 * 60 * 1000;
+// Alpaca Basic/SIP ücretsiz veri gecikmeli olabildiği için seans içi quote
+// doğrulamasında daha geniş, fakat yine sınırlı bir pencere kullanılır.
+const NASDAQ_MONITOR_QUOTE_MAX_AGE_MS = 20 * 60 * 1000;
+const CRYPTO_MONITOR_QUOTE_MAX_AGE_MS = 15 * 60 * 1000;
 const paperMarketPriceCache = new Map();
 const paperMonitorStatus = {
   intervalMs: PAPER_MONITOR_INTERVAL_MS,
@@ -4898,13 +4909,25 @@ function archivePaperDecision(
 }
 
 
-async function fetchPaperMarketPrice(symbol) {
+async function fetchBistCompletedDailyQuote(symbol) {
+  const yahoo = await fetchYahooChart(symbol, "1mo", "1d", 12000);
+  const history = fibonacciEngine.completedDailyHistory(yahoo.history, Date.now(), {market:"BIST"});
+  const latest = history.at(-1);
+  const price = Number(latest?.close);
+  if (!Number.isFinite(price) || price <= 0) throw new Error(`${symbol} için tamamlanmış günlük BIST fiyatı alınamadı.`);
+  return {
+    price: roundTradingValue(price),
+    asOf: new Date(timestampMs(latest.time) || Date.now()).toISOString(),
+    source: "YAHOO_COMPLETED_DAILY",
+  };
+}
+
+async function fetchPaperMarketQuote(symbol) {
   const normalized = String(symbol || "").trim().toUpperCase();
-  // Açık pozisyon takibinde güncel fiyat kullanılabilir; fakat strateji ve
-  // sinyal motoruna hiçbir intraday mum sokmamak için burada Yahoo quote
-  // uç noktası kullanılır. Quote geçici olarak yoksa yalnız tamamlanmış 1G
-  // kapanışına güvenli biçimde geri dönülür.
-  try {
+  const now = Date.now();
+  // Seans dışındaki Yahoo regularMarketPrice eski son işlem olabilir. Bu
+  // nedenle kapanış sonrası yalnız tamamlanmış günlük kapanış gösterilir.
+  if (isBistMarketOpen(new Date(now))) try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
     try {
@@ -4915,20 +4938,23 @@ async function fetchPaperMarketPrice(symbol) {
       if (response.ok) {
         const payload = await response.json();
         const row = payload?.quoteResponse?.result?.[0];
-        const price = Number(row?.regularMarketPrice ?? row?.postMarketPrice ?? row?.preMarketPrice);
-        if (Number.isFinite(price) && price > 0) return roundTradingValue(price);
+        const price = Number(row?.regularMarketPrice);
+        const quoteTime = timestampMs(row?.regularMarketTime);
+        if (Number.isFinite(price) && price > 0 && canUseSessionQuote({marketOpen:true, timestamp:quoteTime, now, maxAgeMs:BIST_MONITOR_QUOTE_MAX_AGE_MS})) {
+          return {price:roundTradingValue(price), asOf:new Date(quoteTime).toISOString(), source:"YAHOO_REGULAR_QUOTE"};
+        }
       }
     } finally {
       clearTimeout(timeout);
     }
   } catch {
-    // Quote kaynağı kapalıysa aşağıdaki tamamlanmış günlük kapanış kullanılır.
+    // Quote doğrulanamıyorsa güvenli günlük kapanışa düşülür.
   }
-  const yahoo = await fetchYahooChart(normalized, "1mo", "1d", 12000);
-  const history = fibonacciEngine.completedDailyHistory(yahoo.history, Date.now(), {market:"BIST"});
-  const price = Number(history.at(-1)?.close);
-  if (!Number.isFinite(price) || price <= 0) throw new Error(`${normalized} için doğrulanmış piyasa fiyatı alınamadı.`);
-  return roundTradingValue(price);
+  return fetchBistCompletedDailyQuote(normalized);
+}
+
+async function fetchPaperMarketPrice(symbol) {
+  return (await fetchPaperMarketQuote(symbol)).price;
 }
 
 async function fetchCachedPaperMarketPrice(symbol) {
@@ -4939,11 +4965,9 @@ async function fetchCachedPaperMarketPrice(symbol) {
     return cached;
   }
 
-  const price = await fetchPaperMarketPrice(normalizedSymbol);
+  const quote = await fetchPaperMarketQuote(normalizedSymbol);
   const value = {
-    price,
-    asOf: new Date().toISOString(),
-    source: "YAHOO_QUOTE_OR_COMPLETED_DAILY",
+    ...quote,
     fetchedAt: now,
   };
   paperMarketPriceCache.set(normalizedSymbol, value);
@@ -5343,7 +5367,8 @@ async function monitorPaperPositions() {
     try {
       // TP/SL takibi anlık quote kullanabilir; bu yol strateji/scanner
       // hesaplarına mum eklemez ve 4H/intraday mum tüketmez.
-      const current = Number((await fetchCachedPaperMarketPrice(savedPosition.symbol)).price);
+      const quote = await fetchCachedPaperMarketPrice(savedPosition.symbol);
+      const current = Number(quote.price);
 
       if (!Number.isFinite(current)) {
         continue;
@@ -5361,10 +5386,16 @@ async function monitorPaperPositions() {
         continue;
       }
 
+      const previousCurrent = Number(position.current);
+      const previousPnl = Number(position.pnl);
       position.current = current;
       position.pnl =
         (current - Number(position.entry)) *
         Number(position.quantity);
+      position.currentQuote = {source:quote.source, asOf:quote.asOf};
+      // Fiyat değişimi de kalıcı state'e yazılmalı; aksi hâlde arayüz önceki
+      // monitör olayında kalmış eski fiyatı göstermeye devam eder.
+      if (previousCurrent !== current || previousPnl !== Number(position.pnl)) changed = true;
 
       // Strateji/sinyal hesaplamasi yalnız tamamlanmış günlük mumdan gelir.
       // Burada sadece açık pozisyonun güncel quote ile yürütülmesi var.
@@ -8090,13 +8121,18 @@ async function fetchNasdaqDailyClose(symbol) {
 // yolundan baska hicbir zaman dilimi okumaz.
 async function fetchNasdaqMonitorPrice(symbol) {
   const safe = nasdaqSafeSymbol(symbol);
+  const now = Date.now();
+  // Seans kapalıyken latest-trade endpoint'i önceki seansın son işlemini
+  // döndürebilir. Kapanışta yalnız son tamamlanmış günlük Alpaca barı geçer.
+  if (!isNasdaqMarketOpen(new Date(now))) return fetchNasdaqDailyClose(safe);
   const feeds = [...new Set([ALPACA_DATA_FEED, "iex"])];
   for (const feed of feeds) {
     try {
       const payload = await alpacaJson(`${ALPACA_DATA_BASE_URL}/v2/stocks/${encodeURIComponent(safe)}/trades/latest?feed=${encodeURIComponent(feed)}`);
       const price = Number(payload?.trade?.p ?? payload?.trade?.price);
-      if (Number.isFinite(price) && price > 0) {
-        return {price:roundTradingValue(price), asOf:payload?.trade?.t || new Date().toISOString(), source:`ALPACA_${String(feed).toUpperCase()}_LATEST_TRADE`};
+      const quoteTime = timestampMs(payload?.trade?.t);
+      if (Number.isFinite(price) && price > 0 && canUseSessionQuote({marketOpen:true, timestamp:quoteTime, now, maxAgeMs:NASDAQ_MONITOR_QUOTE_MAX_AGE_MS})) {
+        return {price:roundTradingValue(price), asOf:new Date(quoteTime).toISOString(), source:`ALPACA_${String(feed).toUpperCase()}_LATEST_TRADE`};
       }
     } catch {
       // SIP/Basic yetkisi yoksa veya seans disindaysa diger feed denenir.
@@ -10302,11 +10338,20 @@ async function fetchBinanceDailyHistory(symbol) {
     .filter(candle => [candle.open, candle.high, candle.low, candle.close, candle.volume].every(Number.isFinite));
 }
 
-async function fetchCryptoPaperMarketPrice(symbol) {
-  const quote = await fetchBinancePublicJson(`/api/v3/ticker/price?symbol=${encodeURIComponent(symbol)}`);
-  const price = Number(quote?.price);
+async function fetchCryptoPaperMarketQuote(symbol) {
+  const trades = await fetchBinancePublicJson(`/api/v3/aggTrades?symbol=${encodeURIComponent(symbol)}&limit=1`);
+  const trade = Array.isArray(trades) ? trades.at(-1) : null;
+  const price = Number(trade?.p);
+  const quoteTime = timestampMs(trade?.T);
   if (!Number.isFinite(price) || price <= 0) throw new Error(`${symbol} için doğrulanmış kripto piyasa fiyatı alınamadı.`);
-  return roundCryptoValue(price);
+  if (!canUseSessionQuote({marketOpen:true, timestamp:quoteTime, now:Date.now(), maxAgeMs:CRYPTO_MONITOR_QUOTE_MAX_AGE_MS})) {
+    throw new Error(`${symbol} için güncel kripto işlemi alınamadı.`);
+  }
+  return {price:roundCryptoValue(price), asOf:new Date(quoteTime).toISOString(), source:"BINANCE_PUBLIC_AGG_TRADE"};
+}
+
+async function fetchCryptoPaperMarketPrice(symbol) {
+  return (await fetchCryptoPaperMarketQuote(symbol)).price;
 }
 
 function roundCryptoValue(value) {
@@ -10392,7 +10437,7 @@ async function handleCryptoQuotes(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   const symbols = [...new Set(String(url.searchParams.get("symbols") || "").split(",").map(value => value.trim().toUpperCase()).filter(value => /^[A-Z0-9]{2,12}$/.test(value)).slice(0, 20))];
   const quotes = {}; const unavailable = [];
-  await Promise.all(symbols.map(async symbol => { try { quotes[symbol] = {price: await fetchCryptoPaperMarketPrice(symbol), asOf: new Date().toISOString(), source: "BINANCE_LAST_PRICE"}; } catch { unavailable.push(symbol); } }));
+  await Promise.all(symbols.map(async symbol => { try { quotes[symbol] = await fetchCryptoPaperMarketQuote(symbol); } catch { unavailable.push(symbol); } }));
   return sendJSON(res, 200, {quotes, unavailable});
 }
 
@@ -10675,8 +10720,15 @@ async function monitorCryptoPaperTrading(paper, timestamp) {
   }
   for (const position of paper.positions || []) {
     if (position.status !== "OPEN") continue;
-    let price;
-    try { price = await fetchCryptoPaperMarketPrice(position.symbol); } catch { continue; }
+    let quote;
+    try { quote = await fetchCryptoPaperMarketQuote(position.symbol); } catch { continue; }
+    const price = Number(quote.price);
+    if (!Number.isFinite(price)) continue;
+    const previousCurrent = Number(position.current);
+    const previousQuoteAsOf = String(position.currentQuote?.asOf || "");
+    position.current = price;
+    position.currentQuote = {source:quote.source, asOf:quote.asOf};
+    if (previousCurrent !== price || previousQuoteAsOf !== String(quote.asOf || "")) changed = true;
     const before = {...position};
     const event = evaluateLongPosition(before, price, {quantityPrecision:8});
     if (!event) continue;
@@ -11092,9 +11144,11 @@ async function monitorNasdaqPaperTrading(paper, timestamp) {
     try { quote = await fetchNasdaqMonitorPrice(position.symbol); } catch { continue; }
     const price = Number(quote?.price);
     if (!Number.isFinite(price)) continue;
-    // Güncel fiyat sadece monitor kararında kullanılır. Her 60 saniyede GitHub
-    // state'ine yazılmaması için fiyat değişimi tek başına `changed` sayılmaz.
+    const previousCurrent = Number(position.current);
+    const previousQuoteAsOf = String(position.currentQuote?.asOf || "");
     position.current = price;
+    position.currentQuote = {source:quote.source, asOf:quote.asOf};
+    if (previousCurrent !== price || previousQuoteAsOf !== String(quote.asOf || "")) changed = true;
     const before = {...position};
 
     if (isBrokerBacked && position.monitor?.pendingBrokerExit) {

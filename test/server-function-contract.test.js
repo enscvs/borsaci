@@ -66,6 +66,16 @@ test("crypto trading is paper-only while public Binance market data remains avai
   assert.doesNotMatch(appSource, /CANLI EMİR FORMUNA AKTAR/);
 });
 
+test("paper position prices reject stale session quotes and persist verified market updates", () => {
+  assert.match(source, /async function fetchBistCompletedDailyQuote/);
+  assert.match(source, /if \(isBistMarketOpen\(new Date\(now\)\)\)/);
+  assert.match(source, /if \(!isNasdaqMarketOpen\(new Date\(now\)\)\) return fetchNasdaqDailyClose/);
+  assert.match(source, /fetchCryptoPaperMarketQuote/);
+  assert.match(source, /position\.currentQuote = \{source:quote\.source, asOf:quote\.asOf\}/);
+  assert.match(appSource, /paperStateRefreshTimer = window\.setInterval\(\(\) => \{ void loadTradingState\(\); \}, 60000\)/);
+  assert.match(appSource, /cryptoPaperStateRefreshTimer = window\.setInterval\(\(\) => \{ void loadCryptoPaperState\(\); \}, 60000\)/);
+});
+
 test("NASDAQ scanner decisions are deduplicated and Alpaca entries receive emergency stops", () => {
   assert.match(source, /function mergeNasdaqScannerDecisions/);
   assert.match(source, /paper\.decisions=mergeNasdaqScannerDecisions\(decisions,paper\.decisions\.filter\(item=>!activePositionSymbols\.has\(item\.symbol\)\),timestamp\)/);

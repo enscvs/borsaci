@@ -5469,6 +5469,7 @@ let scannerProgressGeneration = 0;
 let paperMonitorUiState = null;
 let paperMonitorRefreshTimer = null;
 let paperMonitorCountdownTimer = null;
+let paperStateRefreshTimer = null;
 let paperMonitorRefreshInFlight = false;
 
 function renderScannerProgress(progress, message, status = "RUNNING") {
@@ -6003,6 +6004,9 @@ function startPaperMonitorUi() {
   paperMonitorCountdownTimer = window.setInterval(() => {
     renderPaperMonitorStatus();
   }, 1000);
+  // Açık pozisyonların sunucuda 60 sn'de bir doğrulanan fiyatını ekrana da
+  // taşır. Sadece bekleyen emir quote'larını yenilemek eski P&L bırakıyordu.
+  paperStateRefreshTimer = window.setInterval(() => { void loadTradingState(); }, 60000);
 }
 
 
@@ -8452,6 +8456,7 @@ let cryptoChartMarkers = null;
 let latestCryptoPaperState = null;
 let cryptoVisibleSignals = [];
 let cryptoQuoteRefreshTimer = null;
+let cryptoPaperStateRefreshTimer = null;
 let cryptoManualQuoteTimer = null;
 let cryptoScannerAbortController = null;
 let cryptoScannerPollTimer = null;
@@ -9250,6 +9255,7 @@ function bindCryptoWorkspaceControls() {
   if (closeForm && closeForm.dataset.cryptoBound !== "true") { closeForm.dataset.cryptoBound = "true"; closeForm.addEventListener("submit", async event => { event.preventDefault(); const data = Object.fromEntries(new FormData(closeForm)); try { const response = await fetch("/api/crypto/paper/close", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(data)}); const payload = await response.json(); if (!response.ok) throw new Error(payload?.error || "Satış emri gerçekleştirilemedi."); renderCryptoPaperState(payload); document.getElementById("cryptoCloseOrderPanel").hidden = true; } catch (error) { window.alert(error.message); } }); }
   const cancel = document.getElementById("cryptoCloseOrderCancel"); if (cancel && cancel.dataset.cryptoBound !== "true") { cancel.dataset.cryptoBound = "true"; cancel.addEventListener("click", () => { document.getElementById("cryptoCloseOrderPanel").hidden = true; }); }
   if (!cryptoQuoteRefreshTimer) cryptoQuoteRefreshTimer = window.setInterval(() => { void refreshCryptoQuotes(); }, 15000);
+  if (!cryptoPaperStateRefreshTimer) cryptoPaperStateRefreshTimer = window.setInterval(() => { void loadCryptoPaperState(); }, 60000);
 }
 
 function renderCryptoDecisionChart(item) {
