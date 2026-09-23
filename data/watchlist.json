@@ -4,11 +4,36 @@
     "version": 2,
     "paper": {
       "initialCapital": 100000,
-      "cash": 134970.74,
-      "equity": 134970.74,
+      "cash": 127083.36,
+      "equity": 134962.86,
       "pnl": 35624.51999999999,
       "pnlPercent": 35.62451999999999,
       "positions": [
+        {
+          "id": "paper-2026-09-23T11:06:28.180Z-MPARK-62e0f432",
+          "decisionId": "1790160702773-MPARK",
+          "decisionIds": [
+            "1790160702773-MPARK"
+          ],
+          "symbol": "MPARK",
+          "source": "SCANNER",
+          "paperOnly": true,
+          "orderType": "LIMIT",
+          "quantity": 18,
+          "originalQuantity": 18,
+          "entry": 437.75,
+          "entryCommission": 7.88,
+          "current": 437.75,
+          "stop": 386.12,
+          "target1": 465.07,
+          "target2": 484.39,
+          "target3": 509,
+          "status": "OPEN",
+          "openedAt": "2026-09-23T11:06:28.180Z",
+          "tp1Hit": false,
+          "realizedPnl": -7.88,
+          "pnl": -7.88
+        },
         {
           "id": "paper-2026-09-23T10:42:43.623Z-MPARK-7dec53f6",
           "decisionId": "1790160124645-MPARK",
@@ -13036,7 +13061,7 @@
         "rank": 2,
         "symbol": "MPARK",
         "action": "BUY SETUP",
-        "status": "PENDING_APPROVAL",
+        "status": "OPEN",
         "confidence": null,
         "entry": {
           "low": 397.11,
@@ -13354,9 +13379,10 @@
           "summary": "Doğrulanmış haber başlığı alınamadı."
         },
         "lifecycle": {
-          "stage": "PENDING_APPROVAL",
+          "stage": "OPEN",
           "createdAt": "2026-09-23T10:51:42.773Z",
-          "expiresAt": "2026-09-24T10:51:42.773Z"
+          "expiresAt": "2026-09-24T10:51:42.773Z",
+          "openedAt": "2026-09-23T11:06:28.180Z"
         },
         "currentScan": true,
         "reason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
@@ -13366,19 +13392,23 @@
         "pendingOrder": {
           "symbol": "MPARK",
           "quantity": 18,
-          "entryPrice": 439.25,
+          "entryPrice": 437.75,
           "orderType": "LIMIT",
           "stop": 386.12,
           "target1": 465.07,
           "target2": 484.39,
           "target3": 509,
-          "positionValue": 7906.5,
-          "actualRisk": 956.34,
+          "positionValue": 7879.5,
+          "actualRisk": 929.34,
           "paperOnly": true,
           "source": "SCANNER",
           "createdAt": "2026-09-23T10:51:42.773Z",
-          "updatedAt": "2026-09-23T11:06:24.082Z",
-          "editedAt": "2026-09-23T11:06:24.082Z"
+          "updatedAt": "2026-09-23T11:06:28.180Z",
+          "editedAt": "2026-09-23T11:06:24.082Z",
+          "commission": 7.88,
+          "totalCost": 7887.38,
+          "status": "APPROVED",
+          "approvedAt": "2026-09-23T11:06:28.180Z"
         }
       },
       {
@@ -20217,6 +20247,16 @@
       }
     },
     "activity": [
+      {
+        "timestamp": "2026-09-23T11:06:28.180Z",
+        "type": "PAPER_APPROVED",
+        "message": "MPARK paper işlemi SITE üzerinden onaylandı."
+      },
+      {
+        "timestamp": "2026-09-23T11:06:28.180Z",
+        "type": "PAPER_OPEN",
+        "message": "MPARK scanner paper pozisyonu açıldı: 18 lot · ₺7879.50 · LIMIT."
+      },
       {
         "timestamp": "2026-09-23T11:06:24.082Z",
         "type": "PAPER_ORDER_EDITED",
