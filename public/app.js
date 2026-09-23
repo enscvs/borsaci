@@ -63,6 +63,19 @@ let latestCryptoSpotOpenOrders = [];
 /* BUY SETUP eşiği backend karar politikasındaki eşikle aynı tutulur. */
 const BUY_SETUP_SCORE_THRESHOLD = 60;
 
+/* Canvas charts cannot inherit CSS custom properties. Keep their semantic
+   colors in one matching palette instead of reviving legacy market themes. */
+const OLD_MONEY_CHART = Object.freeze({
+  background: "#17231B",
+  text: "#E8E2D0",
+  grid: "rgba(57, 75, 62, .52)",
+  border: "#394B3E",
+  positive: "#7FA88A",
+  negative: "#BC7974",
+  gold: "#C9A15A",
+  warning: "#D8BB80",
+});
+
 /* Bekleyen emir kartları için son sunucu durumu. */
 let latestPaperOrderState = null;
 
@@ -1518,22 +1531,22 @@ function initMarketChart() {
         layout: {
           background: {
             type: "solid",
-            color: "#0b0f14"
+            color: OLD_MONEY_CHART.background
           },
 
           textColor:
-            "#9aa4b2"
+            OLD_MONEY_CHART.text
         },
 
         grid: {
           vertLines: {
             color:
-              "#151b23"
+              OLD_MONEY_CHART.grid
           },
 
           horzLines: {
             color:
-              "#151b23"
+              OLD_MONEY_CHART.grid
           }
         },
 
@@ -1546,12 +1559,12 @@ function initMarketChart() {
 
         rightPriceScale: {
           borderColor:
-            "#252c36"
+            OLD_MONEY_CHART.border
         },
 
         timeScale: {
           borderColor:
-            "#252c36",
+            OLD_MONEY_CHART.border,
 
           timeVisible:
             false,
@@ -1591,22 +1604,22 @@ function initMarketChart() {
       LightweightCharts.CandlestickSeries,
       {
         upColor:
-          "#26a69a",
+          OLD_MONEY_CHART.positive,
 
         downColor:
-          "#ef5350",
+          OLD_MONEY_CHART.negative,
 
         borderUpColor:
-          "#26a69a",
+          OLD_MONEY_CHART.positive,
 
         borderDownColor:
-          "#ef5350",
+          OLD_MONEY_CHART.negative,
 
         wickUpColor:
-          "#26a69a",
+          OLD_MONEY_CHART.positive,
 
         wickDownColor:
-          "#ef5350"
+          OLD_MONEY_CHART.negative
       }
     );
 
@@ -3227,7 +3240,7 @@ function addDecisionDescendingResistanceTrendline(
         LightweightCharts.LineSeries,
         {
           color:
-            "#ff5d5d",
+            OLD_MONEY_CHART.negative,
           lineWidth:
             2,
           lineStyle,
@@ -3343,7 +3356,7 @@ function renderDecisionChartOverlay(
         title:
           "FIB TETİK",
         color:
-          "#76a9ff",
+          OLD_MONEY_CHART.gold,
         style:
           dashed
       },
@@ -3355,7 +3368,7 @@ function renderDecisionChartOverlay(
         title:
           "GİRİŞ ALT",
         color:
-          "#72dddd",
+          OLD_MONEY_CHART.gold,
         style:
           dotted
       },
@@ -3366,7 +3379,7 @@ function renderDecisionChartOverlay(
         title:
           "GİRİŞ ÜST",
         color:
-          "#72dddd",
+          OLD_MONEY_CHART.gold,
         style:
           dotted
       },
@@ -3377,7 +3390,7 @@ function renderDecisionChartOverlay(
         title:
           "SL",
         color:
-          "#ff6b6b",
+          OLD_MONEY_CHART.negative,
         style:
           solid
       },
@@ -3388,7 +3401,7 @@ function renderDecisionChartOverlay(
         title:
           "TP1",
         color:
-          "#78e58b",
+          OLD_MONEY_CHART.positive,
         style:
           solid
       },
@@ -3399,7 +3412,7 @@ function renderDecisionChartOverlay(
         title:
           "TP2",
         color:
-          "#78e58b",
+          OLD_MONEY_CHART.positive,
         style:
           solid
       },
@@ -3410,7 +3423,7 @@ function renderDecisionChartOverlay(
         title:
           "TP3",
         color:
-          "#78e58b",
+          OLD_MONEY_CHART.positive,
         style:
           solid
       }
@@ -3469,7 +3482,7 @@ function renderDecisionChartOverlay(
         shape:
           "arrowUp",
         color:
-          "#f5c15d",
+          OLD_MONEY_CHART.warning,
         lineStyle:
           dotted
       },
@@ -3483,7 +3496,7 @@ function renderDecisionChartOverlay(
         shape:
           "arrowDown",
         color:
-          "#78e58b",
+          OLD_MONEY_CHART.gold,
         lineStyle:
           dashed
       },
@@ -3497,7 +3510,7 @@ function renderDecisionChartOverlay(
         shape:
           "arrowUp",
         color:
-          "#76a9ff",
+          OLD_MONEY_CHART.negative,
         lineStyle:
           solid
       }
@@ -4577,25 +4590,25 @@ console.log(
     ----------------------------------------------------- */
 
     :root {
-      --borsaci-orange: #ff9f1c;
-      --borsaci-green: #20c997;
-      --borsaci-red: #ff4d4d;
-      --borsaci-blue: #4da3ff;
-      --borsaci-bg: #080808;
-      --borsaci-panel: #101010;
-      --borsaci-border: #242424;
-      --borsaci-text: #e8e8e8;
-      --borsaci-muted: #777;
+      --borsaci-orange: #C9A15A;
+      --borsaci-green: #7FA88A;
+      --borsaci-red: #BC7974;
+      --borsaci-blue: #D8BB80;
+      --borsaci-bg: #0F1611;
+      --borsaci-panel: #1C2B22;
+      --borsaci-border: #394B3E;
+      --borsaci-text: #E8E2D0;
+      --borsaci-muted: #B0B5A3;
     }
 
     * {
       scrollbar-width: thin;
-      scrollbar-color: #333 #090909;
+      scrollbar-color: var(--borsaci-border) var(--borsaci-bg);
     }
 
     ::selection {
-      background: rgba(255,159,28,.25);
-      color: #fff;
+      background: rgba(201,161,90,.28);
+      color: var(--borsaci-text);
     }
 
 
@@ -4607,23 +4620,7 @@ console.log(
       position: relative;
     }
 
-    .terminal::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-
-      background:
-        linear-gradient(
-          rgba(255,255,255,.012) 50%,
-          transparent 50%
-        );
-
-      background-size: 100% 4px;
-
-      opacity: .18;
-    }
+    .terminal::before { content: none; display: none; }
 
 
     /* -----------------------------------------------------
@@ -4631,10 +4628,8 @@ console.log(
     ----------------------------------------------------- */
 
     .topbar {
-      border-bottom: 1px solid #292929 !important;
-      box-shadow:
-        0 1px 0 rgba(255,159,28,.05),
-        0 8px 30px rgba(0,0,0,.25);
+      border-bottom: 1px solid var(--borsaci-border) !important;
+      box-shadow: none;
     }
 
     .brand {
@@ -4660,9 +4655,7 @@ console.log(
       border-radius: 50%;
       background: var(--borsaci-green) !important;
 
-      box-shadow:
-        0 0 6px rgba(32,201,151,.9),
-        0 0 14px rgba(32,201,151,.35);
+      box-shadow: none;
 
       animation: borsaciPulse 2s infinite;
     }
@@ -4685,16 +4678,9 @@ console.log(
     ----------------------------------------------------- */
 
     .market-bar {
-      border-top: 1px solid #181818;
-      border-bottom: 1px solid #292929;
-      background:
-        linear-gradient(
-          90deg,
-          rgba(255,159,28,.025),
-          transparent 30%,
-          transparent 70%,
-          rgba(32,201,151,.02)
-        );
+      border-top: 1px solid var(--borsaci-border);
+      border-bottom: 1px solid var(--borsaci-border);
+      background: var(--borsaci-panel);
     }
 
     .market-bar strong {
@@ -4704,7 +4690,7 @@ console.log(
 
     .market-bar .online {
       color: var(--borsaci-green) !important;
-      text-shadow: 0 0 8px rgba(32,201,151,.25);
+      text-shadow: none;
     }
 
 
@@ -4716,15 +4702,8 @@ console.log(
       position: relative;
       border: 1px solid var(--borsaci-border) !important;
 
-      background:
-        linear-gradient(
-          145deg,
-          rgba(255,255,255,.018),
-          rgba(0,0,0,.12)
-        ) !important;
-
-      box-shadow:
-        0 8px 30px rgba(0,0,0,.18);
+      background: var(--borsaci-panel) !important;
+      box-shadow: none;
 
       transition:
         border-color .2s ease,
@@ -4733,10 +4712,8 @@ console.log(
     }
 
     .panel:hover {
-      border-color: #343434 !important;
-
-      box-shadow:
-        0 10px 35px rgba(0,0,0,.25);
+      border-color: #526652 !important;
+      box-shadow: none;
     }
 
 
@@ -4747,17 +4724,12 @@ console.log(
     .panel-title {
       position: relative;
 
-      border-bottom: 1px solid #252525 !important;
+      border-bottom: 1px solid var(--borsaci-border) !important;
 
       letter-spacing: 1.2px;
       font-size: 11px;
 
-      background:
-        linear-gradient(
-          90deg,
-          rgba(255,159,28,.045),
-          transparent 35%
-        );
+      background: var(--panel-alt);
     }
 
     .panel-title::before {
@@ -4773,12 +4745,11 @@ console.log(
 
       background: var(--borsaci-orange);
 
-      box-shadow:
-        0 0 8px rgba(255,159,28,.3);
+      box-shadow: none;
     }
 
     .panel-status {
-      color: #888;
+      color: var(--borsaci-muted);
       font-family: monospace;
     }
 
@@ -4788,13 +4759,7 @@ console.log(
     ----------------------------------------------------- */
 
     .watchlist-body {
-      background:
-        repeating-linear-gradient(
-          0deg,
-          transparent,
-          transparent 34px,
-          rgba(255,255,255,.015) 35px
-        );
+      background: var(--panel-alt);
     }
 
     .watchlist-empty {
@@ -4802,14 +4767,14 @@ console.log(
     }
 
     .empty-icon {
-      border-color: #333 !important;
+      border-color: var(--borsaci-border) !important;
       color: var(--borsaci-orange) !important;
       transition: all .2s ease;
     }
 
     .watchlist-empty:hover .empty-icon {
       border-color: var(--borsaci-orange) !important;
-      box-shadow: 0 0 15px rgba(255,159,28,.15);
+      box-shadow: none;
     }
 
     .mini-button {
@@ -4819,7 +4784,7 @@ console.log(
     .mini-button:hover {
       border-color: var(--borsaci-orange) !important;
       color: var(--borsaci-orange) !important;
-      box-shadow: 0 0 12px rgba(255,159,28,.12);
+      box-shadow: none;
     }
 
 
@@ -4831,13 +4796,7 @@ console.log(
       position: relative;
       overflow: hidden;
 
-      background:
-        radial-gradient(
-          circle at 50% 45%,
-          rgba(255,159,28,.025),
-          transparent 55%
-        ),
-        #090909 !important;
+      background: var(--panel-alt) !important;
     }
 
     .chart-area::after {
@@ -4852,7 +4811,7 @@ console.log(
 
       letter-spacing: 1px;
 
-      color: rgba(255,255,255,.15);
+      color: rgba(232,226,208,.34);
 
       pointer-events: none;
     }
@@ -4863,18 +4822,13 @@ console.log(
     ----------------------------------------------------- */
 
     .news-feed {
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255,159,28,.015),
-          transparent
-        );
+      background: transparent;
     }
 
     .news-item {
       position: relative;
 
-      border-bottom: 1px solid #1d1d1d !important;
+      border-bottom: 1px solid var(--borsaci-border) !important;
 
       transition:
         background .15s ease,
@@ -4882,12 +4836,12 @@ console.log(
     }
 
     .news-item:hover {
-      background: rgba(255,159,28,.035) !important;
+      background: #26382C !important;
       padding-left: 7px !important;
     }
 
     .news-item:hover .news-item-title {
-      color: #fff;
+      color: var(--borsaci-text);
     }
 
     .news-item-title {
@@ -4902,8 +4856,7 @@ console.log(
     .kap-source {
       color: var(--borsaci-orange) !important;
 
-      text-shadow:
-        0 0 8px rgba(255,159,28,.2);
+      text-shadow: none;
     }
 
 
@@ -4923,18 +4876,9 @@ console.log(
     .command-panel {
       position: relative;
 
-      border: 1px solid #2a2a2a;
-
-      background:
-        radial-gradient(
-          circle at 10% 0%,
-          rgba(255,159,28,.035),
-          transparent 40%
-        ),
-        #0a0a0a;
-
-      box-shadow:
-        0 10px 40px rgba(0,0,0,.3);
+      border: 1px solid var(--borsaci-border);
+      background: var(--borsaci-panel);
+      box-shadow: none;
     }
 
     .command-panel::before {
@@ -4950,13 +4894,13 @@ console.log(
 
       letter-spacing: 1.5px;
 
-      color: #444;
+      color: var(--borsaci-muted);
 
       pointer-events: none;
     }
 
     .command-header {
-      border-bottom: 1px solid #262626 !important;
+      border-bottom: 1px solid var(--borsaci-border) !important;
     }
 
     .command-title {
@@ -4966,8 +4910,7 @@ console.log(
 
     .command-title > span {
       color: var(--borsaci-orange);
-      text-shadow:
-        0 0 10px rgba(255,159,28,.4);
+      text-shadow: none;
     }
 
     .command-status {
@@ -4977,14 +4920,8 @@ console.log(
     }
 
     #question {
-      background:
-        linear-gradient(
-          90deg,
-          rgba(255,159,28,.018),
-          transparent
-        ) !important;
-
-      border-color: #252525 !important;
+      background: var(--panel-alt) !important;
+      border-color: var(--borsaci-border) !important;
 
       font-family:
         "JetBrains Mono",
@@ -4997,37 +4934,26 @@ console.log(
     }
 
     #question:focus {
-      border-color: rgba(255,159,28,.55) !important;
-
-      box-shadow:
-        0 0 0 1px rgba(255,159,28,.08),
-        0 0 25px rgba(255,159,28,.06);
+      border-color: var(--borsaci-orange) !important;
+      box-shadow: 0 0 0 1px rgba(201,161,90,.18);
     }
 
     #question::placeholder {
-      color: #555;
+      color: var(--borsaci-muted);
     }
 
     #analyzeBtn {
       position: relative;
       overflow: hidden;
 
-      border: 1px solid #bd7110 !important;
-
-      background:
-        linear-gradient(
-          180deg,
-          #ffad32,
-          #d77f08
-        ) !important;
-
-      color: #080808 !important;
+      border: 1px solid var(--borsaci-orange) !important;
+      background: var(--borsaci-panel) !important;
+      color: var(--borsaci-text) !important;
 
       font-weight: 800;
       letter-spacing: 1px;
 
-      box-shadow:
-        0 0 15px rgba(255,159,28,.08);
+      box-shadow: none;
 
       transition:
         transform .15s ease,
@@ -5037,8 +4963,7 @@ console.log(
     #analyzeBtn:hover {
       transform: translateY(-1px);
 
-      box-shadow:
-        0 5px 25px rgba(255,159,28,.18);
+      box-shadow: none;
     }
 
     #analyzeBtn:active {
@@ -5066,14 +4991,8 @@ console.log(
 
       line-height: 1.65;
 
-      color: #d8d8d8;
-
-      background:
-        radial-gradient(
-          circle at 0% 0%,
-          rgba(77,163,255,.025),
-          transparent 40%
-        );
+      color: var(--borsaci-text);
+      background: var(--panel-alt);
     }
 
 
@@ -5091,9 +5010,8 @@ console.log(
     ----------------------------------------------------- */
 
     .footer {
-      border-top: 1px solid #242424 !important;
-
-      color: #555;
+      border-top: 1px solid var(--borsaci-border) !important;
+      color: var(--borsaci-muted);
 
       letter-spacing: 1px;
       font-family: monospace;
@@ -5101,7 +5019,7 @@ console.log(
     }
 
     .footer span {
-      color: #333;
+      color: var(--borsaci-muted);
     }
 
 
@@ -5272,11 +5190,8 @@ console.log(
 
       if (!source) return;
 
-      source.style.transition =
-        "text-shadow .2s ease";
-
-      source.style.textShadow =
-        "0 0 10px rgba(255,159,28,.35)";
+      source.style.transition = "color .2s ease";
+      source.style.textShadow = "";
 
     }
   );
@@ -5406,8 +5321,8 @@ console.log(
   console.log(
     "%c BORSACI UI READY ",
     `
-      background:#ff9f1c;
-      color:#080808;
+      background:#C9A15A;
+      color:#0F1611;
       font-weight:bold;
       padding:4px 8px;
     `
@@ -5466,7 +5381,7 @@ let paperMonitorRefreshInFlight = false;
 function renderScannerProgress(progress, message, status = "RUNNING") {
   if (!scannerResults) return;
   const percent=Math.max(0,Math.min(100,Number(progress)||0));
-  scannerResults.innerHTML=`<div class="trading-empty scanner-progress"><strong>${status === "ERROR" ? "TARAMA HATASI" : status === "COMPLETE" ? "TARAMA TAMAMLANDI" : "TARAMA ÇALIŞIYOR"}</strong><br><small>${escapeHtml(String(message||"Hazırlanıyor"))}</small><div style="height:8px;border:1px solid #2f6;background:#071008;margin:12px auto;max-width:480px"><div style="height:100%;width:${percent}%;background:#34ff75;transition:width .3s ease"></div></div><small>${percent}%</small></div>`;
+  scannerResults.innerHTML=`<div class="trading-empty scanner-progress"><strong>${status === "ERROR" ? "TARAMA HATASI" : status === "COMPLETE" ? "TARAMA TAMAMLANDI" : "TARAMA ÇALIŞIYOR"}</strong><br><small>${escapeHtml(String(message||"Hazırlanıyor"))}</small><div style="height:8px;border:1px solid #394B3E;background:#17231B;margin:12px auto;max-width:480px"><div style="height:100%;width:${percent}%;background:#7FA88A;transition:width .3s ease"></div></div><small>${percent}%</small></div>`;
 }
 
 function translateTradingStatus(value) {
@@ -8588,12 +8503,12 @@ function renderNasdaqChart(item) {
   if (!container || typeof LightweightCharts === "undefined" || !item?.history?.length) { if (empty) { empty.hidden=false; empty.textContent = item ? "Grafik, yeni NASDAQ taramasında tamamlanmış günlük verilerle hazırlanır." : "Bir karar seçin."; } return; }
   try {
     nasdaqMarketChart?.remove(); container.innerHTML="";
-    nasdaqMarketChart=LightweightCharts.createChart(container,{width:Math.max(280,container.clientWidth||320),height:300,layout:{background:{color:"#101922"},textColor:"#d5e5ef"},grid:{vertLines:{color:"rgba(91,169,255,.13)"},horzLines:{color:"rgba(91,169,255,.13)"}},rightPriceScale:{borderColor:"rgba(125,202,255,.42)"},timeScale:{borderColor:"rgba(125,202,255,.42)",timeVisible:false}});
-    const candles=nasdaqMarketChart.addSeries(LightweightCharts.CandlestickSeries,{upColor:"#42d392",downColor:"#f05b6b",borderVisible:false,wickUpColor:"#42d392",wickDownColor:"#f05b6b"});
+    nasdaqMarketChart=LightweightCharts.createChart(container,{width:Math.max(280,container.clientWidth||320),height:300,layout:{background:{color:OLD_MONEY_CHART.background},textColor:OLD_MONEY_CHART.text},grid:{vertLines:{color:OLD_MONEY_CHART.grid},horzLines:{color:OLD_MONEY_CHART.grid}},rightPriceScale:{borderColor:OLD_MONEY_CHART.border},timeScale:{borderColor:OLD_MONEY_CHART.border,timeVisible:false}});
+    const candles=nasdaqMarketChart.addSeries(LightweightCharts.CandlestickSeries,{upColor:OLD_MONEY_CHART.positive,downColor:OLD_MONEY_CHART.negative,borderVisible:false,wickUpColor:OLD_MONEY_CHART.positive,wickDownColor:OLD_MONEY_CHART.negative});
     candles.setData(item.history.slice(-150).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Number.isFinite(c.time)&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));
     const fib=item.fibonacci||{},plan=nasdaqPlan(item), style=LightweightCharts.LineStyle||{};
-    [[fib.valid?fib.entryTriggerPrice:null,"FIB TETİK","#76a9ff",style.Dashed??2],[fib.valid?fib.entryZoneLow:plan.entryPrice,"GİRİŞ","#72dddd",style.Dotted??1],[fib.valid?fib.entryZoneHigh:null,"GİRİŞ ÜST","#72dddd",style.Dotted??1],[plan.stopLoss,"SL","#ff6b6b",style.Solid??0],[plan.tp1,"TP1","#78e58b",style.Solid??0],[plan.tp2,"TP2","#78e58b",style.Solid??0],[plan.tp3,"TP3","#78e58b",style.Solid??0]].forEach(([price,title,color,lineStyle])=>{if(Number.isFinite(Number(price))&&Number(price)>0)candles.createPriceLine({price:Number(price),title,color,lineWidth:1,lineStyle,axisLabelVisible:true});});
-    const markers=[[fib.pointA,"A","belowBar","#f8c35a"],[fib.pointB,"B","aboveBar","#76a9ff"],[fib.pointC,"C","belowBar","#ff7a7a"]].filter(([point])=>point?.date&&Number.isFinite(Number(point.price))).map(([point,text,position,color])=>({time:Math.floor(new Date(point.date).getTime()/1000),position,color,shape:"circle",text}));
+    [[fib.valid?fib.entryTriggerPrice:null,"FIB TETİK",OLD_MONEY_CHART.gold,style.Dashed??2],[fib.valid?fib.entryZoneLow:plan.entryPrice,"GİRİŞ",OLD_MONEY_CHART.gold,style.Dotted??1],[fib.valid?fib.entryZoneHigh:null,"GİRİŞ ÜST",OLD_MONEY_CHART.gold,style.Dotted??1],[plan.stopLoss,"SL",OLD_MONEY_CHART.negative,style.Solid??0],[plan.tp1,"TP1",OLD_MONEY_CHART.positive,style.Solid??0],[plan.tp2,"TP2",OLD_MONEY_CHART.positive,style.Solid??0],[plan.tp3,"TP3",OLD_MONEY_CHART.positive,style.Solid??0]].forEach(([price,title,color,lineStyle])=>{if(Number.isFinite(Number(price))&&Number(price)>0)candles.createPriceLine({price:Number(price),title,color,lineWidth:1,lineStyle,axisLabelVisible:true});});
+    const markers=[[fib.pointA,"A","belowBar",OLD_MONEY_CHART.warning],[fib.pointB,"B","aboveBar",OLD_MONEY_CHART.gold],[fib.pointC,"C","belowBar",OLD_MONEY_CHART.negative]].filter(([point])=>point?.date&&Number.isFinite(Number(point.price))).map(([point,text,position,color])=>({time:Math.floor(new Date(point.date).getTime()/1000),position,color,shape:"circle",text}));
     if (markers.length && typeof LightweightCharts.createSeriesMarkers === "function") LightweightCharts.createSeriesMarkers(candles,markers);
     nasdaqMarketChart.timeScale().fitContent(); if(empty) { empty.textContent=""; empty.hidden=true; }
   } catch (error) { if(empty) { empty.hidden=false; empty.textContent="NASDAQ grafik katmanı oluşturulamadı."; } }
@@ -9259,14 +9174,14 @@ function renderCryptoDecisionChart(item) {
     const referencePrice = Number(item.price) || Number(candles.at(-1)?.close) || 1;
     cryptoMarketChart = LightweightCharts.createChart(container, {
       width: Math.max(280, container.clientWidth || 320), height: 300,
-      layout: {background: {color: "#071008"}, textColor: "#b8d9c0"},
-      grid: {vertLines: {color: "rgba(72,255,104,.08)"}, horzLines: {color: "rgba(72,255,104,.08)"}},
-      rightPriceScale: {borderColor: "rgba(72,255,104,.25)"},
-      timeScale: {borderColor: "rgba(72,255,104,.25)", timeVisible: false},
+      layout: {background: {color: OLD_MONEY_CHART.background}, textColor: OLD_MONEY_CHART.text},
+      grid: {vertLines: {color: OLD_MONEY_CHART.grid}, horzLines: {color: OLD_MONEY_CHART.grid}},
+      rightPriceScale: {borderColor: OLD_MONEY_CHART.border},
+      timeScale: {borderColor: OLD_MONEY_CHART.border, timeVisible: false},
     });
     cryptoCandleSeries = cryptoMarketChart.addSeries(LightweightCharts.CandlestickSeries, {
-      upColor: "#42d392", downColor: "#f05b6b", borderVisible: false,
-      wickUpColor: "#42d392", wickDownColor: "#f05b6b",
+      upColor: OLD_MONEY_CHART.positive, downColor: OLD_MONEY_CHART.negative, borderVisible: false,
+      wickUpColor: OLD_MONEY_CHART.positive, wickDownColor: OLD_MONEY_CHART.negative,
       priceFormat: cryptoChartPriceFormat(referencePrice),
     });
     cryptoCandleSeries.setData(candles);
@@ -9274,24 +9189,24 @@ function renderCryptoDecisionChart(item) {
     const plan = fib.valid ? fib : (item.fallbackPlan || {});
     const lineStyle = LightweightCharts.LineStyle || {};
     [
-      [fib.valid ? fib.entryTriggerPrice : null, "FIB TETİK", "#76a9ff", lineStyle.Dashed ?? 2],
-      [fib.valid ? fib.entryZoneLow : plan.entryPrice, fib.valid ? "GİRİŞ ALT" : "GİRİŞ", "#72dddd", lineStyle.Dotted ?? 1],
-      [fib.valid ? fib.entryZoneHigh : null, "GİRİŞ ÜST", "#72dddd", lineStyle.Dotted ?? 1],
-      [plan.stopLoss, "SL", "#ff6b6b", lineStyle.Solid ?? 0],
-      [plan.tp1, "TP1", "#78e58b", lineStyle.Solid ?? 0],
-      [plan.tp2, "TP2", "#78e58b", lineStyle.Solid ?? 0],
-      [plan.tp3, "TP3", "#78e58b", lineStyle.Solid ?? 0],
+      [fib.valid ? fib.entryTriggerPrice : null, "FIB TETİK", OLD_MONEY_CHART.gold, lineStyle.Dashed ?? 2],
+      [fib.valid ? fib.entryZoneLow : plan.entryPrice, fib.valid ? "GİRİŞ ALT" : "GİRİŞ", OLD_MONEY_CHART.gold, lineStyle.Dotted ?? 1],
+      [fib.valid ? fib.entryZoneHigh : null, "GİRİŞ ÜST", OLD_MONEY_CHART.gold, lineStyle.Dotted ?? 1],
+      [plan.stopLoss, "SL", OLD_MONEY_CHART.negative, lineStyle.Solid ?? 0],
+      [plan.tp1, "TP1", OLD_MONEY_CHART.positive, lineStyle.Solid ?? 0],
+      [plan.tp2, "TP2", OLD_MONEY_CHART.positive, lineStyle.Solid ?? 0],
+      [plan.tp3, "TP3", OLD_MONEY_CHART.positive, lineStyle.Solid ?? 0],
     ].forEach(([price, title, color, lineStyleValue]) => {
       if (Number.isFinite(Number(price)) && Number(price) > 0) cryptoCandleSeries.createPriceLine({price: Number(price), title, color, lineWidth: 1, lineStyle: lineStyleValue, axisLabelVisible: true});
     });
     const resistance = fib.valid ? fib.descendingResistance : null;
     if (resistance?.valid && resistance?.anchor1 && resistance?.anchor2 && resistance?.projectedPoint && LightweightCharts.LineSeries) {
-      const trendLine = cryptoMarketChart.addSeries(LightweightCharts.LineSeries, {color: "#ff7979", lineWidth: 2, lineStyle: lineStyle.Dashed ?? 2, lastValueVisible: false, priceLineVisible: false});
+      const trendLine = cryptoMarketChart.addSeries(LightweightCharts.LineSeries, {color: OLD_MONEY_CHART.negative, lineWidth: 2, lineStyle: lineStyle.Dashed ?? 2, lastValueVisible: false, priceLineVisible: false});
       trendLine.setData([resistance.anchor1, resistance.anchor2, resistance.projectedPoint].map(point => ({
         time: Math.floor(new Date(point.date).getTime() / 1000), value: Number(point.price),
       })).filter(point => Number.isFinite(point.time) && Number.isFinite(point.value)));
     }
-    const points = [[fib.pointA, "A", "belowBar", "#f8c35a"], [fib.pointB, "B", "aboveBar", "#76a9ff"], [fib.pointC, "C", "belowBar", "#ff7a7a"]]
+    const points = [[fib.pointA, "A", "belowBar", OLD_MONEY_CHART.warning], [fib.pointB, "B", "aboveBar", OLD_MONEY_CHART.gold], [fib.pointC, "C", "belowBar", OLD_MONEY_CHART.negative]]
       .filter(([point]) => Number.isFinite(Number(point?.price)) && point?.date)
       .map(([point, text, position, color]) => ({time: Math.floor(new Date(point.date).getTime() / 1000), position, color, shape: "circle", text}));
     if (points.length && typeof LightweightCharts.createSeriesMarkers === "function") cryptoChartMarkers = LightweightCharts.createSeriesMarkers(cryptoCandleSeries, points);

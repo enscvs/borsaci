@@ -39,22 +39,22 @@
   font-size: 13px;
 }
 :root {
-  --bg: #0f1611;
-  --panel: #17231b;
-  --panel-alt: #1c2b22;
-
-  --border: #6f846d;
-  --border-bright: #6f846d;
-
-  --green: #c9a15a;
-  --green-dim: #a7a179;
-
-  --text: #e8e2d0;
-  --muted: #b0b5a3;
-  --dark: #6f846d;
-
-  --yellow: #c9a15a;
-  --red: #ff5555;
+  --bg: #0F1611;
+  --panel: #1C2B22;
+  --panel-alt: #17231B;
+  --border: #394B3E;
+  --border-bright: #526652;
+  --green: #7FA88A;
+  --green-dim: #607D68;
+  --text: #E8E2D0;
+  --muted: #B0B5A3;
+  --dark: #8D978B;
+  --yellow: #D8BB80;
+  --red: #BC7974;
+  --gold: #C9A15A;
+  --positive: #7FA88A;
+  --negative: #BC7974;
+  --warning: #D8BB80;
 }
 
 * {
@@ -83,8 +83,13 @@ body {
 }
 
 
-/* CRT tarama katmanı kaldırıldı: mat yüzey. */
-body::before { content: none; }
+/* CRT SCANLINES */
+
+body::before {
+  /* Old terminal CRT overlay intentionally removed for the matte theme. */
+  content: none;
+  display: none;
+}
 
 
 /* TERMINAL */
@@ -3566,4 +3571,166 @@ textarea::placeholder {
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid rgba(201, 161, 90, 0.2);
+}
+
+/* =====================================================
+   OLD MONEY THEME
+   This is deliberately the final visual layer: legacy feature styles above
+   retain their layout while every market shares the same semantic palette.
+===================================================== */
+:root {
+  color-scheme: dark;
+  --surface-raised: #26382C;
+  --surface-overlay: #132018;
+  --focus-ring: rgba(201, 161, 90, .34);
+}
+
+html, body, .terminal, #appShell { background: var(--bg) !important; color: var(--text) !important; }
+body::before, .terminal::before { content: none !important; display: none !important; }
+
+* { scrollbar-color: var(--border) var(--bg) !important; }
+::selection { background: rgba(201, 161, 90, .28) !important; color: var(--text) !important; }
+
+.topbar, .market-bar, .main-tabs {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+}
+.main-tab { color: var(--muted) !important; }
+.main-tab:hover { color: var(--text) !important; background: var(--panel-alt) !important; }
+.main-tab.active { color: var(--text) !important; border-bottom-color: var(--gold) !important; background: var(--panel-alt) !important; }
+
+.panel, .command-panel, .response-panel, .trading-panel, .control-market-card,
+.risk-grid > div, .paper-order-dialog, .pending-paper-order-card,
+.manual-paper-order-wrap, .manual-order-create-panel, .crypto-spot-activity-column,
+.crypto-spot-account-summary, .crypto-live-order-result, .push-settings-panel,
+.auth-card, .modal-content, .nasdaq-close-dialog {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+}
+.panel:hover { border-color: var(--border-bright) !important; box-shadow: none !important; }
+.panel-title, .pending-paper-order-head, .manual-paper-order-intro,
+.crypto-spot-activity-column h4, .paper-order-dialog header {
+  background: var(--panel-alt) !important;
+  border-color: var(--border) !important;
+  color: var(--gold) !important;
+}
+.panel-title::before { background: var(--gold) !important; box-shadow: none !important; }
+.panel-status, .trading-stat-label, .table-empty, .footer, .footer span,
+.news-item-meta, .news-loading, .watchlist-empty span, .watchlist-empty small,
+.crypto-spot-activity-row small, .paper-order-form-actions small { color: var(--muted) !important; }
+
+.watchlist-body, .news-feed, .chart-area, #nasdaqTab [data-nasdaq-id="chartArea"],
+.crypto-chart-area, .chart-area .chart-empty, .command-panel, #response,
+.paper-order-form, #nasdaqTab .paper-order-form, .crypto-spot-activity-column,
+#nasdaqTab [data-nasdaq-id="signalDetail"], .crypto-spot-open-orders,
+.position-table-wrapper { background: var(--panel-alt) !important; }
+.chart-area::after { color: rgba(232, 226, 208, .34) !important; }
+
+.news-item, .position-table th, .position-table td, .decision-score-table th,
+.decision-score-table td, .crypto-score-table th, .crypto-score-table td,
+.crypto-spot-activity-row, .crypto-spot-balance-grid > div, .signal-history-item,
+.history-row, .decision-card header, .decision-price-grid span {
+  border-color: var(--border) !important;
+}
+.news-item-title, .position-table td:first-child, .decision-score-table tbody th,
+.crypto-score-table tbody th, .crypto-spot-activity-row strong, .pending-paper-order-head strong,
+.manual-paper-order-intro strong, .auth-card, .auth-card p, .auth-card label { color: var(--text) !important; }
+.news-item:hover, #cryptoSignalHistory .signal-history-item:active,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item:hover,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item:focus-visible,
+.history-row:hover { background: var(--surface-raised) !important; outline-color: var(--gold) !important; }
+
+input, select, textarea, .paper-order-form input, .paper-order-form select,
+#nasdaqTab .paper-order-form input, #nasdaqTab .paper-order-form select,
+.risk-settings input, .risk-settings select, .onesignal-registration input,
+.auth-card input, .kill-switch-controls input, .crypto-spot-activity-controls input,
+.crypto-spot-kill-switch-controls input[type="password"] {
+  background: var(--surface-overlay) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+  box-shadow: none !important;
+  accent-color: var(--gold) !important;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--focus-ring) !important; }
+
+.trading-button, .mini-button, .auth-card button, .logout-button, #analyzeBtn {
+  background: var(--panel-alt) !important;
+  color: var(--text) !important;
+  border-color: var(--border-bright) !important;
+  box-shadow: none !important;
+}
+.trading-button:hover, .mini-button:hover, .auth-card button:hover, .logout-button:hover, #analyzeBtn:hover {
+  background: var(--surface-raised) !important;
+  color: var(--text) !important;
+  border-color: var(--gold) !important;
+  box-shadow: none !important;
+}
+.trading-button.success, .paper-order-form-actions .trading-button[data-paper-order-action="approve"],
+.status-online, .market-bar .online, .command-status, .push-notification-status[data-tone="success"] { color: var(--positive) !important; border-color: var(--positive) !important; }
+.trading-button.danger, .paper-order-form-actions .trading-button[data-paper-order-action="reject"],
+.push-notification-status[data-tone="error"], .auth-message, .pnl-negative { color: var(--negative) !important; border-color: var(--negative) !important; }
+
+.status-dot { background: var(--positive) !important; box-shadow: none !important; }
+.brand span, .empty-icon, .kap-source, .command-title > span, .ai-score-pill,
+.decision-score-summary span, .crypto-spot-balance-grid strong, .onesignal-registration label,
+.onesignal-settings-title { color: var(--gold) !important; border-color: var(--gold) !important; text-shadow: none !important; }
+.decision-chart-key::before { box-shadow: none !important; }
+.decision-chart-key.trigger, .decision-chart-key.entry { color: var(--gold) !important; }
+.decision-chart-key.target, .pnl-positive { color: var(--positive) !important; }
+.decision-chart-key.stop, .decision-chart-key.resistance { color: var(--negative) !important; }
+.decision-score-summary, .score-factor-info, .ai-review-comment, .crypto-live-order-result {
+  background: rgba(127, 168, 138, .10) !important;
+  border-color: rgba(127, 168, 138, .38) !important;
+  color: var(--text) !important;
+}
+.score-factor-pass, .risk-allocation-gauge, .paper-order-live-price,
+.crypto-spot-account-summary { color: var(--positive) !important; border-color: rgba(127, 168, 138, .52) !important; background: rgba(127, 168, 138, .10) !important; }
+.score-factor-miss, .crypto-live-order-warning, .crypto-live-confirm,
+.pending-paper-order-card, .manual-paper-order-wrap, .manual-order-create-panel,
+.paper-order-dialog { color: var(--warning) !important; border-color: rgba(216, 187, 128, .58) !important; background: rgba(216, 187, 128, .06) !important; }
+.score-factor-penalty, .risk-allocation-gauge.is-over, .danger-status,
+.crypto-spot-kill-switch-panel, .kill-switch-panel { color: var(--negative) !important; border-color: rgba(188, 121, 116, .70) !important; background: rgba(188, 121, 116, .09) !important; box-shadow: none !important; }
+.kill-switch-heading, .kill-switch-panel p, .crypto-spot-kill-switch-panel p { color: var(--text) !important; }
+.kill-switch-icon { color: var(--negative) !important; text-shadow: none !important; }
+.kill-switch-button, .kill-switch-button:hover, .kill-switch-button.is-active { background: var(--negative) !important; color: var(--bg) !important; border-color: var(--negative) !important; box-shadow: none !important; }
+
+.auth-screen { background: var(--bg) !important; }
+.auth-brand, .auth-brand span { color: var(--text) !important; }
+.auth-card { background: var(--panel) !important; }
+.auth-card button { border-color: var(--gold) !important; }
+.scanner-progress > div { border-color: var(--border) !important; background: var(--panel-alt) !important; }
+.scanner-progress > div > div { background: var(--positive) !important; }
+.positive, .kap-live { color: var(--positive) !important; }
+.negative { color: var(--negative) !important; }
+.symbol-button.active { border-color: var(--gold) !important; }
+.symbol-button { background: var(--panel-alt) !important; border-color: var(--border) !important; color: var(--text) !important; }
+.control-market-card header strong, .control-health-item strong, .control-activity-item,
+.control-activity-item strong, .trading-stat strong, .order-fill-progress-head,
+.trade-journal summary, .trade-journal details, #cryptoSignalHistory .signal-history-item,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item strong { color: var(--text) !important; }
+.control-market-card header span, .control-health-item small, .control-activity-item time,
+.control-health-item.needs-attention span, .control-health-item.is-running span,
+.crypto-spot-open-order-actions small, .crypto-paper-pending-bridge > small,
+#cryptoSignalHistory .signal-history-item span, #cryptoSignalHistory .signal-history-item small,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item span,
+#nasdaqTab [data-nasdaq-id="signalHistory"] .signal-history-item small { color: var(--muted) !important; }
+.control-health-item span, .control-activity-item strong { color: var(--positive) !important; }
+.control-market-card.is-stopped header span { color: var(--negative) !important; }
+.crypto-paper-pending-bridge, .order-fill-progress, .trade-journal details,
+.crypto-spot-balances, .crypto-spot-activity-column, .crypto-spot-open-order-actions { border-color: var(--border) !important; }
+.order-fill-progress-track { border-color: var(--border) !important; background: var(--panel-alt) !important; }
+.order-fill-progress-track > span { background: var(--positive) !important; }
+.paper-order-live-price { background: rgba(127, 168, 138, .10) !important; }
+.borsaci-chart-controls { background: var(--panel-alt) !important; border-color: var(--border) !important; }
+.chart-control-label { color: var(--muted) !important; }
+.chart-buttons button { background: var(--surface-overlay) !important; border-color: var(--border) !important; color: var(--muted) !important; }
+.chart-buttons button:hover { background: var(--surface-raised) !important; border-color: var(--gold) !important; color: var(--text) !important; }
+.chart-buttons button.active { background: var(--surface-raised) !important; border-color: var(--gold) !important; color: var(--text) !important; }
+
+@media (max-width: 800px) {
+  .main-tabs { background: var(--panel) !important; }
+  .panel, .trading-panel, .control-market-card { box-shadow: none !important; }
 }

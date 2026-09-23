@@ -12,7 +12,7 @@
 
   <title>𐰇𐰠𐰇𐱁</title>
 
-  <meta name="theme-color" content="#0f1611">
+  <meta name="theme-color" content="#0F1611">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="𐰇𐰠𐰇𐱁">
@@ -35,7 +35,7 @@
 
   <link
     rel="stylesheet"
-  href="/style.css?v=20260923-ivory-green-2"
+  href="/style.css?v=20260923-old-money"
   >
 
   <script
@@ -1081,8 +1081,8 @@ Waiting for input...
             "symbol": "FX:USDTRY",
             "theme": "dark",
             "timezone": "Europe/Istanbul",
-            "backgroundColor": "#0F0F0F",
-            "gridColor": "rgba(242, 242, 242, 0.2)",
+            "backgroundColor": "#17231B",
+            "gridColor": "rgba(57, 75, 62, 0.52)",
             "watchlist": [],
             "withdateranges": false,
             "compareSymbols": [],
@@ -1954,8 +1954,8 @@ Waiting for input...
             "symbol": "BINANCE:BTCUSDT",
             "theme": "dark",
             "timezone": "Europe/Istanbul",
-            "backgroundColor": "#0F0F0F",
-            "gridColor": "rgba(242, 242, 242, 0.2)",
+            "backgroundColor": "#17231B",
+            "gridColor": "rgba(57, 75, 62, 0.52)",
             "watchlist": [],
             "withdateranges": false,
             "compareSymbols": [],
@@ -2899,8 +2899,8 @@ Waiting for input...
             "symbol": "FX:USDTRY",
             "theme": "dark",
             "timezone": "Europe/Istanbul",
-            "backgroundColor": "#0F0F0F",
-            "gridColor": "rgba(242, 242, 242, 0.2)",
+            "backgroundColor": "#17231B",
+            "gridColor": "rgba(57, 75, 62, 0.52)",
             "watchlist": [],
             "withdateranges": false,
             "compareSymbols": [],
@@ -3775,6 +3775,33 @@ Waiting for input...
   .auth-message { min-height: 16px; color: #ff9b9b; font-size: 10px; }
   .logout-button { margin-left: auto; font-size: 10px; }
 
+  /* This document keeps several feature-specific inline styles.  Only their
+     legacy color layer is normalized here; layout and interaction rules stay
+     exactly as they are. */
+  .scanner-metrics, .scanner-compact small, .risk-settings label,
+  .performance-filter label, .decision-summary, .decision-score-empty,
+  .decision-score-summary small { color: var(--muted) !important; }
+  .decision-risk-line, .decision-filter-line, .history-row,
+  .decision-item.decision-card, .decision-card header,
+  .decision-price-grid span, .performance-filter { border-color: var(--border) !important; }
+  .history-row, .decision-item.decision-card, .decision-detail-panel,
+  #signalDetail { background: var(--panel-alt) !important; color: var(--text) !important; }
+  .history-row:hover { border-color: var(--gold) !important; }
+  #signalDetail, #signalDetail strong, #signalDetail div, #signalDetail small { color: var(--text) !important; border-color: var(--border) !important; }
+  .ai-score-pill, .ai-review-comment { color: var(--text) !important; border-color: var(--gold) !important; background: rgba(201, 161, 90, .08) !important; }
+  .ai-review-comment strong { color: var(--gold) !important; }
+  .kill-switch-panel { border-color: rgba(188, 121, 116, .70) !important; background: rgba(188, 121, 116, .09) !important; box-shadow: none !important; }
+  .kill-switch-heading, .kill-switch-panel p { color: var(--text) !important; }
+  .kill-switch-icon { color: var(--negative) !important; text-shadow: none !important; }
+  .kill-switch-controls input { border-color: var(--border) !important; background: var(--surface-overlay) !important; color: var(--text) !important; }
+  .kill-switch-button, .kill-switch-button:hover, .kill-switch-button.is-active { border-color: var(--negative) !important; background: var(--negative) !important; color: var(--bg) !important; box-shadow: none !important; }
+  .auth-screen { background: var(--bg) !important; }
+  .auth-card { border-color: var(--border) !important; background: var(--panel) !important; box-shadow: none !important; color: var(--text) !important; }
+  .auth-brand, .auth-brand span, .auth-card p, .auth-card label { color: var(--text) !important; }
+  .auth-card input { border-color: var(--border) !important; background: var(--surface-overlay) !important; color: var(--text) !important; }
+  .auth-card button, .logout-button { border-color: var(--gold) !important; background: var(--panel-alt) !important; color: var(--text) !important; }
+  .auth-message { color: var(--negative) !important; }
+
 </style>
 
 
@@ -3788,7 +3815,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260829-ui-memory-trim"
+  src="/app.js?v=20260923-old-money"
   defer
 ></script>
 
