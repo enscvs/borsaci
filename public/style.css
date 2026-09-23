@@ -3531,3 +3531,38 @@ textarea::placeholder {
   }
 }
 
+
+
+/* =====================================================
+   PWA / WEB PUSH
+===================================================== */
+.push-settings-panel {
+  border-color: rgba(98, 207, 113, .42);
+  background:
+    linear-gradient(135deg, rgba(8, 35, 13, .9), rgba(2, 8, 2, .96));
+}
+.push-settings-copy {
+  margin: 0 0 14px;
+  color: #bfe9c5;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.push-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.push-notification-status {
+  margin-top: 12px;
+  min-height: 18px;
+  color: #a9c9ae;
+  font-size: 11px;
+  letter-spacing: .03em;
+}
+.push-notification-status[data-tone="success"] { color: #74ff87; }
+.push-notification-status[data-tone="error"] { color: #ff9b9b; }
+@media (max-width: 640px) {
+  .push-settings-actions .trading-button {
+    width: 100%;
+  }
+}

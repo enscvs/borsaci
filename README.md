@@ -74,3 +74,36 @@ Scanner artık doğrulanmamış 0–100 puanını başarı olasılığı olarak 
 
 Backtest etiketleri sinyalden sonraki seansın açılışından başlar; aynı günlük mumda hedef ve stop birlikte görülürse muhafazakâr olarak LOSS sayılır. Walk-forward doğrulama kronolojiktir ve purge/embargo uygular. Geçmiş sonuçlar garanti değildir.
 
+
+
+## iPhone PWA Web Push
+
+Web Push, Apple Developer Program üyeliği gerektirmeden iOS/iPadOS 16.4 veya yenisinde
+Ana Ekrana eklenmiş web uygulamalarında çalışır. Bildirim izni otomatik istenmez;
+kullanıcı Kontrol sekmesindeki **BİLDİRİMLERİ ETKİNLEŞTİR** düğmesine dokunmalıdır.
+
+Render hazırlığı:
+
+1. Kalıcı bir Render PostgreSQL veritabanı oluşturun ve internal connection URL'yi
+   `WEB_PUSH_DATABASE_URL` olarak ekleyin. Uygulamada zaten `DATABASE_URL` varsa ayrıca
+   tanımlamak gerekmez.
+2. Yerel bir terminalde bir kez `npx web-push generate-vapid-keys` çalıştırın.
+3. Public/private anahtarları sırasıyla `WEB_PUSH_VAPID_PUBLIC_KEY` ve
+   `WEB_PUSH_VAPID_PRIVATE_KEY` olarak Render'a ekleyin.
+4. `WEB_PUSH_VAPID_SUBJECT` değerini bir `mailto:` adresi veya HTTPS URL yapın.
+5. Private VAPID anahtarını repoya, tarayıcıya veya loglara koymayın.
+
+Gerçek iPhone testi:
+
+1. Siteyi Safari'de açın, Paylaş > Ana Ekrana Ekle'yi seçin.
+2. Ana ekran simgesinden PWA'yı açıp normal BorsaCI şifresiyle giriş yapın.
+3. Kontrol > iPhone Bildirimleri bölümünden bildirimleri etkinleştirin.
+4. PWA'yı arka plana alın veya kapatın; BIST, NASDAQ, kripto, TP/SL ya da sistem
+   olaylarından birini normal akışla tetikleyin.
+5. Bildirime dokununca oturum geçerliyse ilgili sekmenin açıldığını; oturum
+   sona ermişse girişten sonra aynı sekmeye yönlendirildiğini doğrulayın.
+
+Service Worker hiçbir `/api/*` yanıtını, finansal veriyi veya kimlik doğrulama
+yanıtını önbelleğe almaz. Abonelik oluşturma/silme uçları mevcut session cookie,
+same-origin ve CSRF korumasından geçer. Telegram outbox sistemi Web Push
+teslimatından bağımsız kalır.

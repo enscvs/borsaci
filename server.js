@@ -8,6 +8,9 @@ const crypto = require("crypto");
 const {
   createAuthService,
 } = require("./auth");
+const {
+  createWebPushService,
+} = require("./web-push-service");
 
 const OpenAI = require("openai");
 const fibonacciEngine = require("./trading/fibonacci-engine");
@@ -118,6 +121,25 @@ const PUBLIC_BASE_URL =
   process.env.PUBLIC_BASE_URL ||
   process.env.RENDER_EXTERNAL_URL ||
   "https://gemini-borsaci.onrender.com";
+
+const webPushService = createWebPushService({
+  databaseUrl:
+    process.env.WEB_PUSH_DATABASE_URL ||
+    process.env.DATABASE_URL,
+  databaseSsl:
+    /^(1|true|yes)$/i.test(
+      String(process.env.WEB_PUSH_DATABASE_SSL || "")
+    ),
+  vapidPublicKey:
+    process.env.WEB_PUSH_VAPID_PUBLIC_KEY,
+  vapidPrivateKey:
+    process.env.WEB_PUSH_VAPID_PRIVATE_KEY,
+  vapidSubject:
+    process.env.WEB_PUSH_VAPID_SUBJECT,
+  dedupeWindowMs:
+    Number(process.env.WEB_PUSH_DEDUPE_WINDOW_MS) ||
+    10 * 60 * 1000,
+});
 
 // Binance piyasa listesi alınamazsa taramanın tamamen durmaması için kısa
 // bir geri-dönüş evreni. Normal durumda her tarama öncesi hacme göre ilk 100
@@ -278,7 +300,7 @@ function activeScannerMarketNames() {
   return scannerExecutionRegistry.activeMarkets();
 }
 
-async function sendTelegramNotification(
+async function deliverTelegramNotification(
   message,
   replyMarkup = null,
   {queueOnFailure = true} = {}
@@ -340,6 +362,37 @@ async function sendTelegramNotification(
 
 }
 
+async function sendTelegramNotification(
+  message,
+  replyMarkup = null,
+  telegramOptions = {}
+) {
+  const [telegramResult, webPushResult] =
+    await Promise.allSettled([
+      deliverTelegramNotification(
+        message,
+        replyMarkup,
+        telegramOptions
+      ),
+      webPushService.send(message),
+    ]);
+
+  if (webPushResult.status === "rejected") {
+    console.error(
+      "WEB PUSH NOTIFICATION ERROR:",
+      String(
+        webPushResult.reason?.message ||
+        webPushResult.reason ||
+        "Teslimat başarısız."
+      ).slice(0, 300)
+    );
+  }
+
+  return telegramResult.status === "fulfilled"
+    ? Boolean(telegramResult.value)
+    : false;
+}
+
 function telegramOutboxKey(message, replyMarkup) {
   return crypto.createHash("sha256").update(JSON.stringify([String(message || ""), replyMarkup || null])).digest("hex");
 }
@@ -368,7 +421,7 @@ async function flushTelegramOutbox() {
     if (!rows.length) return;
     const delivered = new Set();
     for (const item of rows) {
-      if (await sendTelegramNotification(item.message, item.replyMarkup, {queueOnFailure:false})) delivered.add(item.key);
+      if (await deliverTelegramNotification(item.message, item.replyMarkup, {queueOnFailure:false})) delivered.add(item.key);
       else item.attempts = Number(item.attempts || 0) + 1;
     }
     const latest = await getTradingState();
@@ -1942,6 +1995,72 @@ function handleAuthLogout(req, res) {
 }
 
 
+function handleWebPushConfig(req, res) {
+  return sendJSON(
+    res,
+    200,
+    webPushService.publicConfig()
+  );
+}
+
+async function handleWebPushSubscribe(req, res) {
+  if (!webPushService.configured()) {
+    return sendJSON(res, 503, {
+      error: "Web Push sunucuda yapılandırılmadı.",
+    });
+  }
+
+  try {
+    const body = await readBody(req);
+    const data = JSON.parse(body || "{}");
+    const result = await webPushService.subscribe(
+      data.subscription,
+      {
+        sessionId: req.authSession?.id,
+        userAgent:
+          req.headers["user-agent"] || "",
+      }
+    );
+
+    return sendJSON(res, 200, result);
+  } catch (error) {
+    console.error(
+      "WEB PUSH SUBSCRIBE ERROR:",
+      String(error?.message || error).slice(0, 300)
+    );
+    return sendJSON(res, 400, {
+      error: "Web Push aboneliği kabul edilmedi.",
+    });
+  }
+}
+
+async function handleWebPushUnsubscribe(req, res) {
+  if (!webPushService.configured()) {
+    return sendJSON(res, 503, {
+      error: "Web Push sunucuda yapılandırılmadı.",
+    });
+  }
+
+  try {
+    const body = await readBody(req);
+    const data = JSON.parse(body || "{}");
+    const result =
+      await webPushService.unsubscribe(
+        data.endpoint
+      );
+
+    return sendJSON(res, 200, result);
+  } catch (error) {
+    console.error(
+      "WEB PUSH UNSUBSCRIBE ERROR:",
+      String(error?.message || error).slice(0, 300)
+    );
+    return sendJSON(res, 400, {
+      error: "Web Push aboneliği kapatılamadı.",
+    });
+  }
+}
+
 function authorizeRequest(req, res) {
   const session =
     auth.getSessionFromRequest(req);
@@ -3416,7 +3535,8 @@ STATIC FILE
 function serveFile(
   res,
   filePath,
-  contentType
+  contentType,
+  extraHeaders = {}
 ) {
 
   fs.readFile(
@@ -3455,6 +3575,8 @@ function serveFile(
 
           "Referrer-Policy":
             "same-origin",
+
+          ...extraHeaders,
 
         }
       );
@@ -9107,6 +9229,16 @@ if (
 
 if (req.method === "GET" && pathname === "/api/system/health") return handleSystemHealth(req, res);
 
+if (req.method === "GET" && pathname === "/api/push/config") {
+  return handleWebPushConfig(req, res);
+}
+if (req.method === "POST" && pathname === "/api/push/subscribe") {
+  return handleWebPushSubscribe(req, res);
+}
+if (req.method === "POST" && pathname === "/api/push/unsubscribe") {
+  return handleWebPushUnsubscribe(req, res);
+}
+
 if (
   req.method === "GET" &&
   pathname === "/api/crypto/scanner"
@@ -11508,6 +11640,42 @@ const answer =
         );
 
       }
+/*
+========================================================
+PWA FILES
+========================================================
+*/
+
+if (req.method === "GET" && pathname === "/manifest.webmanifest") {
+  return serveFile(
+    res,
+    path.join(__dirname, "public", "manifest.webmanifest"),
+    "application/manifest+json; charset=utf-8",
+    {"Cache-Control": "no-cache"}
+  );
+}
+
+if (req.method === "GET" && pathname === "/sw.js") {
+  return serveFile(
+    res,
+    path.join(__dirname, "public", "sw.js"),
+    "application/javascript; charset=utf-8",
+    {
+      "Cache-Control": "no-store",
+      "Service-Worker-Allowed": "/",
+    }
+  );
+}
+
+if (req.method === "GET" && pathname === "/push.js") {
+  return serveFile(
+    res,
+    path.join(__dirname, "public", "push.js"),
+    "application/javascript; charset=utf-8",
+    {"Cache-Control": "no-cache"}
+  );
+}
+
 /*
 ========================================================
 BRAND ICONS

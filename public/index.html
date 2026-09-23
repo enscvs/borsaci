@@ -12,6 +12,14 @@
 
   <title>𐰇𐰠𐰇𐱁</title>
 
+  <meta name="theme-color" content="#061108">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="𐰇𐰠𐰇𐱁">
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/borsaci-crescent-star.png?v=2">
+
   <link
     rel="icon"
     type="image/png"
@@ -170,6 +178,28 @@
           <p>BIST100, Kripto Spot ve NASDAQ çalışma alanlarının durumunu ayrı hesaplar üzerinden takip edin.</p>
         </div>
         <button type="button" id="refreshControlCenter" class="trading-button">DURUMLARI YENİLE</button>
+      </div>
+    </section>
+
+    <section class="panel push-settings-panel" aria-labelledby="pushSettingsTitle">
+      <div class="panel-title">
+        <span id="pushSettingsTitle">IPHONE BİLDİRİMLERİ</span>
+        <span class="panel-status">WEB PUSH</span>
+      </div>
+      <p class="push-settings-copy">
+        iPhone'da Safari Paylaş menüsünden Ana Ekrana Ekle, uygulamayı simgesinden aç
+        ve ardından bildirimi etkinleştir. İzin yalnızca aşağıdaki düğmeye dokunduğunda istenir.
+      </p>
+      <div class="push-settings-actions">
+        <button type="button" id="enablePushNotifications" class="trading-button">
+          BİLDİRİMLERİ ETKİNLEŞTİR
+        </button>
+        <button type="button" id="disablePushNotifications" class="trading-button danger" hidden>
+          BİLDİRİMLERİ KAPAT
+        </button>
+      </div>
+      <div id="pushNotificationStatus" class="push-notification-status" aria-live="polite">
+        Bildirim durumu girişten sonra kontrol edilecek.
       </div>
     </section>
 
@@ -3725,6 +3755,11 @@ Waiting for input...
 
 <script
   src="/app.js?v=20260829-ui-memory-trim"
+  defer
+></script>
+
+<script
+  src="/push.js?v=20260923-web-push"
   defer
 ></script>
 
