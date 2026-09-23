@@ -6,6 +6,7 @@ const assert = require("node:assert/strict");
 const {
   createOneSignalPushService,
   normalizeBaseUrl,
+  normalizeOneSignalText,
   uuidFromEventKey,
 } = require("../onesignal-push-service");
 
@@ -83,6 +84,26 @@ test("duplicate logical events produce a single OneSignal request", async () => 
   assert.equal(first.delivered, 1);
   assert.equal(duplicate.deduplicated, true);
   assert.equal(requests, 1);
+});
+
+test("OneSignal payload turns literal newline escapes into readable iOS lines", async () => {
+  const calls = [];
+  const service = configuredService(async (url, options) => {
+    calls.push(JSON.parse(options.body));
+    return {
+      ok: true,
+      status: 200,
+      async text() { return JSON.stringify({ id: "message-id" }); },
+    };
+  });
+
+  await service.send("BTCUSDT\\nTP1 gerçekleşti\\nKalan: 0.01 BTC", {
+    title: "BORSACI\\nKRİPTO",
+  });
+
+  assert.equal(calls[0].headings.en, "BORSACI\nKRİPTO");
+  assert.equal(calls[0].contents.en, "BTCUSDT\nTP1 gerçekleşti\nKalan: 0.01 BTC");
+  assert.equal(normalizeOneSignalText("A  \\n  B\r\nC", 80), "A\nB\nC");
 });
 
 test("idempotency key is a deterministic RFC 9562 UUID and URLs require HTTPS", () => {

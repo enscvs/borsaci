@@ -39,6 +39,21 @@ function uuidFromEventKey(eventKey) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+// Telegram ve uygulama içi event metinleri aynen kalır. OneSignal'a giderken
+// ise bazı kaynakların ürettiği literal "\\n" dizisini gerçek satır sonuna
+// dönüştürürüz. iOS bildirim önizlemesi bu gerçek yeni satırları okunaklı
+// biçimde gösterir; satır içindeki fazla boşluklar da taşmayı azaltır.
+function normalizeOneSignalText(value, maxLength) {
+  return String(value || "")
+    .replace(/\\r\\n|\\n|\\r/g, "\n")
+    .replace(/\r\n?|\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[\t\f\v ]+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, maxLength);
+}
+
 function createOneSignalPushService(config = {}, dependencies = {}) {
   const fetchImpl = dependencies.fetch || global.fetch;
   const now = dependencies.now || (() => Date.now());
@@ -117,8 +132,8 @@ function createOneSignalPushService(config = {}, dependencies = {}) {
     }
     reservations.set(idempotencyKey, timestamp + settings.dedupeWindowMs);
 
-    const title = String(options.title || "BorsaCI").slice(0, 80);
-    const body = String(message).replace(/\s+/g, " ").trim().slice(0, 240);
+    const title = normalizeOneSignalText(options.title || "BorsaCI", 80);
+    const body = normalizeOneSignalText(message, 240);
     const targetUrl = new URL("/", settings.publicBaseUrl);
     targetUrl.searchParams.set("pushTab", route);
     targetUrl.searchParams.set("pushEvent", eventKey);
@@ -193,6 +208,7 @@ module.exports = {
   DEFAULT_API_URL,
   createOneSignalPushService,
   normalizeBaseUrl,
+  normalizeOneSignalText,
   uuidFromEventKey,
 };
 
