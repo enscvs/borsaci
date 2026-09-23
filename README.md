@@ -76,34 +76,52 @@ Backtest etiketleri sinyalden sonraki seansın açılışından başlar; aynı g
 
 
 
-## iPhone PWA Web Push
+## iPhone PWA OneSignal Web Push
 
-Web Push, Apple Developer Program üyeliği gerektirmeden iOS/iPadOS 16.4 veya yenisinde
-Ana Ekrana eklenmiş web uygulamalarında çalışır. Bildirim izni otomatik istenmez;
-kullanıcı Kontrol sekmesindeki **BİLDİRİMLERİ ETKİNLEŞTİR** düğmesine dokunmalıdır.
+Bu entegrasyon Apple Developer Program üyeliği veya PostgreSQL gerektirmez.
+Cihaz aboneliği ve bildirim teslimatı OneSignal tarafından tutulur. BorsaCI'nin
+zaten çalışan sunucusu sinyal oluştuğunda OneSignal REST API'sine yalnızca
+sunucudan sunucuya bir HTTPS isteği gönderir; ek Render veritabanı veya disk
+servisi kullanılmaz.
 
-Render hazırlığı:
+OneSignal paneli:
 
-1. Kalıcı bir Render PostgreSQL veritabanı oluşturun ve internal connection URL'yi
-   `WEB_PUSH_DATABASE_URL` olarak ekleyin. Uygulamada zaten `DATABASE_URL` varsa ayrıca
-   tanımlamak gerekmez.
-2. Yerel bir terminalde bir kez `npx web-push generate-vapid-keys` çalıştırın.
-3. Public/private anahtarları sırasıyla `WEB_PUSH_VAPID_PUBLIC_KEY` ve
-   `WEB_PUSH_VAPID_PRIVATE_KEY` olarak Render'a ekleyin.
-4. `WEB_PUSH_VAPID_SUBJECT` değerini bir `mailto:` adresi veya HTTPS URL yapın.
-5. Private VAPID anahtarını repoya, tarayıcıya veya loglara koymayın.
+1. Web platformunu **Custom Code** olarak yapılandırın.
+2. Site URL'sini `https://gemini-borsaci.onrender.com` yapın.
+3. App ID `37d4853e-17da-4ebe-9220-372f2964a8e4` olmalıdır.
+4. Service Worker yolu `push/onesignal/OneSignalSDKWorker.js`, kapsamı
+   `/push/onesignal/` olarak kalır. Kök kapsamındaki `/sw.js` PWA'ya aittir.
+5. Otomatik izin isteme kapalıdır; izin yalnız Kontrol sekmesindeki düğmeden istenir.
 
-Gerçek iPhone testi:
+Mevcut BorsaCI sunucusunun environment değişkenleri:
 
-1. Siteyi Safari'de açın, Paylaş > Ana Ekrana Ekle'yi seçin.
-2. Ana ekran simgesinden PWA'yı açıp normal BorsaCI şifresiyle giriş yapın.
-3. Kontrol > iPhone Bildirimleri bölümünden bildirimleri etkinleştirin.
-4. PWA'yı arka plana alın veya kapatın; BIST, NASDAQ, kripto, TP/SL ya da sistem
-   olaylarından birini normal akışla tetikleyin.
-5. Bildirime dokununca oturum geçerliyse ilgili sekmenin açıldığını; oturum
-   sona ermişse girişten sonra aynı sekmeye yönlendirildiğini doğrulayın.
+- `ONESIGNAL_APP_ID=37d4853e-17da-4ebe-9220-372f2964a8e4`
+- `ONESIGNAL_APP_API_KEY=<OneSignal App API Key>`
+- `ONESIGNAL_ALLOWED_SUBSCRIPTION_ID=<yalnız iPhone cihaz ID'si>`
+- `WEB_PUSH_PROVIDER=legacy` (ilk gerçek cihaz doğrulamasına kadar)
+- `ONESIGNAL_API_TIMEOUT_MS=5000` (opsiyonel)
 
-Service Worker hiçbir `/api/*` yanıtını, finansal veriyi veya kimlik doğrulama
-yanıtını önbelleğe almaz. Abonelik oluşturma/silme uçları mevcut session cookie,
-same-origin ve CSRF korumasından geçer. Telegram outbox sistemi Web Push
-teslimatından bağımsız kalır.
+`ONESIGNAL_APP_API_KEY` tarayıcıya, repoya veya loglara yazılmaz. Tarayıcıdan
+gelen bir cihaz ID'si sunucu hedefini otomatik değiştirmez. Sunucu yalnız
+environment'taki tek `ONESIGNAL_ALLOWED_SUBSCRIPTION_ID` değerini
+`include_subscription_ids` ile hedefler; segment veya tüm aboneler kullanılmaz.
+
+İlk cihaz kaydı ve test:
+
+1. iOS/iPadOS 16.4 veya yenisinde siteyi Safari'de açın ve Ana Ekrana ekleyin.
+2. PWA'yı simgesinden açıp BorsaCI oturumuna giriş yapın.
+3. Kontrol > iPhone Bildirimleri bölümünde OneSignal'ı etkinleştirin.
+4. Gösterilen Subscription ID'yi kopyalayıp sunucu environment'ına
+   `ONESIGNAL_ALLOWED_SUBSCRIPTION_ID` olarak ekleyin ve mevcut servisi yeniden dağıtın.
+5. Kontrol ekranındaki **TEST BİLDİRİMİ GÖNDER** düğmesini kullanın.
+6. Bildirimin iPhone'a gerçekten geldiğini ve dokununca doğru sekmenin açıldığını
+   doğruladıktan sonra `WEB_PUSH_PROVIDER=onesignal` yapın.
+
+`WEB_PUSH_PROVIDER` tek kanal seçer; bu nedenle aynı telefona legacy VAPID ve
+OneSignal üzerinden çift bildirim gönderilmez. Eski `WEB_PUSH_*` kodu ilk
+aşamada geri dönüş seçeneği olarak korunur. Telegram teslimatı, outbox ve retry
+akışı OneSignal'dan bağımsızdır.
+
+Service Worker'lar hiçbir `/api/*` yanıtını, finansal veriyi veya kimlik
+doğrulama yanıtını önbelleğe almaz. OneSignal yapılandırma ve test uçları mevcut
+session cookie, same-origin ve CSRF korumasından geçer.

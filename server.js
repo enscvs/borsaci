@@ -11,6 +11,9 @@ const {
 const {
   createWebPushService,
 } = require("./web-push-service");
+const {
+  createOneSignalPushService,
+} = require("./onesignal-push-service");
 
 const OpenAI = require("openai");
 const fibonacciEngine = require("./trading/fibonacci-engine");
@@ -140,6 +143,48 @@ const webPushService = createWebPushService({
     Number(process.env.WEB_PUSH_DEDUPE_WINDOW_MS) ||
     10 * 60 * 1000,
 });
+
+const oneSignalPushService = createOneSignalPushService({
+  appId:
+    process.env.ONESIGNAL_APP_ID ||
+    "37d4853e-17da-4ebe-9220-372f2964a8e4",
+  apiKey:
+    process.env.ONESIGNAL_APP_API_KEY,
+  allowedSubscriptionId:
+    process.env.ONESIGNAL_ALLOWED_SUBSCRIPTION_ID,
+  publicBaseUrl:
+    PUBLIC_BASE_URL,
+  timeoutMs:
+    Number(process.env.ONESIGNAL_API_TIMEOUT_MS) ||
+    5000,
+  dedupeWindowMs:
+    Number(process.env.WEB_PUSH_DEDUPE_WINDOW_MS) ||
+    10 * 60 * 1000,
+});
+
+const WEB_PUSH_PROVIDER =
+  String(
+    process.env.WEB_PUSH_PROVIDER ||
+    "legacy"
+  )
+    .trim()
+    .toLowerCase();
+
+function activeWebPushProviderName() {
+  if (
+    WEB_PUSH_PROVIDER === "onesignal" &&
+    oneSignalPushService.configured()
+  ) {
+    return "onesignal";
+  }
+  return "legacy";
+}
+
+function sendConfiguredWebPush(message, options = {}) {
+  return activeWebPushProviderName() === "onesignal"
+    ? oneSignalPushService.send(message, options)
+    : webPushService.send(message, options);
+}
 
 // Binance piyasa listesi alınamazsa taramanın tamamen durmaması için kısa
 // bir geri-dönüş evreni. Normal durumda her tarama öncesi hacme göre ilk 100
@@ -374,12 +419,12 @@ async function sendTelegramNotification(
         replyMarkup,
         telegramOptions
       ),
-      webPushService.send(message),
+      sendConfiguredWebPush(message),
     ]);
 
   if (webPushResult.status === "rejected") {
     console.error(
-      "WEB PUSH NOTIFICATION ERROR:",
+      `${activeWebPushProviderName().toUpperCase()} WEB PUSH NOTIFICATION ERROR:`,
       String(
         webPushResult.reason?.message ||
         webPushResult.reason ||
@@ -2001,6 +2046,65 @@ function handleWebPushConfig(req, res) {
     200,
     webPushService.publicConfig()
   );
+}
+
+function handleOneSignalPushConfig(req, res) {
+  return sendJSON(
+    res,
+    200,
+    {
+      ...oneSignalPushService.publicConfig(),
+      activeProvider:
+        activeWebPushProviderName(),
+    }
+  );
+}
+
+async function handleOneSignalPushTest(req, res) {
+  if (!oneSignalPushService.configured()) {
+    return sendJSON(res, 503, {
+      error:
+        "OneSignal sunucu teslimatı henüz yapılandırılmadı.",
+    });
+  }
+
+  try {
+    const result =
+      await oneSignalPushService.send(
+        "BorsaCI OneSignal test bildirimi",
+        {
+          title: "BorsaCI Test",
+          route: "controlTab",
+          eventId:
+            `manual-test-${crypto.randomUUID()}`,
+        }
+      );
+
+    if (!result.delivered) {
+      return sendJSON(res, 502, {
+        error:
+          "OneSignal bildirimi kabul etmedi.",
+      });
+    }
+
+    return sendJSON(res, 200, {
+      delivered: result.delivered,
+      deduplicated: result.deduplicated,
+      route: result.route,
+    });
+  } catch (error) {
+    console.error(
+      "ONESIGNAL TEST ERROR:",
+      String(
+        error?.message ||
+        "Teslimat başarısız."
+      ).slice(0, 200)
+    );
+    return sendJSON(res, 502, {
+      error:
+        "OneSignal test bildirimi gönderilemedi.",
+    });
+  }
 }
 
 async function handleWebPushSubscribe(req, res) {
@@ -9232,6 +9336,12 @@ if (req.method === "GET" && pathname === "/api/system/health") return handleSyst
 if (req.method === "GET" && pathname === "/api/push/config") {
   return handleWebPushConfig(req, res);
 }
+if (req.method === "GET" && pathname === "/api/push/onesignal/config") {
+  return handleOneSignalPushConfig(req, res);
+}
+if (req.method === "POST" && pathname === "/api/push/onesignal/test") {
+  return handleOneSignalPushTest(req, res);
+}
 if (req.method === "POST" && pathname === "/api/push/subscribe") {
   return handleWebPushSubscribe(req, res);
 }
@@ -11667,10 +11777,40 @@ if (req.method === "GET" && pathname === "/sw.js") {
   );
 }
 
+if (
+  req.method === "GET" &&
+  pathname === "/push/onesignal/OneSignalSDKWorker.js"
+) {
+  return serveFile(
+    res,
+    path.join(
+      __dirname,
+      "public",
+      "push",
+      "onesignal",
+      "OneSignalSDKWorker.js"
+    ),
+    "application/javascript; charset=utf-8",
+    {
+      "Cache-Control": "no-store",
+      "Service-Worker-Allowed": "/push/onesignal/",
+    }
+  );
+}
+
 if (req.method === "GET" && pathname === "/push.js") {
   return serveFile(
     res,
     path.join(__dirname, "public", "push.js"),
+    "application/javascript; charset=utf-8",
+    {"Cache-Control": "no-cache"}
+  );
+}
+
+if (req.method === "GET" && pathname === "/onesignal-push.js") {
+  return serveFile(
+    res,
+    path.join(__dirname, "public", "onesignal-push.js"),
     "application/javascript; charset=utf-8",
     {"Cache-Control": "no-cache"}
   );

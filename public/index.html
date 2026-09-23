@@ -38,6 +38,11 @@
   href="/style.css?v=20260829-performance-layout"
   >
 
+  <script
+    src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+    defer
+  ></script>
+
 </head>
 
 
@@ -188,18 +193,47 @@
       </div>
       <p class="push-settings-copy">
         iPhone'da Safari Paylaş menüsünden Ana Ekrana Ekle, uygulamayı simgesinden aç
-        ve ardından bildirimi etkinleştir. İzin yalnızca aşağıdaki düğmeye dokunduğunda istenir.
+        ve OneSignal cihaz kaydını başlat. Bildirim izni yalnızca düğmeye dokunduğunda istenir.
       </p>
       <div class="push-settings-actions">
-        <button type="button" id="enablePushNotifications" class="trading-button">
-          BİLDİRİMLERİ ETKİNLEŞTİR
+        <button type="button" id="enableOneSignalNotifications" class="trading-button">
+          ONESIGNAL BİLDİRİMLERİNİ ETKİNLEŞTİR
         </button>
-        <button type="button" id="disablePushNotifications" class="trading-button danger" hidden>
-          BİLDİRİMLERİ KAPAT
+        <button type="button" id="disableOneSignalNotifications" class="trading-button danger" hidden>
+          ONESIGNAL BİLDİRİMLERİNİ KAPAT
+        </button>
+        <button type="button" id="copyOneSignalSubscriptionId" class="trading-button" hidden>
+          CİHAZ ID'Yİ KOPYALA
+        </button>
+        <button type="button" id="sendOneSignalTestNotification" class="trading-button" hidden>
+          TEST BİLDİRİMİ GÖNDER
         </button>
       </div>
-      <div id="pushNotificationStatus" class="push-notification-status" aria-live="polite">
-        Bildirim durumu girişten sonra kontrol edilecek.
+      <div id="oneSignalRegistration" class="onesignal-registration" hidden>
+        <label for="oneSignalSubscriptionId">ONESIGNAL SUBSCRIPTION ID</label>
+        <input id="oneSignalSubscriptionId" type="text" readonly autocomplete="off">
+      </div>
+      <div id="oneSignalNotificationStatus" class="push-notification-status" aria-live="polite">
+        OneSignal durumu girişten sonra kontrol edilecek.
+      </div>
+
+      <div class="legacy-push-settings">
+        <div class="onesignal-settings-title">ESKİ WEB PUSH YEDEĞİ</div>
+        <p class="push-settings-copy">
+          OneSignal gerçek iPhone'da doğrulanana kadar mevcut VAPID sistemi korunur.
+          Sunucu aynı anda yalnızca seçili sağlayıcıya gönderir.
+        </p>
+        <div class="push-settings-actions">
+          <button type="button" id="enablePushNotifications" class="trading-button">
+            YEDEK WEB PUSH'I ETKİNLEŞTİR
+          </button>
+          <button type="button" id="disablePushNotifications" class="trading-button danger" hidden>
+            YEDEK WEB PUSH'I KAPAT
+          </button>
+        </div>
+        <div id="pushNotificationStatus" class="push-notification-status" aria-live="polite">
+          Yedek Web Push durumu girişten sonra kontrol edilecek.
+        </div>
       </div>
     </section>
 
@@ -3760,6 +3794,11 @@ Waiting for input...
 
 <script
   src="/push.js?v=20260923-web-push"
+  defer
+></script>
+
+<script
+  src="/onesignal-push.js?v=20260923-onesignal"
   defer
 ></script>
 
