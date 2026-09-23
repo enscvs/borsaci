@@ -2793,6 +2793,99 @@ function chartDateKey(
 
 }
 
+/* NASDAQ ve Kripto karar grafikleri BIST'in aynı günlük Fibonacci katmanını
+   kullanır. Bu yardımcı yalnız çizim ayrıntılarını ortaklaştırır; veri,
+   analiz ve emir akışlarına dokunmaz. */
+function renderMarketDecisionOverlay({ chart, candleSeries: series, history, item, plan, formatMarkerPrice }) {
+  if (!chart || !series || !Array.isArray(history) || !history.length || !item) return;
+
+  const fib = item.fibonacci || {};
+  const lineStyle = LightweightCharts.LineStyle || {};
+  const dotted = lineStyle.Dotted ?? 1;
+  const dashed = lineStyle.Dashed ?? 2;
+  const solid = lineStyle.Solid ?? 0;
+  const priceOf = value => decisionPrice(value);
+  const timeFor = value => {
+    const wanted = chartDateKey(value);
+    if (!wanted) return null;
+    const candle = history.find(candidate => chartDateKey(candidate.time) === wanted);
+    return candle && Number.isFinite(Number(candle.time)) ? Number(candle.time) : null;
+  };
+  const latestTime = history.reduce((latest, candle) => Math.max(latest, Number(candle.time) || 0), 0) || null;
+  const addPriceLine = (price, title, color, style) => {
+    const safePrice = priceOf(price);
+    if (safePrice === null) return;
+    series.createPriceLine({ price: safePrice, title, color, lineWidth: 1, lineStyle: style, axisLabelVisible: true });
+  };
+
+  const seen = new Set();
+  [
+    [fib.entryTriggerPrice, "FIB TETİK", OLD_MONEY_CHART.gold, dashed],
+    [item.entry?.low ?? fib.entryZoneLow ?? fib.entryPrice ?? plan.entryPrice, "GİRİŞ ALT", OLD_MONEY_CHART.gold, dotted],
+    [item.entry?.high ?? fib.entryZoneHigh, "GİRİŞ ÜST", OLD_MONEY_CHART.gold, dotted],
+    [fib.stopLoss ?? item.stop ?? plan.stopLoss, "SL", OLD_MONEY_CHART.negative, solid],
+    [fib.tp1 ?? item.target1 ?? plan.tp1, "TP1", OLD_MONEY_CHART.positive, solid],
+    [fib.tp2 ?? item.target2 ?? plan.tp2, "TP2", OLD_MONEY_CHART.positive, solid],
+    [fib.tp3 ?? item.target3 ?? plan.tp3, "TP3", OLD_MONEY_CHART.positive, solid],
+  ].forEach(([price, title, color, style]) => {
+    const safePrice = priceOf(price);
+    if (safePrice === null || seen.has(safePrice.toFixed(6))) return;
+    seen.add(safePrice.toFixed(6));
+    addPriceLine(safePrice, title, color, style);
+  });
+
+  const resistance = fib.descendingResistance;
+  if ((resistance?.valid ?? resistance?.available) && LightweightCharts.LineSeries) {
+    const projectedPoint = resistance.projectedPoint || {
+      date: resistance.lastCompletedCandleTime,
+      price: resistance.breakoutPrice ?? resistance.breakoutPriceAtLast,
+    };
+    const points = [resistance.anchor1, resistance.anchor2, projectedPoint]
+      .map(point => ({ time: timeFor(point?.date), value: priceOf(point?.price) }));
+    if (points.every(point => point.time !== null && point.value !== null) && points[0].time < points[1].time && points[1].time <= points[2].time) {
+      const trend = chart.addSeries(LightweightCharts.LineSeries, {
+        color: OLD_MONEY_CHART.negative,
+        lineWidth: 2,
+        lineStyle: solid,
+        lastValueVisible: false,
+        priceLineVisible: false,
+        crosshairMarkerVisible: false,
+        title: "ALÇALAN TEPE TRENDİ",
+      });
+      trend.setData(points[1].time < points[2].time ? points : points.slice(0, 2));
+    }
+  }
+
+  const pivots = [
+    [fib.pointA, "A", "belowBar", "arrowUp", OLD_MONEY_CHART.warning, dotted],
+    [fib.pointB, "B", "aboveBar", "arrowDown", OLD_MONEY_CHART.gold, dashed],
+    [fib.pointC, "C", "belowBar", "arrowUp", OLD_MONEY_CHART.negative, solid],
+  ];
+  pivots.forEach(([point, label, _position, _shape, color, style]) => {
+    const time = timeFor(point?.date);
+    const value = priceOf(point?.price);
+    if (time === null || value === null || latestTime === null || time >= latestTime || !LightweightCharts.LineSeries) return;
+    const ray = chart.addSeries(LightweightCharts.LineSeries, {
+      color, lineWidth: 1, lineStyle: style, lastValueVisible: false,
+      priceLineVisible: false, crosshairMarkerVisible: false, title: `${label} RAY`,
+    });
+    ray.setData([{ time, value }, { time: latestTime, value }]);
+  });
+  const markers = pivots.map(([point, label, position, shape, color]) => {
+    const time = timeFor(point?.date);
+    const value = priceOf(point?.price);
+    return time === null || value === null ? null : {
+      time, position, shape, color, text: `${label} ${formatMarkerPrice(value)}`,
+    };
+  }).filter(Boolean);
+  if (!markers.length) return;
+  if (typeof LightweightCharts.createSeriesMarkers === "function") {
+    LightweightCharts.createSeriesMarkers(series, markers);
+  } else if (typeof series.setMarkers === "function") {
+    series.setMarkers(markers);
+  }
+}
+
 
 function decisionMarkerTime(
   value
@@ -8505,11 +8598,9 @@ function renderNasdaqChart(item) {
     nasdaqMarketChart?.remove(); container.innerHTML="";
     nasdaqMarketChart=LightweightCharts.createChart(container,{width:Math.max(280,container.clientWidth||320),height:300,layout:{background:{color:OLD_MONEY_CHART.background},textColor:OLD_MONEY_CHART.text},grid:{vertLines:{color:OLD_MONEY_CHART.grid},horzLines:{color:OLD_MONEY_CHART.grid}},rightPriceScale:{borderColor:OLD_MONEY_CHART.border},timeScale:{borderColor:OLD_MONEY_CHART.border,timeVisible:false}});
     const candles=nasdaqMarketChart.addSeries(LightweightCharts.CandlestickSeries,{upColor:OLD_MONEY_CHART.positive,downColor:OLD_MONEY_CHART.negative,borderVisible:false,wickUpColor:OLD_MONEY_CHART.positive,wickDownColor:OLD_MONEY_CHART.negative});
-    candles.setData(item.history.slice(-150).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Number.isFinite(c.time)&&[c.open,c.high,c.low,c.close].every(Number.isFinite)));
-    const fib=item.fibonacci||{},plan=nasdaqPlan(item), style=LightweightCharts.LineStyle||{};
-    [[fib.valid?fib.entryTriggerPrice:null,"FIB TETİK",OLD_MONEY_CHART.gold,style.Dashed??2],[fib.valid?fib.entryZoneLow:plan.entryPrice,"GİRİŞ",OLD_MONEY_CHART.gold,style.Dotted??1],[fib.valid?fib.entryZoneHigh:null,"GİRİŞ ÜST",OLD_MONEY_CHART.gold,style.Dotted??1],[plan.stopLoss,"SL",OLD_MONEY_CHART.negative,style.Solid??0],[plan.tp1,"TP1",OLD_MONEY_CHART.positive,style.Solid??0],[plan.tp2,"TP2",OLD_MONEY_CHART.positive,style.Solid??0],[plan.tp3,"TP3",OLD_MONEY_CHART.positive,style.Solid??0]].forEach(([price,title,color,lineStyle])=>{if(Number.isFinite(Number(price))&&Number(price)>0)candles.createPriceLine({price:Number(price),title,color,lineWidth:1,lineStyle,axisLabelVisible:true});});
-    const markers=[[fib.pointA,"A","belowBar",OLD_MONEY_CHART.warning],[fib.pointB,"B","aboveBar",OLD_MONEY_CHART.gold],[fib.pointC,"C","belowBar",OLD_MONEY_CHART.negative]].filter(([point])=>point?.date&&Number.isFinite(Number(point.price))).map(([point,text,position,color])=>({time:Math.floor(new Date(point.date).getTime()/1000),position,color,shape:"circle",text}));
-    if (markers.length && typeof LightweightCharts.createSeriesMarkers === "function") LightweightCharts.createSeriesMarkers(candles,markers);
+    const chartCandles=item.history.slice(-150).map(c=>({time:Number(c.time),open:Number(c.open),high:Number(c.high),low:Number(c.low),close:Number(c.close)})).filter(c=>Number.isFinite(c.time)&&[c.open,c.high,c.low,c.close].every(Number.isFinite));
+    candles.setData(chartCandles);
+    renderMarketDecisionOverlay({chart:nasdaqMarketChart,candleSeries:candles,history:chartCandles,item,plan:nasdaqPlan(item),formatMarkerPrice:formatNasdaqUsd});
     nasdaqMarketChart.timeScale().fitContent(); if(empty) { empty.textContent=""; empty.hidden=true; }
   } catch (error) { if(empty) { empty.hidden=false; empty.textContent="NASDAQ grafik katmanı oluşturulamadı."; } }
 }
@@ -9185,31 +9276,8 @@ function renderCryptoDecisionChart(item) {
       priceFormat: cryptoChartPriceFormat(referencePrice),
     });
     cryptoCandleSeries.setData(candles);
-    const fib = item.fibonacci || {};
-    const plan = fib.valid ? fib : (item.fallbackPlan || {});
-    const lineStyle = LightweightCharts.LineStyle || {};
-    [
-      [fib.valid ? fib.entryTriggerPrice : null, "FIB TETİK", OLD_MONEY_CHART.gold, lineStyle.Dashed ?? 2],
-      [fib.valid ? fib.entryZoneLow : plan.entryPrice, fib.valid ? "GİRİŞ ALT" : "GİRİŞ", OLD_MONEY_CHART.gold, lineStyle.Dotted ?? 1],
-      [fib.valid ? fib.entryZoneHigh : null, "GİRİŞ ÜST", OLD_MONEY_CHART.gold, lineStyle.Dotted ?? 1],
-      [plan.stopLoss, "SL", OLD_MONEY_CHART.negative, lineStyle.Solid ?? 0],
-      [plan.tp1, "TP1", OLD_MONEY_CHART.positive, lineStyle.Solid ?? 0],
-      [plan.tp2, "TP2", OLD_MONEY_CHART.positive, lineStyle.Solid ?? 0],
-      [plan.tp3, "TP3", OLD_MONEY_CHART.positive, lineStyle.Solid ?? 0],
-    ].forEach(([price, title, color, lineStyleValue]) => {
-      if (Number.isFinite(Number(price)) && Number(price) > 0) cryptoCandleSeries.createPriceLine({price: Number(price), title, color, lineWidth: 1, lineStyle: lineStyleValue, axisLabelVisible: true});
-    });
-    const resistance = fib.valid ? fib.descendingResistance : null;
-    if (resistance?.valid && resistance?.anchor1 && resistance?.anchor2 && resistance?.projectedPoint && LightweightCharts.LineSeries) {
-      const trendLine = cryptoMarketChart.addSeries(LightweightCharts.LineSeries, {color: OLD_MONEY_CHART.negative, lineWidth: 2, lineStyle: lineStyle.Dashed ?? 2, lastValueVisible: false, priceLineVisible: false});
-      trendLine.setData([resistance.anchor1, resistance.anchor2, resistance.projectedPoint].map(point => ({
-        time: Math.floor(new Date(point.date).getTime() / 1000), value: Number(point.price),
-      })).filter(point => Number.isFinite(point.time) && Number.isFinite(point.value)));
-    }
-    const points = [[fib.pointA, "A", "belowBar", OLD_MONEY_CHART.warning], [fib.pointB, "B", "aboveBar", OLD_MONEY_CHART.gold], [fib.pointC, "C", "belowBar", OLD_MONEY_CHART.negative]]
-      .filter(([point]) => Number.isFinite(Number(point?.price)) && point?.date)
-      .map(([point, text, position, color]) => ({time: Math.floor(new Date(point.date).getTime() / 1000), position, color, shape: "circle", text}));
-    if (points.length && typeof LightweightCharts.createSeriesMarkers === "function") cryptoChartMarkers = LightweightCharts.createSeriesMarkers(cryptoCandleSeries, points);
+    const plan = item.fibonacci?.valid ? item.fibonacci : (item.fallbackPlan || {});
+    renderMarketDecisionOverlay({chart:cryptoMarketChart,candleSeries:cryptoCandleSeries,history:candles,item,plan,formatMarkerPrice:formatCryptoUsd});
     cryptoMarketChart.timeScale().fitContent();
   } catch (error) {
     console.warn("CRYPTO CHART:", error.message);
