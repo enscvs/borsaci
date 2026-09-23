@@ -35,7 +35,7 @@
 
   <link
     rel="stylesheet"
-  href="/style.css?v=20260923-old-money"
+  href="/style.css?v=20260923-crypto-paper"
   >
 
   <script
@@ -2074,15 +2074,14 @@ Waiting for input...
           id="cryptoPerformanceNote"
           class="trading-empty"
         >
-          Scanner sinyalleri ve canlı Binance Spot emirleri birbirinden ayrıdır; bu bölüm yalnızca tarama kaydını gösterir.
+          Scanner sinyalleri ve kâğıt işlemler birbirinden ayrıdır; bu bölüm yalnızca tarama kaydını gösterir.
         </p>
 
       </section>
 
     </div>
 
-    <!-- Önceki kâğıt işlem kayıtları silinmez; yalnızca kripto canlı ekranından gizlenir. -->
-    <div id="cryptoPaperWorkspace" hidden aria-hidden="true">
+    <div id="cryptoPaperWorkspace">
 
 
     <!-- ==================================================
@@ -2192,7 +2191,7 @@ Waiting for input...
 
         </div>
 
-        <div id="cryptoPaperCostSummary" class="paper-cost-summary">KOMİSYON: ‰1 · BINANCE SPOT · KALDIRAÇ YOK</div>
+        <div id="cryptoPaperCostSummary" class="paper-cost-summary">KOMİSYON: ‰1 · BINANCE PİYASA VERİSİ · KALDIRAÇ YOK</div>
 
       </section>
 
@@ -2531,7 +2530,7 @@ Waiting for input...
 
     </div>
 
-    <section id="cryptoSpotAccountPanel" class="panel trading-panel crypto-spot-account-panel">
+    <section id="cryptoSpotAccountPanel" class="panel trading-panel crypto-spot-account-panel" hidden aria-hidden="true">
       <div class="panel-title">
         <span>BINANCE SPOT HESABI</span>
         <span id="cryptoSpotConnectionStatus" class="panel-status">KONTROL EDİLİYOR</span>
@@ -2546,7 +2545,7 @@ Waiting for input...
       <div id="cryptoSpotBalances" class="crypto-spot-balances" aria-live="polite"></div>
     </section>
 
-    <section id="cryptoLiveOrderPanel" class="panel trading-panel crypto-live-order-panel">
+    <section id="cryptoLiveOrderPanel" class="panel trading-panel crypto-live-order-panel" hidden aria-hidden="true">
       <div class="panel-title">
         <span>BINANCE SPOT CANLI EMİR</span>
         <span class="panel-status danger-status">GERÇEK PARA</span>
@@ -2569,7 +2568,7 @@ Waiting for input...
       <div id="cryptoLiveOrderResult" class="crypto-live-order-result" aria-live="polite"></div>
     </section>
 
-    <section id="cryptoSpotOpenOrdersPanel" class="panel trading-panel">
+    <section id="cryptoSpotOpenOrdersPanel" class="panel trading-panel" hidden aria-hidden="true">
       <div class="panel-title">
         <span>BINANCE AÇIK EMİRLER</span>
         <span id="cryptoSpotOpenOrdersStatus" class="panel-status">YÜKLENİYOR</span>
@@ -2591,7 +2590,7 @@ Waiting for input...
       </div>
     </section>
 
-    <section id="cryptoSpotActivityPanel" class="panel trading-panel crypto-spot-activity-panel">
+    <section id="cryptoSpotActivityPanel" class="panel trading-panel crypto-spot-activity-panel" hidden aria-hidden="true">
       <div class="panel-title">
         <span>BINANCE İŞLEM KAYDI</span>
         <span id="cryptoSpotActivityStatus" class="panel-status">SEMBOL SEÇİN</span>
@@ -2606,7 +2605,7 @@ Waiting for input...
       </div>
     </section>
 
-    <section id="cryptoSpotKillSwitchPanel" class="kill-switch-panel crypto-spot-kill-switch-panel" aria-label="Binance Spot acil durdurma">
+    <section id="cryptoSpotKillSwitchPanel" class="kill-switch-panel crypto-spot-kill-switch-panel" aria-label="Binance Spot acil durdurma" hidden aria-hidden="true">
       <div class="kill-switch-title"><strong>⚠ BINANCE SPOT ACİL DURDURMA</strong><span id="cryptoSpotKillSwitchStatus">AÇIK EMİRLER İZLENİYOR</span></div>
       <p>Şifre ve son onay ile bu Binance Spot hesabındaki açık emirleri iptal eder. Cüzdandaki varlıklar piyasa emriyle satılmaz.</p>
       <div class="crypto-spot-kill-switch-controls">
@@ -3815,7 +3814,7 @@ Waiting for input...
 ></script>
 
 <script
-  src="/app.js?v=20260923-old-money"
+  src="/app.js?v=20260923-crypto-paper"
   defer
 ></script>
 

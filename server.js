@@ -6700,10 +6700,6 @@ async function handleSystemHealth(req, res) {
       integrationHealth.alpaca.lastCheckedAt = new Date().toISOString();
       checks.push(alpacaJson(`${ALPACA_DATA_BASE_URL}/v2/stocks/AAPL/bars?timeframe=1Day&limit=1&feed=${encodeURIComponent(ALPACA_DATA_FEED)}`));
     }
-    if (BINANCE_API_KEY && BINANCE_API_SECRET && checkDue(integrationHealth.binance)) {
-      integrationHealth.binance.lastCheckedAt = new Date().toISOString();
-      checks.push(fetchBinanceSpotAccount());
-    }
     if (checks.length) await Promise.allSettled(checks);
     const saved = await getTradingState();
     const state = saved.content || {};
@@ -6726,7 +6722,7 @@ async function handleSystemHealth(req, res) {
       systemHealthItem("YZ SAĞLAYICILARI", aiProviderCount > 0, aiProviderCount ? `${aiProviderCount} sağlayıcı hazır` : "YZ anahtarı eksik"),
       systemHealthItem("TELEGRAM", Boolean(integrationHealth.telegram.webhookConfiguredAt && integrationHealth.telegram.lastSuccessAt && !integrationHealth.telegram.webhookError && !integrationHealth.telegram.deliveryError), integrationHealth.telegram.webhookError || integrationHealth.telegram.deliveryError || (integrationHealth.telegram.webhookConfiguredAt ? `Son teslim: ${integrationHealth.telegram.lastSuccessAt}` : "Webhook doğrulanmadı")),
       systemHealthItem("BIST VERİSİ", bistFresh, bistScanTimestamp ? `Son tarama: ${bistScanTimestamp}` : "Henüz BIST taraması yok"),
-      systemHealthItem("BİNANCE", Boolean(integrationHealth.binance.lastSuccessAt && !integrationHealth.binance.lastError), integrationHealth.binance.lastError || (integrationHealth.binance.lastSuccessAt ? `Son bağlantı: ${integrationHealth.binance.lastSuccessAt}` : "Spot bağlantısı doğrulanmadı")),
+      systemHealthItem("BİNANCE PİYASA VERİSİ", cryptoFresh, cryptoPaper.scanner?.timestamp ? `Son public veri taraması: ${cryptoPaper.scanner.timestamp}` : "Henüz kripto taraması yok"),
       systemHealthItem("KRİPTO VERİSİ", cryptoFresh, cryptoPaper.scanner?.timestamp ? `Son tarama: ${cryptoPaper.scanner.timestamp}` : "Henüz kripto taraması yok"),
       systemHealthItem("ALPACA", Boolean(integrationHealth.alpaca.lastSuccessAt && !integrationHealth.alpaca.lastError), integrationHealth.alpaca.lastError || (integrationHealth.alpaca.lastSuccessAt ? `Son bağlantı: ${integrationHealth.alpaca.lastSuccessAt} · ${ALPACA_DATA_FEED.toUpperCase()}` : "Alpaca bağlantısı doğrulanmadı")),
       systemHealthItem("NASDAQ VERİSİ", nasdaqFresh, nasdaqPaper.scanner?.timestamp ? `Son tarama: ${nasdaqPaper.scanner.timestamp}` : "Henüz NASDAQ taraması yok"),
@@ -9356,15 +9352,29 @@ if (
   return handleCryptoScanner(req, res);
 }
 
+// Kripto işlemleri yalnız kâğıt portföyde tutulur. Binance'in ücretsiz public
+// piyasa verisi/scanner uçları ayrı kalır; private Spot hesap veya emir
+// uçları bu modda hiçbir imzalı Binance isteği başlatmaz.
+function handleCryptoPaperOnly(req, res) {
+  return sendJSON(res, 410, {
+    success: false,
+    paperOnly: true,
+    error: {
+      code: "CRYPTO_PAPER_ONLY",
+      message: "Kripto işlemleri yalnız kâğıt portföyde çalışır; Binance Spot hesabı bağlı değildir."
+    }
+  });
+}
+
 if (req.method === "GET" && pathname === "/api/crypto/state") return handleCryptoState(req, res);
 if (req.method === "GET" && pathname === "/api/crypto/quotes") return handleCryptoQuotes(req, res);
-if (req.method === "GET" && pathname === "/api/trading/crypto/account") return handleCryptoSpotAccount(req, res);
-if (req.method === "GET" && pathname === "/api/trading/crypto/safety") return handleCryptoSpotSafety(req, res);
-if (req.method === "GET" && pathname === "/api/trading/crypto/open-orders") return handleCryptoSpotOpenOrders(req, res);
-if (req.method === "GET" && pathname === "/api/trading/crypto/recent-activity") return handleCryptoSpotRecentActivity(req, res);
-if (req.method === "POST" && pathname === "/api/trading/crypto/order") return handleCryptoSpotOrder(req, res);
-if (req.method === "POST" && pathname === "/api/trading/crypto/order/cancel") return handleCryptoSpotOrderCancel(req, res);
-if (req.method === "POST" && pathname === "/api/trading/crypto/kill-switch") return handleCryptoSpotKillSwitch(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/account") return handleCryptoPaperOnly(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/safety") return handleCryptoPaperOnly(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/open-orders") return handleCryptoPaperOnly(req, res);
+if (req.method === "GET" && pathname === "/api/trading/crypto/recent-activity") return handleCryptoPaperOnly(req, res);
+if (req.method === "POST" && pathname === "/api/trading/crypto/order") return handleCryptoPaperOnly(req, res);
+if (req.method === "POST" && pathname === "/api/trading/crypto/order/cancel") return handleCryptoPaperOnly(req, res);
+if (req.method === "POST" && pathname === "/api/trading/crypto/kill-switch") return handleCryptoPaperOnly(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/risk-settings") return handleCryptoRiskSettings(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/kill-switch") return handleCryptoKillSwitch(req, res);
 if (req.method === "POST" && pathname === "/api/crypto/paper/queue") return handleCryptoPaperQueue(req, res);
@@ -11141,9 +11151,8 @@ async function runMarketPaperMonitors() {
     const saved = await getTradingState();
     const timestamp = new Date().toISOString();
     const cryptoChanged = await monitorCryptoPaperTrading(saved.content.cryptoPaper, timestamp);
-    const cryptoLiveChanged = await monitorCryptoLiveTrading(saved.content.cryptoLive, timestamp);
     const nasdaqChanged = await monitorNasdaqPaperTrading(saved.content.nasdaqPaper, timestamp);
-    if (cryptoChanged || cryptoLiveChanged || nasdaqChanged) await saveTradingState(saved.content, saved.sha, saved.container);
+    if (cryptoChanged || nasdaqChanged) await saveTradingState(saved.content, saved.sha, saved.container);
   } finally { marketPaperMonitorRunning = false; }
 }
 

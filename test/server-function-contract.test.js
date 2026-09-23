@@ -5,6 +5,7 @@ const path = require("node:path");
 
 const source = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
 const appSource = fs.readFileSync(path.join(__dirname, "..", "public", "app.js"), "utf8");
+const htmlSource = fs.readFileSync(path.join(__dirname, "..", "public", "index.html"), "utf8");
 
 test("BIST and quantity-based paper close implementations cannot shadow each other", () => {
   assert.equal((source.match(/function closeBistPaperPosition\s*\(/g) || []).length, 1);
@@ -50,10 +51,19 @@ test("NASDAQ broker approvals are serialized and broker limit orders are submitt
   assert.match(source, /reservedCash/);
 });
 
-test("crypto safety readiness requires a real Binance account response", () => {
-  assert.match(source, /async function handleCryptoSpotSafety/);
-  assert.match(source, /const account = await fetchBinanceSpotAccount\(\)/);
-  assert.doesNotMatch(source, /connected: Boolean\(BINANCE_API_KEY && BINANCE_API_SECRET\)/);
+test("crypto trading is paper-only while public Binance market data remains available", () => {
+  assert.match(source, /function handleCryptoPaperOnly\(/);
+  assert.match(source, /code: "CRYPTO_PAPER_ONLY"/);
+  assert.match(source, /pathname === "\/api\/crypto\/quotes"\) return handleCryptoQuotes/);
+  assert.match(source, /pathname === "\/api\/trading\/crypto\/order"\) return handleCryptoPaperOnly/);
+  assert.doesNotMatch(source, /const cryptoLiveChanged = await monitorCryptoLiveTrading/);
+  assert.doesNotMatch(appSource, /void loadCryptoSpotAccount\(\)/);
+  assert.doesNotMatch(appSource, /bindCryptoLiveTrading\(\);/);
+  assert.match(htmlSource, /<div id="cryptoPaperWorkspace">/);
+  assert.match(htmlSource, /id="cryptoLiveOrderPanel"[^>]*hidden/);
+  assert.match(htmlSource, /id="cryptoSpotAccountPanel"[^>]*hidden/);
+  assert.match(appSource, /KÂĞIT EMİR PLANI OLUŞTUR/);
+  assert.doesNotMatch(appSource, /CANLI EMİR FORMUNA AKTAR/);
 });
 
 test("NASDAQ scanner decisions are deduplicated and Alpaca entries receive emergency stops", () => {

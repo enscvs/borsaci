@@ -16,8 +16,8 @@ test("old money palette is centralized and terminal scanlines are disabled", () 
 });
 
 test("theme cache version and canvas palette use the old money colors", () => {
-  assert.match(html, /style\.css\?v=20260923-old-money/);
-  assert.match(html, /app\.js\?v=20260923-old-money/);
+  assert.match(html, /style\.css\?v=20260923-crypto-paper/);
+  assert.match(html, /app\.js\?v=20260923-crypto-paper/);
   assert.match(html, /theme-color" content="#0F1611"/);
   assert.match(app, /const OLD_MONEY_CHART = Object\.freeze/);
   assert.match(app, /positive: "#7FA88A"/);

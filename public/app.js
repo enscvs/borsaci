@@ -8867,11 +8867,10 @@ function renderCryptoDecisionCards(records) {
     const plan = fib.valid ? fib : (item.fallbackPlan || {});
     const entryLow = fib.valid ? fib.entryZoneLow : plan.entryPrice;
     const entryHigh = fib.valid ? fib.entryZoneHigh : plan.entryPrice;
-    return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK · ATR PLAN"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)} · SL: ${formatCryptoUsd(plan.stopLoss)} · TP1/2/3: ${formatCryptoUsd(plan.tp1)} / ${formatCryptoUsd(plan.tp2)} / ${formatCryptoUsd(plan.tp3)}</div><button type="button" class="trading-button" data-crypto-live-action="prefill" data-crypto-decision-index="${index}">CANLI EMİR FORMUNA AKTAR</button></article>`;
+    return `<article class="decision-item decision-card" role="button" tabindex="0" data-crypto-decision-index="${index}"><header><strong>${escapeHtml(item.symbol)}</strong><span>TEKNİK ${Number(item.score || 0)}/100</span><span>${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</span></header><div class="decision-price-grid"><span><small>FİYAT</small>${formatCryptoUsd(item.price)}</span><span><small>RSI / ATR</small>${formatPrice(item.rsi)} / ${formatCryptoUsd(item.atr)}</span><span><small>FIBONACCI</small>${fib.valid ? "GEÇERLİ" : "YAPI YOK · ATR PLAN"}</span></div><div class="decision-summary">Giriş: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)} · SL: ${formatCryptoUsd(plan.stopLoss)} · TP1/2/3: ${formatCryptoUsd(plan.tp1)} / ${formatCryptoUsd(plan.tp2)} / ${formatCryptoUsd(plan.tp3)}</div><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">KÂĞIT EMİR PLANI OLUŞTUR</button></article>`;
   }).join("") || '<div class="trading-empty">Uygun kripto adayı bulunamadı.</div>';
   bindCryptoDecisionInteractions();
   bindCryptoPaperActions();
-  bindCryptoLiveDecisionActions();
 }
 
 function restoreCryptoSavedScan(paper) {
@@ -9319,9 +9318,8 @@ function renderCryptoDecisionDetail(item) {
   if (chart) renderCryptoDecisionChart(item);
   renderCryptoScoreBreakdown(item);
   const index = cryptoRenderedRecords.indexOf(item);
-  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)}</span><span>Stop: ${formatCryptoUsd(plan.stopLoss)}</span><span>TP1: ${formatCryptoUsd(plan.tp1)} · R/R ${plan.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(plan.tp2)} · R/R ${plan.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(plan.tp3)} · R/R ${plan.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.valid ? (fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR") : "FIBONACCI YAPISI YOK"}</span>${precisionInsightMarkup(item)}</div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : (plan.message || "Geçerli Fibonacci yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.")))}</small>${index >= 0 ? `<br><button type="button" class="trading-button" data-crypto-live-action="prefill" data-crypto-decision-index="${index}">CANLI EMİR FORMUNA AKTAR</button>` : ""}`;
+  detail.innerHTML = `<strong>${escapeHtml(item.symbol)} · ${escapeHtml(item.grade || "KARAR")} · ${escapeHtml(translateTradingStatus(fib.status || "NO_VALID_STRUCTURE"))}</strong><div class="decision-detail-grid"><span>Son fiyat: ${formatCryptoUsd(item.price)}</span><span>RSI: ${formatPrice(item.rsi)} · ATR: ${formatCryptoUsd(item.atr)}</span><span>A: ${formatCryptoUsd(fib.pointA?.price)} · ${escapeHtml(chartDateKey(fib.pointA?.date) || "—")}</span><span>B: ${formatCryptoUsd(fib.pointB?.price)} · ${escapeHtml(chartDateKey(fib.pointB?.date) || "—")}</span><span>C: ${formatCryptoUsd(fib.pointC?.price)} · ${escapeHtml(chartDateKey(fib.pointC?.date) || "—")}</span><span>FIB TETİK: ${formatCryptoUsd(fib.entryTriggerPrice)}</span><span>Giriş bölgesi: ${formatCryptoUsd(entryLow)} – ${formatCryptoUsd(entryHigh)}</span><span>Stop: ${formatCryptoUsd(plan.stopLoss)}</span><span>TP1: ${formatCryptoUsd(plan.tp1)} · R/R ${plan.riskRewardTp1 ?? "—"}</span><span>TP2: ${formatCryptoUsd(plan.tp2)} · R/R ${plan.riskRewardTp2 ?? "—"}</span><span>TP3: ${formatCryptoUsd(plan.tp3)} · R/R ${plan.riskRewardTp3 ?? "—"}</span><span>Teyit: ${fib.valid ? (fib.confirmationPassed ? "GEÇTİ" : "BEKLİYOR") : "FIBONACCI YAPISI YOK"}</span>${precisionInsightMarkup(item)}</div><small>${escapeHtml(item.reason || (fib.valid ? "Fibonacci seviyeleri backend günlük OHLCV verisinden hesaplandı." : (plan.message || "Geçerli Fibonacci yapısı bulunamadı; seviyeler destek/direnç ve ATR ile hesaplandı.")))}</small>${index >= 0 ? `<br><button type="button" class="trading-button" data-crypto-paper-action="queue" data-crypto-decision-index="${index}">KÂĞIT EMİR PLANI OLUŞTUR</button>` : ""}`;
   bindCryptoPaperActions();
-  bindCryptoLiveDecisionActions();
 }
 
 function renderCryptoScanSummary(data, records) {
@@ -9805,13 +9803,7 @@ function bindTradingScannerControls() {
   bindCryptoScannerControls();
   bindCryptoWorkspaceControls();
   bindCryptoKillSwitch();
-  bindCryptoLiveTrading();
-  bindCryptoSpotActivity();
-  bindCryptoSpotKillSwitch();
   void loadCryptoPaperState();
-  void loadCryptoSpotAccount();
-  void loadCryptoSpotOpenOrders();
-  void loadCryptoSpotActivity();
 
   if (
     scannerStopButton &&

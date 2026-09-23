@@ -3307,6 +3307,7 @@ textarea::placeholder {
 
 /* Kripto canlı Spot emir alanı: eski kâğıt işlem yüzeyi görünmez kalır. */
 #cryptoPaperWorkspace[hidden] { display: none !important; }
+#cryptoSpotAccountPanel[hidden], #cryptoLiveOrderPanel[hidden], #cryptoSpotOpenOrdersPanel[hidden], #cryptoSpotActivityPanel[hidden], #cryptoSpotKillSwitchPanel[hidden] { display: none !important; }
 
 .crypto-spot-account-summary,
 .crypto-live-order-warning,
