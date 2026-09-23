@@ -1,0 +1,80 @@
+/* BorsaCI — Fildişi & Koyu Yeşil. Yalnızca görsel renk katmanı. */
+:root {
+  color-scheme: dark;
+  --bg: #0f1611;
+  --panel: #17231b;
+  --panel-alt: #1c2b22;
+  --border: #394b3e;
+  --border-bright: #8e7950;
+  --green: #c9a15a;
+  --green-dim: #a98d5b;
+  --text: #e8e2d0;
+  --muted: #b0b5a3;
+  --dark: #293a2d;
+  --yellow: #d8bb80;
+  --red: #bc7974;
+}
+html, body { background: var(--bg) !important; color: var(--text); }
+body::before { background: none !important; }
+.topbar, .panel, .control-market-card, .control-health-item,
+.control-activity-item, .control-market-metrics span, .push-settings-panel,
+.crypto-spot-activity-column, .crypto-spot-account-summary,
+.crypto-live-order-warning, .crypto-live-order-result,
+.paper-order-dialog, #nasdaqTab .pending-paper-order-card,
+#nasdaqTab .paper-order-form, #nasdaqTab [data-nasdaq-id="chartArea"] {
+  background: var(--panel) !important;
+  border-color: var(--border) !important;
+}
+.panel-title, .market-bar, .decision-score-table thead th,
+.decision-score-summary, .decision-score-table tfoot th,
+.decision-score-table tfoot td {
+  background: var(--panel-alt) !important;
+  border-color: var(--border) !important;
+}
+.brand, .brand-name, .panel-title, .control-hero-content strong,
+.turkic-main-banner, .turkic-auth-title, .onesignal-settings-title,
+.onesignal-registration label, .crypto-spot-activity-column h4 {
+  color: var(--green) !important;
+  text-shadow: none !important;
+}
+.control-market-card header strong, .control-market-metrics span,
+.control-health-item strong, .control-activity-item,
+.control-activity-item strong, .push-settings-copy,
+.decision-score-content, .decision-score-table tbody th,
+.crypto-spot-account-summary, .crypto-spot-activity-row,
+.crypto-spot-activity-row strong, .paper-order-dialog header {
+  color: var(--text) !important;
+}
+.control-market-card header span, .control-health-item small,
+.control-activity-item time, .push-notification-status,
+.control-hero-content p, .system-clock-stack .clock {
+  color: var(--muted) !important;
+}
+.control-health-item span, .push-notification-status[data-tone="success"],
+.control-market-card .online, .market-bar .online {
+  color: #91b49a !important;
+}
+.control-market-card.is-stopped header span,
+.push-notification-status[data-tone="error"] {
+  color: var(--red) !important;
+}
+.control-market-card.is-stopped, .control-health-item.needs-attention,
+.control-health-item.is-running {
+  border-color: var(--border-bright) !important;
+}
+.control-market-metrics span, .control-health-item, .control-activity-item,
+.crypto-spot-balance-grid > div, .crypto-spot-activity-row,
+.decision-score-table th, .decision-score-table td,
+.decision-score-table-wrap, .decision-chart-status, .decision-chart-key,
+.crypto-spot-balances, .crypto-spot-activity-column {
+  border-color: var(--border) !important;
+}
+.control-activity-item { border-left-color: var(--green) !important; }
+.status-dot { background: #91b49a !important; box-shadow: none !important; }
+.onesignal-registration input, .crypto-spot-activity-controls input,
+.crypto-spot-kill-switch-controls input[type="password"],
+#nasdaqTab .paper-order-form input, #nasdaqTab .paper-order-form select {
+  background: #101a13 !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
