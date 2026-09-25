@@ -1,0 +1,28 @@
+/* BIST feature only: inherits the existing terminal/theme tokens. */
+#tradingTab .bist-tsmom { display:grid; gap:18px; }
+#tradingTab .bist-tsmom-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:10px; }
+#tradingTab .bist-tsmom-summary article { border:1px solid var(--border,#394B3E); background:var(--panel,#1C2B22); padding:12px; min-width:0; }
+#tradingTab .bist-tsmom-summary small { display:block; opacity:.78; margin-bottom:6px; }
+#tradingTab .bist-tsmom-summary strong { overflow-wrap:anywhere; }
+#tradingTab .bist-tsmom-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:end; }
+#tradingTab .bist-tsmom-toolbar label { display:grid; gap:5px; min-width:145px; }
+#tradingTab .bist-tsmom-toolbar input,#tradingTab .bist-tsmom-toolbar select { max-width:240px; }
+#tradingTab .bist-tsmom-table-wrap { overflow:auto; max-height:68vh; border:1px solid var(--border,#394B3E); }
+#tradingTab .bist-tsmom-table { width:max-content; min-width:100%; border-collapse:collapse; font-size:.78rem; }
+#tradingTab .bist-tsmom-table th,#tradingTab .bist-tsmom-table td { padding:8px; border-bottom:1px solid var(--border,#394B3E); white-space:nowrap; text-align:left; vertical-align:top; }
+#tradingTab .bist-tsmom-table th { position:sticky; top:0; z-index:2; background:var(--panel,#1C2B22); }
+#tradingTab .bist-tsmom-table button { font:inherit; color:inherit; background:none; border:0; padding:0; text-decoration:underline; cursor:pointer; }
+#tradingTab .bist-tsmom-row-selected { background:color-mix(in srgb,var(--panel,#1C2B22) 82%,#C9A15A); }
+#tradingTab .bist-tsmom-state-SELECTED { color:var(--accent,#C9A15A); }
+#tradingTab .bist-tsmom-state-POSITIVE_NOT_SELECTED { color:var(--warning,#D8BB80); }
+#tradingTab .bist-tsmom-state-NEGATIVE { color:var(--negative,#BC7974); }
+#tradingTab .bist-tsmom-state-NO_DATA { opacity:.65; }
+#tradingTab .bist-tsmom-detail { display:grid; gap:14px; }
+#tradingTab .bist-tsmom-detail-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; }
+#tradingTab .bist-tsmom-detail-grid div { border:1px solid var(--border,#394B3E); padding:9px; }
+#tradingTab .bist-tsmom-detail-grid small { display:block; opacity:.75; }
+#tradingTab .bist-tsmom-calculation { line-height:1.7; padding:12px; border-left:3px solid var(--accent,#C9A15A); }
+#tradingTab .bist-tsmom-tabs { display:flex; flex-wrap:wrap; gap:8px; }
+#tradingTab .bist-tsmom-tabs button[aria-selected="true"] { outline:2px solid var(--accent,#C9A15A); }
+#tradingTab .bist-tsmom-hidden { display:none !important; }
+@media (max-width:600px) { #tradingTab .bist-tsmom-table { font-size:.72rem; } #tradingTab .bist-tsmom-table-wrap { max-height:58vh; } }

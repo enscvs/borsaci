@@ -63,6 +63,9 @@ const {
   fetchOfficialBistUniverse,
 } = require("./trading/bist-universe");
 const {
+  buildTsmomPortfolio,
+} = require("./trading/bist-tsmom-service");
+const {
   createBinanceBroker,
 } = require("./trading/broker/binance-broker");
 const {
@@ -7862,6 +7865,86 @@ function attachPrecisionInsights(candidates, indexHistory, market, breadthFeatur
   });
 }
 
+/*
+ * BIST TSMOM is a read-only feature model.  It intentionally does not reuse
+ * the Fibonacci scanner snapshot: eligibility is only completed monthly close
+ * versus the close exactly twelve calendar months earlier.  Keeping this cache
+ * in process prevents repeated table sort/filter requests from downloading the
+ * whole universe again; it never writes paper positions or orders.
+ */
+let bistTsmomCache = null;
+let bistTsmomInFlight = null;
+const BIST_TSMOM_CACHE_MS = 10 * 60 * 1000;
+
+async function buildBistTsmomSnapshot() {
+  const now = Date.now();
+  if (bistTsmomCache && now - bistTsmomCache.createdAt < BIST_TSMOM_CACHE_MS) return bistTsmomCache.payload;
+  if (bistTsmomInFlight) return bistTsmomInFlight;
+  bistTsmomInFlight = (async () => {
+    const universeResult = await fetchOfficialBistUniverse({fallback:BIST_UNIVERSE_FALLBACK_SYMBOLS});
+    const symbols = universeResult.symbols || [];
+    if (!symbols.length) throw new Error("BIST TSMOM evreni alınamadı.");
+    const histories = {};
+    const companyNames = {};
+    const batchSize = 10;
+    for (let offset = 0; offset < symbols.length; offset += batchSize) {
+      const batch = symbols.slice(offset, offset + batchSize);
+      const settled = await Promise.allSettled(batch.map(symbol => fetchYahooChart(symbol, "2y", "1d", 8000)));
+      settled.forEach((entry, index) => {
+        if (entry.status !== "fulfilled") return;
+        // Monthly TSMOM may only see completed daily bars.  The current
+        // unfinished day is removed by the shared daily-history guard.
+        histories[batch[index]] = fibonacciEngine.completedDailyHistory(entry.value.history, now, {market:"BIST"});
+        companyNames[batch[index]] = entry.value.meta?.longName || entry.value.meta?.shortName || batch[index];
+      });
+    }
+    const saved = await getTradingState();
+    const payload = buildTsmomPortfolio({
+      universe:symbols,
+      histories,
+      companyNames,
+      positions:saved.content?.paper?.positions || [],
+      currentCash:saved.content?.paper?.cash,
+      realizedPnl:saved.content?.paper?.pnl,
+      now,
+      source:"YAHOO_FINANCE_COMPLETED_DAILY",
+      universeSource:universeResult.source,
+    });
+    payload.summary.lastRebalanceDate = null;
+    payload.summary.nextRebalanceDate = nextBistTsmomRebalanceDate(now);
+    payload.summary.portfolioStatus = "MIGRATION_PREVIEW_ONLY";
+    payload.summary.migrationOpenPositions = (saved.content?.paper?.positions || []).filter(item => String(item?.status || "").toUpperCase() === "OPEN").length;
+    payload.history = {
+      monthlyTsmomSnapshots:[{timestamp:payload.generatedAt, selectedCount:payload.summary.selectedCount, positiveCount:payload.summary.positiveCount, universeCount:payload.summary.universeCount}],
+      rebalanceHistory:[{timestamp:payload.generatedAt, sells:payload.rebalance.sells.length, buys:payload.rebalance.buys.length, holds:payload.rebalance.holds.length, cashAfter:payload.rebalance.cashAfter}],
+      navHistory:[{timestamp:payload.generatedAt, nav:payload.summary.currentNav, totalPnl:payload.summary.totalPnl}],
+      cashHistory:[{timestamp:payload.generatedAt, cash:payload.summary.availableCash}],
+      portfolioTransactions:(saved.content?.activity || []).slice(0, 100),
+      historicalPositions:(saved.content?.history || []).slice(0, 100),
+    };
+    bistTsmomCache = {createdAt:now, payload};
+    return payload;
+  })();
+  try { return await bistTsmomInFlight; }
+  finally { bistTsmomInFlight = null; }
+}
+
+function nextBistTsmomRebalanceDate(now = Date.now()) {
+  const date = new Date(now);
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+}
+
+async function handleBistTsmomState(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+    if (url.searchParams.get("refresh") === "1") bistTsmomCache = null;
+    return sendJSON(res, 200, await buildBistTsmomSnapshot());
+  } catch (error) {
+    console.error("BIST TSMOM STATE ERROR:", error.message);
+    return sendJSON(res, 503, {error:"BIST TSMOM verisi şu anda hazırlanamadı.", detail:error.message});
+  }
+}
+
 
 /*
 --------------------------------------------------------
@@ -9464,6 +9547,10 @@ if (
     res
   );
 
+}
+
+if (req.method === "GET" && pathname === "/api/bist/tsmom") {
+  return handleBistTsmomState(req, res);
 }
 
 if (
@@ -11877,6 +11964,15 @@ if (req.method === "GET" && pathname === "/onesignal-push.js") {
     "application/javascript; charset=utf-8",
     {"Cache-Control": "no-cache"}
   );
+}
+
+// Feature-local BIST TSMOM assets.  No global stylesheet or other market UI
+// is served from this route.
+if (req.method === "GET" && pathname === "/bist-tsmom/bist-tsmom.js") {
+  return serveFile(res, path.join(__dirname, "public", "bist-tsmom", "bist-tsmom.js"), "application/javascript; charset=utf-8", {"Cache-Control":"no-cache"});
+}
+if (req.method === "GET" && pathname === "/bist-tsmom/bist-tsmom.css") {
+  return serveFile(res, path.join(__dirname, "public", "bist-tsmom", "bist-tsmom.css"), "text/css; charset=utf-8", {"Cache-Control":"no-cache"});
 }
 
 /*
