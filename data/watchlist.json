@@ -1527,6 +1527,83 @@
       ],
       "signals": [
         {
+          "id": "crypto-signal-2026-09-25T21:00:11.567Z-DOGEUSDT",
+          "symbol": "DOGEUSDT",
+          "timestamp": "2026-09-25T21:00:11.567Z",
+          "score": 66,
+          "grade": "A / AL ADAYI",
+          "status": "ENTRY_TOO_FAR",
+          "price": 0.09603,
+          "fibonacci": {
+            "valid": true,
+            "status": "ENTRY_TOO_FAR",
+            "pointA": {
+              "type": "LOW",
+              "index": 494,
+              "price": 0.06772,
+              "date": "2026-08-01T23:59:59.000Z"
+            },
+            "pointB": {
+              "type": "HIGH",
+              "index": 515,
+              "price": 0.10081,
+              "date": "2026-08-22T23:59:59.000Z"
+            },
+            "pointC": {
+              "type": "LOW",
+              "index": 540,
+              "price": 0.07836,
+              "date": "2026-09-16T23:59:59.000Z"
+            },
+            "range": 0.03,
+            "retracementRatio": 0.6785,
+            "entryTriggerPrice": 0.08,
+            "entryZoneLow": 0.08,
+            "entryZoneHigh": 0.09,
+            "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+            "descendingResistance": {
+              "valid": true,
+              "available": true,
+              "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+              "reason": null,
+              "anchor1": {
+                "type": "HIGH",
+                "index": 515,
+                "price": 0.10081,
+                "date": "2026-08-22T23:59:59.000Z"
+              },
+              "anchor2": {
+                "type": "HIGH",
+                "index": 529,
+                "price": 0.09507,
+                "date": "2026-09-05T23:59:59.000Z"
+              },
+              "slopePerBar": -0.00041,
+              "lastCompletedCandleTime": "2026-09-24T23:59:59.000Z",
+              "projectedPoint": {
+                "index": 548,
+                "date": "2026-09-24T23:59:59.000Z",
+                "price": 0.0873
+              },
+              "breakoutPrice": 0.0873,
+              "breakoutPriceAtLast": 0.0873,
+              "entryUpperRaw": 0.08989840000000002,
+              "entryUpperPrice": 0.09
+            },
+            "stopLoss": 0.08,
+            "tp1": 0.1,
+            "tp2": 0.1,
+            "tp3": 0.11,
+            "volumeConfirmation": "STRONG",
+            "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+            "confirmationPassed": true,
+            "confirmationCandleTime": "2026-09-17T23:59:59.000Z",
+            "confirmationCandleClose": 0.08,
+            "entryPrice": 0.1
+          },
+          "fallbackPlan": null
+        },
+        {
           "id": "crypto-signal-2026-09-25T10:00:48.849Z-XRPUSDT",
           "symbol": "XRPUSDT",
           "timestamp": "2026-09-25T10:00:48.849Z",
@@ -4949,6 +5026,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-09-25T21:00:11.567Z",
+          "type": "CRYPTO_SCAN",
+          "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
+        },
+        {
           "timestamp": "2026-09-25T20:00:12.842Z",
           "type": "CRYPTO_SCAN",
           "message": "100 USDT paritesi tarandı; 5 aday kaydedildi."
@@ -5280,7 +5362,7 @@
         }
       ],
       "scanner": {
-        "timestamp": "2026-09-25T20:00:12.842Z",
+        "timestamp": "2026-09-25T21:00:11.567Z",
         "scanned": 100,
         "successful": 92,
         "results": [
@@ -5572,14 +5654,14 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Alçalan tepe trend çizgisi + %3 giriş üst seviyesi, Fibonacci giriş alt seviyesinin üzerinde değil."
             },
-            "timestamp": "2026-09-25T20:00:08.181Z",
+            "timestamp": "2026-09-25T21:00:07.170Z",
             "precision": {
               "status": "VALIDATED",
               "dataQuality": "PASSED",
               "calibration": "KALIBRE_EDILMEDI",
               "marketRegime": "RISK_ON",
               "marketRegimeReason": "Endeks trendi ve piyasa genişliği uygun.",
-              "breadth": 0.9783,
+              "breadth": 0.9674,
               "relativeStrengthRank": 73,
               "relativeStrengthPercentile": 0.7934782608695652,
               "rs20": 0.04280011057437205,
@@ -5895,14 +5977,14 @@
               "confirmationCandleClose": 0.2,
               "entryPrice": 0.25
             },
-            "timestamp": "2026-09-25T20:00:03.760Z",
+            "timestamp": "2026-09-25T21:00:03.411Z",
             "precision": {
               "status": "VALIDATED",
               "dataQuality": "PASSED",
               "calibration": "KALIBRE_EDILMEDI",
               "marketRegime": "RISK_ON",
               "marketRegimeReason": "Endeks trendi ve piyasa genişliği uygun.",
-              "breadth": 0.9783,
+              "breadth": 0.9674,
               "relativeStrengthRank": 38,
               "relativeStrengthPercentile": 0.41304347826086957,
               "rs20": 0.11579693366998978,
@@ -6200,14 +6282,14 @@
               "volumeConfirmation": "STRONG",
               "invalidReason": "Giriş üst seviyesi oluşturulmadı: B sonrası iki noktadan oluşan teyitli günlük alçalan tepe trendi bulunamadı."
             },
-            "timestamp": "2026-09-25T20:00:05.944Z",
+            "timestamp": "2026-09-25T21:00:05.068Z",
             "precision": {
               "status": "VALIDATED",
               "dataQuality": "PASSED",
               "calibration": "KALIBRE_EDILMEDI",
               "marketRegime": "RISK_ON",
               "marketRegimeReason": "Endeks trendi ve piyasa genişliği uygun.",
-              "breadth": 0.9783,
+              "breadth": 0.9674,
               "relativeStrengthRank": 40,
               "relativeStrengthPercentile": 0.43478260869565216,
               "rs20": 0.19545952926933685,
@@ -6230,6 +6312,329 @@
             "atr": 0.18137291864019947,
             "volumeRatio": 1.3901439568836051,
             "turnover": 9773.3125
+          },
+          {
+            "symbol": "DOGEUSDT",
+            "validation": {
+              "ok": true
+            },
+            "dataStatus": "OK",
+            "score": 66,
+            "grade": "A / AL ADAYI",
+            "features": {
+              "price": 0.09603,
+              "ema20": 0.08871186731445221,
+              "ema50": 0.08441889024898905,
+              "ema200": 0.09258780459084595,
+              "ema20FiveDaysAgo": 0.08436038371277627,
+              "rsi": 61.423221944351795,
+              "atr": 0.005930561041313136,
+              "macd": 0.003253491660054092,
+              "macdSignal": 0.002149200364153195,
+              "macdHistogram": 0.001104291295900897,
+              "previousHistogram": 0.0011076057512150357,
+              "histogramThreeBack": 0.0007924899115464719,
+              "volume": 5631911,
+              "averageVolume": 5137691.65,
+              "volumeRatio": 1.0961948251604394,
+              "turnover": 540832.41333,
+              "fiveDayReturn": 9.448370184636424
+            },
+            "reasons": [
+              "Fiyat EMA20 üzerinde",
+              "EMA20 EMA50 üzerinde",
+              "Fiyat EMA200 üzerinde",
+              "EMA20 son 5 günde yükseliyor"
+            ],
+            "risks": [],
+            "scoreBreakdown": {
+              "trend": {
+                "score": 30,
+                "max": 30,
+                "items": [
+                  {
+                    "id": "price_above_ema20",
+                    "label": "Fiyat EMA20 üzerinde",
+                    "points": 8,
+                    "maxPoints": 8,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "ema20_above_ema50",
+                    "label": "EMA20 EMA50 üzerinde",
+                    "points": 8,
+                    "maxPoints": 8,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "price_above_ema200",
+                    "label": "Fiyat EMA200 üzerinde",
+                    "points": 7,
+                    "maxPoints": 7,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "ema20_rising_5d",
+                    "label": "EMA20 son 5 günde yükseliyor",
+                    "points": 7,
+                    "maxPoints": 7,
+                    "passed": true,
+                    "detail": ""
+                  }
+                ]
+              },
+              "momentum": {
+                "score": 18,
+                "max": 25,
+                "items": [
+                  {
+                    "id": "rsi14",
+                    "label": "RSI14",
+                    "points": 10,
+                    "maxPoints": 10,
+                    "passed": true,
+                    "partial": false,
+                    "detail": "RSI 52–65 aralığında"
+                  },
+                  {
+                    "id": "macd_above_signal",
+                    "label": "MACD sinyal çizgisinin üzerinde",
+                    "points": 8,
+                    "maxPoints": 8,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "macd_histogram_strengthening",
+                    "label": "MACD histogramı pozitif ve güçleniyor",
+                    "points": 0,
+                    "maxPoints": 7,
+                    "passed": false,
+                    "detail": ""
+                  }
+                ]
+              },
+              "volumeLiquidity": {
+                "score": 5,
+                "max": 20,
+                "items": [
+                  {
+                    "id": "volume_ratio",
+                    "label": "Hacim oranı",
+                    "points": 5,
+                    "maxPoints": 10,
+                    "passed": true,
+                    "partial": true,
+                    "detail": "Hacim 20 günlük ortalamaya yakın"
+                  },
+                  {
+                    "id": "turnover",
+                    "label": "Likidite / işlem tutarı",
+                    "points": 0,
+                    "maxPoints": 10,
+                    "passed": false,
+                    "partial": false,
+                    "detail": "Günlük işlem tutarı 25 milyon USDT altında"
+                  }
+                ]
+              },
+              "entryQuality": {
+                "score": 13,
+                "max": 25,
+                "items": [
+                  {
+                    "id": "near_ema20",
+                    "label": "Fiyat EMA20'ye en fazla 1 ATR uzaklıkta",
+                    "points": 0,
+                    "maxPoints": 5,
+                    "passed": false,
+                    "detail": ""
+                  },
+                  {
+                    "id": "valid_fibonacci",
+                    "label": "Geçerli Fibonacci A–B–C yapısı",
+                    "points": 5,
+                    "maxPoints": 5,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "fibonacci_confirmation",
+                    "label": "Fibonacci dönüş teyidi",
+                    "points": 5,
+                    "maxPoints": 5,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "volume_confirmation",
+                    "label": "Dönüş hacmi güçlü",
+                    "points": 3,
+                    "maxPoints": 3,
+                    "passed": true,
+                    "detail": ""
+                  },
+                  {
+                    "id": "risk_reward",
+                    "label": "TP2 veya TP3 için en az 1:2 risk/getiri",
+                    "points": 0,
+                    "maxPoints": 7,
+                    "passed": false,
+                    "detail": ""
+                  }
+                ]
+              },
+              "penalties": {
+                "score": 0,
+                "items": [
+                  {
+                    "id": "rsi_overbought",
+                    "label": "RSI aşırı yüksek",
+                    "points": 0,
+                    "maxPoints": -10,
+                    "applied": false,
+                    "detail": ""
+                  },
+                  {
+                    "id": "extended_above_ema20",
+                    "label": "Fiyat EMA20'den aşırı uzak",
+                    "points": 0,
+                    "maxPoints": -10,
+                    "applied": false,
+                    "detail": ""
+                  },
+                  {
+                    "id": "five_day_runup",
+                    "label": "Son 5 günde aşırı yükseliş",
+                    "points": 0,
+                    "maxPoints": -5,
+                    "applied": false,
+                    "detail": ""
+                  },
+                  {
+                    "id": "low_volume",
+                    "label": "Hacim çok düşük",
+                    "points": 0,
+                    "maxPoints": -10,
+                    "applied": false,
+                    "detail": ""
+                  },
+                  {
+                    "id": "weakening_macd_histogram",
+                    "label": "MACD histogramı zayıflıyor",
+                    "points": 0,
+                    "maxPoints": -5,
+                    "applied": false,
+                    "detail": ""
+                  }
+                ]
+              },
+              "positiveTotal": 66,
+              "rawTotal": 66,
+              "total": 66,
+              "maximum": 100,
+              "capped": false
+            },
+            "fibonacci": {
+              "valid": true,
+              "status": "ENTRY_TOO_FAR",
+              "pointA": {
+                "type": "LOW",
+                "index": 494,
+                "price": 0.06772,
+                "date": "2026-08-01T23:59:59.000Z"
+              },
+              "pointB": {
+                "type": "HIGH",
+                "index": 515,
+                "price": 0.10081,
+                "date": "2026-08-22T23:59:59.000Z"
+              },
+              "pointC": {
+                "type": "LOW",
+                "index": 540,
+                "price": 0.07836,
+                "date": "2026-09-16T23:59:59.000Z"
+              },
+              "range": 0.03,
+              "retracementRatio": 0.6785,
+              "entryTriggerPrice": 0.08,
+              "entryZoneLow": 0.08,
+              "entryZoneHigh": 0.09,
+              "entryUpperSource": "DESCENDING_DAILY_HIGH_TRENDLINE_PLUS_3_PERCENT",
+              "descendingResistance": {
+                "valid": true,
+                "available": true,
+                "source": "B_TO_FIRST_POST_B_LOWER_HIGH",
+                "reason": null,
+                "anchor1": {
+                  "type": "HIGH",
+                  "index": 515,
+                  "price": 0.10081,
+                  "date": "2026-08-22T23:59:59.000Z"
+                },
+                "anchor2": {
+                  "type": "HIGH",
+                  "index": 529,
+                  "price": 0.09507,
+                  "date": "2026-09-05T23:59:59.000Z"
+                },
+                "slopePerBar": -0.00041,
+                "lastCompletedCandleTime": "2026-09-24T23:59:59.000Z",
+                "projectedPoint": {
+                  "index": 548,
+                  "date": "2026-09-24T23:59:59.000Z",
+                  "price": 0.0873
+                },
+                "breakoutPrice": 0.0873,
+                "breakoutPriceAtLast": 0.0873,
+                "entryUpperRaw": 0.08989840000000002,
+                "entryUpperPrice": 0.09
+              },
+              "stopLoss": 0.08,
+              "tp1": 0.1,
+              "tp2": 0.1,
+              "tp3": 0.11,
+              "volumeConfirmation": "STRONG",
+              "invalidReason": "GİRİŞ İÇİN UZAKLAŞTI – fiyat alçalan tepe trendi kırılım seviyesinin %3 üzerindedir.",
+              "confirmationPassed": true,
+              "confirmationCandleTime": "2026-09-17T23:59:59.000Z",
+              "confirmationCandleClose": 0.08,
+              "entryPrice": 0.1
+            },
+            "timestamp": "2026-09-25T21:00:02.433Z",
+            "precision": {
+              "status": "VALIDATED",
+              "dataQuality": "PASSED",
+              "calibration": "KALIBRE_EDILMEDI",
+              "marketRegime": "RISK_ON",
+              "marketRegimeReason": "Endeks trendi ve piyasa genişliği uygun.",
+              "breadth": 0.9674,
+              "relativeStrengthRank": 62,
+              "relativeStrengthPercentile": 0.6739130434782609,
+              "rs20": 0.07365432790162307,
+              "rs60": 0.01724547726377046,
+              "indicators": {
+                "adx": 34.699373332031996,
+                "atrPercent": 6.175737833294946,
+                "volumeZScore": -1.142192702516931
+              },
+              "errors": [],
+              "affectsScore": false
+            },
+            "fallbackPlan": null,
+            "price": 0.09603,
+            "ema20": 0.08871186731445221,
+            "ema50": 0.08441889024898905,
+            "ema200": 0.09258780459084595,
+            "rsi": 61.423221944351795,
+            "macd": 0.003253491660054092,
+            "atr": 0.005930561041313136,
+            "volumeRatio": 1.0961948251604394,
+            "turnover": 540832.41333
           },
           {
             "symbol": "AAVEUSDT",
@@ -6523,14 +6928,14 @@
               "confirmationCandleClose": 128.65,
               "entryPrice": 145.08
             },
-            "timestamp": "2026-09-25T20:00:05.333Z",
+            "timestamp": "2026-09-25T21:00:04.729Z",
             "precision": {
               "status": "VALIDATED",
               "dataQuality": "PASSED",
               "calibration": "KALIBRE_EDILMEDI",
               "marketRegime": "RISK_ON",
               "marketRegimeReason": "Endeks trendi ve piyasa genişliği uygun.",
-              "breadth": 0.9783,
+              "breadth": 0.9674,
               "relativeStrengthRank": 55,
               "relativeStrengthPercentile": 0.5978260869565217,
               "rs20": 0.05027638936459322,
@@ -6553,311 +6958,6 @@
             "atr": 8.879578330899045,
             "volumeRatio": 0.6267008182357006,
             "turnover": 13813.792200000002
-          },
-          {
-            "symbol": "XRPUSDT",
-            "validation": {
-              "ok": true
-            },
-            "dataStatus": "OK",
-            "score": 65,
-            "grade": "A / AL ADAYI",
-            "features": {
-              "price": 1.5349,
-              "ema20": 1.418596247852427,
-              "ema50": 1.3330721249884538,
-              "ema200": 1.3609305396715532,
-              "ema20FiveDaysAgo": 1.3560116112685094,
-              "rsi": 62.00998636109556,
-              "atr": 0.0933941750644243,
-              "macd": 0.051728528808251184,
-              "macdSignal": 0.03764569583831168,
-              "macdHistogram": 0.014082832969939507,
-              "previousHistogram": 0.013121085331495502,
-              "histogramThreeBack": 0.005219959949059532,
-              "volume": 1025933.1,
-              "averageVolume": 1269729.6800000002,
-              "volumeRatio": 0.807993320279006,
-              "turnover": 1574704.71519,
-              "fiveDayReturn": 8.773297427538784
-            },
-            "reasons": [
-              "Fiyat EMA20 üzerinde",
-              "EMA20 EMA50 üzerinde",
-              "Fiyat EMA200 üzerinde",
-              "EMA20 son 5 günde yükseliyor"
-            ],
-            "risks": [],
-            "scoreBreakdown": {
-              "trend": {
-                "score": 30,
-                "max": 30,
-                "items": [
-                  {
-                    "id": "price_above_ema20",
-                    "label": "Fiyat EMA20 üzerinde",
-                    "points": 8,
-                    "maxPoints": 8,
-                    "passed": true,
-                    "detail": ""
-                  },
-                  {
-                    "id": "ema20_above_ema50",
-                    "label": "EMA20 EMA50 üzerinde",
-                    "points": 8,
-                    "maxPoints": 8,
-                    "passed": true,
-                    "detail": ""
-                  },
-                  {
-                    "id": "price_above_ema200",
-                    "label": "Fiyat EMA200 üzerinde",
-                    "points": 7,
-                    "maxPoints": 7,
-                    "passed": true,
-                    "detail": ""
-                  },
-                  {
-                    "id": "ema20_rising_5d",
-                    "label": "EMA20 son 5 günde yükseliyor",
-                    "points": 7,
-                    "maxPoints": 7,
-                    "passed": true,
-                    "detail": ""
-                  }
-                ]
-              },
-              "momentum": {
-                "score": 25,
-                "max": 25,
-                "items": [
-                  {
-                    "id": "rsi14",
-                    "label": "RSI14",
-                    "points": 10,
-                    "maxPoints": 10,
-                    "passed": true,
-                    "partial": false,
-                    "detail": "RSI 52–65 aralığında"
-                  },
-                  {
-                    "id": "macd_above_signal",
-                    "label": "MACD sinyal çizgisinin üzerinde",
-                    "points": 8,
-                    "maxPoints": 8,
-                    "passed": true,
-                    "detail": ""
-                  },
-                  {
-                    "id": "macd_histogram_strengthening",
-                    "label": "MACD histogramı pozitif ve güçleniyor",
-                    "points": 7,
-                    "maxPoints": 7,
-                    "passed": true,
-                    "detail": ""
-                  }
-                ]
-              },
-              "volumeLiquidity": {
-                "score": 5,
-                "max": 20,
-                "items": [
-                  {
-                    "id": "volume_ratio",
-                    "label": "Hacim oranı",
-                    "points": 5,
-                    "maxPoints": 10,
-                    "passed": true,
-                    "partial": true,
-                    "detail": "Hacim 20 günlük ortalamaya yakın"
-                  },
-                  {
-                    "id": "turnover",
-                    "label": "Likidite / işlem tutarı",
-                    "points": 0,
-                    "maxPoints": 10,
-                    "passed": false,
-                    "partial": false,
-                    "detail": "Günlük işlem tutarı 25 milyon USDT altında"
-                  }
-                ]
-              },
-              "entryQuality": {
-                "score": 5,
-                "max": 25,
-                "items": [
-                  {
-                    "id": "near_ema20",
-                    "label": "Fiyat EMA20'ye en fazla 1 ATR uzaklıkta",
-                    "points": 0,
-                    "maxPoints": 5,
-                    "passed": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "valid_fibonacci",
-                    "label": "Geçerli Fibonacci A–B–C yapısı",
-                    "points": 5,
-                    "maxPoints": 5,
-                    "passed": true,
-                    "detail": ""
-                  },
-                  {
-                    "id": "fibonacci_confirmation",
-                    "label": "Fibonacci dönüş teyidi",
-                    "points": 0,
-                    "maxPoints": 5,
-                    "passed": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "volume_confirmation",
-                    "label": "Dönüş hacmi güçlü",
-                    "points": 0,
-                    "maxPoints": 3,
-                    "passed": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "risk_reward",
-                    "label": "TP2 veya TP3 için en az 1:2 risk/getiri",
-                    "points": 0,
-                    "maxPoints": 7,
-                    "passed": false,
-                    "detail": ""
-                  }
-                ]
-              },
-              "penalties": {
-                "score": 0,
-                "items": [
-                  {
-                    "id": "rsi_overbought",
-                    "label": "RSI aşırı yüksek",
-                    "points": 0,
-                    "maxPoints": -10,
-                    "applied": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "extended_above_ema20",
-                    "label": "Fiyat EMA20'den aşırı uzak",
-                    "points": 0,
-                    "maxPoints": -10,
-                    "applied": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "five_day_runup",
-                    "label": "Son 5 günde aşırı yükseliş",
-                    "points": 0,
-                    "maxPoints": -5,
-                    "applied": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "low_volume",
-                    "label": "Hacim çok düşük",
-                    "points": 0,
-                    "maxPoints": -10,
-                    "applied": false,
-                    "detail": ""
-                  },
-                  {
-                    "id": "weakening_macd_histogram",
-                    "label": "MACD histogramı zayıflıyor",
-                    "points": 0,
-                    "maxPoints": -5,
-                    "applied": false,
-                    "detail": ""
-                  }
-                ]
-              },
-              "positiveTotal": 65,
-              "rawTotal": 65,
-              "total": 65,
-              "maximum": 100,
-              "capped": false
-            },
-            "fibonacci": {
-              "valid": true,
-              "status": "ENTRY_RESISTANCE_UNAVAILABLE",
-              "pointA": {
-                "type": "LOW",
-                "index": 507,
-                "price": 0.9879,
-                "date": "2026-08-14T23:59:59.000Z"
-              },
-              "pointB": {
-                "type": "HIGH",
-                "index": 515,
-                "price": 1.6995,
-                "date": "2026-08-22T23:59:59.000Z"
-              },
-              "pointC": {
-                "type": "LOW",
-                "index": 540,
-                "price": 1.2477,
-                "date": "2026-09-16T23:59:59.000Z"
-              },
-              "range": 0.71,
-              "retracementRatio": 0.6349,
-              "entryTriggerPrice": 1.27,
-              "entryZoneLow": 1.27,
-              "entryZoneHigh": null,
-              "entryUpperSource": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-              "descendingResistance": {
-                "valid": false,
-                "available": false,
-                "source": "NO_DESCENDING_DAILY_HIGH_TRENDLINE",
-                "reason": "En güncel günlük tepe çifti alçalan trend oluşturmuyor.",
-                "anchor1": null,
-                "anchor2": null,
-                "slopePerBar": null,
-                "lastCompletedCandleTime": "2026-09-24T23:59:59.000Z",
-                "projectedPoint": null,
-                "breakoutPrice": null,
-                "breakoutPriceAtLast": null,
-                "entryUpperRaw": null,
-                "entryUpperPrice": null
-              },
-              "stopLoss": 1.22,
-              "tp1": 1.69,
-              "tp2": 1.81,
-              "tp3": 1.96,
-              "volumeConfirmation": "WEAK",
-              "invalidReason": "Giriş üst seviyesi oluşturulmadı: En güncel günlük tepe çifti alçalan trend oluşturmuyor."
-            },
-            "timestamp": "2026-09-25T20:00:02.618Z",
-            "precision": {
-              "status": "VALIDATED",
-              "dataQuality": "PASSED",
-              "calibration": "KALIBRE_EDILMEDI",
-              "marketRegime": "RISK_ON",
-              "marketRegimeReason": "Endeks trendi ve piyasa genişliği uygun.",
-              "breadth": 0.9783,
-              "relativeStrengthRank": 58,
-              "relativeStrengthPercentile": 0.6304347826086957,
-              "rs20": 0.03819182776616081,
-              "rs60": 0.08783730456392469,
-              "indicators": {
-                "adx": 41.53499989986788,
-                "atrPercent": 6.084707476996827,
-                "volumeZScore": -1.286684781416757
-              },
-              "errors": [],
-              "affectsScore": false
-            },
-            "fallbackPlan": null,
-            "price": 1.5349,
-            "ema20": 1.418596247852427,
-            "ema50": 1.3330721249884538,
-            "ema200": 1.3609305396715532,
-            "rsi": 62.00998636109556,
-            "macd": 0.051728528808251184,
-            "atr": 0.0933941750644243,
-            "volumeRatio": 0.807993320279006,
-            "turnover": 1574704.71519
           }
         ]
       },
