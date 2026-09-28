@@ -13,6 +13,9 @@
 #tradingTab .bist-tsmom-table th { position:sticky; top:0; z-index:2; background:var(--panel,#1C2B22); }
 #tradingTab .bist-tsmom-table button { font:inherit; color:inherit; background:none; border:0; padding:0; text-decoration:underline; cursor:pointer; }
 #tradingTab .bist-tsmom-row-selected { background:color-mix(in srgb,var(--panel,#1C2B22) 82%,#C9A15A); }
+#tradingTab .bist-tsmom-table tbody tr[data-symbol] { cursor:pointer; touch-action:manipulation; }
+#tradingTab .bist-tsmom-table tbody tr[data-symbol]:focus-visible { outline:2px solid var(--accent,#C9A15A); outline-offset:-2px; }
+#tradingTab .bist-tsmom-table tbody tr.bist-tsmom-row-active { background:color-mix(in srgb,var(--panel,#1C2B22) 72%,#C9A15A); box-shadow:inset 3px 0 0 var(--accent,#C9A15A); }
 #tradingTab .bist-tsmom-state-SELECTED { color:var(--accent,#C9A15A); }
 #tradingTab .bist-tsmom-state-POSITIVE_NOT_SELECTED { color:var(--warning,#D8BB80); }
 #tradingTab .bist-tsmom-state-NEGATIVE { color:var(--negative,#BC7974); }
