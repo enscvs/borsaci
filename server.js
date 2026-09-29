@@ -11968,6 +11968,9 @@ if (req.method === "GET" && pathname === "/onesignal-push.js") {
 
 // Feature-local BIST TSMOM assets.  No global stylesheet or other market UI
 // is served from this route.
+if (req.method === "GET" && pathname === "/bist-tsmom/bist-tsmom-interaction.js") {
+  return serveFile(res, path.join(__dirname, "public", "bist-tsmom", "bist-tsmom-interaction.js"), "application/javascript; charset=utf-8", {"Cache-Control":"no-cache"});
+}
 if (req.method === "GET" && pathname === "/bist-tsmom/bist-tsmom.js") {
   return serveFile(res, path.join(__dirname, "public", "bist-tsmom", "bist-tsmom.js"), "application/javascript; charset=utf-8", {"Cache-Control":"no-cache"});
 }

@@ -5,7 +5,6 @@ const path = require("node:path");
 const vm = require("node:vm");
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const interaction = require("../public/bist-tsmom/bist-tsmom-interaction.js");
 
 function element() {
   return { dataset:{}, listeners:{}, innerHTML:"", textContent:"", className:"", disabled:false,
@@ -26,9 +25,14 @@ test("BIST table click renders ASELS detail then replaces it with TUPRS", async 
   const payload = { strategy:{name:"12M TSMOM Top 30",baseCapital:100000,maxPositions:30,slotCapital:3333.333333}, source:"TEST", universeSource:"TEST", rows:[row("ASELS",1), row("TUPRS",2)], summary:{currentNav:100000,availableCash:0,investedValue:0,unrealizedPnl:0,realizedPnl:0,totalPnl:0,returnPercent:0,openPositions:0,universeCount:2,positiveCount:2,selectedCount:2,positiveNotSelectedCount:0,negativeCount:0,noDataCount:0,lastPriceUpdate:"2026-09-24T18:15:00.000Z",lastSignalDate:"2026-08-31",nextRebalanceDate:"2026-09-30",portfolioStatus:"READY"}, rebalance:{sells:[],buys:[],holds:[],sellProceeds:0,buyCost:0,cashAfter:0,estimatedPositionCount:2}, history:{} };
   let authReady;
   let fetchCalls = 0;
-  const context = { document, window:{ BistTsmomInteraction:interaction, borsaciAuth:{authenticated:false}, addEventListener(type, callback) { if (type === "borsaci:auth-ready") authReady = callback; } }, fetch:async () => { fetchCalls += 1; return { ok:true, json:async () => payload }; }, Intl, Date, Number, String, Math, Promise, console };
-  const code = fs.readFileSync(path.join(__dirname,"../public/bist-tsmom/bist-tsmom.js"),"utf8");
-  vm.runInNewContext(code, context);
+  const context = vm.createContext({ document, window:{ borsaciAuth:{authenticated:false}, addEventListener(type, callback) { if (type === "borsaci:auth-ready") authReady = callback; } }, fetch:async () => { fetchCalls += 1; return { ok:true, json:async () => payload }; }, Intl, Date, Number, String, Math, Promise, console });
+  // Load the real browser scripts in HTML order; do not inject the dependency.
+  const html = fs.readFileSync(path.join(__dirname,"../public/index.html"),"utf8");
+  const scripts = [...html.matchAll(/<script src="(\/bist-tsmom\/[^"?]+)(?:\?[^\"]*)?"[^>]*><\/script>/g)];
+  assert.equal(scripts.length, 2);
+  for (const [, script] of scripts) {
+    vm.runInContext(fs.readFileSync(path.join(__dirname,"../public",script),"utf8"), context);
+  }
   assert.equal(fetchCalls,0,"TSMOM request waits for authenticated session");
   authReady();
   await new Promise(resolve => setImmediate(resolve));
