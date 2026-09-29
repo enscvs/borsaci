@@ -8,13 +8,41 @@ const MAX_POSITIONS = 30;
 const SLOT_CAPITAL = BASE_CAPITAL / MAX_POSITIONS;
 const STALE_PRICE_MS = 3 * 24 * 60 * 60 * 1000;
 
-const number = value => Number.isFinite(Number(value)) ? Number(value) : null;
-const round = (value, digits = 4) => Number.isFinite(Number(value)) ? Number(Number(value).toFixed(digits)) : null;
+const number = value => value === null || value === undefined || typeof value === "boolean" || String(value).trim() === "" ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 const average = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
 const marketDate = value => {
-  const numeric = Number(value);
-  return Number.isFinite(numeric) && numeric > 0 && numeric < 100000000000 ? new Date(numeric * 1000) : new Date(value || 0);
+  const numeric = number(value);
+  return value === null || value === undefined ? new Date(NaN) : numeric !== null && numeric > 0 && numeric < 100000000000 ? new Date(numeric * 1000) : new Date(value);
 };
+const symbolKey = value => String(value || "").trim().toUpperCase().replace(/\.IS$/, "");
+const monthFormatter = new Intl.DateTimeFormat("en-CA", {timeZone:"Europe/Istanbul",year:"numeric",month:"2-digit"});
+const monthKey = value => {
+  const parts=Object.fromEntries(monthFormatter.formatToParts(value).map(item=>[item.type,item.value]));
+  return `${parts.year}-${parts.month}`;
+};
+function shiftedMonth(key, offset) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1 + offset, 1)).toISOString().slice(0, 7);
+}
+
+// Unknown values never become zero prices. Conflicting duplicate timestamps
+// are excluded rather than selecting an arbitrary record. No input mutation.
+function normalizeBars(bars, now = Date.now()) {
+  const byTime = new Map(), conflicts = new Set();
+  let rejected = 0;
+  for (const item of Array.isArray(bars) ? bars : []) {
+    const time = marketDate(item.timestamp ?? item.date ?? item.time).getTime();
+    const close = number(item.close), high = number(item.high), low = number(item.low), open = number(item.open ?? item.close);
+    if (!Number.isFinite(time) || time > now || [close, high, low, open].some(value => value === null || value <= 0) || high < Math.max(open,close,low) || low > Math.min(open,close,high)) { rejected++; continue; }
+    const bar = {timestamp:new Date(time).toISOString(),time:time/1000,open,high,low,close,volume:number(item.volume)};
+    const prior = byTime.get(time);
+    if (prior && JSON.stringify(prior) !== JSON.stringify(bar)) { conflicts.add(time); rejected++; }
+    else byTime.set(time, bar);
+  }
+  const sorted = [...byTime].filter(([time]) => !conflicts.has(time)).sort(([a],[b]) => a-b).map(([,bar]) => bar);
+  const {completedDailyHistory} = require("./fibonacci-engine");
+  return {bars:completedDailyHistory(sorted, now, {market:"BIST"}), rejected};
+}
 
 function sma(values, period) {
   if (!Array.isArray(values) || values.length < period) return null;
@@ -42,7 +70,7 @@ function rsi(values, period = 14) {
     gain = (gain * (period - 1) + Math.max(0, change)) / period;
     loss = (loss * (period - 1) + Math.max(0, -change)) / period;
   }
-  return loss === 0 ? 100 : 100 - (100 / (1 + gain / loss));
+  return loss === 0 ? gain === 0 ? 50 : 100 : 100 - (100 / (1 + gain / loss));
 }
 
 function atr(bars, period = 14) {
@@ -65,21 +93,20 @@ function monthlyCloses(bars, now = Date.now()) {
   const byMonth = new Map();
   for (const bar of bars || []) {
     const date = marketDate(bar.timestamp || bar.date || bar.time || 0);
-    if (!Number.isFinite(date.getTime()) || !Number.isFinite(Number(bar.close)) || Number(bar.close) <= 0) continue;
-    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+    if (!Number.isFinite(date.getTime()) || number(bar.close) === null || Number(bar.close) <= 0) continue;
+    const key = monthKey(date);
     const previous = byMonth.get(key);
     if (!previous || date.getTime() > previous.timestamp) byMonth.set(key, {key, date: date.toISOString().slice(0, 10), timestamp: date.getTime(), close: Number(bar.close)});
   }
-  const current = new Date(now);
-  const currentKey = `${current.getUTCFullYear()}-${String(current.getUTCMonth() + 1).padStart(2, "0")}`;
+  const currentKey = monthKey(new Date(now));
   // A partial current calendar month is never an end-of-month TSMOM input.
   return [...byMonth.values()].filter(item => item.key < currentKey).sort((left, right) => left.timestamp - right.timestamp);
 }
 
 function technicals(bars) {
-  const valid = (bars || []).filter(bar => [bar.close, bar.high, bar.low].every(value => Number.isFinite(Number(value))));
+  const valid = (bars || []).filter(bar => [bar.close, bar.high, bar.low].every(value => number(value) !== null && Number(value)>0) && Number(bar.high)>=Number(bar.close) && Number(bar.low)<=Number(bar.close));
   const closes = valid.map(bar => Number(bar.close));
-  const volumes = valid.map(bar => Number(bar.volume) || 0);
+  const volumes = valid.map(bar => number(bar.volume));
   const latest = valid.at(-1) || null;
   const macd = ema(closes, 12) === null || ema(closes, 26) === null ? null : ema(closes, 12) - ema(closes, 26);
   const macdSeries = closes.map((_, index) => {
@@ -98,7 +125,7 @@ function technicals(bars) {
   const high52 = trailing.length ? Math.max(...trailing.map(bar => Number(bar.high))) : null;
   const low52 = trailing.length ? Math.min(...trailing.map(bar => Number(bar.low))) : null;
   const current = closes.at(-1) ?? null;
-  const volume20 = sma(volumes, 20);
+  const volume20 = volumes.length>=20 && volumes.slice(-20).every(value=>value!==null && value>=0) ? sma(volumes,20) : null;
   return {
     sma20:sma(closes,20), sma50:sma(closes,50), sma100:sma(closes,100), sma200:sma(closes,200),
     ema20:ema(closes,20), ema50:ema(closes,50), ema100:ema(closes,100), ema200:ema(closes,200),
@@ -108,8 +135,8 @@ function technicals(bars) {
     distanceHigh52:current && high52 ? (current / high52 - 1) * 100 : null,
     distanceLow52:current && low52 ? (current / low52 - 1) * 100 : null,
     return20:returns(20), return50:returns(50), return100:returns(100), return200:returns(200),
-    averageVolume20:volume20, latestVolume:Number(latest?.volume) || null,
-    volumeRatio:volume20 && latest ? (Number(latest.volume) || 0) / volume20 : null,
+    averageVolume20:volume20, latestVolume:number(latest?.volume),
+    volumeRatio:volume20>0 && number(latest?.volume)!==null ? Number(latest.volume) / volume20 : null,
   };
 }
 
@@ -117,57 +144,109 @@ function positionBySymbol(positions) {
   const map = new Map();
   for (const item of positions || []) {
     if (String(item.status || "OPEN").toUpperCase() !== "OPEN") continue;
-    const symbol = String(item.symbol || "").toUpperCase().replace(/\.IS$/, "");
+    const symbol = symbolKey(item.symbol);
     if (!symbol) continue;
-    map.set(symbol, {lot:Number(item.quantity ?? item.lot) || 0, averageCost:number(item.entry ?? item.averageCost), current:number(item.current)});
+    const lot = number(item.quantity ?? item.lot);
+    if (lot === null || lot <= 0) continue;
+    const cost=number(item.entry ?? item.averageCost), current=number(item.current);
+    const prior=map.get(symbol) || {lot:0,costValue:0,markedValue:0,costKnown:true,markKnown:true,validLot:true};
+    prior.lot+=lot; prior.costKnown=prior.costKnown && cost!==null && cost>0;
+    prior.markKnown=prior.markKnown && current!==null && current>0;
+    prior.costValue+=(cost || 0)*lot; prior.markedValue+=(current || 0)*lot;
+    prior.validLot=prior.validLot && Number.isInteger(lot);
+    prior.averageCost=prior.costKnown ? prior.costValue/prior.lot : null;
+    prior.current=prior.markKnown ? prior.markedValue/prior.lot : null;
+    map.set(symbol,prior);
   }
   return map;
 }
 
 function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, positions = [], currentCash = null, realizedPnl = 0, now = Date.now(), source = "UNKNOWN", universeSource = "UNKNOWN"} = {}) {
   const existing = positionBySymbol(positions);
-  const rows = universe.map(symbol => {
-    const clean = String(symbol).toUpperCase().replace(/\.IS$/, "");
-    const bars = Array.isArray(histories[clean]) ? histories[clean] : [];
+  const universeSet = new Set(universe.map(symbolKey).filter(Boolean));
+  const symbols = [...new Set([...universeSet, ...existing.keys()])];
+  const signalMonth = shiftedMonth(monthKey(new Date(now)), -1);
+  const referenceMonth = shiftedMonth(signalMonth, -12);
+  const rows = symbols.map(clean => {
+    const normalized = normalizeBars(histories[clean],now), bars=normalized.bars;
     const monthly = monthlyCloses(bars, now);
-    const currentMonth = monthly.at(-1);
-    const reference = monthly.length >= 13 ? monthly.at(-13) : null;
+    const currentMonth = monthly.find(item=>item.key===signalMonth);
+    const reference = monthly.find(item=>item.key===referenceMonth);
     const tsmom = currentMonth && reference && reference.close > 0 ? (currentMonth.close / reference.close - 1) * 100 : null;
     const latest = bars.at(-1) || null;
-    const timestamp = marketDate(latest?.timestamp || latest?.date || latest?.time || 0).getTime();
-    const stale = !timestamp || now - timestamp > STALE_PRICE_MS;
-    const quality = !bars.length ? "NO_DATA" : !reference ? "INSUFFICIENT_HISTORY" : stale ? "STALE_PRICE" : "PRICE_OK";
-    return {symbol:clean, companyName:String(companyNames[clean] || clean), bars, currentPrice:number(latest?.close), currentPriceTimestamp:latest?.timestamp || latest?.date || latest?.time || null, currentMonthEndClose:currentMonth?.close ?? null, currentMonthEndDate:currentMonth?.date ?? null, referenceClose:reference?.close ?? null, referenceDate:reference?.date ?? null, absolutePriceDifference:currentMonth && reference ? currentMonth.close-reference.close : null, tsmom, dataQuality:quality, technical:technicals(bars)};
+    const timestamp = marketDate(latest?.timestamp).getTime();
+    // Conservative age cap on completed DAILY reference prices, not a live
+    // quote guarantee. Both BUY and SELL are blocked beyond 72 hours. Long
+    // holiday closures can therefore block previews until fresh data arrives.
+    const stale = !Number.isFinite(timestamp) || now-timestamp>STALE_PRICE_MS;
+    const flags=[];
+    if (!bars.length) flags.push("NO_DATA");
+    if (!currentMonth || !reference) flags.push("INSUFFICIENT_HISTORY");
+    if (stale) flags.push("STALE_PRICE");
+    if (normalized.rejected) flags.push("INVALID_DATA");
+    if (!flags.length) flags.push("PRICE_OK");
+    return {symbol:clean,companyName:String(companyNames[clean] || clean),universeStatus:universeSet.has(clean)?"IN_UNIVERSE":"LEGACY_OUTSIDE_UNIVERSE",currentPrice:number(latest?.close),currentPriceTimestamp:latest?.timestamp ?? null,currentMonthEndClose:currentMonth?.close ?? null,currentMonthEndDate:currentMonth?.date ?? null,referenceClose:reference?.close ?? null,referenceDate:reference?.date ?? null,expectedSignalMonth:signalMonth,expectedReferenceMonth:referenceMonth,absolutePriceDifference:currentMonth && reference?currentMonth.close-reference.close:null,tsmom,dataQuality:flags.join(" · "),dataQualityFlags:flags,rejectedBars:normalized.rejected,technical:technicals(bars)};
   });
-  const positives = rows.filter(row => row.tsmom !== null && row.tsmom > 0).sort((left,right) => right.tsmom-left.tsmom || left.symbol.localeCompare(right.symbol));
+  const positives = rows.filter(row => row.universeStatus==="IN_UNIVERSE" && row.tsmom !== null && row.tsmom > 0).sort((left,right) => right.tsmom-left.tsmom || left.symbol.localeCompare(right.symbol));
   positives.forEach((row,index) => { row.tsmomRank=index+1; row.selected=index<MAX_POSITIONS; });
   const selected = new Set(positives.slice(0,MAX_POSITIONS).map(row => row.symbol));
   for (const row of rows) {
-    const current = existing.get(row.symbol) || {lot:0,averageCost:null,current:null};
-    const executable = row.currentPrice && row.dataQuality === "PRICE_OK";
-    const targetLot = selected.has(row.symbol) && executable ? Math.floor(SLOT_CAPITAL / row.currentPrice) : 0;
-    const targetValue = targetLot * (row.currentPrice || 0);
-    const deltaLot = targetLot - current.lot;
+    const current = existing.get(row.symbol) || {lot:0,averageCost:null,current:null,validLot:true};
+    const executable = row.currentPrice>0 && row.dataQuality==="PRICE_OK" && current.validLot;
+    // Unknown target is NOT a target of zero: missing/stale data must never
+    // turn an existing holding into an implicit liquidation instruction.
+    const targetLot = executable ? selected.has(row.symbol) ? Math.floor(SLOT_CAPITAL/row.currentPrice) : 0 : null;
+    const targetValue = targetLot===null ? null : targetLot*row.currentPrice;
+    const deltaLot = targetLot===null ? null : targetLot-current.lot;
     row.status = row.tsmom === null ? "NO_DATA" : row.tsmom > 0 ? selected.has(row.symbol) ? "SELECTED" : "POSITIVE_NOT_SELECTED" : "NEGATIVE";
-    row.selectionReason = row.status === "SELECTED" ? "Positive TSMOM and rank <= 30" : row.status === "POSITIVE_NOT_SELECTED" ? "Positive TSMOM but rank > 30" : row.status === "NEGATIVE" ? "TSMOM <= 0" : "Completed 12 calendar month reference unavailable";
-    row.currentLot=current.lot; row.averageCost=current.averageCost; row.currentMarketValue=(row.currentPrice || current.current || 0)*current.lot;
-    row.currentPnl=current.averageCost && row.currentPrice ? (row.currentPrice-current.averageCost)*current.lot : null;
+    row.selectionReason = row.universeStatus!=="IN_UNIVERSE" ? "Legacy holding outside current universe; excluded from selection" : row.status === "SELECTED" ? `TSMOM > 0; Rank = ${row.tsmomRank}; Rank <= 30 → SELECTED` : row.status === "POSITIVE_NOT_SELECTED" ? "Positive TSMOM but rank > 30" : row.status === "NEGATIVE" ? "TSMOM <= 0" : `Completed month endpoints required: ${signalMonth} / ${referenceMonth}`;
+    const mark=row.currentPrice>0 ? row.currentPrice : current.current;
+    row.currentLot=current.lot; row.averageCost=current.averageCost;
+    row.valuationSource=row.currentPrice>0?"COMPLETED_DAILY":mark>0?"LAST_KNOWN_POSITION_MARK":"UNAVAILABLE";
+    row.currentMarketValue=current.lot===0?0:mark>0?mark*current.lot:null;
+    row.currentPnl=current.lot===0?0:current.averageCost>0 && mark>0?(mark-current.averageCost)*current.lot:null;
     row.targetSlotCapital=SLOT_CAPITAL; row.targetLot=targetLot; row.targetMarketValue=targetValue; row.deltaLot=deltaLot;
-    row.requiredAction=deltaLot>0 ? "BUY" : deltaLot<0 ? "SELL" : "HOLD";
-    row.residualCashContribution=selected.has(row.symbol) ? SLOT_CAPITAL-targetValue : 0;
-    row.portfolioWeight=BASE_CAPITAL ? row.currentMarketValue/BASE_CAPITAL*100 : 0;
-    row.targetPortfolioWeight=targetValue/BASE_CAPITAL*100;
+    row.requiredAction=deltaLot===null?"BLOCKED":deltaLot>0?"BUY":deltaLot<0?"SELL":"HOLD";
+    row.blockedReason=executable?null:!current.validLot?"INVALID_POSITION_LOT":row.dataQuality;
+    row.plannedDeltaLot=executable?deltaLot:0;
+    row.residualCashContribution=selected.has(row.symbol)?targetValue===null?null:SLOT_CAPITAL-targetValue:0;
+    row.targetPortfolioWeight=targetValue===null?null:targetValue/BASE_CAPITAL*100;
     row.executionReferencePrice=row.currentPrice;
   }
-  const sells=rows.filter(row=>row.requiredAction==="SELL"), buys=rows.filter(row=>row.requiredAction==="BUY"), holds=rows.filter(row=>row.requiredAction==="HOLD" && (row.currentLot||row.targetLot));
+  const currentInvested=rows.some(row=>row.currentMarketValue===null)?null:rows.reduce((sum,row)=>sum+row.currentMarketValue,0);
+  const currentPnl=rows.some(row=>row.currentPnl===null)?null:rows.reduce((sum,row)=>sum+row.currentPnl,0);
+  // Default new empty account is 100000. Existing holdings with missing cash
+  // require reconciliation, not an invented cash balance.
+  const cash=number(currentCash) ?? (existing.size===0?BASE_CAPITAL:null);
+  const realized=number(realizedPnl);
+  const sells=rows.filter(row=>row.requiredAction==="SELL");
   const sellProceeds=sells.reduce((sum,row)=>sum+Math.abs(row.deltaLot)*(row.executionReferencePrice||0),0);
+  let budget=cash===null?null:cash+sellProceeds;
+  // Fixed targets are never redistributed or shrunk to favor another symbol.
+  // A buy is funded in rank order in full or explicitly blocked.
+  const candidates=rows.filter(row=>row.requiredAction==="BUY").sort((a,b)=>a.tsmomRank-b.tsmomRank);
+  let plannedCount=rows.filter(row=>row.currentLot+(row.requiredAction==="SELL"?row.deltaLot:0)>0).length;
+  for (const row of candidates) {
+    const cost=row.deltaLot*row.executionReferencePrice;
+    const tooMany=row.currentLot===0 && plannedCount>=MAX_POSITIONS;
+    if (budget===null || cost>budget || tooMany) {
+      row.requiredAction="BLOCKED"; row.plannedDeltaLot=0;
+      row.blockedReason=tooMany?"POSITION_LIMIT":budget===null?"CASH_UNKNOWN":"INSUFFICIENT_CASH";
+    } else { budget-=cost; if(row.currentLot===0) plannedCount++; }
+  }
+  const buys=rows.filter(row=>row.requiredAction==="BUY"), holds=rows.filter(row=>row.requiredAction==="HOLD" && (row.currentLot||row.targetLot)), blocked=rows.filter(row=>row.requiredAction==="BLOCKED");
   const buyCost=buys.reduce((sum,row)=>sum+row.deltaLot*(row.executionReferencePrice||0),0);
-  const invested=rows.reduce((sum,row)=>sum+row.targetMarketValue,0);
-  const currentInvested=rows.reduce((sum,row)=>sum+row.currentMarketValue,0);
-  const currentPnl=rows.reduce((sum,row)=>sum+(row.currentPnl||0),0);
-  const cash = Number.isFinite(Number(currentCash)) ? Number(currentCash) : Math.max(0, BASE_CAPITAL-currentInvested);
-  const realized = Number.isFinite(Number(realizedPnl)) ? Number(realizedPnl) : 0;
-  return {generatedAt:new Date(now).toISOString(), strategy:{name:"12M TSMOM Top 30",baseCapital:BASE_CAPITAL,maxPositions:MAX_POSITIONS,slotCapital:SLOT_CAPITAL,execution:"SELL_FIRST_BUY_SECOND",technicalIndicatorsInformationalOnly:true}, source, universeSource, rows:rows.sort((left,right)=>(left.tsmomRank||999999)-(right.tsmomRank||999999)||left.symbol.localeCompare(right.symbol)), summary:{universeCount:rows.length,positiveCount:positives.length,selectedCount:selected.size,positiveNotSelectedCount:Math.max(0,positives.length-MAX_POSITIONS),negativeCount:rows.filter(row=>row.status==="NEGATIVE").length,noDataCount:rows.filter(row=>row.status==="NO_DATA").length,currentNav:cash+currentInvested,availableCash:cash,investedValue:currentInvested,unrealizedPnl:currentPnl,realizedPnl:realized,totalPnl:currentPnl+realized,returnPercent:(currentPnl+realized)/BASE_CAPITAL*100,openPositions:rows.filter(row=>row.currentLot>0).length,lastPriceUpdate:rows.map(row=>row.currentPriceTimestamp).filter(Boolean).sort().at(-1)||null,lastSignalDate:positives[0]?.currentMonthEndDate||null}, rebalance:{sells,buys,holds,sellProceeds,buyCost,cashBefore:cash,cashAfter:cash+sellProceeds-buyCost,estimatedInvestedValue:invested,estimatedPositionCount:selected.size}};
+  const nav=cash===null || currentInvested===null?null:cash+currentInvested;
+  const totalPnl=nav===null?null:nav-BASE_CAPITAL;
+  const reconciliationDifference=totalPnl===null || realized===null || currentPnl===null?null:totalPnl-realized-currentPnl;
+  for (const row of rows) row.portfolioWeight=nav>0 && row.currentMarketValue!==null?row.currentMarketValue/nav*100:null;
+  const issues=[];
+  if (cash===null) issues.push("CASH_UNKNOWN");
+  if (cash!==null && cash<0) issues.push("NEGATIVE_STARTING_CASH");
+  if (currentInvested===null) issues.push("UNVALUED_POSITION");
+  if (reconciliationDifference!==null && Math.abs(reconciliationDifference)>0.01) issues.push("PNL_RECONCILIATION_REQUIRED");
+  const listedRows=rows.filter(row=>row.universeStatus==="IN_UNIVERSE");
+  return {generatedAt:new Date(now).toISOString(),strategy:{name:"12M TSMOM Top 30",baseCapital:BASE_CAPITAL,maxPositions:MAX_POSITIONS,slotCapital:SLOT_CAPITAL,execution:"SELL_FIRST_BUY_SECOND",technicalIndicatorsInformationalOnly:true,priceBasis:"COMPLETED_DAILY_REFERENCE_NOT_LIVE",maxPriceAgeMs:STALE_PRICE_MS,costAssumption:"GROSS_PREVIEW_EXCLUDES_FEES_AND_SLIPPAGE",atrMethod:"SIMPLE_MEAN_TRUE_RANGE_14",volatilityMethod:"POPULATION_LOG_RETURN_STDEV_SQRT_252"},source,universeSource,rows:rows.sort((a,b)=>(a.tsmomRank??Infinity)-(b.tsmomRank??Infinity)||a.symbol.localeCompare(b.symbol)),summary:{universeCount:universeSet.size,positiveCount:positives.length,selectedCount:selected.size,positiveNotSelectedCount:Math.max(0,positives.length-MAX_POSITIONS),negativeCount:listedRows.filter(row=>row.status==="NEGATIVE").length,noDataCount:listedRows.filter(row=>row.status==="NO_DATA").length,currentNav:nav,availableCash:cash,investedValue:currentInvested,unrealizedPnl:currentPnl,realizedPnl:realized,totalPnl,returnPercent:totalPnl===null?null:totalPnl/BASE_CAPITAL*100,reconciliationDifference,accountingIssues:issues,openPositions:existing.size,lastPriceUpdate:rows.map(row=>row.currentPriceTimestamp).filter(Boolean).sort().at(-1)||null,lastSignalDate:listedRows.map(row=>row.currentMonthEndDate).filter(Boolean).sort().at(-1)||null},rebalance:{sells,buys,holds,blocked,sellProceeds,buyCost,cashBefore:cash,cashAfter:budget,estimatedInvestedValue:currentInvested===null?null:currentInvested-sellProceeds+buyCost,estimatedPositionCount:plannedCount}};
 }
 
-module.exports={BASE_CAPITAL,MAX_POSITIONS,SLOT_CAPITAL,STALE_PRICE_MS,monthlyCloses,technicals,buildTsmomPortfolio};
+module.exports={BASE_CAPITAL,MAX_POSITIONS,SLOT_CAPITAL,STALE_PRICE_MS,monthlyCloses,technicals,buildTsmomPortfolio,normalizeBars,number};

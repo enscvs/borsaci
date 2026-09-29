@@ -7886,9 +7886,17 @@ async function buildBistTsmomSnapshot() {
     if (!symbols.length) throw new Error("BIST TSMOM evreni alınamadı.");
     const histories = {};
     const companyNames = {};
+    const saved = await getTradingState();
+    // Retain legacy holdings even if an instrument leaves the current universe.
+    // Fetch their marks for valuation only; they cannot enter Top30 selection.
+    const heldSymbols = (saved.content?.paper?.positions || [])
+      .filter(item => String(item.status || "OPEN").toUpperCase() === "OPEN" && Number(item.quantity ?? item.lot) > 0)
+      .map(item => String(item.symbol || "").trim().toUpperCase().replace(/\.IS$/, ""))
+      .filter(Boolean);
+    const priceSymbols = [...new Set([...symbols, ...heldSymbols])];
     const batchSize = 10;
-    for (let offset = 0; offset < symbols.length; offset += batchSize) {
-      const batch = symbols.slice(offset, offset + batchSize);
+    for (let offset = 0; offset < priceSymbols.length; offset += batchSize) {
+      const batch = priceSymbols.slice(offset, offset + batchSize);
       const settled = await Promise.allSettled(batch.map(symbol => fetchYahooChart(symbol, "2y", "1d", 8000)));
       settled.forEach((entry, index) => {
         if (entry.status !== "fulfilled") return;
@@ -7898,14 +7906,16 @@ async function buildBistTsmomSnapshot() {
         companyNames[batch[index]] = entry.value.meta?.longName || entry.value.meta?.shortName || batch[index];
       });
     }
-    const saved = await getTradingState();
+    // Use the freshest paper account after slow price fetches (reset/position
+    // changes may have happened meanwhile). Only this feature's read is affected.
+    const latestSaved = await getTradingState();
     const payload = buildTsmomPortfolio({
       universe:symbols,
       histories,
       companyNames,
-      positions:saved.content?.paper?.positions || [],
-      currentCash:saved.content?.paper?.cash,
-      realizedPnl:saved.content?.paper?.pnl,
+      positions:latestSaved.content?.paper?.positions || [],
+      currentCash:latestSaved.content?.paper?.cash,
+      realizedPnl:latestSaved.content?.paper?.pnl,
       now,
       source:"YAHOO_FINANCE_COMPLETED_DAILY",
       universeSource:universeResult.source,
@@ -7913,14 +7923,14 @@ async function buildBistTsmomSnapshot() {
     payload.summary.lastRebalanceDate = null;
     payload.summary.nextRebalanceDate = nextBistTsmomRebalanceDate(now);
     payload.summary.portfolioStatus = "MIGRATION_PREVIEW_ONLY";
-    payload.summary.migrationOpenPositions = (saved.content?.paper?.positions || []).filter(item => String(item?.status || "").toUpperCase() === "OPEN").length;
+    payload.summary.migrationOpenPositions = (latestSaved.content?.paper?.positions || []).filter(item => String(item?.status || "").toUpperCase() === "OPEN").length;
     payload.history = {
       monthlyTsmomSnapshots:[{timestamp:payload.generatedAt, selectedCount:payload.summary.selectedCount, positiveCount:payload.summary.positiveCount, universeCount:payload.summary.universeCount}],
       rebalanceHistory:[{timestamp:payload.generatedAt, sells:payload.rebalance.sells.length, buys:payload.rebalance.buys.length, holds:payload.rebalance.holds.length, cashAfter:payload.rebalance.cashAfter}],
       navHistory:[{timestamp:payload.generatedAt, nav:payload.summary.currentNav, totalPnl:payload.summary.totalPnl}],
       cashHistory:[{timestamp:payload.generatedAt, cash:payload.summary.availableCash}],
-      portfolioTransactions:(saved.content?.activity || []).slice(0, 100),
-      historicalPositions:(saved.content?.history || []).slice(0, 100),
+      portfolioTransactions:(latestSaved.content?.activity || []).slice(0, 100),
+      historicalPositions:(latestSaved.content?.history || []).slice(0, 100),
     };
     bistTsmomCache = {createdAt:now, payload};
     return payload;

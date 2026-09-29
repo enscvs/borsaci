@@ -46,10 +46,30 @@ test("BIST table click renders ASELS detail then replaces it with TUPRS", async 
   assert.match(elements.bistTsmomDetail.innerHTML,/MOVING AVERAGES/);
   assert.match(elements.bistTsmomDetail.innerHTML,/LOT HESABI/);
   assert.match(elements.bistTsmomDetail.innerHTML,/95,4/);
+  assert.match(elements.bistTsmomBody.innerHTML,/aria-selected="true"/);
+
+  elements.bistTsmomSearch.listeners.input({target:{value:"no-matching-company"}});
+  assert.match(elements.bistTsmomBody.innerHTML,/Kayıt bulunamadı/);
+  elements.bistTsmomSearch.listeners.input({target:{value:""}});
+  payload.rows[1].requiredAction="BLOCKED";
+  elements.bistTsmomFilter.listeners.change({target:{value:"BLOCKED"}});
+  assert.match(elements.bistTsmomBody.innerHTML,/TUPRS/);
+  assert.doesNotMatch(elements.bistTsmomBody.innerHTML,/ASELS/);
+  elements.bistTsmomFilter.listeners.change({target:{value:"ALL"}});
+
+  payload.rows[0].deltaLot=0; payload.rows[1].deltaLot=10;
+  elements.bistTsmomHead.listeners.click({target:{closest:()=>({dataset:{sort:"deltaLot"}})}});
+  assert.ok(elements.bistTsmomBody.innerHTML.indexOf('data-symbol="ASELS"')<elements.bistTsmomBody.innerHTML.indexOf('data-symbol="TUPRS"'));
 
   const tuprsRow = { dataset:{symbol:"TUPRS"}, parentElement:null };
   const tuprsText = { dataset:{}, parentElement:tuprsRow, closest:() => tuprsRow };
   elements.bistTsmomBody.listeners.pointerup({ type:"pointerup", pointerType:"touch", target:tuprsText });
   assert.equal(elements.bistTsmomDetailSymbol.textContent,"TUPRS");
   assert.match(elements.bistTsmomDetail.innerHTML,/TUPRS/);
+
+  payload.rows[1].technical={rsi14:null,sma20:null,ema20:null};
+  payload.rows[1].tsmom=null;payload.rows[1].referenceClose=null;
+  elements.bistTsmomBody.listeners.pointerup({type:"pointerup",pointerType:"touch",target:tuprsText});
+  assert.match(elements.bistTsmomDetail.innerHTML,/Period = 14 · N\/A/);
+  assert.doesNotMatch(elements.bistTsmomDetail.innerHTML,/PRICE ABOVE|Infinity|NaN|= 0<br>=/);
 });
