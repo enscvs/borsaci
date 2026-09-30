@@ -6133,7 +6133,7 @@
       ],
       "decisions": [
         {
-          "id": "1790780456625-LITE",
+          "id": "1790784056826-LITE",
           "rank": 1,
           "symbol": "LITE",
           "action": "WATCH",
@@ -6471,22 +6471,22 @@
             "provider": "GROQ",
             "score": null,
             "verdict": "INFO",
-            "newsComment": "Verilen başlıklarda LITE hakkında doğrudan bir gelişme bulunmamaktadır.",
+            "newsComment": "Verilen başlıklarda LITE ile ilgili bir haber bulunmamaktadır.",
             "expertComment": "",
-            "summary": "LITE için spesifik haber yok."
+            "summary": "LITE hakkında güncel bilgi yok."
           },
           "lifecycle": {
             "stage": "PENDING",
-            "createdAt": "2026-09-30T15:00:56.625Z",
-            "expiresAt": "2026-10-01T15:00:56.625Z"
+            "createdAt": "2026-09-30T16:00:56.826Z",
+            "expiresAt": "2026-10-01T16:00:56.826Z"
           },
           "currentScan": true,
           "reason": "TP1'e ulaşmış eski yapıdan yeni giriş önerilmez.",
           "invalidation": "C seviyesinin %2 altındaki stop (583.23) planı geçersiz kılar.",
-          "timestamp": "2026-09-30T15:00:56.625Z"
+          "timestamp": "2026-09-30T16:00:56.826Z"
         },
         {
-          "id": "1790780456625-AMGN",
+          "id": "1790784056826-AMGN",
           "rank": 2,
           "symbol": "AMGN",
           "action": "BUY SETUP",
@@ -6824,22 +6824,22 @@
             "provider": "GROQ",
             "score": null,
             "verdict": "INFO",
-            "newsComment": "Amgen'in 6% temettü artışı, zorlu bir yolun sinyali olarak yorumlanıyor; ayrıca Amgen, rekabetçi bir pazar raporunda 2030 yılına kadar 5.8 milyar dolarlık satış",
-            "expertComment": "Analistler, temettü artışının kısa vadeli olumlu bir işaret olduğunu, ancak uzun vadede pazar baskılarının risk oluşturabileceğini belirtiyor.",
-            "summary": "Amgen, temettü artışı, büyük pazar beklentileri ve yeni yönetim kurulu atamasıyla dikkat çekiyor."
+            "newsComment": "Amgen'in %6 temettü artışı duyuruldu, ancak bu durum daha zorlu bir yolun sinyali olarak görülüyor.",
+            "expertComment": "Analistler, temettü artışının şirketin gelecekteki zorluklarını gizleyebileceğini belirtiyor.",
+            "summary": "Amgen %6 temettü artırdı; ancak bu, önümüzdeki dönemde zorlukları işaret ediyor."
           },
           "lifecycle": {
             "stage": "PENDING_APPROVAL",
-            "createdAt": "2026-09-30T15:00:56.625Z",
-            "expiresAt": "2026-10-01T15:00:56.625Z"
+            "createdAt": "2026-09-30T16:00:56.826Z",
+            "expiresAt": "2026-10-01T16:00:56.826Z"
           },
           "currentScan": true,
           "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
           "invalidation": "C seviyesinin %2 altındaki stop (367.13) planı geçersiz kılar.",
-          "timestamp": "2026-09-30T15:00:56.625Z"
+          "timestamp": "2026-09-30T16:00:56.826Z"
         },
         {
-          "id": "1790780456625-NVDA",
+          "id": "1790784056826-NVDA",
           "rank": 3,
           "symbol": "NVDA",
           "action": "BUY SETUP",
@@ -7173,23 +7173,23 @@
           ],
           "risks": [],
           "aiReview": {
-            "available": false,
-            "provider": "UNAVAILABLE",
-            "verdict": "INFO",
+            "available": true,
+            "provider": "GROQ",
             "score": null,
-            "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-            "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
-            "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
+            "verdict": "INFO",
+            "newsComment": "Verilen başlıklarda NVDA ile ilgili bir haber bulunmamaktadır.",
+            "expertComment": "",
+            "summary": "NVDA hakkında güncel bilgi yok."
           },
           "lifecycle": {
             "stage": "PENDING_APPROVAL",
-            "createdAt": "2026-09-30T15:00:56.625Z",
-            "expiresAt": "2026-10-01T15:00:56.625Z"
+            "createdAt": "2026-09-30T16:00:56.826Z",
+            "expiresAt": "2026-10-01T16:00:56.827Z"
           },
           "currentScan": true,
           "reason": "A-B-C yapısı %2,70 üzerinde tamamlanmış günlük kapanışla teyit edildi.",
           "invalidation": "C seviyesinin %2 altındaki stop (186.02) planı geçersiz kılar.",
-          "timestamp": "2026-09-30T15:00:56.625Z",
+          "timestamp": "2026-09-30T16:00:56.826Z",
           "pendingOrder": {
             "symbol": "NVDA",
             "quantity": 1,
@@ -7203,8 +7203,8 @@
             "actualRisk": 41.22,
             "paperOnly": true,
             "source": "SCANNER",
-            "createdAt": "2026-09-30T15:00:56.625Z",
-            "updatedAt": "2026-09-30T15:00:56.625Z",
+            "createdAt": "2026-09-30T16:00:56.826Z",
+            "updatedAt": "2026-09-30T16:00:56.826Z",
             "editedAt": null
           }
         },
@@ -13197,6 +13197,11 @@
       ],
       "activity": [
         {
+          "timestamp": "2026-09-30T16:00:56.826Z",
+          "type": "NASDAQ_SCAN",
+          "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
+        },
+        {
           "timestamp": "2026-09-30T15:00:56.625Z",
           "type": "NASDAQ_SCAN",
           "message": "100 NASDAQ hissesi tarandı; 5 aday kaydedildi (IEX günlük veri)."
@@ -13690,15 +13695,10 @@
           "timestamp": "2026-09-24T07:31:02.647Z",
           "type": "NASDAQ_BROKER_RECONCILE",
           "message": "Alpaca uzlaştırması tamamlandı: 0 emir keşfedildi, 0 kayıt bağlandı, 0 durum güncellendi."
-        },
-        {
-          "timestamp": "2026-09-24T03:31:01.762Z",
-          "type": "NASDAQ_BROKER_RECONCILE",
-          "message": "Alpaca uzlaştırması tamamlandı: 0 emir keşfedildi, 0 kayıt bağlandı, 0 durum güncellendi."
         }
       ],
       "scanner": {
-        "timestamp": "2026-09-30T15:00:56.625Z",
+        "timestamp": "2026-09-30T16:00:56.826Z",
         "scanned": 100,
         "successful": 97,
         "results": [
@@ -14031,9 +14031,9 @@
               "provider": "GROQ",
               "score": null,
               "verdict": "INFO",
-              "newsComment": "Verilen başlıklarda LITE hakkında doğrudan bir gelişme bulunmamaktadır.",
+              "newsComment": "Verilen başlıklarda LITE ile ilgili bir haber bulunmamaktadır.",
               "expertComment": "",
-              "summary": "LITE için spesifik haber yok."
+              "summary": "LITE hakkında güncel bilgi yok."
             }
           },
           {
@@ -14365,9 +14365,9 @@
               "provider": "GROQ",
               "score": null,
               "verdict": "INFO",
-              "newsComment": "Amgen'in 6% temettü artışı, zorlu bir yolun sinyali olarak yorumlanıyor; ayrıca Amgen, rekabetçi bir pazar raporunda 2030 yılına kadar 5.8 milyar dolarlık satış",
-              "expertComment": "Analistler, temettü artışının kısa vadeli olumlu bir işaret olduğunu, ancak uzun vadede pazar baskılarının risk oluşturabileceğini belirtiyor.",
-              "summary": "Amgen, temettü artışı, büyük pazar beklentileri ve yeni yönetim kurulu atamasıyla dikkat çekiyor."
+              "newsComment": "Amgen'in %6 temettü artışı duyuruldu, ancak bu durum daha zorlu bir yolun sinyali olarak görülüyor.",
+              "expertComment": "Analistler, temettü artışının şirketin gelecekteki zorluklarını gizleyebileceğini belirtiyor.",
+              "summary": "Amgen %6 temettü artırdı; ancak bu, önümüzdeki dönemde zorlukları işaret ediyor."
             }
           },
           {
@@ -14695,13 +14695,13 @@
             "volumeRatio": 0.8843075076570494,
             "turnover": 569940374.19,
             "aiReview": {
-              "available": false,
-              "provider": "UNAVAILABLE",
-              "verdict": "INFO",
+              "available": true,
+              "provider": "GROQ",
               "score": null,
-              "newsComment": "Doğrulanmış haber başlığı alınamadı.",
-              "expertComment": "Analist görüşü veya hedef fiyat, doğrulanmış kaynak olmadan gösterilmez.",
-              "summary": "AI bilgi akışı için yapılandırılmış kaynak bekleniyor."
+              "verdict": "INFO",
+              "newsComment": "Verilen başlıklarda NVDA ile ilgili bir haber bulunmamaktadır.",
+              "expertComment": "",
+              "summary": "NVDA hakkında güncel bilgi yok."
             }
           },
           {
