@@ -21,6 +21,8 @@ test("BIST table click renders ASELS detail then replaces it with TUPRS", async 
   const ids = ["bistTsmomStatus","bistTsmomSummary","bistTsmomFilter","bistTsmomSearch","bistTsmomRefresh","bistTsmomRows","bistTsmomHead","bistTsmomBody","bistTsmomDetailSymbol","bistTsmomDetail","bistTsmomRebalance","bistTsmomHistory"];
   const elements = Object.fromEntries(ids.map(id => [id, element()]));
   const root = element();
+  const historyButton = element(); historyButton.dataset.bistView = "snapshots";
+  root.querySelectorAll = () => [historyButton];
   const document = { getElementById(id) { return id === "tradingTab" ? root : elements[id]; } };
   const payload = { strategy:{name:"12M TSMOM Top 30",baseCapital:100000,maxPositions:30,slotCapital:3333.333333}, source:"TEST", universeSource:"TEST", rows:[row("ASELS",1), row("TUPRS",2)], summary:{currentNav:100000,availableCash:0,investedValue:0,unrealizedPnl:0,realizedPnl:0,totalPnl:0,returnPercent:0,openPositions:0,universeCount:2,positiveCount:2,selectedCount:2,positiveNotSelectedCount:0,negativeCount:0,noDataCount:0,lastPriceUpdate:"2026-09-24T18:15:00.000Z",lastSignalDate:"2026-08-31",nextRebalanceDate:"2026-09-30",portfolioStatus:"READY"}, rebalance:{sells:[],buys:[],holds:[],sellProceeds:0,buyCost:0,cashAfter:0,estimatedPositionCount:2}, history:{} };
   let authReady;
@@ -37,14 +39,24 @@ test("BIST table click renders ASELS detail then replaces it with TUPRS", async 
   authReady();
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(fetchCalls,1);
+  assert.match(root.innerHTML, /value="BUY">Alış/);
+  assert.match(elements.bistTsmomSummary.innerHTML, /NET PORTFÖY DEĞERİ/);
+  assert.match(elements.bistTsmomBody.innerHTML, /Fiyat verisi uygun/);
+  assert.doesNotMatch(elements.bistTsmomBody.innerHTML, />SELECTED<|>BUY<|PRICE_OK/);
+  payload.history.monthlyTsmomSnapshots=[{timestamp:"2026-09-24T18:15:00.000Z",selectedCount:2,positiveCount:2,universeCount:2}];
+  historyButton.listeners.click();
+  assert.match(elements.bistTsmomHistory.innerHTML, /Seçilen hisse: 2/);
+  assert.doesNotMatch(elements.bistTsmomHistory.innerHTML, /selectedCount|SNAPSHOT|\{"/);
 
   const aselsRow = { dataset:{symbol:"ASELS"}, parentElement:null };
   const aselsText = { dataset:{}, parentElement:aselsRow, closest:() => aselsRow };
   elements.bistTsmomBody.listeners.click({ type:"click", target:aselsText });
   assert.equal(elements.bistTsmomDetailSymbol.textContent,"ASELS");
   assert.match(elements.bistTsmomDetail.innerHTML,/TSMOM HESABI/);
-  assert.match(elements.bistTsmomDetail.innerHTML,/MOVING AVERAGES/);
+  assert.match(elements.bistTsmomDetail.innerHTML,/HAREKETLİ ORTALAMALAR/);
   assert.match(elements.bistTsmomDetail.innerHTML,/LOT HESABI/);
+  assert.match(elements.bistTsmomDetail.innerHTML,/Seçilme nedeni: 12 aylık momentum/);
+  assert.doesNotMatch(elements.bistTsmomDetail.innerHTML,/Current month-end|Selection reason|OVERSOLD|IDENTIFICATION/);
   assert.match(elements.bistTsmomDetail.innerHTML,/95,4/);
   assert.match(elements.bistTsmomBody.innerHTML,/aria-selected="true"/);
 
@@ -70,6 +82,7 @@ test("BIST table click renders ASELS detail then replaces it with TUPRS", async 
   payload.rows[1].technical={rsi14:null,sma20:null,ema20:null};
   payload.rows[1].tsmom=null;payload.rows[1].referenceClose=null;
   elements.bistTsmomBody.listeners.pointerup({type:"pointerup",pointerType:"touch",target:tuprsText});
-  assert.match(elements.bistTsmomDetail.innerHTML,/Period = 14 · N\/A/);
+  assert.match(elements.bistTsmomDetail.innerHTML,/Dönem = 14 · Veri yok/);
   assert.doesNotMatch(elements.bistTsmomDetail.innerHTML,/PRICE ABOVE|Infinity|NaN|= 0<br>=/);
 });
+
