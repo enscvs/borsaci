@@ -103,6 +103,17 @@ function monthlyCloses(bars, now = Date.now()) {
   return [...byMonth.values()].filter(item => item.key < currentKey).sort((left, right) => left.timestamp - right.timestamp);
 }
 
+function expectedMonthEnd(key) {
+  const [year, month] = key.split("-").map(Number);
+  const day = new Date(Date.UTC(year, month, 0));
+  while ([0,6].includes(day.getUTCDay())) day.setUTCDate(day.getUTCDate()-1);
+  return day.toISOString().slice(0,10);
+}
+
+function nextRebalanceDate(now = Date.now()) {
+  return `${shiftedMonth(monthKey(new Date(now)), 1)}-01`;
+}
+
 function technicals(bars) {
   const valid = (bars || []).filter(bar => [bar.close, bar.high, bar.low].every(value => number(value) !== null && Number(value)>0) && Number(bar.high)>=Number(bar.close) && Number(bar.low)<=Number(bar.close));
   const closes = valid.map(bar => Number(bar.close));
@@ -147,7 +158,13 @@ function positionBySymbol(positions) {
     const symbol = symbolKey(item.symbol);
     if (!symbol) continue;
     const lot = number(item.quantity ?? item.lot);
-    if (lot === null || lot <= 0) continue;
+    if (lot === 0) continue;
+    if (lot === null || lot < 0) {
+      const prior = map.get(symbol) || {lot:0,costValue:0,markedValue:0,costKnown:false,markKnown:false};
+      prior.validLot=false; prior.invalidQuantity=true;
+      map.set(symbol,prior);
+      continue;
+    }
     const cost=number(item.entry ?? item.averageCost), current=number(item.current);
     const prior=map.get(symbol) || {lot:0,costValue:0,markedValue:0,costKnown:true,markKnown:true,validLot:true};
     prior.lot+=lot; prior.costKnown=prior.costKnown && cost!==null && cost>0;
@@ -161,7 +178,7 @@ function positionBySymbol(positions) {
   return map;
 }
 
-function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, positions = [], currentCash = null, realizedPnl = 0, now = Date.now(), source = "UNKNOWN", universeSource = "UNKNOWN"} = {}) {
+function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, positions = [], currentCash = null, realizedPnl = 0, accountCapital = BASE_CAPITAL, expectedMonthEndDates = null, now = Date.now(), source = "UNKNOWN", universeSource = "UNKNOWN"} = {}) {
   const existing = positionBySymbol(positions);
   const universeSet = new Set(universe.map(symbolKey).filter(Boolean));
   const symbols = [...new Set([...universeSet, ...existing.keys()])];
@@ -172,7 +189,13 @@ function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, 
     const monthly = monthlyCloses(bars, now);
     const currentMonth = monthly.find(item=>item.key===signalMonth);
     const reference = monthly.find(item=>item.key===referenceMonth);
-    const tsmom = currentMonth && reference && reference.close > 0 ? (currentMonth.close / reference.close - 1) * 100 : null;
+    const endpointComplete = endpoint => {
+      if (!endpoint) return false;
+      const expected = expectedMonthEndDates === null ? expectedMonthEnd(endpoint.key) : expectedMonthEndDates[endpoint.key];
+      return Boolean(expected) && endpoint.date >= expected;
+    };
+    const completeEndpoints = endpointComplete(currentMonth) && endpointComplete(reference);
+    const tsmom = completeEndpoints && reference.close > 0 ? (currentMonth.close / reference.close - 1) * 100 : null;
     const latest = bars.at(-1) || null;
     const timestamp = marketDate(latest?.timestamp).getTime();
     // Conservative age cap on completed DAILY reference prices, not a live
@@ -181,7 +204,7 @@ function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, 
     const stale = !Number.isFinite(timestamp) || now-timestamp>STALE_PRICE_MS;
     const flags=[];
     if (!bars.length) flags.push("NO_DATA");
-    if (!currentMonth || !reference) flags.push("INSUFFICIENT_HISTORY");
+    if (!completeEndpoints) flags.push("INSUFFICIENT_HISTORY");
     if (stale) flags.push("STALE_PRICE");
     if (normalized.rejected) flags.push("INVALID_DATA");
     if (!flags.length) flags.push("PRICE_OK");
@@ -203,8 +226,8 @@ function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, 
     const mark=row.currentPrice>0 ? row.currentPrice : current.current;
     row.currentLot=current.lot; row.averageCost=current.averageCost;
     row.valuationSource=row.currentPrice>0?"COMPLETED_DAILY":mark>0?"LAST_KNOWN_POSITION_MARK":"UNAVAILABLE";
-    row.currentMarketValue=current.lot===0?0:mark>0?mark*current.lot:null;
-    row.currentPnl=current.lot===0?0:current.averageCost>0 && mark>0?(mark-current.averageCost)*current.lot:null;
+    row.currentMarketValue=current.invalidQuantity?null:current.lot===0?0:mark>0?mark*current.lot:null;
+    row.currentPnl=current.invalidQuantity?null:current.lot===0?0:current.averageCost>0 && mark>0?(mark-current.averageCost)*current.lot:null;
     row.targetSlotCapital=SLOT_CAPITAL; row.targetLot=targetLot; row.targetMarketValue=targetValue; row.deltaLot=deltaLot;
     row.requiredAction=deltaLot===null?"BLOCKED":deltaLot>0?"BUY":deltaLot<0?"SELL":"HOLD";
     row.blockedReason=executable?null:!current.validLot?"INVALID_POSITION_LOT":row.dataQuality;
@@ -237,16 +260,21 @@ function buildTsmomPortfolio({universe = [], histories = {}, companyNames = {}, 
   const buys=rows.filter(row=>row.requiredAction==="BUY"), holds=rows.filter(row=>row.requiredAction==="HOLD" && (row.currentLot||row.targetLot)), blocked=rows.filter(row=>row.requiredAction==="BLOCKED");
   const buyCost=buys.reduce((sum,row)=>sum+row.deltaLot*(row.executionReferencePrice||0),0);
   const nav=cash===null || currentInvested===null?null:cash+currentInvested;
-  const totalPnl=nav===null?null:nav-BASE_CAPITAL;
+  const capital = number(accountCapital);
+  const validCapital = capital !== null && capital > 0;
+  const totalPnl=nav===null || !validCapital?null:nav-capital;
   const reconciliationDifference=totalPnl===null || realized===null || currentPnl===null?null:totalPnl-realized-currentPnl;
   for (const row of rows) row.portfolioWeight=nav>0 && row.currentMarketValue!==null?row.currentMarketValue/nav*100:null;
   const issues=[];
   if (cash===null) issues.push("CASH_UNKNOWN");
+  if (!validCapital) issues.push("INVALID_ACCOUNT_CAPITAL");
+  if ([...existing.values()].some(item => !item.validLot)) issues.push("INVALID_POSITION_LOT");
   if (cash!==null && cash<0) issues.push("NEGATIVE_STARTING_CASH");
   if (currentInvested===null) issues.push("UNVALUED_POSITION");
   if (reconciliationDifference!==null && Math.abs(reconciliationDifference)>0.01) issues.push("PNL_RECONCILIATION_REQUIRED");
   const listedRows=rows.filter(row=>row.universeStatus==="IN_UNIVERSE");
-  return {generatedAt:new Date(now).toISOString(),strategy:{name:"12M TSMOM Top 30",baseCapital:BASE_CAPITAL,maxPositions:MAX_POSITIONS,slotCapital:SLOT_CAPITAL,execution:"SELL_FIRST_BUY_SECOND",technicalIndicatorsInformationalOnly:true,priceBasis:"COMPLETED_DAILY_REFERENCE_NOT_LIVE",maxPriceAgeMs:STALE_PRICE_MS,costAssumption:"GROSS_PREVIEW_EXCLUDES_FEES_AND_SLIPPAGE",atrMethod:"SIMPLE_MEAN_TRUE_RANGE_14",volatilityMethod:"POPULATION_LOG_RETURN_STDEV_SQRT_252"},source,universeSource,rows:rows.sort((a,b)=>(a.tsmomRank??Infinity)-(b.tsmomRank??Infinity)||a.symbol.localeCompare(b.symbol)),summary:{universeCount:universeSet.size,positiveCount:positives.length,selectedCount:selected.size,positiveNotSelectedCount:Math.max(0,positives.length-MAX_POSITIONS),negativeCount:listedRows.filter(row=>row.status==="NEGATIVE").length,noDataCount:listedRows.filter(row=>row.status==="NO_DATA").length,currentNav:nav,availableCash:cash,investedValue:currentInvested,unrealizedPnl:currentPnl,realizedPnl:realized,totalPnl,returnPercent:totalPnl===null?null:totalPnl/BASE_CAPITAL*100,reconciliationDifference,accountingIssues:issues,openPositions:existing.size,lastPriceUpdate:rows.map(row=>row.currentPriceTimestamp).filter(Boolean).sort().at(-1)||null,lastSignalDate:listedRows.map(row=>row.currentMonthEndDate).filter(Boolean).sort().at(-1)||null},rebalance:{sells,buys,holds,blocked,sellProceeds,buyCost,cashBefore:cash,cashAfter:budget,estimatedInvestedValue:currentInvested===null?null:currentInvested-sellProceeds+buyCost,estimatedPositionCount:plannedCount}};
+  return {generatedAt:new Date(now).toISOString(),strategy:{name:"12M TSMOM Top 30",baseCapital:BASE_CAPITAL,accountCapital:validCapital?capital:null,maxPositions:MAX_POSITIONS,slotCapital:SLOT_CAPITAL,execution:"SELL_FIRST_BUY_SECOND",technicalIndicatorsInformationalOnly:true,priceBasis:"COMPLETED_DAILY_REFERENCE_NOT_LIVE",maxPriceAgeMs:STALE_PRICE_MS,costAssumption:"GROSS_PREVIEW_EXCLUDES_FEES_AND_SLIPPAGE",atrMethod:"SIMPLE_MEAN_TRUE_RANGE_14",volatilityMethod:"POPULATION_LOG_RETURN_STDEV_SQRT_252"},source,universeSource,rows:rows.sort((a,b)=>(a.tsmomRank??Infinity)-(b.tsmomRank??Infinity)||a.symbol.localeCompare(b.symbol)),summary:{universeCount:universeSet.size,positiveCount:positives.length,selectedCount:selected.size,positiveNotSelectedCount:Math.max(0,positives.length-MAX_POSITIONS),negativeCount:listedRows.filter(row=>row.status==="NEGATIVE").length,noDataCount:listedRows.filter(row=>row.status==="NO_DATA").length,currentNav:nav,availableCash:cash,investedValue:currentInvested,unrealizedPnl:currentPnl,realizedPnl:realized,totalPnl,returnPercent:totalPnl===null?null:totalPnl/capital*100,reconciliationDifference,accountingIssues:issues,openPositions:existing.size,lastPriceUpdate:rows.map(row=>row.currentPriceTimestamp).filter(Boolean).sort().at(-1)||null,lastSignalDate:listedRows.map(row=>row.currentMonthEndDate).filter(Boolean).sort().at(-1)||null},rebalance:{sells,buys,holds,blocked,sellProceeds,buyCost,cashBefore:cash,cashAfter:budget,estimatedInvestedValue:currentInvested===null?null:currentInvested-sellProceeds+buyCost,estimatedPositionCount:plannedCount}};
 }
 
-module.exports={BASE_CAPITAL,MAX_POSITIONS,SLOT_CAPITAL,STALE_PRICE_MS,monthlyCloses,technicals,buildTsmomPortfolio,normalizeBars,number};
+module.exports={BASE_CAPITAL,MAX_POSITIONS,SLOT_CAPITAL,STALE_PRICE_MS,nextRebalanceDate,monthlyCloses,technicals,buildTsmomPortfolio,normalizeBars,number};
+

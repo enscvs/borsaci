@@ -7886,6 +7886,17 @@ async function buildBistTsmomSnapshot() {
     if (!symbols.length) throw new Error("BIST TSMOM evreni alınamadı.");
     const histories = {};
     const companyNames = {};
+    // Benchmark sessions include BIST holiday closures. If unavailable, no
+    // monthly endpoint can be verified and the preview stays blocked.
+    let expectedMonthEndDates = {};
+    try {
+      const benchmark = await fetchYahooChart("XU100", "2y", "1d", 8000);
+      const service = require("./trading/bist-tsmom-service");
+      const completed = service.normalizeBars(benchmark.history, now).bars;
+      expectedMonthEndDates = Object.fromEntries(service.monthlyCloses(completed, now).map(item => [item.key,item.date]));
+    } catch (error) {
+      console.warn("BIST ay sonu takvimi doğrulanamadı:", error.message);
+    }
     const saved = await getTradingState();
     // Retain legacy holdings even if an instrument leaves the current universe.
     // Fetch their marks for valuation only; they cannot enter Top30 selection.
@@ -7916,6 +7927,8 @@ async function buildBistTsmomSnapshot() {
       positions:latestSaved.content?.paper?.positions || [],
       currentCash:latestSaved.content?.paper?.cash,
       realizedPnl:latestSaved.content?.paper?.pnl,
+      accountCapital:latestSaved.content?.paper?.initialCapital,
+      expectedMonthEndDates,
       now,
       source:"YAHOO_FINANCE_COMPLETED_DAILY",
       universeSource:universeResult.source,
@@ -7940,8 +7953,7 @@ async function buildBistTsmomSnapshot() {
 }
 
 function nextBistTsmomRebalanceDate(now = Date.now()) {
-  const date = new Date(now);
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1)).toISOString().slice(0, 10);
+  return require("./trading/bist-tsmom-service").nextRebalanceDate(now);
 }
 
 async function handleBistTsmomState(req, res) {
@@ -12174,3 +12186,4 @@ server.listen(
 
   }
 );
+

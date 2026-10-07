@@ -53,4 +53,15 @@ Momentum ayı İstanbul takvimine göre belirlenirken `server.js:nextBistTsmomRe
 
 50 ilgili test geçti: momentum referansları, sıralama, lot, nakit, muhasebe, teknik göstergeler, filtreleme, Türkçe detay/geçmiş gösterimi ve etkileşimler. Bu testlerin geçmesi yukarıdaki ek örneklerle saptanan kusurları ortadan kaldırmıyor.
 
-HTTP varlık testleri ortamın `127.0.0.1` üzerinde port açmayı `EPERM` ile engellemesi nedeniyle çalıştırılamadı. Canlı site görüntüsü ve canlı hesap sonuçları doğrulanmadı. Bu değişiklik yalnız Türkçe sunumu düzenler; raporlanan hesaplama kusurları henüz düzeltilmemiştir.
+HTTP varlık testleri ortamın `127.0.0.1` üzerinde port açmayı `EPERM` ile engellemesi nedeniyle çalıştırılamadı. Canlı site görüntüsü ve canlı hesap sonuçları doğrulanmadı. İlk commit yalnız Türkçe sunumu düzenledi. Aşağıdaki ikinci aşamada raporlanan dört kusur düzeltildi.
+
+
+## 7 Ekim 2026 — uygulanan düzeltmeler
+
+- Türkçeleştirme önce `f766465824ba76266c7a1a9825cb049cc56269e0` commit'iyle main dalına yüklendi.
+- Hesap kârı ve getirisi kayıtlı hesabın gerçek başlangıç sermayesine göre hesaplanıyor. Stratejinin 100.000 TL tahsis bütçesi ve 30 hisseye bölünmesi ayrı tutuldu; ekranda hesap başlangıç sermayesi de gösteriliyor. Geçersiz sermayede getiri bilinmiyor olarak gösteriliyor.
+- Referans ve sinyal ayı kapanışları, tamamlanmış XU100 günlük verilerindeki son seans tarihleriyle doğrulanıyor. Böylece tatil günleri hesaba katılıyor. Takvim verisi alınamazsa doğrulanamayan işlemler engelleniyor. Hesaplama modülünün tek başına kullanımında hafta içi ay sonu kontrolü varsayılandır; üretim çağrısı XU100 takvimini açıkça sağlıyor. Veri sağlayıcının endeks geçmişinin doğru ve tam olması hâlâ bir bağımlılık.
+- Sonraki aylık dengeleme günü İstanbul takviminden hesaplanıyor. Bu tarih aylık planlama tarihidir; tatil günlerinde otomatik emir göndermeyi ifade etmez.
+- Negatif veya bilinmeyen lotlu açık pozisyonlar satırlarda korunuyor, işlem engeli ve muhasebe uyarısı gösteriliyor. Bu kayıtların değerlemesi ve net portföy değeri bilinmiyor kalıyor; eksik nakit boş hesap varsayımıyla doldurulmuyor.
+
+Doğrulama: 60 ilgili test geçti; bunlara dört hata için sınır durumları ve üretim snapshot entegrasyon testleri dahil. Türkçe detay/geçmiş testleri de geçti. Canlı kullanıcı hesabı veya canlı site üzerinde sonuç kontrolü yapılmadı. Fiyat getirisi/temettü, basit ATR ve brüt önizleme yöntem tercihleri değiştirilmedi.

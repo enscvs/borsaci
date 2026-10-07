@@ -99,3 +99,56 @@ test("full lots, residuals, cash and projected NAV reconcile over varied portfol
     assert.deepEqual(build(args),r);
   }
 });
+
+
+
+test("capital changes are not trading profit and slot budget stays fixed",()=>{
+  const result=build({currentCash:200000,accountCapital:200000,realizedPnl:0});
+  assert.equal(result.summary.totalPnl,0);assert.equal(result.summary.returnPercent,0);
+  assert.equal(result.summary.reconciliationDifference,0);
+  assert.equal(result.strategy.slotCapital,SLOT_CAPITAL);
+  assert.equal(result.strategy.accountCapital,200000);
+});
+test("invalid account capital cannot generate a return",()=>{
+  for (const accountCapital of [null,0,-1,"invalid"]) {
+    const result=run({accountCapital});assert.equal(result.summary.totalPnl,null);
+    assert.equal(result.summary.returnPercent,null);
+    assert.ok(result.summary.accountingIssues.includes("INVALID_ACCOUNT_CAPITAL"));
+  }
+});
+test("early reference-month quote cannot masquerade as month-end",()=>{
+  const early=bars.map((bar,i)=>i===1?{...bar,timestamp:"2024-02-01T09:00:00Z"}:bar);
+  const result=run({histories:{A:early}}).rows[0];
+  assert.equal(result.tsmom,null);assert.equal(result.requiredAction,"BLOCKED");
+  assert.ok(result.dataQualityFlags.includes("INSUFFICIENT_HISTORY"));
+});
+test("missing signal-month final session is also blocked despite a fresh current quote",()=>{
+  const history=bars.map((bar,i)=>i===13?{...bar,timestamp:"2025-02-03T09:00:00Z"}:bar);
+  history.push({...bars.at(-1),timestamp:"2025-03-03T09:00:00Z"});
+  const result=run({histories:{A:history},now:Date.UTC(2025,2,3,20)}).rows[0];
+  assert.equal(result.tsmom,null);assert.equal(result.requiredAction,"BLOCKED");
+});
+test("verified benchmark calendar handles holiday month-end and missing calendar",()=>{
+  const histories={A:bars.map((bar,i)=>i===13?{...bar,timestamp:"2025-02-27T09:00:00Z"}:bar)};
+  const calendar={"2024-02":"2024-02-29","2025-02":"2025-02-27"};
+  assert.ok(run({histories,expectedMonthEndDates:calendar}).rows[0].tsmom>0);
+  assert.equal(run({histories,expectedMonthEndDates:{}}).rows[0].requiredAction,"BLOCKED");
+});
+test("invalid open lots remain visible and cannot invent cash or NAV",()=>{
+  for (const quantity of [-5,null,"invalid"]) {
+    const result=run({positions:[{symbol:"A",quantity,entry:100,current:100}],currentCash:null});
+    assert.equal(result.summary.openPositions,1);assert.equal(result.summary.availableCash,null);
+    assert.equal(result.summary.currentNav,null);assert.equal(result.rows[0].requiredAction,"BLOCKED");
+    assert.ok(result.summary.accountingIssues.includes("INVALID_POSITION_LOT"));
+  }
+});
+test("invalid lot mixed with valid same-symbol lot still blocks valuation",()=>{
+  const result=run({positions:[{symbol:"A",quantity:2,entry:100},{symbol:"A",quantity:-1,entry:100}]});
+  assert.equal(result.summary.currentNav,null);assert.equal(result.rows[0].requiredAction,"BLOCKED");
+});
+test("next monthly date follows Istanbul across UTC month boundary",()=>{
+  const {nextRebalanceDate}=require("../trading/bist-tsmom-service");
+  assert.equal(nextRebalanceDate(Date.parse("2025-02-28T21:05:00Z")),"2025-04-01");
+  assert.equal(nextRebalanceDate(Date.parse("2025-02-28T20:55:00Z")),"2025-03-01");
+  assert.equal(nextRebalanceDate(Date.parse("2025-12-31T21:05:00Z")),"2026-02-01");
+});
